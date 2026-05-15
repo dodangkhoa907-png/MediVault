@@ -17,7 +17,8 @@ public class ShelfDAO extends DBContext {
                 s.setShelfName(rs.getNString("ShelfName"));
                 s.setMachineSlotCode(rs.getString("MachineSlotCode"));
                 s.setMotorId(rs.getString("MotorID"));
-                s.setAutomated(rs.getBoolean("IsAutomated")); // Cột tính toán trong SQL
+                s.setLocationNotes(rs.getNString("LocationNotes")); // Bổ sung trường này
+                s.setAutomated(rs.getBoolean("IsAutomated"));
                 list.add(s);
             }
         } catch (Exception e) { e.printStackTrace(); }
