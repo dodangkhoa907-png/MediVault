@@ -18,6 +18,8 @@ public class SupplierDAO extends DBContext {
                 s.setContactName(rs.getNString("ContactName"));
                 s.setPhone(rs.getString("Phone"));
                 s.setEmail(rs.getString("Email"));
+                s.setAddress(rs.getNString("Address")); // Bổ sung địa chỉ
+                s.setLicenseNumber(rs.getString("LicenseNumber")); // Bổ sung GPKD
                 s.setActive(rs.getBoolean("IsActive"));
                 list.add(s);
             }

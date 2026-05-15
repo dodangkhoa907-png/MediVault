@@ -18,7 +18,13 @@ public class CustomerDAO extends DBContext {
                 c.setPhone(rs.getString("Phone"));
                 c.setEmail(rs.getString("Email"));
                 c.setAddress(rs.getNString("Address"));
+                // Bổ sung các dòng thiếu trong hình:
+                Date dob = rs.getDate("DateOfBirth");
+                if (dob != null) c.setDateOfBirth(dob.toLocalDate());
+                c.setGender(rs.getString("Gender"));
+                c.setNationalId(rs.getString("NationalID"));
                 c.setAllergyHistory(rs.getNString("AllergyHistory"));
+                c.setChronicDisease(rs.getNString("ChronicDisease"));
                 c.setPoints(rs.getInt("Points"));
                 list.add(c);
             }
