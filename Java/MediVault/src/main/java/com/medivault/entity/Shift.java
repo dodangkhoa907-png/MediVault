@@ -14,6 +14,16 @@ public class Shift {
 
     public Shift() {}
 
+    public Shift(int shiftId, int accountId, LocalDateTime startTime, LocalDateTime endTime, BigDecimal openingCash, BigDecimal closingCash, String notes) {
+        this.shiftId = shiftId;
+        this.accountId = accountId;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.openingCash = openingCash;
+        this.closingCash = closingCash;
+        this.notes = notes;
+    }
+
     public int getShiftId() { return shiftId; }
     public void setShiftId(int shiftId) { this.shiftId = shiftId; }
     public int getAccountId() { return accountId; }

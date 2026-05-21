@@ -20,6 +20,21 @@ public class Batches {
 
     public Batches() {}
 
+    public Batches(int batchId, int medicineId, Integer poId, Integer supplierId, String batchNumber, LocalDate manufactureDate, LocalDate importDate, LocalDate expiryDate, BigDecimal importPrice, int initialQuantity, int currentQuantity, LocalDateTime createdAt) {
+        this.batchId = batchId;
+        this.medicineId = medicineId;
+        this.poId = poId;
+        this.supplierId = supplierId;
+        this.batchNumber = batchNumber;
+        this.manufactureDate = manufactureDate;
+        this.importDate = importDate;
+        this.expiryDate = expiryDate;
+        this.importPrice = importPrice;
+        this.initialQuantity = initialQuantity;
+        this.currentQuantity = currentQuantity;
+        this.createdAt = createdAt;
+    }
+
     public int getBatchId() { return batchId; }
     public void setBatchId(int batchId) { this.batchId = batchId; }
     public int getMedicineId() { return medicineId; }

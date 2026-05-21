@@ -12,6 +12,17 @@ public class Supplier {
 
     public Supplier() {}
 
+    public Supplier(int supplierId, String supplierName, String contactName, String phone, String email, String address, String licenseNumber, boolean isActive) {
+        this.supplierId = supplierId;
+        this.supplierName = supplierName;
+        this.contactName = contactName;
+        this.phone = phone;
+        this.email = email;
+        this.address = address;
+        this.licenseNumber = licenseNumber;
+        this.isActive = isActive;
+    }
+
     public int getSupplierId() { return supplierId; }
     public void setSupplierId(int supplierId) { this.supplierId = supplierId; }
     public String getSupplierName() { return supplierName; }

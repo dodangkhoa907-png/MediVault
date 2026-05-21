@@ -15,6 +15,18 @@ public class MachineCommand {
 
     public MachineCommand() {}
 
+    public MachineCommand(int commandId, int detailId, String machineSlotCode, int quantity, String status, LocalDateTime createdAt, LocalDateTime processedAt, int retryCount, String errorMessage) {
+        this.commandId = commandId;
+        this.detailId = detailId;
+        this.machineSlotCode = machineSlotCode;
+        this.quantity = quantity;
+        this.status = status;
+        this.createdAt = createdAt;
+        this.processedAt = processedAt;
+        this.retryCount = retryCount;
+        this.errorMessage = errorMessage;
+    }
+
     public int getCommandId() { return commandId; }
     public void setCommandId(int commandId) { this.commandId = commandId; }
     public int getDetailId() { return detailId; }

@@ -10,6 +10,15 @@ public class Shelf {
 
     public Shelf() {}
 
+    public Shelf(int shelfId, String shelfName, String machineSlotCode, String motorId, String locationNotes, boolean isAutomated) {
+        this.shelfId = shelfId;
+        this.shelfName = shelfName;
+        this.machineSlotCode = machineSlotCode;
+        this.motorId = motorId;
+        this.locationNotes = locationNotes;
+        this.isAutomated = isAutomated;
+    }
+
     public int getShelfId() { return shelfId; }
     public void setShelfId(int shelfId) { this.shelfId = shelfId; }
     public String getShelfName() { return shelfName; }

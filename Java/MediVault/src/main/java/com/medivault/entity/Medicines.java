@@ -27,6 +27,29 @@ public class Medicines {
 
     public Medicines() {}
 
+    public Medicines(int medicineId, String medicineCode, String medicineName, String genericName, String barcode, String registrationNumber, Integer categoryId, Integer manufacturerId, String unit, Integer shelfId, BigDecimal storageTempMin, BigDecimal storageTempMax, String storageConditions, String dosage, String contraindications, boolean isPrescriptionRequired, BigDecimal sellingPrice, int minInventory, boolean status, LocalDateTime createdAt) {
+        this.medicineId = medicineId;
+        this.medicineCode = medicineCode;
+        this.medicineName = medicineName;
+        this.genericName = genericName;
+        this.barcode = barcode;
+        this.registrationNumber = registrationNumber;
+        this.categoryId = categoryId;
+        this.manufacturerId = manufacturerId;
+        this.unit = unit;
+        this.shelfId = shelfId;
+        this.storageTempMin = storageTempMin;
+        this.storageTempMax = storageTempMax;
+        this.storageConditions = storageConditions;
+        this.dosage = dosage;
+        this.contraindications = contraindications;
+        this.isPrescriptionRequired = isPrescriptionRequired;
+        this.sellingPrice = sellingPrice;
+        this.minInventory = minInventory;
+        this.status = status;
+        this.createdAt = createdAt;
+    }
+
     public int getMedicineId() { return medicineId; }
     public void setMedicineId(int medicineId) { this.medicineId = medicineId; }
     public String getMedicineCode() { return medicineCode; }

@@ -8,6 +8,13 @@ public class Manufacturer {
 
     public Manufacturer() {}
 
+    public Manufacturer(int manufacturerId, String name, String country, String address) {
+        this.manufacturerId = manufacturerId;
+        this.name = name;
+        this.country = country;
+        this.address = address;
+    }
+
     public int getManufacturerId() { return manufacturerId; }
     public void setManufacturerId(int manufacturerId) { this.manufacturerId = manufacturerId; }
     public String getName() { return name; }

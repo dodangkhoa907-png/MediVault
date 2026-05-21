@@ -14,6 +14,17 @@ public class AuditLog {
 
     public AuditLog() {}
 
+    public AuditLog(long logId, Integer accountId, String action, String entityType, Integer entityId, String description, String ipAddress, LocalDateTime createdAt) {
+        this.logId = logId;
+        this.accountId = accountId;
+        this.action = action;
+        this.entityType = entityType;
+        this.entityId = entityId;
+        this.description = description;
+        this.ipAddress = ipAddress;
+        this.createdAt = createdAt;
+    }
+
     public long getLogId() { return logId; }
     public void setLogId(long logId) { this.logId = logId; }
     public Integer getAccountId() { return accountId; }

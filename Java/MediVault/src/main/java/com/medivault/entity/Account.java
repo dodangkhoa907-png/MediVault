@@ -22,6 +22,24 @@ public class Account {
 
     public Account() {}
 
+    public Account(int accountId, String username, String passwordHash, String fullName, String email, String phone, int roleId, String citizenId, String professionalCertNo, LocalDate professionalCertExp, String position, LocalDate trainingDate, boolean isActive, LocalDateTime createdAt, LocalDateTime lastLoginAt) {
+        this.accountId = accountId;
+        this.username = username;
+        this.passwordHash = passwordHash;
+        this.fullName = fullName;
+        this.email = email;
+        this.phone = phone;
+        this.roleId = roleId;
+        this.citizenId = citizenId;
+        this.professionalCertNo = professionalCertNo;
+        this.professionalCertExp = professionalCertExp;
+        this.position = position;
+        this.trainingDate = trainingDate;
+        this.isActive = isActive;
+        this.createdAt = createdAt;
+        this.lastLoginAt = lastLoginAt;
+    }
+
     public int getAccountId() { return accountId; }
     public void setAccountId(int accountId) { this.accountId = accountId; }
     public String getUsername() { return username; }

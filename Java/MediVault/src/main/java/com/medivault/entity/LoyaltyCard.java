@@ -15,6 +15,18 @@ public class LoyaltyCard {
 
     public LoyaltyCard() {}
 
+    public LoyaltyCard(int cardId, String cardCode, int customerId, int tierId, int totalPoints, int usedPoints, LocalDateTime issuedAt, LocalDateTime expiredAt, boolean isActive) {
+        this.cardId = cardId;
+        this.cardCode = cardCode;
+        this.customerId = customerId;
+        this.tierId = tierId;
+        this.totalPoints = totalPoints;
+        this.usedPoints = usedPoints;
+        this.issuedAt = issuedAt;
+        this.expiredAt = expiredAt;
+        this.isActive = isActive;
+    }
+
     public int getCardId() { return cardId; }
     public void setCardId(int cardId) { this.cardId = cardId; }
     public String getCardCode() { return cardCode; }

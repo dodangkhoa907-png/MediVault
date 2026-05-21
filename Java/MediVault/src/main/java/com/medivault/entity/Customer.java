@@ -20,6 +20,22 @@ public class Customer {
 
     public Customer() {}
 
+    public Customer(int customerId, String customerName, String phone, String address, String email, LocalDate dateOfBirth, String gender, String nationalId, String occupation, String allergyHistory, String chronicDisease, int points, LocalDateTime createdAt) {
+        this.customerId = customerId;
+        this.customerName = customerName;
+        this.phone = phone;
+        this.address = address;
+        this.email = email;
+        this.dateOfBirth = dateOfBirth;
+        this.gender = gender;
+        this.nationalId = nationalId;
+        this.occupation = occupation;
+        this.allergyHistory = allergyHistory;
+        this.chronicDisease = chronicDisease;
+        this.points = points;
+        this.createdAt = createdAt;
+    }
+
     public int getCustomerId() { return customerId; }
     public void setCustomerId(int customerId) { this.customerId = customerId; }
     public String getCustomerName() { return customerName; }
