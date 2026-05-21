@@ -15,6 +15,18 @@ public class StockMovements {
 
     public StockMovements() {}
 
+    public StockMovements(int movementId, int batchId, String movementType, int quantity, String refTable, Integer refId, Integer accountId, String notes, LocalDateTime createdAt) {
+        this.movementId = movementId;
+        this.batchId = batchId;
+        this.movementType = movementType;
+        this.quantity = quantity;
+        this.refTable = refTable;
+        this.refId = refId;
+        this.accountId = accountId;
+        this.notes = notes;
+        this.createdAt = createdAt;
+    }
+
     public int getMovementId() { return movementId; }
     public void setMovementId(int movementId) { this.movementId = movementId; }
     public int getBatchId() { return batchId; }

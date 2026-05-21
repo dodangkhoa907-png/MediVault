@@ -15,6 +15,17 @@ public class Prescription {
 
     public Prescription() {}
 
+    public Prescription(int prescriptionId, Integer customerId, String doctorName, String hospitalName, LocalDate prescriptionDate, String imagePath, String notes, LocalDateTime createdAt) {
+        this.prescriptionId = prescriptionId;
+        this.customerId = customerId;
+        this.doctorName = doctorName;
+        this.hospitalName = hospitalName;
+        this.prescriptionDate = prescriptionDate;
+        this.imagePath = imagePath;
+        this.notes = notes;
+        this.createdAt = createdAt;
+    }
+
     public int getPrescriptionId() { return prescriptionId; }
     public void setPrescriptionId(int prescriptionId) { this.prescriptionId = prescriptionId; }
     public Integer getCustomerId() { return customerId; }

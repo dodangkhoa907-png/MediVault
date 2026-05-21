@@ -12,6 +12,15 @@ public class InvoiceDetail {
 
     public InvoiceDetail() {}
 
+    public InvoiceDetail(int detailId, int invoiceId, int batchId, int quantity, BigDecimal unitPrice, BigDecimal subTotal) {
+        this.detailId = detailId;
+        this.invoiceId = invoiceId;
+        this.batchId = batchId;
+        this.quantity = quantity;
+        this.unitPrice = unitPrice;
+        this.subTotal = subTotal;
+    }
+
     public int getDetailId() { return detailId; }
     public void setDetailId(int detailId) { this.detailId = detailId; }
     public int getInvoiceId() { return invoiceId; }

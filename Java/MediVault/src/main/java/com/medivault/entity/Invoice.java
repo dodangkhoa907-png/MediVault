@@ -18,6 +18,20 @@ public class Invoice {
 
     public Invoice() {}
 
+    public Invoice(int invoiceId, String invoiceCode, LocalDateTime createdAt, int accountId, Integer shiftId, Integer customerId, Integer prescriptionId, BigDecimal finalAmount, BigDecimal discountAmount, String paymentMethod, String status) {
+        this.invoiceId = invoiceId;
+        this.invoiceCode = invoiceCode;
+        this.createdAt = createdAt;
+        this.accountId = accountId;
+        this.shiftId = shiftId;
+        this.customerId = customerId;
+        this.prescriptionId = prescriptionId;
+        this.finalAmount = finalAmount;
+        this.discountAmount = discountAmount;
+        this.paymentMethod = paymentMethod;
+        this.status = status;
+    }
+
     public int getInvoiceId() { return invoiceId; }
     public void setInvoiceId(int invoiceId) { this.invoiceId = invoiceId; }
     public String getInvoiceCode() { return invoiceCode; }

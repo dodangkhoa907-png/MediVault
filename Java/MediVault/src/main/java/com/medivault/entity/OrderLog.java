@@ -14,6 +14,17 @@ public class OrderLog {
 
     public OrderLog() {}
 
+    public OrderLog(long logId, int invoiceId, String oldStatus, String newStatus, LocalDateTime changedAt, Integer accountId, String source, String note) {
+        this.logId = logId;
+        this.invoiceId = invoiceId;
+        this.oldStatus = oldStatus;
+        this.newStatus = newStatus;
+        this.changedAt = changedAt;
+        this.accountId = accountId;
+        this.source = source;
+        this.note = note;
+    }
+
     public long getLogId() { return logId; }
     public void setLogId(long logId) { this.logId = logId; }
     public int getInvoiceId() { return invoiceId; }

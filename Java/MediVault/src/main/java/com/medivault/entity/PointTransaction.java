@@ -16,6 +16,19 @@ public class PointTransaction {
 
     public PointTransaction() {}
 
+    public PointTransaction(int transId, int cardId, Integer invoiceId, String transType, int points, int balanceBefore, int balanceAfter, String note, LocalDateTime createdAt, Integer accountId) {
+        this.transId = transId;
+        this.cardId = cardId;
+        this.invoiceId = invoiceId;
+        this.transType = transType;
+        this.points = points;
+        this.balanceBefore = balanceBefore;
+        this.balanceAfter = balanceAfter;
+        this.note = note;
+        this.createdAt = createdAt;
+        this.accountId = accountId;
+    }
+
     public int getTransId() { return transId; }
     public void setTransId(int transId) { this.transId = transId; }
     public int getCardId() { return cardId; }

@@ -15,10 +15,24 @@ public class Customer {
     private String occupation;
     private String allergyHistory;
     private String chronicDisease;
-    private int points;
     private LocalDateTime createdAt;
 
     public Customer() {}
+
+    public Customer(int customerId, String customerName, String phone, String address, String email, LocalDate dateOfBirth, String gender, String nationalId, String occupation, String allergyHistory, String chronicDisease, LocalDateTime createdAt) {
+        this.customerId = customerId;
+        this.customerName = customerName;
+        this.phone = phone;
+        this.address = address;
+        this.email = email;
+        this.dateOfBirth = dateOfBirth;
+        this.gender = gender;
+        this.nationalId = nationalId;
+        this.occupation = occupation;
+        this.allergyHistory = allergyHistory;
+        this.chronicDisease = chronicDisease;
+        this.createdAt = createdAt;
+    }
 
     public int getCustomerId() { return customerId; }
     public void setCustomerId(int customerId) { this.customerId = customerId; }
@@ -42,8 +56,6 @@ public class Customer {
     public void setAllergyHistory(String allergyHistory) { this.allergyHistory = allergyHistory; }
     public String getChronicDisease() { return chronicDisease; }
     public void setChronicDisease(String chronicDisease) { this.chronicDisease = chronicDisease; }
-    public int getPoints() { return points; }
-    public void setPoints(int points) { this.points = points; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

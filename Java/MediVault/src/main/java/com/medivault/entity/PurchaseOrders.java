@@ -14,6 +14,16 @@ public class PurchaseOrders {
 
     public PurchaseOrders() {}
 
+    public PurchaseOrders(int poId, String poCode, Integer supplierId, Integer accountId, LocalDateTime orderDate, BigDecimal totalValue, String notes) {
+        this.poId = poId;
+        this.poCode = poCode;
+        this.supplierId = supplierId;
+        this.accountId = accountId;
+        this.orderDate = orderDate;
+        this.totalValue = totalValue;
+        this.notes = notes;
+    }
+
     public int getPoId() { return poId; }
     public void setPoId(int poId) { this.poId = poId; }
     public String getPoCode() { return poCode; }

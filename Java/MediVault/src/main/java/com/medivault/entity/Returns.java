@@ -15,6 +15,18 @@ public class Returns {
 
     public Returns() {}
 
+    public Returns(int returnId, String returnType, int batchId, Integer invoiceId, int quantity, String reason, int accountId, boolean restoreStock, LocalDateTime createdAt) {
+        this.returnId = returnId;
+        this.returnType = returnType;
+        this.batchId = batchId;
+        this.invoiceId = invoiceId;
+        this.quantity = quantity;
+        this.reason = reason;
+        this.accountId = accountId;
+        this.restoreStock = restoreStock;
+        this.createdAt = createdAt;
+    }
+
     public int getReturnId() { return returnId; }
     public void setReturnId(int returnId) { this.returnId = returnId; }
     public String getReturnType() { return returnType; }
