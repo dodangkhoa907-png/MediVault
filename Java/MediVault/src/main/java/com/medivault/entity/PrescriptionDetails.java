@@ -2,8 +2,8 @@ package com.medivault.entity;
 
 public class PrescriptionDetails {
     private int prescriptionDetailId;
-    private int prescriptionID;
-    private int medicineID;
+    private int prescriptionId;
+    private int medicineId;
     private double dosageQuantity;
     private String dosageUnit;
     private String frequency;
@@ -14,10 +14,10 @@ public class PrescriptionDetails {
     public PrescriptionDetails() {
     }
 
-    public PrescriptionDetails(int prescriptionDetailId, int prescriptionID, int medicineID, double dosageQuantity, String dosageUnit, String frequency, Integer duration, String usageInstruction, int totalPrescribedQty) {
+    public PrescriptionDetails(int prescriptionDetailId, int prescriptionId, int medicineId, double dosageQuantity, String dosageUnit, String frequency, Integer duration, String usageInstruction, int totalPrescribedQty) {
         this.prescriptionDetailId = prescriptionDetailId;
-        this.prescriptionID = prescriptionID;
-        this.medicineID = medicineID;
+        this.prescriptionId = prescriptionId;
+        this.medicineId = medicineId;
         this.dosageQuantity = dosageQuantity;
         this.dosageUnit = dosageUnit;
         this.frequency = frequency;
@@ -34,20 +34,20 @@ public class PrescriptionDetails {
         this.prescriptionDetailId = prescriptionDetailId;
     }
 
-    public int getPrescriptionID() {
-        return prescriptionID;
+    public int getprescriptionId() {
+        return prescriptionId;
     }
 
-    public void setPrescriptionID(int prescriptionID) {
-        this.prescriptionID = prescriptionID;
+    public void setprescriptionId(int prescriptionId) {
+        this.prescriptionId = prescriptionId;
     }
 
-    public int getMedicineID() {
-        return medicineID;
+    public int getmedicineId() {
+        return medicineId;
     }
 
-    public void setMedicineID(int medicineID) {
-        this.medicineID = medicineID;
+    public void setmedicineId(int medicineId) {
+        this.medicineId = medicineId;
     }
 
     public double getDosageQuantity() {

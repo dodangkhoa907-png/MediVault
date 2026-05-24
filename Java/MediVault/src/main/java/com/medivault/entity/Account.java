@@ -17,15 +17,14 @@ public class Account {
     private String position;
     private LocalDate trainingDate;
     private boolean isActive;
+    private String faceEnrollmentPath;
     private LocalDateTime createdAt;
     private LocalDateTime lastLoginAt;
-    private String faceEnrollmentPath;
 
     public Account() {
     }
 
-    public Account(String citizenId, int accountId, String username, String passwordHash, String fullName, String email, String phone, int roleId, String professionalCertNo, LocalDate professionalCertExp, String position, LocalDate trainingDate, boolean isActive, LocalDateTime createdAt, LocalDateTime lastLoginAt, String faceEnrollmentPath) {
-        this.citizenId = citizenId;
+    public Account(int accountId, String username, String passwordHash, String fullName, String email, String phone, int roleId, String citizenId, String professionalCertNo, LocalDate professionalCertExp, String position, LocalDate trainingDate, boolean isActive, String faceEnrollmentPath, LocalDateTime createdAt, LocalDateTime lastLoginAt) {
         this.accountId = accountId;
         this.username = username;
         this.passwordHash = passwordHash;
@@ -33,22 +32,15 @@ public class Account {
         this.email = email;
         this.phone = phone;
         this.roleId = roleId;
+        this.citizenId = citizenId;
         this.professionalCertNo = professionalCertNo;
         this.professionalCertExp = professionalCertExp;
         this.position = position;
         this.trainingDate = trainingDate;
         this.isActive = isActive;
+        this.faceEnrollmentPath = faceEnrollmentPath;
         this.createdAt = createdAt;
         this.lastLoginAt = lastLoginAt;
-        this.faceEnrollmentPath = faceEnrollmentPath;
-    }
-
-    public String getPasswordHash() {
-        return passwordHash;
-    }
-
-    public void setPasswordHash(String passwordHash) {
-        this.passwordHash = passwordHash;
     }
 
     public int getAccountId() {
@@ -65,6 +57,14 @@ public class Account {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public String getFullName() {
@@ -147,6 +147,14 @@ public class Account {
         isActive = active;
     }
 
+    public String getFaceEnrollmentPath() {
+        return faceEnrollmentPath;
+    }
+
+    public void setFaceEnrollmentPath(String faceEnrollmentPath) {
+        this.faceEnrollmentPath = faceEnrollmentPath;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -161,13 +169,5 @@ public class Account {
 
     public void setLastLoginAt(LocalDateTime lastLoginAt) {
         this.lastLoginAt = lastLoginAt;
-    }
-
-    public String getFaceEnrollmentPath() {
-        return faceEnrollmentPath;
-    }
-
-    public void setFaceEnrollmentPath(String faceEnrollmentPath) {
-        this.faceEnrollmentPath = faceEnrollmentPath;
     }
 }

@@ -6,15 +6,15 @@ import java.time.LocalDateTime;
 public class PurchaseOrders {
     private int poId;
     private String poCode; // computed
-    private Integer supplierId;
-    private Integer accountId;
+    private int supplierId;
+    private int accountId;
     private LocalDateTime orderDate;
     private BigDecimal totalValue;
     private String notes;
 
     public PurchaseOrders() {}
 
-    public PurchaseOrders(int poId, String poCode, Integer supplierId, Integer accountId, LocalDateTime orderDate, BigDecimal totalValue, String notes) {
+    public PurchaseOrders(int poId, String poCode, int supplierId, int accountId, LocalDateTime orderDate, BigDecimal totalValue, String notes) {
         this.poId = poId;
         this.poCode = poCode;
         this.supplierId = supplierId;
@@ -28,10 +28,10 @@ public class PurchaseOrders {
     public void setPoId(int poId) { this.poId = poId; }
     public String getPoCode() { return poCode; }
     public void setPoCode(String poCode) { this.poCode = poCode; }
-    public Integer getSupplierId() { return supplierId; }
-    public void setSupplierId(Integer supplierId) { this.supplierId = supplierId; }
-    public Integer getAccountId() { return accountId; }
-    public void setAccountId(Integer accountId) { this.accountId = accountId; }
+    public int getSupplierId() { return supplierId; }
+    public void setSupplierId(int supplierId) { this.supplierId = supplierId; }
+    public int getAccountId() { return accountId; }
+    public void setAccountId(int accountId) { this.accountId = accountId; }
     public LocalDateTime getOrderDate() { return orderDate; }
     public void setOrderDate(LocalDateTime orderDate) { this.orderDate = orderDate; }
     public BigDecimal getTotalValue() { return totalValue; }
