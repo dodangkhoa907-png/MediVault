@@ -1,4 +1,4 @@
-package com.medivault.filter;
+package com.medivault.controller;
 
 import com.medivault.entity.Account;
 import jakarta.servlet.*;
@@ -22,7 +22,8 @@ public class AuthFilter implements Filter {
         boolean isPublic = uri.equals(ctx + "/login")
                 || uri.startsWith(ctx + "/assets")
                 || uri.startsWith(ctx + "/css")
-                || uri.startsWith(ctx + "/js");
+                || uri.startsWith(ctx + "/js")
+                || uri.startsWith(ctx + "/WEB-INF");
 
         if (isPublic) { chain.doFilter(request, response); return; }
 
