@@ -1,12 +1,13 @@
 package com.medivault.dao;
 
 import com.medivault.config.DBContext;
+import com.medivault.dao.interfaces.IBatchesDAO;
 import com.medivault.entity.Batches;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BatchesDAO {
+public class BatchesDAO implements IBatchesDAO {
 
     private Batches mapRow(ResultSet rs) throws SQLException {
         Batches b = new Batches();

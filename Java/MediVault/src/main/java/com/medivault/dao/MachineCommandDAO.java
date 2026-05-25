@@ -1,12 +1,14 @@
 package com.medivault.dao;
 
 import com.medivault.config.DBContext;
+import com.medivault.dao.interfaces.ICustomerDAO;
+import com.medivault.dao.interfaces.IMachineCommandDAO;
 import com.medivault.entity.MachineCommand;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MachineCommandDAO {
+public class MachineCommandDAO implements IMachineCommandDAO {
 
     private MachineCommand mapRow(ResultSet rs) throws SQLException {
         MachineCommand m = new MachineCommand();

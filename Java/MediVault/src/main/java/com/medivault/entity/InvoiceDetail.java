@@ -1,8 +1,14 @@
 package com.medivault.entity;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 public class InvoiceDetail {
+    private String medicineName;
+    private String unit;
+    private String batchNumber;
+    private java.time.LocalDate expiryDate;
+
     private int detailId;
     private int invoiceId;
     private int batchId;
@@ -10,9 +16,14 @@ public class InvoiceDetail {
     private BigDecimal unitPrice;
     private BigDecimal subTotal; // computed: quantity * unitPrice
 
-    public InvoiceDetail() {}
+    public InvoiceDetail() {
+    }
 
-    public InvoiceDetail(int detailId, int invoiceId, int batchId, int quantity, BigDecimal unitPrice, BigDecimal subTotal) {
+    public InvoiceDetail(String medicineName, String unit, String batchNumber, LocalDate expiryDate, int detailId, int invoiceId, int batchId, int quantity, BigDecimal unitPrice, BigDecimal subTotal) {
+        this.medicineName = medicineName;
+        this.unit = unit;
+        this.batchNumber = batchNumber;
+        this.expiryDate = expiryDate;
         this.detailId = detailId;
         this.invoiceId = invoiceId;
         this.batchId = batchId;
@@ -21,6 +32,17 @@ public class InvoiceDetail {
         this.subTotal = subTotal;
     }
 
+    public String getMedicineName() { return medicineName; }
+    public void setMedicineName(String medicineName) { this.medicineName = medicineName; }
+
+    public String getUnit() { return unit; }
+    public void setUnit(String unit) { this.unit = unit; }
+
+    public String getBatchNumber() { return batchNumber; }
+    public void setBatchNumber(String batchNumber) { this.batchNumber = batchNumber; }
+
+    public java.time.LocalDate getExpiryDate() { return expiryDate; }
+    public void setExpiryDate(java.time.LocalDate expiryDate) { this.expiryDate = expiryDate; }
     public int getDetailId() { return detailId; }
     public void setDetailId(int detailId) { this.detailId = detailId; }
     public int getInvoiceId() { return invoiceId; }

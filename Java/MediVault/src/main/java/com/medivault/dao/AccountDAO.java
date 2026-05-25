@@ -1,12 +1,13 @@
 package com.medivault.dao;
 
 import com.medivault.config.DBContext;
+import com.medivault.dao.interfaces.IAccountDAO;
 import com.medivault.entity.Account;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AccountDAO {
+public class AccountDAO implements IAccountDAO {
 
     private Account mapRow(ResultSet rs) throws SQLException {
         Account a = new Account();

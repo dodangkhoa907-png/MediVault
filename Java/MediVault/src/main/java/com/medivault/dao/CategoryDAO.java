@@ -1,12 +1,13 @@
 package com.medivault.dao;
 
 import com.medivault.config.DBContext;
+import com.medivault.dao.interfaces.ICategoryDAO;
 import com.medivault.entity.Category;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CategoryDAO {
+public class CategoryDAO implements ICategoryDAO {
 
     private Category mapRow(ResultSet rs) throws SQLException {
         return new Category(

@@ -1,12 +1,13 @@
 package com.medivault.dao;
 
 import com.medivault.config.DBContext;
+import com.medivault.dao.interfaces.ISupplierDAO;
 import com.medivault.entity.Supplier;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SupplierDAO {
+public class SupplierDAO implements ISupplierDAO {
 
     private Supplier mapRow(ResultSet rs) throws SQLException {
         Supplier s = new Supplier();

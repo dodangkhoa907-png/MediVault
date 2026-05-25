@@ -1,6 +1,8 @@
 package com.medivault.controller;
 
 import com.medivault.entity.Account;
+import com.medivault.dao.MedicineDAO;
+import com.medivault.dao.BatchesDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -23,7 +25,15 @@ public class DashboardServlet extends HttpServlet {
             return;
         }
 
-        // TODO: Châu xong MedicineDAO thì thêm thống kê vào đây
+        MedicineDAO medicineDAO = new MedicineDAO();
+        BatchesDAO  batchesDAO  = new BatchesDAO();
+
+        req.setAttribute("totalMedicines", medicineDAO.countAll());
+        req.setAttribute("lowStockCount",  medicineDAO.countLowStock());
+        req.setAttribute("expiringCount",  batchesDAO.findExpiringSoon().size());
+        req.setAttribute("expiredCount",   batchesDAO.findExpired().size());
         req.getRequestDispatcher("/WEB-INF/views/admin-dashboard.jsp").forward(req, resp);
     }
+
+
 }

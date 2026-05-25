@@ -1,12 +1,14 @@
 package com.medivault.dao;
 
 import com.medivault.config.DBContext;
+import com.medivault.dao.interfaces.IMachineCommandDAO;
+import com.medivault.dao.interfaces.IPrescriptionDAO;
 import com.medivault.entity.Prescription;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PrescriptionDAO {
+public class PrescriptionDAO implements IPrescriptionDAO {
 
     private Prescription mapRow(ResultSet rs) throws SQLException {
         Prescription p = new Prescription();

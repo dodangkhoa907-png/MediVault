@@ -1,12 +1,13 @@
 package com.medivault.dao;
 
 import com.medivault.config.DBContext;
+import com.medivault.dao.interfaces.ICustomerDAO;
 import com.medivault.entity.Customer;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CustomerDAO {
+public class CustomerDAO implements ICustomerDAO {
 
     private Customer mapRow(ResultSet rs) throws SQLException {
         Customer c = new Customer();
@@ -21,7 +22,6 @@ public class CustomerDAO {
         c.setNationalId(rs.getString("NationalId"));
         c.setAllergyHistory(rs.getNString("AllergyHistory"));
         c.setChronicDisease(rs.getNString("ChronicDisease"));
-        c.setPoints(rs.getInt("Points"));
         return c;
     }
 

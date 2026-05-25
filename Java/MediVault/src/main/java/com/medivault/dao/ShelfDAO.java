@@ -1,12 +1,14 @@
 package com.medivault.dao;
 
 import com.medivault.config.DBContext;
+import com.medivault.dao.interfaces.IMachineCommandDAO;
+import com.medivault.dao.interfaces.IShelfDAO;
 import com.medivault.entity.Shelf;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ShelfDAO {
+public class ShelfDAO implements IShelfDAO {
 
     private Shelf mapRow(ResultSet rs) throws SQLException {
         Shelf s = new Shelf();
