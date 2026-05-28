@@ -45,7 +45,7 @@ CREATE TABLE Accounts (
     IsActive     BIT           NOT NULL DEFAULT 1,
     CreatedAt    DATETIME      NOT NULL DEFAULT GETDATE(),
     LastLoginAt  DATETIME      NULL,
-    FaceEnrollmentPath NVARCHAR(500) NULL,   -- Duong dan du lieu khuon mat / Để chấm công
+    FaceEnrollmentPath NVARCHAR(500) NULL,   -- Duong dan du lieu khuon mat / Để chấm công !!!
     CONSTRAINT CK_Account_Email CHECK (Email IS NULL OR Email LIKE '%_@_%._%')
 );
 
