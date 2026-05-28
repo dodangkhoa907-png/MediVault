@@ -12,7 +12,7 @@ public class AccountDAO implements IAccountDAO {
 
     private Account mapRow(ResultSet rs) throws SQLException {
         Account a = new Account();
-        a.setAccountId(rs.getInt("Account_id"));
+        a.setAccountId(rs.getInt("AccountID"));
         a.setUsername(rs.getString("Username"));
         a.setPasswordHash(rs.getString("PasswordHash"));
         a.setFullName(rs.getString("FullName"));
