@@ -2,6 +2,8 @@ package com.medivault.controller;
 
 import com.medivault.dao.AccountDAO;
 import com.medivault.entity.Account;
+import com.medivault.util.EmailUtil;
+import com.medivault.util.OtpUtil;
 import com.medivault.util.PasswordUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -46,17 +48,21 @@ public class LoginServlet extends HttpServlet {
             req.getRequestDispatcher("/WEB-INF/views/login.jsp").forward(req, resp);
             return;
         }
-
-        // Đăng nhập thành công
-        accountDAO.updateLastLogin(account.getAccountId());
         HttpSession session = req.getSession();
-        session.setAttribute("account", account);
-        session.setAttribute("roleId", account.getRoleId());
 
-        switch (account.getRoleId()) {
-            case 1: resp.sendRedirect(req.getContextPath() + "/dashboard?view=admin"); break;
-            case 2: resp.sendRedirect(req.getContextPath() + "/dashboard?view=manager"); break;
-            default: resp.sendRedirect(req.getContextPath() + "/dashboard?view=staff"); break;
+        String otp = OtpUtil.generate(6);
+        session.setAttribute("otpCode",       otp);
+        session.setAttribute("otpExpiry",     System.currentTimeMillis() + 5 * 60 * 1000);
+        session.setAttribute("pendingAccount", account);
+
+        try {
+            EmailUtil.sendEmail(account.getEmail(),
+                    "[MediVault] Mã xác thực OTP",
+                    "Mã OTP của bạn là: " + otp + "\nMã có hiệu lực trong 5 phút.");
+            resp.sendRedirect(req.getContextPath() + "/otp-verify");
+        } catch (Exception e) {
+            req.setAttribute("error", "Không thể gửi OTP. Vui lòng thử lại!");
+            req.getRequestDispatcher("/WEB-INF/views/login.jsp").forward(req, resp);
         }
     }
 }

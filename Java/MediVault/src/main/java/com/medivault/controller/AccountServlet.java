@@ -9,6 +9,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -20,7 +21,7 @@ public class AccountServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        String action = req.getParameter("action");
+        java.lang.String action = req.getParameter("action");
         if (action == null) action = "list";
         switch (action) {
             case "list"   -> showList(req, resp);
@@ -42,15 +43,15 @@ public class AccountServlet extends HttpServlet {
             throws ServletException, IOException {
         req.setCharacterEncoding("UTF-8");
 
-        String idStr    = req.getParameter("accountId");
-        String username = req.getParameter("username");
-        String fullName = req.getParameter("fullName");
-        String email    = req.getParameter("email");
-        String phone    = req.getParameter("phone");
-        String citizenId= req.getParameter("citizenId");
-        String position = req.getParameter("position");
-        String password = req.getParameter("password");
-        String roleStr  = req.getParameter("roleId");
+        java.lang.String idStr    = req.getParameter("accountId");
+        java.lang.String username = req.getParameter("username");
+        java.lang.String fullName = req.getParameter("fullName");
+        java.lang.String email    = req.getParameter("email");
+        java.lang.String phone    = req.getParameter("phone");
+        java.lang.String citizenId= req.getParameter("citizenId");
+        java.lang.String position = req.getParameter("position");
+        java.lang.String password = req.getParameter("password");
+        java.lang.String roleStr  = req.getParameter("roleId");
 
         boolean isNew = (idStr == null || idStr.isEmpty());
 

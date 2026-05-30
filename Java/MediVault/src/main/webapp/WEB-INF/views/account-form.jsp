@@ -1,5 +1,7 @@
+<%@ page import="org.eclipse.tags.shaded.org.apache.xpath.operations.String" %>
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ page import="java.lang.String" %>
 <%
     com.medivault.entity.Account acc =
         (com.medivault.entity.Account) session.getAttribute("account");
@@ -9,12 +11,12 @@
         (com.medivault.entity.Account) request.getAttribute("account");
     boolean isNew = (form == null || form.getAccountId() == 0);
 
-    String vUsername  = form != null && form.getUsername()  != null ? form.getUsername()  : "";
-    String vFullName  = form != null && form.getFullName()  != null ? form.getFullName()  : "";
-    String vEmail     = form != null && form.getEmail()     != null ? form.getEmail()     : "";
-    String vPhone     = form != null && form.getPhone()     != null ? form.getPhone()     : "";
-    String vCitizenId = form != null && form.getCitizenId() != null ? form.getCitizenId(): "";
-    String vPosition  = form != null && form.getPosition()  != null ? form.getPosition() : "";
+    java.lang.String vUsername  = form != null && form.getUsername()  != null ? form.getUsername()  : "";
+    java.lang.String vFullName  = form != null && form.getFullName()  != null ? form.getFullName()  : "";
+    java.lang.String vEmail     = form != null && form.getEmail()     != null ? form.getEmail()     : "";
+    java.lang.String vPhone     = form != null && form.getPhone()     != null ? form.getPhone()     : "";
+    java.lang.String vCitizenId = form != null && form.getCitizenId() != null ? form.getCitizenId(): "";
+    java.lang.String vPosition  = form != null && form.getPosition()  != null ? form.getPosition() : "";
     int    vRoleId    = form != null ? form.getRoleId() : 2;
 
     // Kiểm tra field nào có lỗi để highlight
@@ -618,7 +620,7 @@
 </div>
 
 <!-- Toast thông báo thành công -->
-<% String msg = request.getParameter("msg"); %>
+<% java.lang.String msg = request.getParameter("msg"); %>
 <% if ("created".equals(msg)) { %>
 <div class="toast-success">✅ Tài khoản đã được tạo thành công!</div>
 <% } else if ("updated".equals(msg)) { %>
@@ -640,7 +642,7 @@
 
     // Highlight inputs nếu có lỗi server
     <% if (hasErrors) { %>
-    const errorText = `<%= errs != null ? String.join("|", errs).toLowerCase() : "" %>`;
+    const errorText = `<%= errs != null ? java.lang.String.join("|", errs).toLowerCase() : "" %>`;
     const fieldMap = {
         username: ['tên đăng nhập', 'username'],
         email:    ['email'],
