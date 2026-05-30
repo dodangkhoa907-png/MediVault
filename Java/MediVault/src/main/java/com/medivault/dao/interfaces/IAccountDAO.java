@@ -11,4 +11,5 @@ public interface IAccountDAO {
     boolean updateLastLogin(int accountId);
     boolean toggleActive(int accountId);
     boolean resetPassword(int accountId, String newHash);
+
 }

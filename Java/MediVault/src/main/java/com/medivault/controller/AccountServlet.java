@@ -24,6 +24,7 @@ public class AccountServlet extends HttpServlet {
         java.lang.String action = req.getParameter("action");
         if (action == null) action = "list";
         switch (action) {
+            case "create-otp" -> handleCreateWithOtp(req, resp);
             case "list"   -> showList(req, resp);
             case "new"    -> showForm(req, resp, null);
             case "edit"   -> {
@@ -36,6 +37,9 @@ public class AccountServlet extends HttpServlet {
             }
             default -> showList(req, resp);
         }
+    }
+
+    private void handleCreateWithOtp(HttpServletRequest req, HttpServletResponse resp) {
     }
 
     @Override
@@ -61,6 +65,7 @@ public class AccountServlet extends HttpServlet {
         );
 
         // Validate password (bắt buộc khi tạo mới)
+
         if (isNew && !ValidationUtil.isValidPassword(password))
             errors.add("Mật khẩu phải có ít nhất 6 ký tự.");
 

@@ -47,22 +47,10 @@ public class LoginServlet extends HttpServlet {
             req.setAttribute("error", "Tên đăng nhập hoặc mật khẩu không đúng!");
             req.getRequestDispatcher("/WEB-INF/views/login.jsp").forward(req, resp);
             return;
+        } else {
+            req.getSession().setAttribute("account", account);
+            resp.sendRedirect("/MediVault/dashboard");
         }
-        HttpSession session = req.getSession();
 
-        String otp = OtpUtil.generate(6);
-        session.setAttribute("otpCode",       otp);
-        session.setAttribute("otpExpiry",     System.currentTimeMillis() + 5 * 60 * 1000);
-        session.setAttribute("pendingAccount", account);
-
-        try {
-            EmailUtil.sendEmail(account.getEmail(),
-                    "[MediVault] Mã xác thực OTP",
-                    "Mã OTP của bạn là: " + otp + "\nMã có hiệu lực trong 5 phút.");
-            resp.sendRedirect(req.getContextPath() + "/otp-verify");
-        } catch (Exception e) {
-            req.setAttribute("error", "Không thể gửi OTP. Vui lòng thử lại!");
-            req.getRequestDispatcher("/WEB-INF/views/login.jsp").forward(req, resp);
-        }
     }
 }
