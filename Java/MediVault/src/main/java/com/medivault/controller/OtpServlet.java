@@ -43,7 +43,7 @@ public class OtpServlet extends HttpServlet {
         }
 
         // Sai OTP
-        if (!savedOtp.equals(inputOtp)) {
+        if (savedOtp == null || !savedOtp.equals(inputOtp)) {
             req.setAttribute("error", "Mã OTP không đúng!");
             req.getRequestDispatcher("/WEB-INF/views/otp-verify.jsp").forward(req, resp);
             return;

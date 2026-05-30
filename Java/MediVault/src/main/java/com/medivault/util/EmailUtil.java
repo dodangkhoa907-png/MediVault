@@ -7,8 +7,8 @@ import java.util.Properties;
 public class EmailUtil {
     private static final String HOST     = "smtp.gmail.com";
     private static final String PORT     = "587";
-    private static final String USERNAME = "your_email@gmail.com";   // ← thay thật
-    private static final String PASSWORD = "your_app_password";       // ← App Password Gmail
+    private static final String USERNAME = "dodangkhoa907@gmail.com";   // ← thay thật
+    private static final String PASSWORD = "qhbh kqkg xwxd ugwm";       // ← App Password Gmail
 
     public static void sendEmail(String toAddress, String subject, String body)
             throws MessagingException {
