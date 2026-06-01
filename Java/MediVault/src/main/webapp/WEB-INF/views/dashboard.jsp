@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
     com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("account");
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/login"); return; }
@@ -14,11 +15,11 @@
     Long todayRevenue  = (Long)   request.getAttribute("todayRevenue");
     Integer todayInvoice = (Integer) request.getAttribute("todayInvoices");
     Integer expiryCount  = (Integer) request.getAttribute("expiryCount");
-    Integer activeAccounts = (Integer) request.getAttribute("activeAccounts");
+    Long activeAccountsLong = (Long) request.getAttribute("activeAccounts");
+    int activeAccounts = activeAccountsLong != null ? activeAccountsLong.intValue() : 0;
     if (todayRevenue   == null) todayRevenue   = 0L;
     if (todayInvoice   == null) todayInvoice   = 0;
     if (expiryCount    == null) expiryCount    = 0;
-    if (activeAccounts == null) activeAccounts = 0;
 
     // Trang hiện tại
     java.lang.String currentPage = request.getParameter("view");
@@ -67,7 +68,8 @@
         }
 
         .sidebar-logo {
-            padding: 20px 18px 18px;
+            padding: 0 18px;
+            height: 60px;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -215,23 +217,32 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            min-width: 0;
         }
 
         /* ── TOPBAR ── */
         .topbar {
-            height: 60px;
+            height: 64px;
             background: #fff;
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            padding: 0 28px;
-            gap: 16px;
+            padding: 28px;
+            gap: 14px;
             position: sticky; top: 0; z-index: 50;
+            box-shadow: 0 1px 6px rgba(0,0,0,.04);
+        }
+        .topbar-title {
+            font-family: 'Nunito', sans-serif;
+            font-size: 16px; font-weight: 800;
+            color: var(--navy-deep);
+            flex-shrink: 0;
         }
 
         .topbar-search {
             flex: 1;
-            max-width: 380px;
+            max-width: 300px;
+            min-width: 120px;
             position: relative;
         }
         .topbar-search input {
@@ -260,7 +271,8 @@
             margin-left: auto;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            flex-shrink: 0;
         }
 
         .topbar-time {
@@ -269,6 +281,44 @@
             font-weight: 500;
         }
 
+        .topbar-clock {
+            display: flex; align-items: center; gap: 5px;
+            padding: 5px 11px;
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            font-size: 13px; font-weight: 700; font-style: italic;
+            color: var(--navy-deep); white-space: nowrap;
+        }
+        .clock-sep { animation: blink 1s step-end infinite; font-style: normal; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+        .clock-date {
+            font-size: 11px; font-weight: 500; font-style: normal;
+            color: var(--text-muted);
+            border-left: 1px solid var(--border);
+            padding-left: 8px; margin-left: 2px;
+        }
+        .notif-wrap { position: relative; }
+        .notif-dropdown {
+            display: none; position: absolute;
+            top: calc(100% + 10px); right: 0;
+            width: 320px; background: #fff;
+            border: 1px solid var(--border); border-radius: 14px;
+            box-shadow: 0 12px 40px rgba(0,0,0,.12); z-index: 300; overflow: hidden;
+        }
+        .notif-dropdown.open { display: block; animation: dropIn .2s ease; }
+        @keyframes dropIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+        .notif-head { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px 10px; border-bottom: 1px solid var(--border); }
+        .notif-head-title { font-family: Nunito,sans-serif; font-size: 14px; font-weight: 800; color: var(--navy-deep); }
+        .notif-clear { font-size: 11.5px; color: var(--sky-blue); cursor: pointer; font-weight: 600; background: none; border: none; font-family: inherit; }
+        .notif-list { max-height: 300px; overflow-y: auto; }
+        .notif-item { display: flex; align-items: flex-start; gap: 10px; padding: 11px 16px; border-bottom: 1px solid #f0f4f9; }
+        .notif-item:last-child { border-bottom: none; }
+        .notif-item:hover { background: #f8fbff; }
+        .notif-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sky-blue); flex-shrink: 0; margin-top: 5px; }
+        .notif-dot.old { background: var(--border); }
+        .notif-text { font-size: 12.5px; color: var(--navy-deep); font-weight: 500; line-height: 1.4; }
+        .notif-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
         .topbar-icon-btn {
             width: 36px; height: 36px;
             border: 1.5px solid var(--border);
@@ -801,18 +851,38 @@
 
     <!-- TOPBAR -->
     <header class="topbar">
+        <span class="topbar-title">🏠 Dashboard</span>
         <div class="topbar-search">
-            <input type="text" id="globalSearch" placeholder="Tìm kiếm tài khoản, thuốc, hóa đơn…">
+            <input type="text" id="globalSearch" placeholder="Tìm kiếm…">
         </div>
         <div class="topbar-right">
-            <span class="topbar-time" id="currentTime"></span>
-            <a href="${pageContext.request.contextPath}/medicines?filter=expiry" class="topbar-icon-btn" title="Cảnh báo tồn kho">
-                🔔
-                <% if (expiryCount > 0) { %>
-                <span class="topbar-notif-badge"><%= expiryCount > 9 ? "9+" : expiryCount %></span>
-                <% } %>
-            </a>
-            <a href="${pageContext.request.contextPath}/account-form" class="topbar-user">
+            <div class="topbar-clock">
+                <span id="clockH">00</span><span class="clock-sep">:</span><span id="clockM">00</span>
+                <span class="clock-date" id="clockDate"></span>
+            </div>
+            <div class="notif-wrap">
+                <button class="topbar-icon-btn" onclick="toggleNotif()" title="Thông báo">
+                    🔔
+                    <% if (expiryCount > 0) { %>
+                    <span class="topbar-notif-badge"><%= expiryCount > 9 ? "9+" : expiryCount %></span>
+                    <% } %>
+                </button>
+                <div class="notif-dropdown" id="notifDropdown">
+                    <div class="notif-head">
+                        <span class="notif-head-title">🔔 Thông báo</span>
+                        <button class="notif-clear" onclick="closeNotif()">Đóng ✕</button>
+                    </div>
+                    <div class="notif-list">
+                        <% if (expiryCount > 0) { %>
+                        <div class="notif-item"><div class="notif-dot"></div><div><div class="notif-text">⚠️ Có <%= expiryCount %> mặt hàng sắp hết hạn</div><div class="notif-time">Hôm nay</div></div></div>
+                        <% } else { %>
+                        <div class="notif-item"><div class="notif-dot old"></div><div><div class="notif-text">✅ Không có thuốc nào sắp hết hạn</div><div class="notif-time">Hôm nay</div></div></div>
+                        <% } %>
+                        <div class="notif-item"><div class="notif-dot old"></div><div><div class="notif-text">👤 Admin <%= fullName %> đăng nhập</div><div class="notif-time" id="loginTime"></div></div></div>
+                    </div>
+                </div>
+            </div>
+            <a href="${pageContext.request.contextPath}/accounts" class="topbar-user">
                 <div class="topbar-user-avatar"><%= initials %></div>
                 <span class="topbar-user-name"><%= fullName %></span>
             </a>
@@ -828,7 +898,7 @@
                 <div class="breadcrumb">MediVault › Trang chủ</div>
                 <h1>Dashboard</h1>
             </div>
-            <a href="${pageContext.request.contextPath}/account-form" class="btn-primary">
+            <a href="${pageContext.request.contextPath}/accounts?action=new" class="btn-primary">
                 ＋ Tạo tài khoản mới
             </a>
         </div>
@@ -949,8 +1019,9 @@
                                         <td style="color:var(--text-muted); font-size:12px;">${st.count}</td>
                                         <td>
                                             <div class="cell-user">
+                                                <c:set var="displayName" value="${not empty a.fullName ? a.fullName : a.username}"/>
                                                 <div class="cell-avatar">
-                                                    ${fn:substring(a.fullName != null ? a.fullName : a.username, 0, 1)}${fn:substring(a.fullName != null ? a.fullName : a.username, 1, 2)}
+                                                    ${fn:toUpperCase(fn:substring(displayName, 0, 1))}${fn:toUpperCase(fn:substring(displayName, 1, 2))}
                                                 </div>
                                                 <div>
                                                     <div class="cell-user-name">${a.fullName != null ? a.fullName : '—'}</div>
@@ -979,7 +1050,7 @@
                                         </td>
                                         <td>
                                             <c:choose>
-                                                <c:when test="${a.isActive}">
+                                                <c:when test="${a.active}">
                                                     <span class="badge badge-green">Hoạt động</span>
                                                 </c:when>
                                                 <c:otherwise>
@@ -993,12 +1064,12 @@
                                                    class="action-btn action-btn-edit">✏️ Sửa</a>
                                                 <form method="post" action="${pageContext.request.contextPath}/accounts"
                                                       style="display:inline"
-                                                      onsubmit="return confirm('Bạn chắc chắn muốn ${a.isActive ? 'khóa' : 'mở khóa'} tài khoản này?')">
+                                                      onsubmit="return confirm('Xác nhận thay đổi trạng thái tài khoản này?')">
                                                     <input type="hidden" name="action" value="toggle">
                                                     <input type="hidden" name="accountId" value="${a.accountId}">
                                                     <button type="submit"
-                                                            class="action-btn ${a.isActive ? 'action-btn-toggle-off' : 'action-btn-toggle-on'}">
-                                                        ${a.isActive ? '🔒 Khóa' : '🔓 Mở'}
+                                                        class="action-btn ${a.active ? 'action-btn-toggle-off' : 'action-btn-toggle-on'}"
+                                                        ${a.active ? '🔒 Khóa' : '🔓 Mở'}
                                                     </button>
                                                 </form>
                                             </div>
@@ -1067,15 +1138,22 @@
 <% } %>
 
 <script>
-    // Clock
-    function updateTime() {
+    function updateClock() {
         const now = new Date();
-        document.getElementById('currentTime').textContent =
-            now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' — ' +
-            now.toLocaleDateString('vi-VN', { weekday:'short', day:'2-digit', month:'2-digit' });
+        const h = now.getHours().toString().padStart(2,'0');
+        const m = now.getMinutes().toString().padStart(2,'0');
+        const days = ['CN','T2','T3','T4','T5','T6','T7'];
+        const d = now.getDate().toString().padStart(2,'0');
+        const mo = (now.getMonth()+1).toString().padStart(2,'0');
+        if(document.getElementById('clockH')) document.getElementById('clockH').textContent = h;
+        if(document.getElementById('clockM')) document.getElementById('clockM').textContent = m;
+        if(document.getElementById('clockDate')) document.getElementById('clockDate').textContent = days[now.getDay()] + ', ' + d + '/' + mo;
+        if(document.getElementById('loginTime')) document.getElementById('loginTime').textContent = h + ':' + m + ' hôm nay';
     }
-    updateTime();
-    setInterval(updateTime, 30000);
+    updateClock(); setInterval(updateClock, 1000);
+    function toggleNotif() { document.getElementById('notifDropdown').classList.toggle('open'); }
+    function closeNotif() { document.getElementById('notifDropdown').classList.remove('open'); }
+    document.addEventListener('click', function(e) { const w = document.querySelector('.notif-wrap'); if(w && !w.contains(e.target)) closeNotif(); });
 
     // Auto-hide toast
     const toast = document.getElementById('toast');

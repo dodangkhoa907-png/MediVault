@@ -22,6 +22,12 @@ public class AccountDAO implements IAccountDAO {
         a.setActive(rs.getBoolean("IsActive"));
         a.setCitizenId(rs.getString("CitizenId"));
         a.setPosition(rs.getString("Position"));
+        a.setProfessionalCertNo(rs.getString("ProfessionalCertNo"));
+        if (rs.getDate("ProfessionalCertExp") != null)
+            a.setProfessionalCertExp(rs.getDate("ProfessionalCertExp").toLocalDate());
+        if (rs.getDate("TrainingDate") != null)
+            a.setTrainingDate(rs.getDate("TrainingDate").toLocalDate());
+        a.setFaceEnrollmentPath(rs.getString("FaceEnrollmentPath"));
         if (rs.getTimestamp("CreatedAt") != null)
             a.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
         if (rs.getTimestamp("LastLoginAt") != null)

@@ -1,5 +1,6 @@
 package com.medivault.controller;
 
+import com.medivault.dao.AccountDAO;
 import com.medivault.entity.Account;
 import com.medivault.dao.MedicineDAO;
 import com.medivault.dao.BatchesDAO;
@@ -27,12 +28,17 @@ public class DashboardServlet extends HttpServlet {
 
         MedicineDAO medicineDAO = new MedicineDAO();
         BatchesDAO  batchesDAO  = new BatchesDAO();
+        AccountDAO accountDAO  = new AccountDAO();
 
         req.setAttribute("totalMedicines", medicineDAO.countAll());
         req.setAttribute("lowStockCount",  medicineDAO.countLowStock());
-        req.setAttribute("expiringCount",  batchesDAO.findExpiringSoon().size());
+        req.setAttribute("expiryCount",     batchesDAO.findExpiringSoon().size());
         req.setAttribute("expiredCount",   batchesDAO.findExpired().size());
-        req.getRequestDispatcher("/WEB-INF/views/admin-dashboard.jsp").forward(req, resp);
+        
+        java.util.List<Account> allAccounts = accountDAO.findAll();
+        req.setAttribute("accounts",       allAccounts);
+        req.setAttribute("activeAccounts", allAccounts.stream().filter(Account::isActive).count());
+        req.getRequestDispatcher("/WEB-INF/views/dashboard.jsp").forward(req, resp);
     }
 
 

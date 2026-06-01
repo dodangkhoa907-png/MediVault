@@ -676,13 +676,13 @@
     });
 
     // ─── Form submit: loading state ─────────────────
-    document.getElementById('otpForm').addEventListener('submit', function() {
-        const otp = getOtpValue();
-        if (otp.length < 6) { e.preventDefault(); return; }
-        verifyBtn.disabled = true;
-        verifyBtn.innerHTML = '⏳ Đang kiểm tra…';
-        boxes.forEach(b => b.disabled = true);
-    });
+        document.getElementById('otpForm').addEventListener('submit', function(e) {
+            const otp = getOtpValue();
+            if (otp.length < 6) { e.preventDefault(); return; }
+            verifyBtn.disabled = true;
+            verifyBtn.innerHTML = '⏳ Đang kiểm tra…';
+            boxes.forEach(b => b.disabled = true);
+        });
 
     // ─── Countdown timer (5 min) ────────────────────
     let totalSec = 5 * 60;

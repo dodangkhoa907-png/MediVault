@@ -17,8 +17,12 @@ public class OtpServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        // Nếu không có pendingAccount → về login
-        if (req.getSession().getAttribute("pendingAccount") == null) {
+        HttpSession session = req.getSession();
+
+        boolean hasPending    = session.getAttribute("pendingAccount")    != null;
+        boolean hasPendingNew = session.getAttribute("pendingNewAccount") != null;
+
+        if (!hasPending && !hasPendingNew) {
             resp.sendRedirect(req.getContextPath() + "/login");
             return;
         }
@@ -29,12 +33,43 @@ public class OtpServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         HttpSession session = req.getSession();
-        String inputOtp  = req.getParameter("otp");
-        String savedOtp  = (String) session.getAttribute("otpCode");
-        Long   expiry    = (Long)   session.getAttribute("otpExpiry");
-        Account pending  = (Account) session.getAttribute("pendingAccount");
 
-        // Hết hạn
+        // ── CASE 1: Xác nhận tạo tài khoản nhân viên ──
+        Account pendingNew = (Account) session.getAttribute("pendingNewAccount");
+        if (pendingNew != null) {
+            String inputOtp = req.getParameter("otpCode");
+            String savedOtp = (String) session.getAttribute("newAccOtpCode");
+            Long   expiry   = (Long)   session.getAttribute("newAccOtpExpiry");
+
+            if (expiry == null || System.currentTimeMillis() > expiry) {
+                session.removeAttribute("pendingNewAccount");
+                session.removeAttribute("newAccOtpCode");
+                session.removeAttribute("newAccOtpExpiry");
+                resp.sendRedirect(req.getContextPath() + "/accounts?msg=otp-expired");
+                return;
+            }
+
+            if (savedOtp == null || !savedOtp.equals(inputOtp)) {
+                req.setAttribute("error", "Mã OTP không đúng!");
+                req.getRequestDispatcher("/WEB-INF/views/otp-verify.jsp").forward(req, resp);
+                return;
+            }
+
+            // OTP đúng → save DB
+            new AccountDAO().insert(pendingNew);
+            session.removeAttribute("pendingNewAccount");
+            session.removeAttribute("newAccOtpCode");
+            session.removeAttribute("newAccOtpExpiry");
+            resp.sendRedirect(req.getContextPath() + "/dashboard?msg=created");
+            return;
+        }
+
+        // ── CASE 2: Xác nhận đăng nhập nhân viên ──
+        String inputOtp = req.getParameter("otpCode");
+        String savedOtp = (String) session.getAttribute("otpCode");
+        Long   expiry   = (Long)   session.getAttribute("otpExpiry");
+        Account pending = (Account) session.getAttribute("pendingAccount");
+
         if (expiry == null || System.currentTimeMillis() > expiry) {
             req.setAttribute("error", "Mã OTP đã hết hạn. Vui lòng đăng nhập lại!");
             session.invalidate();
@@ -42,14 +77,13 @@ public class OtpServlet extends HttpServlet {
             return;
         }
 
-        // Sai OTP
         if (savedOtp == null || !savedOtp.equals(inputOtp)) {
             req.setAttribute("error", "Mã OTP không đúng!");
             req.getRequestDispatcher("/WEB-INF/views/otp-verify.jsp").forward(req, resp);
             return;
         }
 
-        // OTP đúng → xác thực hoàn tất
+        // OTP đúng → đăng nhập hoàn tất
         session.removeAttribute("otpCode");
         session.removeAttribute("otpExpiry");
         session.removeAttribute("pendingAccount");

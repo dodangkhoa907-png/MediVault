@@ -1,6 +1,7 @@
 package com.medivault.controller;
 
 import com.medivault.dao.AccountDAO;
+import com.medivault.dao.interfaces.IAccountDAO;
 import com.medivault.entity.Account;
 import com.medivault.util.PasswordUtil;
 import com.medivault.util.ValidationUtil;
@@ -9,14 +10,18 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import com.medivault.util.EmailUtil;
+import com.medivault.util.OtpUtil;
+import jakarta.servlet.http.HttpSession;
+import java.util.List;
 
 import java.io.IOException;
-import java.util.List;
+
 
 @WebServlet("/accounts")
 public class AccountServlet extends HttpServlet {
 
-    private final AccountDAO dao = new AccountDAO();
+    private final IAccountDAO dao = new AccountDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -35,17 +40,82 @@ public class AccountServlet extends HttpServlet {
                 dao.toggleActive(Integer.parseInt(req.getParameter("id")));
                 resp.sendRedirect(req.getContextPath() + "/accounts?msg=updated");
             }
+            case "view" -> {
+                int id = Integer.parseInt(req.getParameter("id"));
+                Account a = dao.findById(id);
+                req.setAttribute("account", a);
+                req.getRequestDispatcher("/WEB-INF/views/account-detail.jsp").forward(req, resp);
+            }
             default -> showList(req, resp);
         }
     }
 
-    private void handleCreateWithOtp(HttpServletRequest req, HttpServletResponse resp) {
+
+
+    private void handleCreateWithOtp(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String username  = req.getParameter("username");
+        String fullName  = req.getParameter("fullName");
+        String email     = req.getParameter("email");
+        String phone     = req.getParameter("phone");
+        String citizenId = req.getParameter("citizenId");
+        String position  = req.getParameter("position");
+        String password  = req.getParameter("password");
+        String roleStr   = req.getParameter("roleId");
+
+        List<String> errors = ValidationUtil.validateAccount(
+                username, fullName, email, phone, citizenId, position);
+        if (!ValidationUtil.isValidPassword(password))
+            errors.add("Mật khẩu phải có ít nhất 6 ký tự.");
+        if (ValidationUtil.notBlank(username) && dao.isUsernameTaken(username))
+            errors.add("Tên đăng nhập '" + username + "' đã tồn tại.");
+        if (ValidationUtil.notBlank(email) && dao.isEmailTaken(email, -1))
+            errors.add("Email '" + email + "' đã được dùng.");
+
+        if (!errors.isEmpty()) {
+            req.setAttribute("errors", errors);
+            req.setAttribute("errorMsg", ValidationUtil.joinErrors(errors));
+            req.getRequestDispatcher("/WEB-INF/views/account-form.jsp").forward(req, resp);
+            return;
+        }
+
+        // Build pending account — chưa save DB
+        Account pending = new Account();
+        pending.setUsername(username.trim());
+        pending.setFullName(fullName.trim());
+        pending.setEmail(email != null ? email.trim() : null);
+        pending.setPhone(phone != null ? phone.trim() : null);
+        pending.setCitizenId(citizenId != null ? citizenId.trim() : null);
+        pending.setPosition(position != null ? position.trim() : null);
+        pending.setRoleId(Integer.parseInt(roleStr));
+        pending.setPasswordHash(PasswordUtil.hashPassword(password));
+
+        String otp = OtpUtil.generate(6);
+        HttpSession session = req.getSession();
+        session.setAttribute("pendingNewAccount", pending);
+        session.setAttribute("newAccOtpCode",     otp);
+        session.setAttribute("newAccOtpExpiry",   System.currentTimeMillis() + 5 * 60 * 1000L);
+
+        try {
+            EmailUtil.sendEmail(email,
+                    "[MediVault] Mã xác nhận tài khoản",
+                    "Mã OTP của bạn là: " + otp + "\nHiệu lực 5 phút.");
+            resp.sendRedirect(req.getContextPath() + "/otp-verify");
+        } catch (Exception e) {
+            req.setAttribute("error", "Không gửi được email OTP!");
+            req.getRequestDispatcher("/WEB-INF/views/account-form.jsp").forward(req, resp);
+        }
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         req.setCharacterEncoding("UTF-8");
+
+        String action = req.getParameter("action");
+        if ("create-otp".equals(action)) {
+            handleCreateWithOtp(req, resp);
+            return;  // ← dừng lại, không chạy xuống update/insert
+        }
 
         java.lang.String idStr    = req.getParameter("accountId");
         java.lang.String username = req.getParameter("username");

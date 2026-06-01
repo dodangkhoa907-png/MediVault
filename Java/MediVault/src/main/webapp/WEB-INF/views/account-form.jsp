@@ -1,4 +1,4 @@
-<%@ page import="org.eclipse.tags.shaded.org.apache.xpath.operations.String" %>
+
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ page import="java.lang.String" %>
@@ -626,7 +626,6 @@
                                 Phân quyền <span class="req">*</span>
                             </label>
                             <select id="roleId" name="roleId" class="field-input" required>
-                                <option value="1" <%= vRoleId == 1 ? "selected" : "" %>>🛡️ Admin — Quản trị viên</option>
                                 <option value="2" <%= vRoleId == 2 ? "selected" : "" %>>💊 Dược sĩ bán hàng</option>
                                 <option value="3" <%= vRoleId == 3 ? "selected" : "" %>>📦 Thủ kho</option>
                             </select>
@@ -772,7 +771,7 @@
 
     // Client-side validation highlights
     <% if (hasErrors) { %>
-    const errorText = `<%= errs != null ? java.lang.String.join("|", errs).toLowerCase() : "" %>`;
+    const errorText = `<%= errs != null ? String.join("|", errs).toLowerCase() : "" %>`;
     const fieldMap = {
         username:  ['tên đăng nhập','username'],
         email:     ['email'],
