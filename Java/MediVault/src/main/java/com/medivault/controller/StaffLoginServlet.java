@@ -8,8 +8,8 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
 
-@WebServlet("/login")
-public class LoginServlet extends HttpServlet {
+@WebServlet("/staff-login")
+public class StaffLoginServlet extends HttpServlet {
 
     private final IAccountDAO accountDAO = new com.medivault.dao.AccountDAO();
 
@@ -18,17 +18,12 @@ public class LoginServlet extends HttpServlet {
             throws ServletException, IOException {
         // Dùng getSession(false) — KHÔNG tạo session mới nếu chưa có
         HttpSession s = req.getSession(false);
-
-        // Chỉ redirect nếu ADMIN đã đăng nhập
-        // KHÔNG redirect nếu chỉ có staffAccount — admin cần thấy form login!
-        if (s != null) {
-            Account adminAcc = (Account) s.getAttribute("adminAccount");
-            if (adminAcc != null) {
-                resp.sendRedirect(req.getContextPath() + "/dashboard");
-                return;
-            }
+        Account acc = s != null ? (Account) s.getAttribute("staffAccount") : null;
+        if (acc != null) {
+            resp.sendRedirect(req.getContextPath() + "/staff-dashboard");
+            return;
         }
-        req.getRequestDispatcher("/WEB-INF/views/login.jsp").forward(req, resp);
+        req.getRequestDispatcher("/WEB-INF/views/staff-login.jsp").forward(req, resp);
     }
 
     @Override
@@ -40,7 +35,7 @@ public class LoginServlet extends HttpServlet {
         if (username == null || username.trim().isEmpty() ||
                 password == null || password.trim().isEmpty()) {
             req.setAttribute("error", "Vui lòng nhập đầy đủ thông tin!");
-            req.getRequestDispatcher("/WEB-INF/views/login.jsp").forward(req, resp);
+            req.getRequestDispatcher("/WEB-INF/views/staff-login.jsp").forward(req, resp);
             return;
         }
 
@@ -48,30 +43,30 @@ public class LoginServlet extends HttpServlet {
 
         if (account == null || !PasswordUtil.checkPassword(password, account.getPasswordHash())) {
             req.setAttribute("error", "Tên đăng nhập hoặc mật khẩu không đúng!");
-            req.getRequestDispatcher("/WEB-INF/views/login.jsp").forward(req, resp);
+            req.getRequestDispatcher("/WEB-INF/views/staff-login.jsp").forward(req, resp);
             return;
         }
 
         if (!account.isActive()) {
             req.setAttribute("error", "Tài khoản đã bị khóa. Liên hệ quản trị viên!");
-            req.getRequestDispatcher("/WEB-INF/views/login.jsp").forward(req, resp);
+            req.getRequestDispatcher("/WEB-INF/views/staff-login.jsp").forward(req, resp);
             return;
         }
 
-        if (account.getRoleId() != 1) {
-            req.setAttribute("error", "Tài khoản nhân viên vui lòng đăng nhập tại trang nhân viên!");
-            req.getRequestDispatcher("/WEB-INF/views/login.jsp").forward(req, resp);
+        if (account.getRoleId() == 1) {
+            req.setAttribute("error", "Tài khoản Admin vui lòng đăng nhập tại trang quản trị!");
+            req.getRequestDispatcher("/WEB-INF/views/staff-login.jsp").forward(req, resp);
             return;
         }
 
-        // OK → chỉ set "adminAccount", KHÔNG set "account" chung
-        // (nếu set "account" thì staff login sau sẽ thấy key này → nhảy vào admin dashboard!)
+        // OK → invalidate session cũ trước (có thể còn "adminAccount" thừa từ lần thử login admin)
+        // rồi tạo session mới sạch chỉ chứa "staffAccount"
         HttpSession old = req.getSession(false);
         if (old != null) old.invalidate();
         HttpSession session = req.getSession(true);
-        session.setAttribute("adminAccount", account);
-        session.removeAttribute("staffAccount"); // Đảm bảo không còn staffAccount thừa
+        session.setAttribute("staffAccount", account);
+        session.removeAttribute("adminAccount"); // Đảm bảo không còn adminAccount thừa
         accountDAO.updateLastLogin(account.getAccountId());
-        resp.sendRedirect(req.getContextPath() + "/dashboard");
+        resp.sendRedirect(req.getContextPath() + "/staff-dashboard");
     }
 }

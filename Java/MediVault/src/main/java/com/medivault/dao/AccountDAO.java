@@ -182,7 +182,8 @@ public class AccountDAO implements IAccountDAO {
         }
 
         String sql = "UPDATE Accounts SET " +
-                "FullName=?, Email=?, Phone=?, RoleID=?, CitizenId=?, Position=? " +
+                "FullName=?, Email=?, Phone=?, RoleID=?, CitizenId=?, Position=?, " +
+                "ProfessionalCertNo=?, ProfessionalCertExp=?, TrainingDate=? " +
                 "WHERE AccountID=?";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
@@ -192,7 +193,14 @@ public class AccountDAO implements IAccountDAO {
             ps.setInt(4, a.getRoleId());
             ps.setString(5, a.getCitizenId() != null ? a.getCitizenId().trim() : null);
             ps.setString(6, a.getPosition() != null ? a.getPosition().trim() : null);
-            ps.setInt(7, a.getAccountId());
+            ps.setString(7, a.getProfessionalCertNo());
+            if (a.getProfessionalCertExp() != null)
+                ps.setDate(8, java.sql.Date.valueOf(a.getProfessionalCertExp()));
+            else ps.setNull(8, java.sql.Types.DATE);
+            if (a.getTrainingDate() != null)
+                ps.setDate(9, java.sql.Date.valueOf(a.getTrainingDate()));
+            else ps.setNull(9, java.sql.Types.DATE);
+            ps.setInt(10, a.getAccountId());
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }

@@ -1,5 +1,6 @@
 package com.medivault.controller;
 
+import com.medivault.entity.Account;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -10,7 +11,23 @@ public class LogoutServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        req.getSession().invalidate();
-        resp.sendRedirect(req.getContextPath() + "/login");
+
+        HttpSession session = req.getSession(false);
+        // "from" param: trang nào gọi logout → biết nên redirect về đâu
+        // staff pages truyền ?from=staff, admin pages không truyền (mặc định)
+        String from = req.getParameter("from");
+        String redirectUrl = "/login"; // mặc định về admin login
+
+        if (session != null) {
+            Account staffAcc = (Account) session.getAttribute("staffAccount");
+            Account adminAcc = (Account) session.getAttribute("adminAccount");
+
+            if ("staff".equals(from) || (staffAcc != null && adminAcc == null)) {
+                redirectUrl = "/staff-login";
+            }
+            session.invalidate();
+        }
+
+        resp.sendRedirect(req.getContextPath() + redirectUrl);
     }
 }

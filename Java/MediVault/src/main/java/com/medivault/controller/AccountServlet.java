@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpSession;
 import java.util.List;
 
 import java.io.IOException;
+import java.time.LocalDate;
 
 
 @WebServlet("/accounts")
@@ -117,15 +118,19 @@ public class AccountServlet extends HttpServlet {
             return;  // ← dừng lại, không chạy xuống update/insert
         }
 
-        java.lang.String idStr    = req.getParameter("accountId");
-        java.lang.String username = req.getParameter("username");
-        java.lang.String fullName = req.getParameter("fullName");
-        java.lang.String email    = req.getParameter("email");
-        java.lang.String phone    = req.getParameter("phone");
-        java.lang.String citizenId= req.getParameter("citizenId");
-        java.lang.String position = req.getParameter("position");
-        java.lang.String password = req.getParameter("password");
-        java.lang.String roleStr  = req.getParameter("roleId");
+        java.lang.String idStr       = req.getParameter("accountId");
+        java.lang.String username    = req.getParameter("username");
+        java.lang.String fullName    = req.getParameter("fullName");
+        java.lang.String email       = req.getParameter("email");
+        java.lang.String phone       = req.getParameter("phone");
+        java.lang.String citizenId   = req.getParameter("citizenId");
+        java.lang.String position    = req.getParameter("position");
+        java.lang.String password    = req.getParameter("password");
+        java.lang.String oldPassword = req.getParameter("oldPassword");
+        java.lang.String roleStr     = req.getParameter("roleId");
+        java.lang.String certNo      = req.getParameter("professionalCertNo");
+        java.lang.String certExpStr  = req.getParameter("professionalCertExp");
+        java.lang.String trainingStr = req.getParameter("trainingDate");
 
         boolean isNew = (idStr == null || idStr.isEmpty());
 
@@ -144,8 +149,11 @@ public class AccountServlet extends HttpServlet {
             errors.add("Tên đăng nhập '" + username + "' đã tồn tại.");
 
         int excludeId = isNew ? -1 : Integer.parseInt(idStr);
-        if (ValidationUtil.notBlank(email) && dao.isEmailTaken(email, excludeId))
+        if (ValidationUtil.notBlank(email) && dao.isEmailTaken(email, excludeId)) {
+            // Khi edit: chỉ báo lỗi nếu email thực sự bị trùng với TÀI KHOẢN KHÁC
+            // (excludeId đã loại chính mình, nếu vẫn trùng thì mới lỗi)
             errors.add("Email '" + email + "' đã được dùng bởi tài khoản khác.");
+        }
 
         // ── BƯỚC 3: Nếu có lỗi → GỬI LẠI FORM + GIỮ DỮ LIỆU ──
         if (!errors.isEmpty()) {
@@ -183,12 +191,71 @@ public class AccountServlet extends HttpServlet {
             dao.insert(a);
             resp.sendRedirect(req.getContextPath() + "/accounts?msg=created");
         } else {
-            a.setAccountId(Integer.parseInt(idStr));
-            dao.update(a);
-            // Đổi mật khẩu nếu nhập mới
-            if (ValidationUtil.notBlank(password) && ValidationUtil.isValidPassword(password)) {
-                dao.resetPassword(a.getAccountId(), PasswordUtil.hashPassword(password));
+            int editId = Integer.parseInt(idStr);
+            a.setAccountId(editId);
+
+            // ── Thông tin chuyên môn ──
+            if (ValidationUtil.notBlank(certNo)) a.setProfessionalCertNo(certNo.trim());
+            try { if (ValidationUtil.notBlank(certExpStr))
+                a.setProfessionalCertExp(LocalDate.parse(certExpStr)); } catch (Exception ignored) {}
+            try { if (ValidationUtil.notBlank(trainingStr))
+                a.setTrainingDate(LocalDate.parse(trainingStr)); } catch (Exception ignored) {}
+
+            // ── Kiểm tra email/phone thay đổi → yêu cầu OTP ──
+            Account current = dao.findById(editId);
+            boolean emailChanged = current != null && ValidationUtil.notBlank(email)
+                    && !email.trim().equals(current.getEmail() != null ? current.getEmail() : "");
+            boolean phoneChanged = current != null && ValidationUtil.notBlank(phone)
+                    && !phone.trim().equals(current.getPhone() != null ? current.getPhone() : "");
+
+            if (emailChanged || phoneChanged) {
+                // Gửi OTP tới email MỚI (nếu email đổi) hoặc email cũ (nếu chỉ đổi phone)
+                String sendTo = emailChanged ? email.trim()
+                        : (current.getEmail() != null ? current.getEmail() : "");
+
+                if (ValidationUtil.notBlank(sendTo)) {
+                    String otp = OtpUtil.generate(6);
+                    HttpSession sess = req.getSession();
+                    sess.setAttribute("pendingUpdateAccount", a);
+                    sess.setAttribute("updateAccOtpCode",    otp);
+                    sess.setAttribute("updateAccOtpExpiry",  System.currentTimeMillis() + 5 * 60 * 1000L);
+                    sess.setAttribute("updateAccNewPassword", ValidationUtil.notBlank(password) && ValidationUtil.isValidPassword(password) ? password : null);
+                    try {
+                        String what = emailChanged && phoneChanged ? "email và số điện thoại"
+                                : emailChanged ? "email" : "số điện thoại";
+                        EmailUtil.sendEmail(sendTo,
+                                "[MediVault] Xác nhận thay đổi thông tin tài khoản",
+                                "Mã OTP xác nhận thay đổi " + what + " cho tài khoản @" + (current != null ? current.getUsername() : "") + ": " + otp + "\nHiệu lực 5 phút.");
+                        resp.sendRedirect(req.getContextPath() + "/otp-verify?mode=update");
+                    } catch (Exception e) {
+                        req.setAttribute("error", "Không gửi được email OTP xác nhận!");
+                        req.getRequestDispatcher("/WEB-INF/views/account-form.jsp").forward(req, resp);
+                    }
+                    return;
+                }
             }
+
+            // ── Đổi mật khẩu: yêu cầu nhập mật khẩu cũ ──
+            if (ValidationUtil.notBlank(password) && ValidationUtil.isValidPassword(password)) {
+                if (ValidationUtil.notBlank(oldPassword)) {
+                    Account cur = dao.findById(editId);
+                    if (cur == null || !PasswordUtil.checkPassword(oldPassword, cur.getPasswordHash())) {
+                        req.setAttribute("errors", java.util.List.of("Mật khẩu cũ không đúng!"));
+                        req.setAttribute("account", a);
+                        req.getRequestDispatcher("/WEB-INF/views/account-form.jsp").forward(req, resp);
+                        return;
+                    }
+                    dao.resetPassword(editId, PasswordUtil.hashPassword(password));
+                } else {
+                    // Không nhập mật khẩu cũ → báo lỗi yêu cầu nhập
+                    req.setAttribute("errors", java.util.List.of("Vui lòng nhập mật khẩu cũ để xác nhận khi đổi mật khẩu!"));
+                    req.setAttribute("account", a);
+                    req.getRequestDispatcher("/WEB-INF/views/account-form.jsp").forward(req, resp);
+                    return;
+                }
+            }
+
+            dao.update(a);
             resp.sendRedirect(req.getContextPath() + "/accounts?msg=updated");
         }
     }

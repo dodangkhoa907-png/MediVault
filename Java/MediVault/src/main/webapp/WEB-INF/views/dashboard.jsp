@@ -3,7 +3,7 @@
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
-    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("account");
+    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("adminAccount");
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/login"); return; }
     int roleId = acc.getRoleId();
     java.lang.String fullName = acc.getFullName() != null ? acc.getFullName() : acc.getUsername();
@@ -882,7 +882,7 @@
                     </div>
                 </div>
             </div>
-            <a href="${pageContext.request.contextPath}/accounts" class="topbar-user">
+            <a href="<%= request.getContextPath() %>/accounts?action=view&id=<%= acc.getAccountId() %>" class="topbar-user" title="Xem hồ sơ của tôi">
                 <div class="topbar-user-avatar"><%= initials %></div>
                 <span class="topbar-user-name"><%= fullName %></span>
             </a>
@@ -1060,7 +1060,7 @@
                                         </td>
                                         <td>
                                             <div class="action-group">
-                                                <a href="${pageContext.request.contextPath}/account-form?id=${a.accountId}"
+                                                <a href="${pageContext.request.contextPath}/accounts?action=edit&id=${a.accountId}"
                                                    class="action-btn action-btn-edit">✏️ Sửa</a>
                                                 <form method="post" action="${pageContext.request.contextPath}/accounts"
                                                       style="display:inline"

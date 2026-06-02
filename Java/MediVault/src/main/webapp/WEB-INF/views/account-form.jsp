@@ -4,7 +4,7 @@
 <%@ page import="java.lang.String" %>
 <%
     com.medivault.entity.Account acc =
-        (com.medivault.entity.Account) session.getAttribute("account");
+        (com.medivault.entity.Account) session.getAttribute("adminAccount");
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/login"); return; }
 
     com.medivault.entity.Account form =
@@ -17,6 +17,9 @@
     java.lang.String vPhone     = form != null && form.getPhone()     != null ? form.getPhone()     : "";
     java.lang.String vCitizenId = form != null && form.getCitizenId() != null ? form.getCitizenId(): "";
     java.lang.String vPosition  = form != null && form.getPosition()  != null ? form.getPosition() : "";
+    java.lang.String vCertNo       = form != null && form.getProfessionalCertNo() != null ? form.getProfessionalCertNo() : "";
+    java.lang.String vCertExp      = form != null && form.getProfessionalCertExp() != null ? form.getProfessionalCertExp().toString() : "";
+    java.lang.String vTrainingDate = form != null && form.getTrainingDate() != null ? form.getTrainingDate().toString() : "";
     int    vRoleId    = form != null ? form.getRoleId() : 2;
 
     @SuppressWarnings("unchecked")
@@ -649,6 +652,22 @@
                             </div>
                         </div>
 
+                        <% if (!isNew) { %>
+                        <!-- Mật khẩu hiện tại — bắt buộc khi đổi mật khẩu mới -->
+                        <div class="field span-2">
+                            <label class="field-label" for="oldPassword">
+                                Mật khẩu hiện tại
+                                <span style="font-weight:400;color:#888;font-size:12px">(bắt buộc nếu muốn đổi mật khẩu)</span>
+                            </label>
+                            <div class="pw-wrap">
+                                <input type="password" id="oldPassword" name="oldPassword"
+                                       class="field-input"
+                                       placeholder="Nhập mật khẩu hiện tại để xác nhận đổi"
+                                       autocomplete="current-password">
+                            </div>
+                        </div>
+                        <% } %>
+
                     </div>
                 </div>
             </div>
@@ -724,6 +743,30 @@
 
                     </div>
                 </div>
+
+                <% if (!isNew) { %>
+                <!-- Thông tin chuyên môn — chỉ khi edit -->
+                <div style="margin:0 24px 20px;padding-top:20px;border-top:1px solid var(--border)">
+                    <p style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">Thông tin chuyên môn</p>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label class="field-label" for="professionalCertNo">Số chứng chỉ hành nghề</label>
+                            <input type="text" id="professionalCertNo" name="professionalCertNo"
+                                   class="field-input" value="<%= vCertNo %>" placeholder="VD: 01234/HN-CCHN">
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="professionalCertExp">Ngày hết hạn chứng chỉ</label>
+                            <input type="date" id="professionalCertExp" name="professionalCertExp"
+                                   class="field-input" value="<%= vCertExp %>">
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="trainingDate">Ngày đào tạo</label>
+                            <input type="date" id="trainingDate" name="trainingDate"
+                                   class="field-input" value="<%= vTrainingDate %>">
+                        </div>
+                    </div>
+                </div>
+                <% } %>
 
                 <!-- Action row bên trong card -->
                 <div class="action-row">
