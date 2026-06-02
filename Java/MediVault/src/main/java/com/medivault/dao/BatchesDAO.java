@@ -90,4 +90,34 @@ public class BatchesDAO implements IBatchesDAO {
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
+
+    /** Tổng tồn kho của 1 thuốc từ tất cả lô còn hàng */
+    public int getTotalQuantity(int medicineId) {
+        String sql = "SELECT ISNULL(SUM(CurrentQuantity),0) FROM Batches " +
+                "WHERE MedicineID=? AND ExpiryDate > CAST(GETDATE() AS DATE)";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, medicineId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return 0;
+    }
+
+    /** Lô gần hết hạn nhất còn tồn kho (FIFO) */
+    public Batches findNearestExpiry(int medicineId) {
+        String sql = "SELECT TOP 1 * FROM Batches " +
+                "WHERE MedicineID=? AND CurrentQuantity>0 " +
+                "AND ExpiryDate > CAST(GETDATE() AS DATE) " +
+                "ORDER BY ExpiryDate ASC";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, medicineId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapRow(rs);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return null;
+    }
 }

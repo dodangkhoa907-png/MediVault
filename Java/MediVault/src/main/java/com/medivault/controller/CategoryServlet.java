@@ -1,6 +1,5 @@
 package com.medivault.controller;
 
-import com.medivault.dao.CategoryDAO;
 import com.medivault.entity.Category;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -18,7 +17,7 @@ import java.util.List;
 @WebServlet("/categories")
 public class CategoryServlet extends HttpServlet {
 
-    private final CategoryDAO dao = new CategoryDAO();
+    private final com.medivault.dao.interfaces.ICategoryDAO dao = new com.medivault.dao.CategoryDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)

@@ -12,7 +12,7 @@ public class AccountDAO implements IAccountDAO {
 
     private Account mapRow(ResultSet rs) throws SQLException {
         Account a = new Account();
-        a.setAccountId(rs.getInt("Account_id"));
+        a.setAccountId(rs.getInt("AccountID"));
         a.setUsername(rs.getString("Username"));
         a.setPasswordHash(rs.getString("PasswordHash"));
         a.setFullName(rs.getString("FullName"));
@@ -22,6 +22,12 @@ public class AccountDAO implements IAccountDAO {
         a.setActive(rs.getBoolean("IsActive"));
         a.setCitizenId(rs.getString("CitizenId"));
         a.setPosition(rs.getString("Position"));
+        a.setProfessionalCertNo(rs.getString("ProfessionalCertNo"));
+        if (rs.getDate("ProfessionalCertExp") != null)
+            a.setProfessionalCertExp(rs.getDate("ProfessionalCertExp").toLocalDate());
+        if (rs.getDate("TrainingDate") != null)
+            a.setTrainingDate(rs.getDate("TrainingDate").toLocalDate());
+        a.setFaceEnrollmentPath(rs.getString("FaceEnrollmentPath"));
         if (rs.getTimestamp("CreatedAt") != null)
             a.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
         if (rs.getTimestamp("LastLoginAt") != null)
@@ -176,7 +182,8 @@ public class AccountDAO implements IAccountDAO {
         }
 
         String sql = "UPDATE Accounts SET " +
-                "FullName=?, Email=?, Phone=?, RoleID=?, CitizenId=?, Position=? " +
+                "FullName=?, Email=?, Phone=?, RoleID=?, CitizenId=?, Position=?, " +
+                "ProfessionalCertNo=?, ProfessionalCertExp=?, TrainingDate=? " +
                 "WHERE AccountID=?";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
@@ -186,7 +193,14 @@ public class AccountDAO implements IAccountDAO {
             ps.setInt(4, a.getRoleId());
             ps.setString(5, a.getCitizenId() != null ? a.getCitizenId().trim() : null);
             ps.setString(6, a.getPosition() != null ? a.getPosition().trim() : null);
-            ps.setInt(7, a.getAccountId());
+            ps.setString(7, a.getProfessionalCertNo());
+            if (a.getProfessionalCertExp() != null)
+                ps.setDate(8, java.sql.Date.valueOf(a.getProfessionalCertExp()));
+            else ps.setNull(8, java.sql.Types.DATE);
+            if (a.getTrainingDate() != null)
+                ps.setDate(9, java.sql.Date.valueOf(a.getTrainingDate()));
+            else ps.setNull(9, java.sql.Types.DATE);
+            ps.setInt(10, a.getAccountId());
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
