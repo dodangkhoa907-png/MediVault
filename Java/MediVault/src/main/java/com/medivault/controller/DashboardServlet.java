@@ -39,8 +39,9 @@ public class DashboardServlet extends HttpServlet {
         req.setAttribute("lowStockCount",  medicineDAO.countLowStock());
         req.setAttribute("expiryCount",    batchesDAO.findExpiringSoon().size());
         req.setAttribute("expiredCount",   batchesDAO.findExpired().size());
-        List<Account> allAccounts = accountDAO.findAll();
+        List<Account> allAccounts = accountDAO.findAllStaff();
         req.setAttribute("accounts",       allAccounts);
+        req.setAttribute("onlineStaff", com.medivault.util.SessionTracker.getOnlineSet());
         req.setAttribute("activeAccounts", allAccounts.stream()
                 .filter(Account::isActive).count());
         req.getRequestDispatcher("/WEB-INF/views/dashboard.jsp").forward(req, resp);

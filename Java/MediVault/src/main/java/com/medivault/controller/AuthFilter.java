@@ -19,14 +19,8 @@ public class AuthFilter implements Filter {
         String query    = req.getQueryString(); // lấy query string để check API call
 
         // ── 1. Public URLs — không cần đăng nhập ──
-        // /pos?action=search và /pos?action=find-customer là API public (JS gọi khi bán hàng)
-        boolean isPosApi = uri.startsWith(ctx + "/pos")
-                && query != null
-                && (query.contains("action=search") || query.contains("action=find-customer"));
-
         boolean isPublic = uri.equals(ctx + "/login")
                 || uri.equals(ctx + "/staff-login")
-                || isPosApi
                 || uri.startsWith(ctx + "/assets")
                 || uri.startsWith(ctx + "/css")
                 || uri.startsWith(ctx + "/js")
@@ -39,12 +33,12 @@ public class AuthFilter implements Filter {
 
         // ── Nếu đã login rồi mà vào trang login → redirect về đúng chỗ ──
         if (uri.equals(ctx + "/login")) {
-            // Chỉ redirect nếu ADMIN đã đăng nhập — staffAccount không đủ điều kiện!
+            // CHỈ redirect nếu đã login là ADMIN
+            // staffAccount KHÔNG redirect về /dashboard — gây redirect loop!
             if (adminAcc != null) { resp.sendRedirect(ctx + "/dashboard"); return; }
             chain.doFilter(request, response); return;
         }
         if (uri.equals(ctx + "/staff-login")) {
-            // Chỉ redirect nếu STAFF đã đăng nhập — về staff-dashboard (không phải /dashboard)
             if (staffAcc != null && staffAcc.getRoleId() != 1) {
                 resp.sendRedirect(ctx + "/staff-dashboard"); return;
             }
@@ -53,21 +47,17 @@ public class AuthFilter implements Filter {
 
         if (isPublic) { chain.doFilter(request, response); return; }
 
-        // ── 2. /pos page — chỉ dành cho Staff (cần staffAccount) ──
+        // ── 2. /pos — PUBLIC hoàn toàn, không cần login ──
+        // POS là quầy bán hàng công cộng, ai cũng dùng được
+        // Điểm danh được xử lý riêng qua sidebar hover trong pos.jsp
         if (uri.startsWith(ctx + "/pos")) {
-            if (staffAcc == null) {
-                resp.sendRedirect(ctx + "/staff-login");
-                return;
-            }
             chain.doFilter(request, response);
             return;
         }
 
-        // ── 3. /dashboard — CHỈ dành cho ADMIN (adminAccount) ──
+        // ── 3. /dashboard — dùng chung, DashboardServlet tự phân luồng ──
         if (uri.equals(ctx + "/dashboard") || uri.equals(ctx + "/dashboard/")) {
-            if (adminAcc == null) {
-                // Không có adminAccount → về login admin
-                // (Dù có staffAccount cũng không cho vào /dashboard)
+            if (adminAcc == null && staffAcc == null) {
                 resp.sendRedirect(ctx + "/login");
                 return;
             }
@@ -101,8 +91,7 @@ public class AuthFilter implements Filter {
         // ── 5. Trang chỉ dành cho Staff ──
         if (uri.startsWith(ctx + "/staff-dashboard")
                 || uri.equals(ctx + "/staff-profile")) {
-            if (staffAcc == null || staffAcc.getRoleId() == 1) {
-                // Không có staffAccount hợp lệ → về login staff
+            if (staffAcc == null) {
                 resp.sendRedirect(ctx + "/staff-login");
                 return;
             }

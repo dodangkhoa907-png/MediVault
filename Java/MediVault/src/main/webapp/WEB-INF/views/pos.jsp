@@ -2,12 +2,13 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%
+    // POS PUBLIC — không cần login để bán hàng
+    // Nếu staff đã login → hiển thị thông tin, nút điểm danh
     com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("staffAccount");
-    if (acc == null) { response.sendRedirect(request.getContextPath() + "/staff-login"); return; }
-    if (acc.getRoleId() == 1) { response.sendRedirect(request.getContextPath() + "/dashboard"); return; }
-    String fullName = acc.getFullName() != null ? acc.getFullName() : acc.getUsername();
-    String initials = fullName.length()>=2
-        ? fullName.substring(0,1).toUpperCase()+fullName.substring(1,2).toUpperCase()
+    boolean isLoggedIn = (acc != null && acc.getRoleId() != 1);
+    String fullName  = isLoggedIn ? (acc.getFullName() != null ? acc.getFullName() : acc.getUsername()) : "Khách";
+    String initials  = fullName.length() >= 2
+        ? fullName.substring(0,1).toUpperCase() + fullName.substring(1,2).toUpperCase()
         : fullName.toUpperCase();
     String ctx = request.getContextPath();
 %>
@@ -281,7 +282,7 @@ body{display:flex;background:var(--surface);color:var(--navy)}
 <aside class="msidebar">
   <a href="<%= ctx %>/pos" class="ms-logo" title="POS">💊</a>
 
-  <a href="<%= ctx %>/staff-dashboard" class="ms-btn" title="">
+  <a href="<%= ctx %>/dashboard" class="ms-btn" title="">
     <span>🏠</span>
     <span class="ms-tooltip">Dashboard</span>
   </a>
@@ -298,15 +299,51 @@ body{display:flex;background:var(--surface);color:var(--navy)}
     <span class="ms-tooltip">Khách hàng</span>
   </a>
   <div class="ms-sep"></div>
-  <a href="#" class="ms-btn" title="">
-    <span>📅</span>
-    <span class="ms-tooltip">Ca làm việc</span>
-  </a>
-  <a href="<%= ctx %>/logout?from=staff" class="ms-btn" title="" style="margin-top:auto">
-    <span>⏻</span>
-    <span class="ms-tooltip">Đăng xuất</span>
-  </a>
-  <div class="ms-av" title="<%= fullName %>"><%= initials %></div>
+  <!-- Nút điểm danh / đăng nhập staff — hover hiện panel -->
+  <div class="ms-checkin-wrap" style="margin-top:auto;position:relative">
+    <button class="ms-btn" id="checkinBtn" title="" onclick="toggleCheckinPanel()" style="width:44px;height:44px">
+      <span><%= isLoggedIn ? "🟢" : "👤" %></span>
+      <span class="ms-tooltip"><%= isLoggedIn ? "Điểm danh / " + fullName : "Nhân viên đăng nhập" %></span>
+    </button>
+    <!-- Panel hiện khi hover/click -->
+    <div id="checkinPanel" style="display:none;position:absolute;left:54px;bottom:0;width:220px;
+         background:#1e1035;border:1px solid rgba(167,139,250,.3);border-radius:14px;
+         padding:16px;box-shadow:0 8px 32px rgba(0,0,0,.4);z-index:9999">
+      <% if (isLoggedIn) { %>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="width:36px;height:36px;background:linear-gradient(135deg,#a78bfa,#7c3aed);
+             border-radius:10px;display:flex;align-items:center;justify-content:center;
+             font-size:13px;font-weight:800;color:#fff"><%= initials %></div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#fff"><%= fullName %></div>
+          <div style="font-size:11px;color:rgba(255,255,255,.4)">Đã đăng nhập</div>
+        </div>
+      </div>
+      <a href="<%= ctx %>/staff-dashboard" style="display:block;padding:8px 12px;
+         background:rgba(167,139,250,.15);border-radius:8px;color:#a78bfa;
+         font-size:12px;font-weight:600;text-decoration:none;margin-bottom:6px;text-align:center">
+        📅 Xem ca làm việc
+      </a>
+      <a href="<%= ctx %>/logout?from=staff" style="display:block;padding:8px 12px;
+         background:rgba(239,68,68,.1);border-radius:8px;color:#f87171;
+         font-size:12px;font-weight:600;text-decoration:none;text-align:center">
+        ⏻ Kết thúc ca
+      </a>
+      <% } else { %>
+      <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:10px">
+        Nhân viên đăng nhập để điểm danh ca làm
+      </div>
+      <a href="<%= ctx %>/staff-login" style="display:block;padding:10px 12px;
+         background:linear-gradient(135deg,#7c3aed,#5b21b6);border-radius:8px;color:#fff;
+         font-size:13px;font-weight:700;text-decoration:none;text-align:center">
+        👤 Đăng nhập nhân viên
+      </a>
+      <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:8px;text-align:center">
+        POS vẫn hoạt động không cần đăng nhập
+      </div>
+      <% } %>
+    </div>
+  </div>
 </aside>
 
 <!-- ── CENTER: MEDICINE GRID ── -->
@@ -739,6 +776,19 @@ function showToast(msg, type) {
   document.body.appendChild(t);
   setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 2500);
 }
+
+// Checkin panel toggle
+function toggleCheckinPanel() {
+  const panel = document.getElementById('checkinPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+document.addEventListener('click', function(e) {
+  const wrap = document.querySelector('.ms-checkin-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    const panel = document.getElementById('checkinPanel');
+    if (panel) panel.style.display = 'none';
+  }
+});
 </script>
 </body>
 </html>

@@ -17,9 +17,6 @@
     java.lang.String vPhone     = form != null && form.getPhone()     != null ? form.getPhone()     : "";
     java.lang.String vCitizenId = form != null && form.getCitizenId() != null ? form.getCitizenId(): "";
     java.lang.String vPosition  = form != null && form.getPosition()  != null ? form.getPosition() : "";
-    java.lang.String vCertNo       = form != null && form.getProfessionalCertNo() != null ? form.getProfessionalCertNo() : "";
-    java.lang.String vCertExp      = form != null && form.getProfessionalCertExp() != null ? form.getProfessionalCertExp().toString() : "";
-    java.lang.String vTrainingDate = form != null && form.getTrainingDate() != null ? form.getTrainingDate().toString() : "";
     int    vRoleId    = form != null ? form.getRoleId() : 2;
 
     @SuppressWarnings("unchecked")
@@ -652,22 +649,6 @@
                             </div>
                         </div>
 
-                        <% if (!isNew) { %>
-                        <!-- Mật khẩu hiện tại — bắt buộc khi đổi mật khẩu mới -->
-                        <div class="field span-2">
-                            <label class="field-label" for="oldPassword">
-                                Mật khẩu hiện tại
-                                <span style="font-weight:400;color:#888;font-size:12px">(bắt buộc nếu muốn đổi mật khẩu)</span>
-                            </label>
-                            <div class="pw-wrap">
-                                <input type="password" id="oldPassword" name="oldPassword"
-                                       class="field-input"
-                                       placeholder="Nhập mật khẩu hiện tại để xác nhận đổi"
-                                       autocomplete="current-password">
-                            </div>
-                        </div>
-                        <% } %>
-
                     </div>
                 </div>
             </div>
@@ -744,31 +725,37 @@
                     </div>
                 </div>
 
-                <% if (!isNew) { %>
-                <!-- Thông tin chuyên môn — chỉ khi edit -->
-                <div style="margin:0 24px 20px;padding-top:20px;border-top:1px solid var(--border)">
-                    <p style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">Thông tin chuyên môn</p>
-                    <div class="form-grid">
-                        <div class="field">
-                            <label class="field-label" for="professionalCertNo">Số chứng chỉ hành nghề</label>
-                            <input type="text" id="professionalCertNo" name="professionalCertNo"
-                                   class="field-input" value="<%= vCertNo %>" placeholder="VD: 01234/HN-CCHN">
-                        </div>
-                        <div class="field">
-                            <label class="field-label" for="professionalCertExp">Ngày hết hạn chứng chỉ</label>
-                            <input type="date" id="professionalCertExp" name="professionalCertExp"
-                                   class="field-input" value="<%= vCertExp %>">
-                        </div>
-                        <div class="field">
-                            <label class="field-label" for="trainingDate">Ngày đào tạo</label>
-                            <input type="date" id="trainingDate" name="trainingDate"
-                                   class="field-input" value="<%= vTrainingDate %>">
-                        </div>
-                    </div>
-                </div>
-                <% } %>
-
                 <!-- Action row bên trong card -->
+                <input type="hidden" name="otpVerified" id="otpVerified" value="false">
+
+                <!-- OTP inline box — chỉ hiện khi email/phone thay đổi và đã gửi OTP -->
+                <div id="otpBox" style="display:none;margin:0 24px 16px;padding:16px;
+                     background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px">
+                    <p style="font-size:13px;font-weight:600;color:#166534;margin-bottom:10px">
+                        📧 Mã OTP đã được gửi về email. Nhập mã để xác nhận thay đổi:
+                    </p>
+                    <div style="display:flex;gap:10px;align-items:center">
+                        <input type="text" id="otpInput" maxlength="6"
+                               style="width:140px;padding:10px 14px;border:1.5px solid #86efac;
+                                      border-radius:8px;font-size:18px;font-weight:700;
+                                      letter-spacing:6px;text-align:center"
+                               placeholder="000000">
+                        <button type="button" id="verifyOtpBtn" onclick="verifyOtp()"
+                                style="padding:10px 18px;background:#16a34a;color:#fff;
+                                       border:none;border-radius:8px;font-size:13px;
+                                       font-weight:600;cursor:pointer">
+                            ✅ Xác nhận
+                        </button>
+                        <button type="button" onclick="resendOtp()"
+                                style="padding:10px 14px;background:transparent;color:#16a34a;
+                                       border:1.5px solid #86efac;border-radius:8px;
+                                       font-size:12px;cursor:pointer">
+                            🔄 Gửi lại
+                        </button>
+                    </div>
+                    <p id="otpMsg" style="font-size:12px;margin-top:8px;display:none"></p>
+                </div>
+
                 <div class="action-row">
                     <button type="submit" class="btn-submit" id="submitBtn">
                         <%= isNew
@@ -805,12 +792,7 @@
     const toast = document.getElementById('toast');
     if (toast) setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 3500);
 
-    // Loading state khi submit
-    document.getElementById('mainForm').addEventListener('submit', function() {
-        const btn = document.getElementById('submitBtn');
-        btn.disabled = true;
-        btn.innerHTML = '⏳ Đang xử lý…';
-    });
+    // Submit handled below (OTP-aware)
 
     // Client-side validation highlights
     <% if (hasErrors) { %>
@@ -857,6 +839,111 @@
             this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
         });
     }
+
+    <% if (!isNew) { %>
+    // ── OTP INLINE — phát hiện email/phone thay đổi ──
+    const origEmail = '<%= vEmail %>'.trim();
+    const origPhone = '<%= vPhone %>'.trim();
+    let otpSent = false;
+    let otpVerifiedOk = false;
+
+    function emailOrPhoneChanged() {
+        const curEmail = (document.getElementById('email')?.value || '').trim();
+        const curPhone = (document.getElementById('phone')?.value || '').trim();
+        return curEmail !== origEmail || curPhone !== origPhone;
+    }
+
+    // 1 listener duy nhất — xử lý OTP + loading state
+    document.getElementById('mainForm').addEventListener('submit', async function(e) {
+        if (emailOrPhoneChanged() && !otpVerifiedOk) {
+            // Email/phone thay đổi, chưa verify OTP → chặn submit, gửi OTP
+            e.preventDefault();
+            if (!otpSent) await sendOtp();
+            return;
+        }
+        // Không đổi email/phone HOẶC đã verify OTP → loading state rồi submit
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Đang lưu…';
+    });
+
+    async function sendOtp() {
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '📧 Đang gửi OTP…';
+
+        const formData = new FormData(document.getElementById('mainForm'));
+        const params = new URLSearchParams(formData);
+        params.set('action', 'send-otp');
+
+        try {
+            const res = await fetch('<%= request.getContextPath() %>/accounts', {
+                method: 'POST', body: params,
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+            });
+            const data = await res.json();
+            if (data.ok) {
+                otpSent = true;
+                document.getElementById('otpBox').style.display = 'block';
+                btn.disabled = false;
+                btn.innerHTML = '💾 Lưu thay đổi';
+                showOtpMsg('Mã OTP đã gửi — kiểm tra email!', '#166534');
+            } else {
+                showOtpMsg('Lỗi: ' + data.msg, '#dc2626');
+                btn.disabled = false;
+                btn.innerHTML = '💾 Lưu thay đổi';
+            }
+        } catch(err) {
+            showOtpMsg('Không gửi được OTP!', '#dc2626');
+            btn.disabled = false;
+            btn.innerHTML = '💾 Lưu thay đổi';
+        }
+    }
+
+    async function verifyOtp() {
+        const code = document.getElementById('otpInput').value.trim();
+        if (code.length !== 6) { showOtpMsg('Nhập đủ 6 chữ số!', '#dc2626'); return; }
+
+        const btn = document.getElementById('verifyOtpBtn');
+        btn.disabled = true; btn.innerHTML = '⏳';
+
+        try {
+            const res = await fetch('<%= request.getContextPath() %>/accounts', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'action=verify-otp&otpCode=' + encodeURIComponent(code)
+                    + '&accountId=<%= form != null ? form.getAccountId() : 0 %>'
+            });
+            const data = await res.json();
+            if (data.ok) {
+                otpVerifiedOk = true;
+                document.getElementById('otpVerified').value = 'true';
+                document.getElementById('otpBox').innerHTML =
+                    '<p style="color:#166534;font-weight:700">✅ Xác minh thành công!</p>';
+                document.getElementById('mainForm').submit();
+            } else {
+                showOtpMsg('Mã không đúng hoặc đã hết hạn!', '#dc2626');
+                btn.disabled = false; btn.innerHTML = '✅ Xác nhận';
+            }
+        } catch(err) {
+            showOtpMsg('Lỗi xác minh!', '#dc2626');
+            btn.disabled = false; btn.innerHTML = '✅ Xác nhận';
+        }
+    }
+
+    async function resendOtp() {
+        otpSent = false;
+        document.getElementById('otpInput').value = '';
+        showOtpMsg('', '');
+        await sendOtp();
+    }
+
+    function showOtpMsg(msg, color) {
+        const el = document.getElementById('otpMsg');
+        el.textContent = msg; el.style.color = color;
+        el.style.display = msg ? 'block' : 'none';
+    }
+    <% } %>
 </script>
 
 </body>

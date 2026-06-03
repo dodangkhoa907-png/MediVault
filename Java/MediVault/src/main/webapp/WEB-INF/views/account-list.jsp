@@ -208,7 +208,10 @@ body{display:flex;background:var(--surface);color:var(--navy)}
         <div class="breadcrumb">MediVault › Quản lý › Tài khoản</div>
         <h1>Tài khoản nhân viên</h1>
       </div>
+      <div style="display:flex;gap:10px;align-items:center">
+      <a href="${pageContext.request.contextPath}/accounts?action=trash" class="btn-secondary" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">🗑️ Thùng rác</a>
       <a href="${pageContext.request.contextPath}/accounts?action=new" class="btn-primary">＋ Tạo tài khoản</a>
+    </div>
     </div>
 
     <%-- STATS --%>
@@ -249,26 +252,24 @@ body{display:flex;background:var(--surface);color:var(--navy)}
         </div>
       </div>
 
-      <form method="get" action="${pageContext.request.contextPath}/accounts" id="ff">
-        <div class="filter-bar">
+      <div class="filter-bar">
           <div class="fsearch">
-            <input type="text" name="q" placeholder="Tìm tên, email, CCCD…" value="${param.q}">
+            <input type="text" id="searchInput" placeholder="Tìm tên, email, CCCD…" autocomplete="off">
           </div>
-          <select name="role" class="fselect" onchange="ff.submit()">
+          <select id="roleFilter" class="fselect">
             <option value="">Tất cả chức vụ</option>
-            <option value="1" ${param.role=='1'?'selected':''}>🛡️ Admin</option>
-            <option value="2" ${param.role=='2'?'selected':''}>💊 Dược sĩ</option>
-            <option value="3" ${param.role=='3'?'selected':''}>📦 Thủ kho</option>
+            <option value="2">💊 Dược sĩ</option>
+            <option value="3">📦 Thủ kho</option>
           </select>
-          <select name="status" class="fselect" onchange="ff.submit()">
+          <select id="statusFilter" class="fselect">
             <option value="">Tất cả trạng thái</option>
-            <option value="1" ${param.status=='1'?'selected':''}>Hoạt động</option>
-            <option value="0" ${param.status=='0'?'selected':''}>Đã khóa</option>
+            <option value="1">🟢 Đang online</option>
+            <option value="active">✅ Hoạt động</option>
+            <option value="0">🔒 Đã khóa</option>
           </select>
-          <button type="submit" class="fchip">🔍 Lọc</button>
-          <a href="${pageContext.request.contextPath}/accounts" class="fchip clear">✕ Xóa lọc</a>
+          <button type="button" class="fchip" onclick="applyFilter()">🔍 Lọc</button>
+          <button type="button" class="fchip clear" onclick="clearFilter()">✕ Xóa lọc</button>
         </div>
-      </form>
 
       <div class="tbl-wrap">
         <table class="tbl">
@@ -295,7 +296,10 @@ body{display:flex;background:var(--surface);color:var(--navy)}
               </c:when>
               <c:otherwise>
                 <c:forEach var="a" items="${accounts}" varStatus="st">
-                  <tr onclick="location.href='${pageContext.request.contextPath}/accounts?action=view&id=${a.accountId}'">
+                  <tr onclick="location.href='${pageContext.request.contextPath}/accounts?action=view&id=${a.accountId}'"
+                      data-name="${fn:toLowerCase(not empty a.fullName ? a.fullName : a.username)} @${fn:toLowerCase(a.username)} ${not empty a.email ? fn:toLowerCase(a.email) : ''} ${not empty a.citizenId ? a.citizenId : ''}"
+                      data-role="${a.roleId}"
+                      data-status="${a.active ? '1' : '0'}">
                     <td style="color:var(--muted);font-size:12px">${st.count}</td>
                     <td>
                       <div class="cell-user">
@@ -329,8 +333,15 @@ body{display:flex;background:var(--surface);color:var(--navy)}
                     <td style="color:var(--muted);font-size:12.5px">${not empty a.position ? a.position : '—'}</td>
                     <td>
                       <c:choose>
-                        <c:when test="${a.active}"><span class="badge b-green">Hoạt động</span></c:when>
-                        <c:otherwise><span class="badge b-gray">Đã khóa</span></c:otherwise>
+                        <c:when test="${!a.active}">
+                          <span class="badge b-gray">🔒 Đã khóa</span>
+                        </c:when>
+                        <c:when test="${onlineStaff != null && onlineStaff.contains(a.accountId)}">
+                          <span class="badge b-green" title="Đang đăng nhập">🟢 Đang online</span>
+                        </c:when>
+                        <c:otherwise>
+                          <span class="badge b-gray" title="Chưa đăng nhập">⚫ Offline</span>
+                        </c:otherwise>
                       </c:choose>
                     </td>
                     <td style="color:var(--muted);font-size:12px">
@@ -344,6 +355,9 @@ body{display:flex;background:var(--surface);color:var(--navy)}
                     <td onclick="event.stopPropagation()">
                       <div class="act-group">
                         <a href="${pageContext.request.contextPath}/accounts?action=view&id=${a.accountId}" class="act-btn act-view">👁 Xem</a>
+                        <a href="${pageContext.request.contextPath}/accounts?action=delete&id=${a.accountId}"
+                           onclick="return confirm('Chuyển tài khoản @${a.username} vào thùng rác?')"
+                           class="act-btn" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca">🗑️</a>
                       </div>
                     </td>
                   </tr>
@@ -385,11 +399,66 @@ body{display:flex;background:var(--surface);color:var(--navy)}
 <% } else if ("updated".equals(msg)) { %><div class="toast toast-ok">✅ Cập nhật thành công!</div>
 <% } else if ("locked".equals(msg)) { %><div class="toast toast-warn">🔒 Đã khóa tài khoản.</div>
 <% } else if ("unlocked".equals(msg)) { %><div class="toast toast-ok">🔓 Đã mở khóa tài khoản.</div>
+<% } else if ("deleted".equals(msg)) { %><div class="toast toast-warn">🗑️ Đã chuyển vào thùng rác.</div>
+<% } else if ("nochange".equals(msg)) { %><div class="toast toast-warn">ℹ️ Không có thay đổi nào được ghi nhận.</div>
+<% } else if ("last-admin".equals(msg)) { %><div class="toast toast-warn">⚠️ Không thể thực hiện — đây là Admin duy nhất!</div>
+<% } else if ("otp-expired".equals(msg)) { %><div class="toast toast-warn">⏱️ Mã OTP đã hết hạn.</div>
 <% } %>
 
 <script>
 const t = document.querySelector('.toast');
 if (t) setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .4s'; setTimeout(()=>t.remove(),400); }, 3000);
+
+// ── REALTIME FILTER ──────────────────────────────────────────
+function applyFilter() {
+    const q      = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+    const role   = document.getElementById('roleFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    let visible  = 0;
+
+    document.querySelectorAll('tbody tr[data-name]').forEach(row => {
+        const name   = (row.dataset.name   || '').toLowerCase();
+        const rId    = row.dataset.role    || '';
+        const isAct  = row.dataset.status  || '';
+        // online: check badge text
+        const badge  = row.querySelector('td:nth-child(8) .badge');
+        const isOnline = badge && badge.textContent.includes('online');
+
+        const matchQ = !q || name.includes(q);
+        const matchRole = !role || rId === role;
+        let matchStatus = true;
+        if (status === '1')      matchStatus = isOnline;
+        else if (status === 'active') matchStatus = isAct === '1';
+        else if (status === '0') matchStatus = isAct === '0';
+
+        const show = matchQ && matchRole && matchStatus;
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+
+    // Cập nhật empty state
+    const empty = document.getElementById('emptyRow');
+    const emptyMsg = document.getElementById('noResultMsg');
+    if (empty) empty.style.display = visible === 0 ? '' : 'none';
+    if (emptyMsg) emptyMsg.style.display = visible === 0 ? '' : 'none';
+}
+
+function clearFilter() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('roleFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    applyFilter();
+}
+
+// Realtime: gõ là lọc ngay
+document.getElementById('searchInput').addEventListener('input', applyFilter);
+document.getElementById('roleFilter').addEventListener('change', applyFilter);
+document.getElementById('statusFilter').addEventListener('change', applyFilter);
+
+// Enter trong search box cũng lọc
+document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); applyFilter(); }
+});
 </script>
 </body>
 </html>

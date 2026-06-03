@@ -25,6 +25,7 @@ public class LogoutServlet extends HttpServlet {
             if ("staff".equals(from) || (staffAcc != null && adminAcc == null)) {
                 redirectUrl = "/staff-login";
             }
+            if (staffAcc != null) com.medivault.util.SessionTracker.logout(staffAcc.getAccountId());
             session.invalidate();
         }
 

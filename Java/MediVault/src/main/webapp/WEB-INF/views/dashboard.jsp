@@ -966,24 +966,24 @@
             </div>
 
             <!-- Filter row -->
-            <form method="get" action="${pageContext.request.contextPath}/dashboard" id="filterForm">
+            <form method="get" action="${pageContext.request.contextPath}/dashboard" id="filterForm" onsubmit="return false">
                 <div class="filter-row">
                     <div class="filter-search">
                         <input type="text" name="q" placeholder="Tìm theo tên, email…"
                                value="${param.q}">
                     </div>
-                    <select name="role" class="filter-select" onchange="document.getElementById('filterForm').submit()">
+                    <select name="role" class="filter-select" onchange="filterTable()">
                         <option value="">Tất cả chức vụ</option>
                         <option value="1" ${param.role == '1' ? 'selected' : ''}>🛡️ Admin</option>
                         <option value="2" ${param.role == '2' ? 'selected' : ''}>💊 Dược sĩ</option>
                         <option value="3" ${param.role == '3' ? 'selected' : ''}>📦 Thủ kho</option>
                     </select>
-                    <select name="status" class="filter-select" onchange="document.getElementById('filterForm').submit()">
+                    <select name="status" class="filter-select" onchange="filterTable()">
                         <option value="">Tất cả trạng thái</option>
                         <option value="1" ${param.status == '1' ? 'selected' : ''}>Đang hoạt động</option>
                         <option value="0" ${param.status == '0' ? 'selected' : ''}>Đã khóa</option>
                     </select>
-                    <button type="submit" class="filter-chip">🔍 Lọc</button>
+                    <button type="button" class="filter-chip" onclick="filterTable()">🔍 Lọc</button>
                     <a href="${pageContext.request.contextPath}/dashboard" class="filter-chip">✕ Xóa lọc</a>
                 </div>
             </form>
@@ -1171,6 +1171,22 @@
             }
         }, 600);
     });
+</script>
+
+<script>
+function filterTable() {
+  const q      = (document.querySelector('#filterForm [name="q"]')?.value || '').toLowerCase();
+  const role   = document.querySelector('#filterForm [name="role"]')?.value || '';
+  const status = document.querySelector('#filterForm [name="status"]')?.value || '';
+  document.querySelectorAll('tbody tr[data-name]').forEach(row => {
+    const show = (!q      || (row.dataset.name  || '').toLowerCase().includes(q))
+              && (!role   || row.dataset.role   === role)
+              && (!status || row.dataset.status === status);
+    row.style.display = show ? '' : 'none';
+  });
+}
+document.querySelector('#filterForm [name="q"]')
+  ?.addEventListener('input', filterTable);
 </script>
 
 </body>

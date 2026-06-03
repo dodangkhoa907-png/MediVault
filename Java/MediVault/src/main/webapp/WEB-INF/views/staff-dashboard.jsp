@@ -246,7 +246,7 @@ body{display:flex;background:var(--surface);color:var(--navy)}
   <% if (acc.getRoleId() == 2) { %>
   <nav class="nav-section">
     <div class="nav-label">Bán hàng</div>
-    <a href="#" class="nav-item"><span>🛒</span> Bán thuốc (POS)</a>
+    <a href="${pageContext.request.contextPath}/pos" class="nav-item"><span>🛒</span> Bán thuốc (POS)</a>
     <a href="#" class="nav-item"><span>🧾</span> Hóa đơn của tôi</a>
     <a href="#" class="nav-item"><span>👥</span> Khách hàng</a>
   </nav>

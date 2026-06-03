@@ -65,6 +65,7 @@ public class StaffLoginServlet extends HttpServlet {
         if (old != null) old.invalidate();
         HttpSession session = req.getSession(true);
         session.setAttribute("staffAccount", account);
+        com.medivault.util.SessionTracker.login(account.getAccountId());
         session.removeAttribute("adminAccount"); // Đảm bảo không còn adminAccount thừa
         accountDAO.updateLastLogin(account.getAccountId());
         resp.sendRedirect(req.getContextPath() + "/staff-dashboard");
