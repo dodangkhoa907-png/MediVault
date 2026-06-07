@@ -76,6 +76,7 @@ public class ValidationUtil {
     public static List<String> validateAccount(String username, String fullName,
                                                String email, String phone,
                                                String citizenId, String position) {
+
         List<String> errors = new ArrayList<>();
 
         // Username
@@ -99,14 +100,21 @@ public class ValidationUtil {
             errors.add("Số điện thoại không hợp lệ (phải là 10 số, bắt đầu bằng 03x-09x).");
 
         // CMND/CCCD
-        if (!isValidCitizenId(citizenId))
-            errors.add("CMND/CCCD phải là 9 hoặc 12 chữ số.");
+        if (notBlank(citizenId)) {
+            String cid = citizenId.trim();
+            if (cid.length() != 9 && cid.length() != 12) {
+                errors.add("Số CMND/CCCD không hợp lệ (phải có đúng 9 hoặc 12 chữ số).");
+            } else if (!cid.matches("^[0-9]+$")) {
+                errors.add("Số CMND/CCCD chỉ được chứa các ký tự số.");
+            }
+        }
 
         // Chức vụ
-        if (!maxLength(position, 100))
-            errors.add("Chức vụ không quá 100 ký tự.");
-
+        if (notBlank(position) && position.trim().length() > 100) {
+            errors.add("Chức vụ nhập vào quá dài (không được vượt quá 100 ký tự).");
+        }
         return errors;
+
     }
 
     /**
