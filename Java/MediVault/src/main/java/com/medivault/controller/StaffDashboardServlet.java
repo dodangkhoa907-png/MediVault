@@ -24,24 +24,42 @@ public class StaffDashboardServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        HttpSession session = req.getSession(false);
-        Account staffAcc = session != null
-                ? (Account) session.getAttribute("staffAccount") : null;
+        // uid LUÔN lấy từ URL param — KHÔNG lưu vào session vì session chia sẻ giữa tabs
+        String uid = req.getParameter("uid");
+        if (uid == null || uid.isEmpty()) {
+            resp.sendRedirect(req.getContextPath() + "/staff-login");
+            return;
+        }
 
-        // Không có staffAccount → về staff-login
+        HttpSession session = req.getSession(false);
+        if (session == null) { resp.sendRedirect(req.getContextPath() + "/staff-login"); return; }
+
+        Account staffAcc = (Account) session.getAttribute("staffAccount_" + uid);
         if (staffAcc == null) {
             resp.sendRedirect(req.getContextPath() + "/staff-login");
             return;
         }
-        // Admin vô nhầm → về admin dashboard
         if (staffAcc.getRoleId() == 1) {
             resp.sendRedirect(req.getContextPath() + "/dashboard");
             return;
         }
+        // Truyền uid xuống JSP để gắn vào links
+        req.setAttribute("staffUid", uid);
 
         req.setAttribute("totalMedicines", medicineDAO.countAll());
         req.setAttribute("lowStockCount",  medicineDAO.countLowStock());
         req.setAttribute("expiryCount",    batchesDAO.findExpiringSoon().size());
         req.getRequestDispatcher("/WEB-INF/views/staff-dashboard.jsp").forward(req, resp);
     }
+    // Lấy staff uid từ cookie mv_staff_uid
+    private String getStaffUid(jakarta.servlet.http.HttpServletRequest req) {
+        jakarta.servlet.http.Cookie[] cookies = req.getCookies();
+        if (cookies != null) {
+            for (jakarta.servlet.http.Cookie ck : cookies) {
+                if ("mv_staff_uid".equals(ck.getName())) return ck.getValue();
+            }
+        }
+        return "";
+    }
+
 }

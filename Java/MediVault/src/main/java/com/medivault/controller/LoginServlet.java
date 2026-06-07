@@ -64,13 +64,11 @@ public class LoginServlet extends HttpServlet {
             return;
         }
 
-        // OK → chỉ set "adminAccount", KHÔNG set "account" chung
-        // (nếu set "account" thì staff login sau sẽ thấy key này → nhảy vào admin dashboard!)
-        HttpSession old = req.getSession(false);
-        if (old != null) old.invalidate();
+        // OK → chỉ set "adminAccount"
+        // KHÔNG invalidate session vì admin và staff có thể chạy song song
         HttpSession session = req.getSession(true);
         session.setAttribute("adminAccount", account);
-        session.removeAttribute("staffAccount"); // Đảm bảo không còn staffAccount thừa
+        session.removeAttribute("staffAccount"); // đảm bảo không dính staffAccount
         accountDAO.updateLastLogin(account.getAccountId());
         resp.sendRedirect(req.getContextPath() + "/dashboard");
     }

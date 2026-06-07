@@ -1,9 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%
-    // Chỉ redirect nếu đã đăng nhập là NHÂN VIÊN (staffAccount)
-    // KHÔNG dùng "account" chung vì admin cũng set key đó → sẽ bị đụng!
     com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("staffAccount");
-    if (acc != null) { response.sendRedirect(request.getContextPath() + "/dashboard"); return; }
+    if (acc != null) { response.sendRedirect(request.getContextPath() + "/staff-dashboard"); return; }
     String error = (String) request.getAttribute("error");
 %>
 <!DOCTYPE html>
@@ -13,225 +11,231 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>MediVault — Đăng nhập nhân viên</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --purple-deep:#1E1035;--purple-mid:#2D1B69;--purple:#4C1D95;
-  --purple-main:#7C3AED;--purple-light:#A78BFA;--purple-soft:#EDE9FE;
-  --surface:#F5F3FF;--white:#fff;--muted:#6B7280;
-  --sky:#46CAF4;--gold:#FCDA7C;
+  --ink:#12082A;--dp:#1C0F3F;--mid:#2D1B69;--main:#6D28D9;
+  --light:#A78BFA;--soft:#EDE9FE;--surface:#F5F3FF;
+  --white:#fff;--muted:#7C6FAA;--border:#D8D0F5;
+  --cyan:#5EEAD4;--gold:#FCD34D;
 }
-html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif}
-body{display:grid;grid-template-columns:1fr 1fr;min-height:100vh;background:var(--purple-deep);overflow:hidden}
+html,body{height:100%;font-family:'Outfit',sans-serif}
+body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(--ink);overflow:hidden}
 
-/* ── LEFT PANEL ── */
 .left{
-  position:relative;display:flex;flex-direction:column;justify-content:center;
-  padding:60px 64px;
-  background:linear-gradient(145deg,var(--purple-deep) 0%,var(--purple-mid) 50%,var(--purple) 100%);
+  position:relative;display:flex;flex-direction:column;justify-content:space-between;
+  padding:52px 56px 44px;
+  background:linear-gradient(160deg,#0E0520 0%,#1C0F3F 40%,#4C1D95 100%);
   overflow:hidden;
 }
-
-/* Decorative circles */
-.left::before{content:'';position:absolute;top:-120px;right:-80px;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(167,139,250,.18) 0%,transparent 70%);pointer-events:none}
-.left::after{content:'';position:absolute;bottom:-100px;left:-60px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.2) 0%,transparent 70%);pointer-events:none}
-
-/* Cross marks */
-.cross{position:absolute;color:rgba(167,139,250,.25);font-size:18px;font-weight:300;user-select:none}
-
-/* Logo */
-.logo{display:flex;align-items:center;gap:14px;margin-bottom:52px;position:relative;z-index:1}
-.logo-box{
-  width:56px;height:56px;border-radius:16px;
-  background:rgba(167,139,250,.15);
-  border:1.5px solid rgba(167,139,250,.35);
-  display:flex;align-items:center;justify-content:center;font-size:26px;
+.left-mesh{
+  position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 60% at 75% 15%,rgba(167,139,250,.14) 0%,transparent 70%),
+             radial-gradient(ellipse 50% 50% at 25% 85%,rgba(109,40,217,.22) 0%,transparent 70%);
 }
-.logo-name{font-family:'Nunito',sans-serif;font-size:26px;font-weight:900;color:#fff;letter-spacing:-.5px}
-.logo-name span{color:var(--purple-light)}
-.logo-tag{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
+.left-grid{position:absolute;inset:0;pointer-events:none;opacity:.05}
+.left-grid svg{width:100%;height:100%}
 
-.left-headline{position:relative;z-index:1;margin-bottom:32px}
-.left-headline h1{
-  font-family:'Nunito',sans-serif;font-size:40px;font-weight:900;
-  color:#fff;line-height:1.15;letter-spacing:-.5px;margin-bottom:12px;
+.bubble{
+  position:absolute;border-radius:50%;
+  background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.12);
+  animation:pulseBubble 6s ease-in-out infinite;
 }
-.left-headline h1 span{color:var(--purple-light)}
-.left-headline p{font-size:15px;color:rgba(255,255,255,.6);line-height:1.6;max-width:360px}
+.bubble-1{width:280px;height:280px;top:-80px;right:-60px;animation-delay:0s}
+.bubble-2{width:180px;height:180px;bottom:10%;right:5%;animation-delay:2s}
+.bubble-3{width:120px;height:120px;bottom:30%;right:30%;animation-delay:4s}
+@keyframes pulseBubble{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.05);opacity:.8}}
 
-.feature-pills{display:flex;flex-wrap:wrap;gap:8px;position:relative;z-index:1}
 .pill{
-  display:flex;align-items:center;gap:6px;
-  padding:7px 14px;border-radius:20px;
-  background:rgba(255,255,255,.07);
-  border:1px solid rgba(167,139,250,.25);
-  font-size:12.5px;font-weight:500;color:rgba(255,255,255,.7);
-}
-.pill::before{content:'●';font-size:6px;color:var(--purple-light)}
-
-.fpt-badge{
-  position:absolute;top:28px;right:28px;
-  font-size:11px;font-weight:700;letter-spacing:1.5px;
-  color:var(--purple-light);text-transform:uppercase;
+  display:inline-flex;align-items:center;gap:7px;
+  border-radius:20px;border:1px solid rgba(167,139,250,.2);
+  background:rgba(167,139,250,.07);
+  padding:6px 13px;font-size:11.5px;font-weight:500;color:rgba(255,255,255,.55);
 }
 
-/* ── RIGHT PANEL ── */
+.brand{}
+.brand-badge{
+  display:inline-flex;align-items:center;gap:10px;
+  background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.22);
+  border-radius:14px;padding:10px 18px;margin-bottom:36px;
+}
+.brand-badge-icon{
+  width:36px;height:36px;border-radius:9px;
+  background:linear-gradient(135deg,var(--light),var(--main));
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+  box-shadow:0 4px 16px rgba(109,40,217,.35);
+}
+.brand-name{font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:#fff;letter-spacing:-.2px}
+.brand-tag{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:1px;text-transform:uppercase}
+
+.left-headline{margin-bottom:auto;position:relative;z-index:2}
+.left-headline h1{
+  font-family:'DM Serif Display',serif;font-size:50px;font-weight:400;
+  color:#fff;line-height:1.12;letter-spacing:-.3px;margin-bottom:16px;
+}
+.left-headline h1 em{color:var(--light);font-style:italic}
+.left-headline p{font-size:14.5px;color:rgba(255,255,255,.48);line-height:1.65;max-width:340px}
+
+.left-footer{position:relative;z-index:2;display:flex;gap:20px;flex-wrap:wrap}
+.feat{display:flex;align-items:center;gap:7px;color:rgba(255,255,255,.38);font-size:12px;font-weight:500}
+.feat-dot{width:5px;height:5px;border-radius:50%;background:var(--light);opacity:.7}
+
+/* Right panel */
 .right{
-  background:var(--surface);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:48px 64px;position:relative;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  padding:48px 52px;background:var(--surface);position:relative;overflow:hidden;
 }
-
-.form-wrap{width:100%;max-width:400px}
-
-.role-tag{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:4px 12px;border-radius:20px;
-  background:rgba(124,58,237,.1);
-  font-size:12px;font-weight:700;letter-spacing:.5px;
-  color:var(--purple-main);margin-bottom:20px;
+.right::before{
+  content:'';position:absolute;top:-80px;right:-80px;
+  width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle,rgba(109,40,217,.07) 0%,transparent 70%);
 }
-.role-tag::before{content:'●';font-size:7px}
+.form-box{width:100%;max-width:380px}
 
-.form-title{font-family:'Nunito',sans-serif;font-size:38px;font-weight:900;color:var(--purple-deep);letter-spacing:-.8px;line-height:1.1;margin-bottom:8px}
-.form-sub{font-size:14px;color:var(--muted);margin-bottom:36px}
+.form-eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  background:#fff;border:1px solid var(--border);
+  border-radius:20px;padding:5px 14px;margin-bottom:24px;
+  font-size:12px;font-weight:600;color:var(--main);letter-spacing:.3px;
+}
+.form-eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--light)}
 
-/* Error */
-.error-box{
+.form-title{font-family:'DM Serif Display',serif;font-size:30px;color:var(--ink);margin-bottom:6px}
+.form-sub{font-size:14px;color:var(--muted);margin-bottom:32px;line-height:1.5}
+
+.err-box{
+  display:flex;align-items:flex-start;gap:10px;padding:12px 16px;
   background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;
-  padding:12px 16px;margin-bottom:20px;
-  display:flex;align-items:center;gap:8px;
-  font-size:13.5px;color:#DC2626;font-weight:500;
+  margin-bottom:20px;font-size:13px;color:#991B1B;font-weight:500;
+  animation:shake .4s ease;
 }
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
 
-/* Input group */
-.input-group{margin-bottom:20px}
-.input-label{font-size:13px;font-weight:600;color:var(--purple-deep);margin-bottom:8px;display:block}
-.input-wrap{position:relative}
-.input-wrap input{
-  width:100%;height:52px;
-  padding:0 46px 0 46px;
-  border:1.5px solid #DDD6FE;border-radius:12px;
-  font-size:14px;font-family:inherit;color:var(--purple-deep);
-  background:#fff;outline:none;transition:border-color .2s,box-shadow .2s;
+.field{margin-bottom:18px}
+.field-label{font-size:12.5px;font-weight:600;color:var(--dp);letter-spacing:.3px;margin-bottom:7px;display:block}
+.field-wrap{position:relative}
+.field-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none;opacity:.5}
+.field-input{
+  width:100%;padding:12px 16px 12px 42px;
+  background:#fff;border:1.5px solid var(--border);border-radius:12px;
+  font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;color:var(--ink);
+  outline:none;transition:all .2s;
 }
-.input-wrap input:focus{border-color:var(--purple-main);box-shadow:0 0 0 3px rgba(124,58,237,.1)}
-.input-wrap input::placeholder{color:#C4B5FD}
-.input-icon{
-  position:absolute;left:14px;top:50%;transform:translateY(-50%);
-  font-size:16px;pointer-events:none;
-}
+.field-input:focus{border-color:var(--light);box-shadow:0 0 0 3px rgba(167,139,250,.14)}
+.field-input::placeholder{color:var(--muted);font-weight:400}
 .pw-toggle{
   position:absolute;right:14px;top:50%;transform:translateY(-50%);
-  background:none;border:none;cursor:pointer;font-size:16px;color:#C4B5FD;
-  padding:0;line-height:1;
+  background:none;border:none;cursor:pointer;font-size:16px;opacity:.45;
+  transition:opacity .2s;padding:0;
 }
-.pw-toggle:hover{color:var(--purple-main)}
+.pw-toggle:hover{opacity:.8}
 
-/* Submit */
-.submit-btn{
-  width:100%;height:52px;
-  background:linear-gradient(135deg,var(--purple-main),var(--purple));
+.btn-submit{
+  width:100%;padding:13px;margin-top:8px;
+  background:linear-gradient(135deg,var(--main),#5B21B6);
   color:#fff;border:none;border-radius:12px;
-  font-size:15px;font-weight:700;font-family:inherit;
-  cursor:pointer;transition:all .2s;
-  display:flex;align-items:center;justify-content:center;gap:8px;
-  margin-bottom:20px;
+  font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;
+  cursor:pointer;letter-spacing:.3px;transition:all .22s;
+  position:relative;overflow:hidden;
 }
-.submit-btn:hover{background:linear-gradient(135deg,#6D28D9,#3B0764);transform:translateY(-1px);box-shadow:0 8px 24px rgba(124,58,237,.35)}
-.submit-btn:active{transform:translateY(0)}
-
-/* Divider */
-.divider{display:flex;align-items:center;gap:12px;margin-bottom:20px;color:var(--muted);font-size:12.5px}
-.divider::before,.divider::after{content:'';flex:1;height:1px;background:#DDD6FE}
-
-/* Admin link */
+.btn-submit::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent,rgba(255,255,255,.08))}
+.btn-submit:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(109,40,217,.35)}
+.btn-submit:active{transform:translateY(0)}
 
 
-.form-footer{text-align:center;margin-top:20px;font-size:12px;color:var(--muted)}
-.form-footer a{color:var(--purple-main);font-weight:600;text-decoration:none}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.form-box>*{animation:fadeUp .45s ease both}
+.form-box>*:nth-child(1){animation-delay:.05s}
+.form-box>*:nth-child(2){animation-delay:.1s}
+.form-box>*:nth-child(3){animation-delay:.15s}
+.form-box>*:nth-child(4){animation-delay:.2s}
+.form-box>*:nth-child(5){animation-delay:.3s}
 </style>
 </head>
 <body>
 
-<!-- ── LEFT ── -->
 <div class="left">
-  <span class="cross" style="top:14%;left:8%">+</span>
-  <span class="cross" style="top:28%;right:15%">+</span>
-  <span class="cross" style="bottom:22%;left:18%">+</span>
-  <span class="cross" style="bottom:12%;right:10%">+</span>
-  <span class="fpt-badge">FPT POLYTECHNIC</span>
+  <div class="left-mesh"></div>
+  <div class="left-grid">
+    <svg viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice">
+      <defs><pattern id="g" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M60 0H0M0 0V60" stroke="white" stroke-width=".5" fill="none"/></pattern></defs>
+      <rect width="600" height="800" fill="url(#g)"/>
+    </svg>
+  </div>
 
-  <div class="logo">
-    <div class="logo-box">💊</div>
-    <div>
-      <div class="logo-name">Medi<span>Vault</span></div>
-      <div class="logo-tag">Staff Portal</div>
+  <div class="bubble bubble-1"></div>
+  <div class="bubble bubble-2"></div>
+  <div class="bubble bubble-3"></div>
+
+  <div class="brand">
+    <div class="brand-badge">
+      <div class="brand-badge-icon">💊</div>
+      <div>
+        <div class="brand-name">MediVault</div>
+        <div class="brand-tag">Nhân viên</div>
+      </div>
     </div>
   </div>
 
   <div class="left-headline">
-    <h1>Cổng nhân viên<br><span>nhà thuốc</span></h1>
-    <p>Truy cập hệ thống bán hàng, quản lý kho và theo dõi ca làm việc của bạn.</p>
+    <h1>Không gian<br>làm việc<br><em>của bạn</em></h1>
+    <p>Đăng nhập để truy cập ca làm việc, quầy bán hàng và thông tin cá nhân của bạn.</p>
   </div>
 
-  <div class="feature-pills">
-    <div class="pill">Bán thuốc POS</div>
-    <div class="pill">Quản lý kho</div>
-    <div class="pill">Ca làm việc</div>
-    <div class="pill">Hóa đơn</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+    <div class="pill">💊 Bán hàng POS</div>
+    <div class="pill">📦 Quản lý kho</div>
+    <div class="pill">📅 Ca làm việc</div>
+  </div>
+  <div class="left-footer">
+    <div class="feat"><div class="feat-dot"></div>Bán hàng POS</div>
+    <div class="feat"><div class="feat-dot"></div>Theo dõi ca làm</div>
+    <div class="feat"><div class="feat-dot"></div>Hồ sơ cá nhân</div>
   </div>
 </div>
 
-<!-- ── RIGHT ── -->
 <div class="right">
-  <div class="form-wrap">
-    <div class="role-tag">NHÂN VIÊN</div>
-    <h1 class="form-title">Đăng Nhập</h1>
-    <p class="form-sub">Truy cập hệ thống nhà thuốc của bạn</p>
+  <div class="form-box">
+    <div class="form-eyebrow">Nhân viên</div>
+    <div class="form-title">Đăng nhập</div>
+    <div class="form-sub">Chào mừng! Nhập thông tin tài khoản nhân viên của bạn để bắt đầu ca làm việc.</div>
 
     <% if (error != null) { %>
-    <div class="error-box">❌ <%= error %></div>
+    <div class="err-box">⚠️ <%= error %></div>
     <% } %>
 
     <form method="post" action="${pageContext.request.contextPath}/staff-login" autocomplete="off">
-
-      <div class="input-group">
-        <label class="input-label">Tên đăng nhập</label>
-        <div class="input-wrap">
-          <span class="input-icon">👤</span>
-          <input type="text" name="username" placeholder="Nhập tên đăng nhập" autocomplete="username" required>
+      <div class="field">
+        <label class="field-label">Tên đăng nhập</label>
+        <div class="field-wrap">
+          <span class="field-icon">👤</span>
+          <input type="text" name="username" class="field-input" placeholder="Nhập tên đăng nhập" required autofocus>
         </div>
       </div>
-
-      <div class="input-group">
-        <label class="input-label">Mật khẩu</label>
-        <div class="input-wrap">
-          <span class="input-icon">🔒</span>
-          <input type="password" name="password" id="pwField" placeholder="Nhập mật khẩu" autocomplete="current-password" required>
-          <button type="button" class="pw-toggle" onclick="togglePw()" id="pwBtn">👁</button>
+      <div class="field">
+        <label class="field-label">Mật khẩu</label>
+        <div class="field-wrap">
+          <span class="field-icon">🔑</span>
+          <input type="password" id="pw" name="password" class="field-input" placeholder="Nhập mật khẩu" required>
+          <button type="button" class="pw-toggle" id="togglePw">👁</button>
         </div>
       </div>
-
-      <button type="submit" class="submit-btn">
-        Đăng nhập nhân viên →
-      </button>
+      <button type="submit" class="btn-submit">Bắt đầu ca làm việc →</button>
     </form>
 
-    <div class="form-footer">
-      MediVault v1.0 &nbsp;·&nbsp; <a href="#">Quên mật khẩu?</a>
-    </div>
+
   </div>
 </div>
 
 <script>
-function togglePw() {
-    const f = document.getElementById('pwField');
-    const b = document.getElementById('pwBtn');
-    if (f.type === 'password') { f.type = 'text'; b.textContent = '🙈'; }
-    else { f.type = 'password'; b.textContent = '👁'; }
-}
+document.getElementById('togglePw').addEventListener('click',function(){
+  const pw=document.getElementById('pw');
+  const isText=pw.type==='text';
+  pw.type=isText?'password':'text';
+  this.textContent=isText?'👁':'🙈';
+});
 </script>
 </body>
 </html>

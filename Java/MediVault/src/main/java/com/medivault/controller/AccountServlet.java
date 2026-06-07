@@ -80,6 +80,20 @@ public class AccountServlet extends HttpServlet {
                 req.setAttribute("deletedAccounts", dao.findDeleted());
                 req.getRequestDispatcher("/WEB-INF/views/account-trash.jsp").forward(req, resp);
             }
+            case "online-status" -> {
+                resp.setContentType("application/json;charset=UTF-8");
+                java.util.Set<Integer> idsSet = com.medivault.util.SessionTracker.getOnlineSet();
+                java.io.PrintWriter pw = resp.getWriter();
+                pw.print("{\"onlineCount\":" + idsSet.size() + ",\"onlineIds\":[");
+                boolean isFirst = true;
+                for (Integer oid : idsSet) {
+                    if (!isFirst) pw.print(",");
+                    pw.print("\"" + oid + "\"");
+                    isFirst = false;
+                }
+                pw.print("]}");
+                return;
+            }
             default -> showList(req, resp);
         }
     }
@@ -106,6 +120,17 @@ public class AccountServlet extends HttpServlet {
             errors.add("Email '" + email + "' đã được dùng.");
 
         if (!errors.isEmpty()) {
+            // Giữ lại toàn bộ form data đã nhập → account-form.jsp dùng để pre-populate
+            Account draft = new Account();
+            draft.setUsername(username != null ? username : "");
+            draft.setFullName(fullName != null ? fullName : "");
+            draft.setEmail(email != null ? email : "");
+            draft.setPhone(phone != null ? phone : "");
+            draft.setCitizenId(citizenId != null ? citizenId : "");
+            draft.setPosition(position != null ? position : "");
+            draft.setRoleId(roleStr != null ? Integer.parseInt(roleStr) : 2);
+            // Không set passwordHash (không re-populate password vì bảo mật)
+            req.setAttribute("account", draft);  // JSP dùng để fill lại form
             req.setAttribute("errors", errors);
             req.setAttribute("errorMsg", ValidationUtil.joinErrors(errors));
             req.getRequestDispatcher("/WEB-INF/views/account-form.jsp").forward(req, resp);

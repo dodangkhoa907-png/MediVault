@@ -41,7 +41,12 @@ public class DashboardServlet extends HttpServlet {
         req.setAttribute("expiredCount",   batchesDAO.findExpired().size());
         List<Account> allAccounts = accountDAO.findAllStaff();
         req.setAttribute("accounts",       allAccounts);
-        req.setAttribute("onlineStaff", com.medivault.util.SessionTracker.getOnlineSet());
+        // Convert Set<Integer> → Set<String> để JSTL EL contains() hoạt động đúng
+        java.util.Set<String> onlineStaffStr = new java.util.HashSet<>();
+        for (Integer id : com.medivault.util.SessionTracker.getOnlineSet()) {
+            onlineStaffStr.add(String.valueOf(id));
+        }
+        req.setAttribute("onlineStaff", onlineStaffStr);
         req.setAttribute("activeAccounts", allAccounts.stream()
                 .filter(Account::isActive).count());
         req.getRequestDispatcher("/WEB-INF/views/dashboard.jsp").forward(req, resp);

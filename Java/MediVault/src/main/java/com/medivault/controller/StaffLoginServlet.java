@@ -16,12 +16,17 @@ public class StaffLoginServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        // Dùng getSession(false) — KHÔNG tạo session mới nếu chưa có
+        // Kiểm tra session staffUid — nếu đã login thì redirect luôn
         HttpSession s = req.getSession(false);
-        Account acc = s != null ? (Account) s.getAttribute("staffAccount") : null;
-        if (acc != null) {
-            resp.sendRedirect(req.getContextPath() + "/staff-dashboard");
-            return;
+        if (s != null) {
+            String staffUid = (String) s.getAttribute("staffUid");
+            if (staffUid != null && !staffUid.isEmpty()) {
+                Account acc = (Account) s.getAttribute("staffAccount_" + staffUid);
+                if (acc != null) {
+                    resp.sendRedirect(req.getContextPath() + "/staff-dashboard?uid=" + staffUid);
+                    return;
+                }
+            }
         }
         req.getRequestDispatcher("/WEB-INF/views/staff-login.jsp").forward(req, resp);
     }
@@ -59,15 +64,16 @@ public class StaffLoginServlet extends HttpServlet {
             return;
         }
 
-        // OK → invalidate session cũ trước (có thể còn "adminAccount" thừa từ lần thử login admin)
-        // rồi tạo session mới sạch chỉ chứa "staffAccount"
-        HttpSession old = req.getSession(false);
-        if (old != null) old.invalidate();
+        // OK → lưu với key riêng "staffAccount_{id}"
         HttpSession session = req.getSession(true);
-        session.setAttribute("staffAccount", account);
-        com.medivault.util.SessionTracker.login(account.getAccountId());
-        session.removeAttribute("adminAccount"); // Đảm bảo không còn adminAccount thừa
-        accountDAO.updateLastLogin(account.getAccountId());
-        resp.sendRedirect(req.getContextPath() + "/staff-dashboard");
+        int staffId = account.getAccountId();
+        session.setAttribute("staffAccount_" + staffId, account);
+
+        // login() tạo token mới → tab cũ cùng account sẽ bị kick khi ping
+        String token = com.medivault.util.SessionTracker.login(staffId);
+        accountDAO.updateLastLogin(staffId);
+
+        // Redirect kèm uid + token → tab lưu vào sessionStorage, dùng để ping
+        resp.sendRedirect(req.getContextPath() + "/staff-dashboard?uid=" + staffId + "&token=" + token);
     }
 }

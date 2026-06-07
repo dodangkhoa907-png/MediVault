@@ -19,7 +19,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>MediVault POS — Bán hàng</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -31,7 +31,7 @@
   --mid:calc(100vw - 64px - 420px);
   --right:420px;
 }
-html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden}
+html,body{height:100%;font-family:'Outfit',sans-serif;overflow:hidden}
 body{display:flex;background:var(--surface);color:var(--navy)}
 
 /* ── MINI SIDEBAR ── */
@@ -62,7 +62,7 @@ body{display:flex;background:var(--surface);color:var(--navy)}
   height:56px;background:#fff;border-bottom:1px solid var(--border);
   display:flex;align-items:center;padding: 20px;gap:12px;flex-shrink:0;
 }
-.pos-title{font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;color:var(--navy);flex-shrink:0}
+.pos-title{font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:var(--navy);flex-shrink:0}
 .search-wrap{flex:1;max-width:340px;position:relative}
 .search-wrap input{
   width:100%;height:36px;padding:0 36px 0 14px;
@@ -116,14 +116,14 @@ body{display:flex;background:var(--surface);color:var(--navy)}
 .mb-box{background:rgba(17,76,125,.1);color:var(--blue)}
 .mb-warn{background:rgba(217,119,6,.12);color:var(--gold)}
 
-.med-name{font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;color:var(--navy);line-height:1.3}
+.med-name{font-family:'Outfit',sans-serif;font-size:13px;font-weight:800;color:var(--navy);line-height:1.3}
 .med-code{font-size:10.5px;color:var(--muted)}
 
 .med-batch{font-size:10.5px;color:var(--muted);background:var(--surface);padding:4px 8px;border-radius:6px}
 .med-batch span{color:var(--navy);font-weight:600}
 
 .med-footer{display:flex;align-items:center;justify-content:space-between;margin-top:2px}
-.med-price{font-family:'Nunito',sans-serif;font-size:15px;font-weight:900;color:var(--blue)}
+.med-price{font-family:'Outfit',sans-serif;font-size:15px;font-weight:900;color:var(--blue)}
 .med-stock{font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px}
 .stock-ok{background:rgba(5,150,105,.1);color:var(--green)}
 .stock-low{background:rgba(217,119,6,.1);color:var(--gold)}
@@ -151,7 +151,7 @@ body{display:flex;background:var(--surface);color:var(--navy)}
   background:linear-gradient(135deg,#101A33,#114C7D);
   display:flex;align-items:center;justify-content:space-between;
 }
-.inv-head-left h3{font-family:'Nunito',sans-serif;font-size:15px;font-weight:900;color:#fff}
+.inv-head-left h3{font-family:'Outfit',sans-serif;font-size:15px;font-weight:900;color:#fff}
 .inv-code{font-size:11px;color:rgba(255,255,255,.5);margin-top:1px}
 .inv-clear{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;padding:5px 10px;border-radius:7px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
 .inv-clear:hover{background:rgba(255,255,255,.25)}
@@ -199,13 +199,13 @@ body{display:flex;background:var(--surface);color:var(--navy)}
 .inv-item-rm:hover{color:var(--red)}
 
 /* Subtotal per item */
-.inv-item-sub{font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;color:var(--navy);white-space:nowrap;min-width:70px;text-align:right}
+.inv-item-sub{font-family:'Outfit',sans-serif;font-size:13px;font-weight:800;color:var(--navy);white-space:nowrap;min-width:70px;text-align:right}
 
 /* Summary */
 .inv-summary{padding:12px 18px;border-top:1.5px solid var(--border);background:#FAFCFF}
 .sum-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:6px;color:var(--muted)}
 .sum-row.total{color:var(--navy);font-size:15px;font-weight:800;margin-top:8px;padding-top:8px;border-top:1.5px solid var(--border)}
-.sum-row.total .sum-val{font-family:'Nunito',sans-serif;font-size:18px;font-weight:900;color:var(--blue)}
+.sum-row.total .sum-val{font-family:'Outfit',sans-serif;font-size:18px;font-weight:900;color:var(--blue)}
 .discount-input{width:100px;height:28px;padding:0 8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;text-align:right}
 .discount-input:focus{border-color:var(--sky)}
 
@@ -238,7 +238,7 @@ body{display:flex;background:var(--surface);color:var(--navy)}
   flex:2;height:44px;border-radius:10px;border:none;
   background:linear-gradient(135deg,var(--blue),#0d3d63);
   color:#fff;font-size:14px;font-weight:800;
-  cursor:pointer;font-family:'Nunito',sans-serif;
+  cursor:pointer;font-family:'Outfit',sans-serif;
   display:flex;align-items:center;justify-content:center;gap:8px;
   transition:all .2s;letter-spacing:-.2px;
 }
@@ -260,11 +260,11 @@ body{display:flex;background:var(--surface);color:var(--navy)}
 }
 @keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
 .sm-icon{font-size:52px;margin-bottom:16px;display:block}
-.sm-title{font-family:'Nunito',sans-serif;font-size:22px;font-weight:900;color:var(--navy);margin-bottom:6px}
+.sm-title{font-family:'DM Serif Display',serif;font-size:22px;font-weight:400;color:var(--navy);margin-bottom:6px}
 .sm-code{font-size:13px;color:var(--muted);margin-bottom:20px}
-.sm-total{font-family:'Nunito',sans-serif;font-size:32px;font-weight:900;color:var(--blue);margin-bottom:24px}
+.sm-total{font-family:'DM Serif Display',serif;font-size:32px;font-weight:400;color:var(--blue);margin-bottom:24px}
 .sm-btns{display:flex;gap:10px}
-.sm-btn-new{flex:1;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--blue),#0d3d63);color:#fff;border:none;font-size:14px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;transition:all .2s}
+.sm-btn-new{flex:1;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--blue),#0d3d63);color:#fff;border:none;font-size:14px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s}
 .sm-btn-new:hover{box-shadow:0 6px 20px rgba(17,76,125,.4)}
 .sm-btn-print{flex:1;height:44px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--navy);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
 .sm-btn-print:hover{border-color:var(--blue);color:var(--blue)}

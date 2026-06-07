@@ -305,4 +305,23 @@ public class AccountDAO implements IAccountDAO {
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
+
+    /** Force delete — xóa vĩnh viễn NGAY (không cần đủ 30 ngày, dành cho admin) */
+    public boolean forceDelete(int accountId) {
+        String sql = "DELETE FROM Accounts WHERE AccountID = ? AND IsDeleted = 1";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, accountId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+    public boolean updateAvatar(int accountId, String path) {
+        String sql = "UPDATE Accounts SET FaceEnrollmentPath = ? WHERE AccountID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, path);
+            ps.setInt(2, accountId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
 }
