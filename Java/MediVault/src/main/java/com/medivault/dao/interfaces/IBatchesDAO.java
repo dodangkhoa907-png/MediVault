@@ -9,4 +9,6 @@ public interface IBatchesDAO {
     List<Batches> findExpiringSoon();
     List<Batches> findExpired();
     boolean insert(Batches b);
+    int getTotalQuantity(int medicineId);
+    Batches findNearestExpiry(int medicineId);
 }

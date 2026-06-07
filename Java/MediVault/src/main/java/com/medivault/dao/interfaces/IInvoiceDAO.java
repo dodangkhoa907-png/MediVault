@@ -14,6 +14,16 @@ public interface IInvoiceDAO {
     boolean complete(int invoiceId, BigDecimal discountAmount);
     boolean cancel(int invoiceId);
 
+    /**
+     * Thực hiện toàn bộ flow bán hàng trong 1 transaction:
+     * createPending → addItemByFIFO (từng SP) → complete
+     * Nếu bất kỳ bước nào lỗi → rollback toàn bộ
+     * @return invoiceId nếu thành công, -1 nếu lỗi
+     */
+    int completeSaleTransaction(int accountId, Integer customerId,
+                                String paymentMethod, BigDecimal discount,
+                                int[] medicineIds, int[] quantities);
+
     // Truy vấn
     Invoice findById(int id);
     Invoice findByCode(String invoiceCode);

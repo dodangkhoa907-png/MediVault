@@ -30,6 +30,10 @@ public class ValidationUtil {
     private static final Pattern CITIZEN_ID =
             Pattern.compile("^[0-9]{9}$|^[0-9]{12}$");
 
+    // Mật khẩu: ít nhất 6 ký tự, KHÔNG chứa khoảng trắng bất kỳ
+    private static final Pattern PASSWORD =
+            Pattern.compile("^[^\\s]{6,}$");
+
     // ── Public validators ────────────────────────────────────
 
     /** Kiểm tra email hợp lệ */
@@ -62,9 +66,9 @@ public class ValidationUtil {
         return s == null || s.trim().length() <= max;
     }
 
-    /** Kiểm tra mật khẩu: ít nhất 6 ký tự */
+    /** Kiểm tra mật khẩu: ít nhất 6 ký tự, không chứa khoảng trắng */
     public static boolean isValidPassword(String pw) {
-        return pw != null && pw.length() >= 6;
+        return pw != null && PASSWORD.matcher(pw).matches();
     }
 
     // ── Validate Account (dùng trước insert/update) ─────────

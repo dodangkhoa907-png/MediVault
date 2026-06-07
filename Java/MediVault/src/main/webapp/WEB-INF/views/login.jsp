@@ -2,499 +2,236 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediVault — Đăng nhập</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediVault — Đăng nhập</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0B1628;--navy:#0F2645;--blue:#1558A8;--cyan:#3ABDE0;
+  --surface:#EEF3FA;--white:#fff;--muted:#7A90B0;--border:#D0DCF0;
+  --gold:#F5C842;--red:#E03B3B;
+}
+html,body{height:100%;font-family:'Outfit',sans-serif}
+body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(--ink);overflow:hidden}
 
-        :root {
-            --navy-deep:  #101A33;
-            --navy-mid:   #1D2D50;
-            --blue-main:  #114C7D;
-            --cyan-light: #5EC3E4;
-            --sky-blue:   #46CAF4;
-            --surface:    #F2F2F2;
-            --gold:       #FCDA7C;
-            --white:      #FFFFFF;
-            --text-muted: #8fa3c8;
-        }
+/* ── LEFT ── */
+.left{
+  position:relative;display:flex;flex-direction:column;justify-content:space-between;
+  padding:52px 56px 44px;
+  background:linear-gradient(160deg,#071022 0%,#0F2645 40%,#1558A8 100%);
+  overflow:hidden;
+}
+.left-mesh{
+  position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 60% at 80% 20%,rgba(58,189,224,.12) 0%,transparent 70%),
+             radial-gradient(ellipse 50% 50% at 20% 80%,rgba(21,88,168,.2) 0%,transparent 70%);
+}
+/* Animated grid lines */
+.left-grid{position:absolute;inset:0;pointer-events:none;opacity:.06}
+.left-grid svg{width:100%;height:100%}
 
-        html, body {
-            height: 100%;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-        }
+/* Floating pills */
+.pill{
+  display:inline-flex;align-items:center;gap:7px;
+  border-radius:20px;border:1px solid rgba(58,189,224,.2);
+  background:rgba(58,189,224,.06);
+  padding:6px 13px;font-size:11.5px;font-weight:500;color:rgba(255,255,255,.55);
+}
+.pill-icon{font-size:13px}
 
-        body {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            min-height: 100vh;
-            background: var(--navy-deep);
-            overflow: hidden;
-        }
+.brand{position:relative;z-index:2}
+.brand-badge{
+  display:inline-flex;align-items:center;gap:10px;
+  background:rgba(58,189,224,.1);border:1px solid rgba(58,189,224,.25);
+  border-radius:14px;padding:10px 18px;margin-bottom:36px;
+}
+.brand-badge-icon{
+  width:36px;height:36px;border-radius:9px;
+  background:linear-gradient(135deg,var(--cyan),var(--blue));
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+  box-shadow:0 4px 16px rgba(58,189,224,.3);
+}
+.brand-name{font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:#fff;letter-spacing:-.2px}
+.brand-tag{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:1px;text-transform:uppercase}
 
-        /* ── LEFT PANEL ─────────────────────────────── */
-        .left-panel {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 60px 64px;
-            background: linear-gradient(145deg, var(--navy-deep) 0%, var(--navy-mid) 50%, var(--blue-main) 100%);
-            overflow: hidden;
-        }
+.left-headline{position:relative;z-index:2;margin-bottom:auto}
+.left-headline h1{
+  font-family:'DM Serif Display',serif;font-size:52px;font-weight:400;
+  color:#fff;line-height:1.1;letter-spacing:-.5px;margin-bottom:16px;
+}
+.left-headline h1 em{color:var(--cyan);font-style:italic}
+.left-headline p{font-size:15px;color:rgba(255,255,255,.5);line-height:1.6;max-width:360px}
 
-        /* Decorative cross marks */
-        .cross {
-            position: absolute;
-            color: rgba(94,195,228,.15);
-            font-size: 48px;
-            font-weight: 300;
-            line-height: 1;
-            user-select: none;
-            animation: floatCross 6s ease-in-out infinite;
-        }
-        .cross:nth-child(1) { top: 8%;  left: 12%;  animation-delay: 0s; font-size: 56px; }
-        .cross:nth-child(2) { top: 18%; right: 8%;  animation-delay: 1.5s; font-size: 32px; }
-        .cross:nth-child(3) { bottom: 22%; left: 8%; animation-delay: 3s; font-size: 40px; }
-        .cross:nth-child(4) { bottom: 10%; right: 15%; animation-delay: 4.5s; font-size: 24px; }
-        .cross:nth-child(5) { top: 45%; left: 5%;  animation-delay: 2s; font-size: 20px; }
+.left-footer{position:relative;z-index:2;display:flex;gap:24px}
+.feat{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.4);font-size:12.5px;font-weight:500}
+.feat-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);opacity:.6}
 
-        @keyframes floatCross {
-            0%, 100% { transform: translateY(0) rotate(0deg); opacity: .15; }
-            50%       { transform: translateY(-12px) rotate(5deg); opacity: .3; }
-        }
+/* ── RIGHT ── */
+.right{
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  padding:48px 52px;background:var(--surface);position:relative;overflow:hidden;
+}
+.right::before{
+  content:'';position:absolute;top:-100px;right:-100px;
+  width:350px;height:350px;border-radius:50%;
+  background:radial-gradient(circle,rgba(21,88,168,.07) 0%,transparent 70%);
+  pointer-events:none;
+}
+.form-box{width:100%;max-width:380px}
+.form-eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  background:#fff;border:1px solid var(--border);
+  border-radius:20px;padding:5px 14px;margin-bottom:24px;
+  font-size:12px;font-weight:600;color:var(--blue);letter-spacing:.3px;
+}
+.form-eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--cyan)}
+.form-title{font-family:'DM Serif Display',serif;font-size:30px;color:var(--ink);margin-bottom:6px}
+.form-sub{font-size:14px;color:var(--muted);margin-bottom:32px;line-height:1.5}
 
-        /* Glow orb */
-        .glow-orb {
-            position: absolute;
-            width: 320px; height: 320px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(70,202,244,.18) 0%, transparent 70%);
-            bottom: -60px; right: -60px;
-            pointer-events: none;
-        }
+/* Error */
+.err-box{
+  display:flex;align-items:flex-start;gap:10px;padding:12px 16px;
+  background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;
+  margin-bottom:20px;font-size:13px;color:#991B1B;font-weight:500;
+  animation:shake .4s ease;
+}
+.err-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
 
-        .brand-logo {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 52px;
-            animation: slideUp .6s ease both;
-        }
+/* Fields */
+.field{margin-bottom:18px}
+.field-label{font-size:12.5px;font-weight:600;color:var(--navy);letter-spacing:.3px;margin-bottom:7px;display:block}
+.field-wrap{position:relative}
+.field-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none;opacity:.5}
+.field-input{
+  width:100%;padding:12px 16px 12px 42px;
+  background:#fff;border:1.5px solid var(--border);border-radius:12px;
+  font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;color:var(--ink);
+  outline:none;transition:all .2s;
+}
+.field-input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(58,189,224,.12)}
+.field-input::placeholder{color:var(--muted);font-weight:400}
+.pw-toggle{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;font-size:16px;opacity:.45;
+  transition:opacity .2s;padding:0;
+}
+.pw-toggle:hover{opacity:.8}
 
-        .logo-icon {
-            width: 64px; height: 64px;
-            background: linear-gradient(135deg, var(--sky-blue), var(--cyan-light));
-            border-radius: 18px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 28px;
-            box-shadow: 0 8px 32px rgba(70,202,244,.35);
-        }
+/* Submit */
+.btn-submit{
+  width:100%;padding:13px;margin-top:8px;
+  background:linear-gradient(135deg,var(--blue),#0D3F85);
+  color:#fff;border:none;border-radius:12px;
+  font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;
+  cursor:pointer;letter-spacing:.3px;
+  transition:all .22s;position:relative;overflow:hidden;
+}
+.btn-submit::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,transparent,rgba(255,255,255,.08));
+}
+.btn-submit:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(21,88,168,.35)}
+.btn-submit:active{transform:translateY(0)}
 
-        .logo-text h1 {
-            font-family: 'Nunito', sans-serif;
-            font-size: 28px;
-            font-weight: 900;
-            color: var(--white);
-            letter-spacing: -.5px;
-        }
+/* Staff link */
 
-        .logo-text span {
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--sky-blue);
-        }
 
-        .brand-headline {
-            margin-bottom: 40px;
-            animation: slideUp .6s .1s ease both;
-        }
-
-        .brand-headline h2 {
-            font-family: 'Nunito', sans-serif;
-            font-size: 42px;
-            font-weight: 900;
-            color: var(--white);
-            line-height: 1.1;
-            letter-spacing: -1px;
-            margin-bottom: 12px;
-        }
-
-        .brand-headline h2 em {
-            font-style: normal;
-            color: var(--sky-blue);
-        }
-
-        .brand-headline p {
-            font-size: 15px;
-            color: var(--text-muted);
-            line-height: 1.6;
-            max-width: 340px;
-        }
-
-        .feature-pills {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            animation: slideUp .6s .2s ease both;
-        }
-
-        .pill {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 7px 14px;
-            background: rgba(255,255,255,.07);
-            border: 1px solid rgba(255,255,255,.1);
-            border-radius: 100px;
-            font-size: 12px;
-            font-weight: 500;
-            color: rgba(255,255,255,.75);
-            backdrop-filter: blur(8px);
-        }
-
-        .pill-dot {
-            width: 6px; height: 6px;
-            border-radius: 50%;
-            background: var(--sky-blue);
-            box-shadow: 0 0 8px var(--sky-blue);
-        }
-
-        /* ── RIGHT PANEL ─────────────────────────────── */
-        .right-panel {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 48px 56px;
-            background: var(--surface);
-            position: relative;
-        }
-
-        .right-panel::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--blue-main), var(--sky-blue), var(--cyan-light));
-        }
-
-        .login-card {
-            width: 100%;
-            max-width: 400px;
-            animation: slideUp .5s .15s ease both;
-        }
-
-        .login-card-header {
-            margin-bottom: 36px;
-        }
-
-        .role-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 5px 12px 5px 8px;
-            background: #EBF5FB;
-            border-radius: 100px;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            color: var(--blue-main);
-            margin-bottom: 16px;
-        }
-
-        .role-badge-dot {
-            width: 7px; height: 7px;
-            border-radius: 50%;
-            background: var(--sky-blue);
-            box-shadow: 0 0 6px var(--sky-blue);
-        }
-
-        .login-card-header h2 {
-            font-family: 'Nunito', sans-serif;
-            font-size: 36px;
-            font-weight: 900;
-            color: var(--navy-deep);
-            letter-spacing: -1px;
-            margin-bottom: 6px;
-        }
-
-        .login-card-header p {
-            font-size: 14px;
-            color: #6b7f9e;
-        }
-
-        /* Alert */
-        .alert-error {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            padding: 12px 16px;
-            background: #FEF2F2;
-            border: 1px solid #fecaca;
-            border-radius: 10px;
-            margin-bottom: 24px;
-            font-size: 13px;
-            color: #b91c1c;
-            animation: shake .4s ease;
-        }
-
-        @keyframes shake {
-            0%,100% { transform: translateX(0); }
-            25% { transform: translateX(-6px); }
-            75% { transform: translateX(6px); }
-        }
-
-        /* Form */
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--navy-mid);
-            margin-bottom: 7px;
-            letter-spacing: .2px;
-        }
-
-        .input-wrap {
-            position: relative;
-        }
-
-        .input-icon {
-            position: absolute;
-            left: 14px; top: 50%;
-            transform: translateY(-50%);
-            font-size: 16px;
-            color: #94a3b8;
-            pointer-events: none;
-            transition: color .2s;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 12px 16px 12px 42px;
-            background: var(--white);
-            border: 1.5px solid #dde4ef;
-            border-radius: 10px;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 14px;
-            color: var(--navy-deep);
-            outline: none;
-            transition: border-color .2s, box-shadow .2s;
-        }
-
-        .form-input::placeholder { color: #b0bcd0; }
-
-        .form-input:focus {
-            border-color: var(--sky-blue);
-            box-shadow: 0 0 0 3px rgba(70,202,244,.15);
-        }
-
-        .form-input:focus + .input-icon-right,
-        .input-wrap:focus-within .input-icon { color: var(--blue-main); }
-
-        /* Password toggle */
-        .input-icon-right {
-            position: absolute;
-            right: 14px; top: 50%;
-            transform: translateY(-50%);
-            background: none; border: none;
-            cursor: pointer;
-            font-size: 16px;
-            color: #94a3b8;
-            padding: 4px;
-            transition: color .2s;
-        }
-        .input-icon-right:hover { color: var(--blue-main); }
-        .form-input.has-right { padding-right: 44px; }
-
-        /* Submit btn */
-        .btn-login {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, var(--blue-main), #1a6baa);
-            color: var(--white);
-            border: none;
-            border-radius: 12px;
-            font-family: 'Nunito', sans-serif;
-            font-size: 16px;
-            font-weight: 800;
-            letter-spacing: .3px;
-            cursor: pointer;
-            margin-top: 8px;
-            transition: transform .15s, box-shadow .2s, background .2s;
-            box-shadow: 0 4px 20px rgba(17,76,125,.35);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .btn-login:hover {
-            background: linear-gradient(135deg, #0d3d6b, var(--blue-main));
-            transform: translateY(-1px);
-            box-shadow: 0 6px 28px rgba(17,76,125,.45);
-        }
-
-        .btn-login:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 12px rgba(17,76,125,.3);
-        }
-
-        .btn-login .arrow {
-            transition: transform .2s;
-        }
-        .btn-login:hover .arrow { transform: translateX(4px); }
-
-        .login-footer {
-            text-align: center;
-            margin-top: 28px;
-            font-size: 11.5px;
-            color: #94a3b8;
-        }
-
-        .login-footer strong { color: var(--blue-main); }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        /* FPT Poly badge */
-        .poly-badge {
-            position: absolute;
-            top: 24px; right: 28px;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            color: #e85d14;
-            text-transform: uppercase;
-        }
-
-        /* Responsive */
-        @media (max-width: 860px) {
-            body { grid-template-columns: 1fr; }
-            .left-panel { display: none; }
-            .right-panel { padding: 40px 24px; background: var(--navy-deep); }
-            .login-card-header h2 { color: var(--white); }
-            .login-card-header p { color: var(--text-muted); }
-            .form-label { color: rgba(255,255,255,.85); }
-            .form-input { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.15); color: var(--white); }
-            .form-input::placeholder { color: rgba(255,255,255,.3); }
-            .role-badge { background: rgba(70,202,244,.15); color: var(--sky-blue); }
-        }
-    </style>
+/* Entrance animations */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.form-box{animation:fadeUp .5s ease both}
+.form-eyebrow{animation:fadeUp .5s .05s ease both}
+.form-title{animation:fadeUp .5s .1s ease both}
+.form-sub{animation:fadeUp .5s .15s ease both}
+.field:nth-child(1){animation:fadeUp .5s .2s ease both}
+.field:nth-child(2){animation:fadeUp .5s .25s ease both}
+.btn-submit{animation:fadeUp .5s .3s ease both}
+</style>
 </head>
 <body>
 
-<!-- ── LEFT PANEL ───────────────────────────────────────── -->
-<div class="left-panel">
-    <span class="cross">+</span>
-    <span class="cross">+</span>
-    <span class="cross">+</span>
-    <span class="cross">+</span>
-    <span class="cross">+</span>
-    <div class="glow-orb"></div>
+<div class="left">
+  <div class="left-mesh"></div>
+  <div class="left-grid">
+    <svg viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice">
+      <defs><pattern id="g" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M60 0H0M0 0V60" stroke="white" stroke-width=".5" fill="none"/></pattern></defs>
+      <rect width="600" height="800" fill="url(#g)"/>
+    </svg>
+  </div>
 
-    <div class="brand-logo">
-        <div class="logo-icon">💊</div>
-        <div class="logo-text">
-            <h1>MediVault</h1>
-            <span>Admin Console</span>
-        </div>
+  <div class="brand">
+    <div class="brand-badge">
+      <div class="brand-badge-icon">🏥</div>
+      <div>
+        <div class="brand-name">MediVault</div>
+        <div class="brand-tag">Admin Console</div>
+      </div>
     </div>
+  </div>
 
-    <div class="brand-headline">
-        <h2>Hệ thống quản lý<br>nhà thuốc <em>thông minh</em></h2>
-        <p>Quản trị toàn quyền · Tạo &amp; phân quyền nhân viên · Theo dõi kho hàng tự động</p>
-    </div>
+  <div class="left-headline">
+    <h1>Quản trị<br>nhà thuốc<br><em>thông minh</em></h1>
+    <p>Hệ thống quản lý dược phẩm tích hợp — kiểm soát tồn kho, bán hàng và nhân sự trong một nền tảng.</p>
+  </div>
 
-    <div class="feature-pills">
-        <div class="pill"><div class="pill-dot"></div> Quản lý tài khoản</div>
-        <div class="pill"><div class="pill-dot"></div> Báo cáo doanh thu</div>
-        <div class="pill"><div class="pill-dot"></div> Kho thuốc FIFO</div>
-        <div class="pill"><div class="pill-dot"></div> Cấp thuốc tự động</div>
-    </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+    <div class="pill"><span class="pill-icon">💊</span> Dược phẩm</div>
+    <div class="pill"><span class="pill-icon">🔒</span> Bảo mật OTP</div>
+    <div class="pill"><span class="pill-icon">📊</span> Báo cáo</div>
+  </div>
+  <div class="left-footer">
+    <div class="feat"><div class="feat-dot"></div>Quản lý kho thời gian thực</div>
+    <div class="feat"><div class="feat-dot"></div>Phân quyền đa cấp</div>
+    <div class="feat"><div class="feat-dot"></div>Bảo mật OTP</div>
+  </div>
 </div>
 
-<!-- ── RIGHT PANEL ──────────────────────────────────────── -->
-<div class="right-panel">
-    <span class="poly-badge">FPT Polytechnic</span>
+<div class="right">
+  <div class="form-box">
+    <div class="form-eyebrow">Quản trị viên</div>
+    <div class="form-title">Đăng nhập</div>
+    <div class="form-sub">Chào mừng trở lại! Nhập thông tin tài khoản Admin để tiếp tục.</div>
 
-    <div class="login-card">
-        <div class="login-card-header">
-            <div class="role-badge">
-                <div class="role-badge-dot"></div>
-                ADMIN
-            </div>
-            <h2>Đăng Nhập</h2>
-            <p>Truy cập bảng điều khiển quản trị</p>
-        </div>
-
-        <!-- Thông báo lỗi -->
-        <% if (request.getAttribute("error") != null) { %>
-        <div class="alert-error">
-            <span>⚠️</span>
-            <span><%= request.getAttribute("error") %></span>
-        </div>
-        <% } %>
-
-        <!-- Form -->
-        <form method="post" action="${pageContext.request.contextPath}/login" autocomplete="off">
-
-            <div class="form-group">
-                <label class="form-label" for="username">Tên đăng nhập</label>
-                <div class="input-wrap">
-                    <span class="input-icon">👤</span>
-                    <input type="text" id="username" name="username"
-                           class="form-input"
-                           placeholder="Nhập tên đăng nhập"
-                           required autofocus autocomplete="username">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="password">Mật khẩu</label>
-                <div class="input-wrap">
-                    <span class="input-icon">🔒</span>
-                    <input type="password" id="password" name="password"
-                           class="form-input has-right"
-                           placeholder="Nhập mật khẩu"
-                           required autocomplete="current-password">
-                    <button type="button" class="input-icon-right" id="togglePw" aria-label="Hiện/ẩn mật khẩu">👁</button>
-                </div>
-            </div>
-
-            <button type="submit" class="btn-login">
-                Đăng nhập quản trị
-                <span class="arrow">→</span>
-            </button>
-
-        </form>
-
-        <div class="login-footer">
-            MediVault v1.0 · <strong>Secure Admin Access</strong>
-        </div>
+    <% if (request.getAttribute("error") != null) { %>
+    <div class="err-box">
+      <span class="err-icon">⚠️</span>
+      <span><%= request.getAttribute("error") %></span>
     </div>
+    <% } %>
+
+    <form method="post" action="${pageContext.request.contextPath}/login" autocomplete="off">
+      <div class="field">
+        <label class="field-label">Tên đăng nhập</label>
+        <div class="field-wrap">
+          <span class="field-icon">👤</span>
+          <input type="text" name="username" class="field-input" placeholder="Nhập tên đăng nhập" required autofocus>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Mật khẩu</label>
+        <div class="field-wrap">
+          <span class="field-icon">🔑</span>
+          <input type="password" id="pw" name="password" class="field-input" placeholder="Nhập mật khẩu" required>
+          <button type="button" class="pw-toggle" id="togglePw">👁</button>
+        </div>
+      </div>
+      <button type="submit" class="btn-submit">Đăng nhập →</button>
+    </form>
+
+
+  </div>
 </div>
 
 <script>
-    document.getElementById('togglePw').addEventListener('click', function () {
-        const pw = document.getElementById('password');
-        const isHidden = pw.type === 'password';
-        pw.type = isHidden ? 'text' : 'password';
-        this.textContent = isHidden ? '🙈' : '👁';
-    });
+document.getElementById('togglePw').addEventListener('click', function(){
+  const pw = document.getElementById('pw');
+  const isText = pw.type === 'text';
+  pw.type = isText ? 'password' : 'text';
+  this.textContent = isText ? '👁' : '🙈';
+});
 </script>
-
 </body>
 </html>

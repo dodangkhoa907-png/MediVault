@@ -1,6 +1,9 @@
 package com.medivault.controller;
 
+import com.medivault.dao.interfaces.IAccountDAO;
 import com.medivault.dao.AccountDAO;
+import com.medivault.util.PasswordUtil;
+import com.medivault.util.ValidationUtil;
 import com.medivault.entity.Account;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -17,8 +20,13 @@ public class OtpServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        // Nếu không có pendingAccount → về login
-        if (req.getSession().getAttribute("pendingAccount") == null) {
+        HttpSession session = req.getSession();
+
+        boolean hasPending       = session.getAttribute("pendingAccount")       != null;
+        boolean hasPendingNew    = session.getAttribute("pendingNewAccount")    != null;
+        boolean hasPendingUpdate = session.getAttribute("pendingUpdateAccount") != null;
+
+        if (!hasPending && !hasPendingNew && !hasPendingUpdate) {
             resp.sendRedirect(req.getContextPath() + "/login");
             return;
         }
@@ -29,12 +37,80 @@ public class OtpServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         HttpSession session = req.getSession();
-        String inputOtp  = req.getParameter("otp");
-        String savedOtp  = (String) session.getAttribute("otpCode");
-        Long   expiry    = (Long)   session.getAttribute("otpExpiry");
-        Account pending  = (Account) session.getAttribute("pendingAccount");
 
-        // Hết hạn
+        // ── CASE 3: Xác nhận thay đổi email/phone tài khoản ──
+        Account pendingUpdate = (Account) session.getAttribute("pendingUpdateAccount");
+        if (pendingUpdate != null) {
+            String inputOtp = req.getParameter("otpCode");
+            String savedOtp = (String) session.getAttribute("updateAccOtpCode");
+            Long   expiry   = (Long)   session.getAttribute("updateAccOtpExpiry");
+            String newPw    = (String) session.getAttribute("updateAccNewPassword");
+
+            if (expiry == null || System.currentTimeMillis() > expiry) {
+                session.removeAttribute("pendingUpdateAccount");
+                session.removeAttribute("updateAccOtpCode");
+                session.removeAttribute("updateAccOtpExpiry");
+                session.removeAttribute("updateAccNewPassword");
+                resp.sendRedirect(req.getContextPath() + "/accounts?msg=otp-expired");
+                return;
+            }
+
+            if (savedOtp == null || !savedOtp.equals(inputOtp)) {
+                req.setAttribute("error", "Mã OTP không đúng!");
+                req.getRequestDispatcher("/WEB-INF/views/otp-verify.jsp").forward(req, resp);
+                return;
+            }
+
+            // OTP đúng → lưu thay đổi
+            IAccountDAO accDao = new AccountDAO();
+            accDao.update(pendingUpdate);
+            if (ValidationUtil.notBlank(newPw) && ValidationUtil.isValidPassword(newPw)) {
+                accDao.resetPassword(pendingUpdate.getAccountId(), PasswordUtil.hashPassword(newPw));
+            }
+            session.removeAttribute("pendingUpdateAccount");
+            session.removeAttribute("updateAccOtpCode");
+            session.removeAttribute("updateAccOtpExpiry");
+            session.removeAttribute("updateAccNewPassword");
+            resp.sendRedirect(req.getContextPath() + "/accounts?msg=updated");
+            return;
+        }
+
+        // ── CASE 1: Xác nhận tạo tài khoản nhân viên ──
+        Account pendingNew = (Account) session.getAttribute("pendingNewAccount");
+        if (pendingNew != null) {
+            String inputOtp = req.getParameter("otpCode");
+            String savedOtp = (String) session.getAttribute("newAccOtpCode");
+            Long   expiry   = (Long)   session.getAttribute("newAccOtpExpiry");
+
+            if (expiry == null || System.currentTimeMillis() > expiry) {
+                session.removeAttribute("pendingNewAccount");
+                session.removeAttribute("newAccOtpCode");
+                session.removeAttribute("newAccOtpExpiry");
+                resp.sendRedirect(req.getContextPath() + "/accounts?msg=otp-expired");
+                return;
+            }
+
+            if (savedOtp == null || !savedOtp.equals(inputOtp)) {
+                req.setAttribute("error", "Mã OTP không đúng!");
+                req.getRequestDispatcher("/WEB-INF/views/otp-verify.jsp").forward(req, resp);
+                return;
+            }
+
+            // OTP đúng → save DB
+            new com.medivault.dao.AccountDAO().insert(pendingNew);
+            session.removeAttribute("pendingNewAccount");
+            session.removeAttribute("newAccOtpCode");
+            session.removeAttribute("newAccOtpExpiry");
+            resp.sendRedirect(req.getContextPath() + "/dashboard?msg=created");
+            return;
+        }
+
+        // ── CASE 2: Xác nhận đăng nhập nhân viên ──
+        String inputOtp = req.getParameter("otpCode");
+        String savedOtp = (String) session.getAttribute("otpCode");
+        Long   expiry   = (Long)   session.getAttribute("otpExpiry");
+        Account pending = (Account) session.getAttribute("pendingAccount");
+
         if (expiry == null || System.currentTimeMillis() > expiry) {
             req.setAttribute("error", "Mã OTP đã hết hạn. Vui lòng đăng nhập lại!");
             session.invalidate();
@@ -42,26 +118,30 @@ public class OtpServlet extends HttpServlet {
             return;
         }
 
-        // Sai OTP
         if (savedOtp == null || !savedOtp.equals(inputOtp)) {
             req.setAttribute("error", "Mã OTP không đúng!");
             req.getRequestDispatcher("/WEB-INF/views/otp-verify.jsp").forward(req, resp);
             return;
         }
 
-        // OTP đúng → xác thực hoàn tất
+        // OTP đúng → đăng nhập hoàn tất
         session.removeAttribute("otpCode");
         session.removeAttribute("otpExpiry");
         session.removeAttribute("pendingAccount");
-        session.setAttribute("account", pending);
-        session.setAttribute("roleId",  pending.getRoleId());
 
-        new AccountDAO().updateLastLogin(pending.getAccountId());
+        // Set đúng key theo role — KHÔNG dùng "account" chung nữa
+        if (pending.getRoleId() == 1) {
+            session.setAttribute("adminAccount", pending);
+        } else {
+            session.setAttribute("staffAccount", pending);
+        }
+
+        ((IAccountDAO) new com.medivault.dao.AccountDAO()).updateLastLogin(pending.getAccountId());
 
         switch (pending.getRoleId()) {
-            case 1 -> resp.sendRedirect(req.getContextPath() + "/dashboard?view=admin");
-            case 2 -> resp.sendRedirect(req.getContextPath() + "/dashboard?view=manager");
-            default -> resp.sendRedirect(req.getContextPath() + "/dashboard?view=staff");
+            case 1 -> resp.sendRedirect(req.getContextPath() + "/dashboard");
+            case 2 -> resp.sendRedirect(req.getContextPath() + "/dashboard");
+            default -> resp.sendRedirect(req.getContextPath() + "/dashboard");
         }
     }
 }
