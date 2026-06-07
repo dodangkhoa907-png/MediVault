@@ -20,4 +20,6 @@ public interface IAccountDAO {
     boolean hardDelete(int accountId);
     List<Account> findDeleted();
     List<Account> findAllStaff();
+    boolean forceDelete(int accountId);
+    boolean updateAvatar(int accountId, String path);
 }

@@ -13,21 +13,34 @@ public class LogoutServlet extends HttpServlet {
             throws ServletException, IOException {
 
         HttpSession session = req.getSession(false);
-        // "from" param: trang nào gọi logout → biết nên redirect về đâu
-        // staff pages truyền ?from=staff, admin pages không truyền (mặc định)
         String from = req.getParameter("from");
         String redirectUrl = "/login"; // mặc định về admin login
 
         if (session != null) {
-            Account staffAcc = (Account) session.getAttribute("staffAccount");
             Account adminAcc = (Account) session.getAttribute("adminAccount");
+
+            // Lấy uid từ URL param (tab này mang uid của mình khi bấm logout)
+            String staffUid = req.getParameter("uid");
+            Account staffAcc = null;
+            if (staffUid != null && !staffUid.isEmpty()) {
+                staffAcc = (Account) session.getAttribute("staffAccount_" + staffUid);
+            }
 
             if ("staff".equals(from) || (staffAcc != null && adminAcc == null)) {
                 redirectUrl = "/staff-login";
             }
-            if (staffAcc != null) com.medivault.util.SessionTracker.logout(staffAcc.getAccountId());
-            session.invalidate();
+            if (staffAcc != null) {
+                com.medivault.util.SessionTracker.logout(staffAcc.getAccountId());
+                session.removeAttribute("staffAccount_" + staffAcc.getAccountId());
+            }
+            if (adminAcc != null) {
+                com.medivault.util.SessionTracker.logout(adminAcc.getAccountId());
+                session.removeAttribute("adminAccount");
+            }
         }
+
+        // ── Xóa cả 2 Remember Me cookie khi logout ──
+        AuthFilter.clearAllCookies(resp);
 
         resp.sendRedirect(req.getContextPath() + redirectUrl);
     }

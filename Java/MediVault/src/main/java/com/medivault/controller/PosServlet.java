@@ -11,21 +11,15 @@ import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * PosServlet — Giao diện bán hàng PUBLIC (không cần đăng nhập)
- * Mọi tương tác với DB đều qua Interface, không gọi DAO trực tiếp.
- */
 @WebServlet("/pos")
 public class PosServlet extends HttpServlet {
 
-    // ── Chỉ khai báo qua Interface ──
-    private final IMedicineDAO  medicineDAO  = new MedicineDAO();
-    private final IBatchesDAO   batchesDAO   = new BatchesDAO();
-    private final ICustomerDAO  customerDAO  = new CustomerDAO();
-    private final IInvoiceDAO   invoiceDAO   = new InvoiceDAO();
-    private final ICategoryDAO  categoryDAO  = new CategoryDAO();
+    private final IMedicineDAO medicineDAO = new MedicineDAO();
+    private final IBatchesDAO  batchesDAO  = new BatchesDAO();
+    private final ICustomerDAO customerDAO = new CustomerDAO();
+    private final IInvoiceDAO  invoiceDAO  = new InvoiceDAO();
+    private final ICategoryDAO categoryDAO = new CategoryDAO();
 
-    // AccountID mặc định cho POS không đăng nhập (account "pos" hoặc account hệ thống)
     private static final int POS_ACCOUNT_ID = 1;
 
     @Override
@@ -34,12 +28,10 @@ public class PosServlet extends HttpServlet {
 
         String action = req.getParameter("action");
 
-        // ── API: Tìm kiếm thuốc → JSON ──
         if ("search".equals(action)) {
             String q = req.getParameter("q");
             List<Medicines> list = (q != null && !q.trim().isEmpty())
-                    ? medicineDAO.search(q.trim())
-                    : medicineDAO.findAll();
+                    ? medicineDAO.search(q.trim()) : medicineDAO.findAll();
             resp.setContentType("application/json;charset=UTF-8");
             PrintWriter out = resp.getWriter();
             out.print("[");
@@ -62,7 +54,6 @@ public class PosServlet extends HttpServlet {
             return;
         }
 
-        // ── API: Tìm khách hàng → JSON ──
         if ("find-customer".equals(action)) {
             String phone = req.getParameter("phone");
             Customer c = customerDAO.findByPhone(phone);
@@ -77,7 +68,6 @@ public class PosServlet extends HttpServlet {
             return;
         }
 
-        // ── Serve POS Page ──
         req.setAttribute("categories", categoryDAO.findAll());
         req.setAttribute("medicines",  medicineDAO.findAll());
         req.getRequestDispatcher("/WEB-INF/views/pos.jsp").forward(req, resp);
@@ -94,51 +84,43 @@ public class PosServlet extends HttpServlet {
 
         if ("complete-sale".equals(action)) {
             try {
-                // Lấy accountId từ session nếu có, không thì dùng POS_ACCOUNT_ID
                 HttpSession session = req.getSession(false);
                 Account acc = session != null ? (Account) session.getAttribute("staffAccount") : null;
                 if (acc == null) acc = session != null ? (Account) session.getAttribute("adminAccount") : null;
                 int accountId = acc != null ? acc.getAccountId() : POS_ACCOUNT_ID;
 
-                Integer customerId  = parseIntOrNull(req.getParameter("customerId"));
-                String  payMethod   = req.getParameter("paymentMethod");
-                String  discStr     = req.getParameter("discount");
+                Integer customerId = parseIntOrNull(req.getParameter("customerId"));
+                String  payMethod  = req.getParameter("paymentMethod");
+                String  discStr    = req.getParameter("discount");
                 BigDecimal discount = (discStr != null && !discStr.isEmpty())
                         ? new BigDecimal(discStr) : BigDecimal.ZERO;
 
-                // Bước 1: Tạo PENDING
-                int invoiceId = invoiceDAO.createPending(
-                        accountId, null, customerId, null, payMethod);
-                if (invoiceId < 0) {
-                    out.print("{\"ok\":false,\"msg\":\"Không thể tạo hóa đơn!\"}");
+                String[] medIdStrs = req.getParameterValues("medId[]");
+                String[] qtyStrs   = req.getParameterValues("qty[]");
+
+                if (medIdStrs == null || medIdStrs.length == 0) {
+                    out.print("{\"ok\":false,\"msg\":\"Giỏ hàng trống!\"}");
                     return;
                 }
 
-                // Bước 2: Thêm từng sản phẩm FIFO
-                String[] medIds = req.getParameterValues("medId[]");
-                String[] qtys   = req.getParameterValues("qty[]");
-                if (medIds != null) {
-                    for (int i = 0; i < medIds.length; i++) {
-                        int medId = Integer.parseInt(medIds[i]);
-                        int qty   = Integer.parseInt(qtys[i]);
-                        if (!invoiceDAO.addItemByFIFO(invoiceId, medId, qty)) {
-                            invoiceDAO.cancel(invoiceId);
-                            out.printf("{\"ok\":false,\"msg\":\"Thuốc ID %d không đủ tồn kho!\"}", medId);
-                            return;
-                        }
-                    }
+                int[] medicineIds = new int[medIdStrs.length];
+                int[] quantities  = new int[qtyStrs.length];
+                for (int i = 0; i < medIdStrs.length; i++) {
+                    medicineIds[i] = Integer.parseInt(medIdStrs[i]);
+                    quantities[i]  = Integer.parseInt(qtyStrs[i]);
                 }
 
-                // Bước 3: Hoàn tất
-                if (invoiceDAO.complete(invoiceId, discount)) {
+                int invoiceId = invoiceDAO.completeSaleTransaction(
+                        accountId, customerId, payMethod, discount, medicineIds, quantities);
+
+                if (invoiceId > 0) {
                     Invoice inv = invoiceDAO.findById(invoiceId);
                     out.printf("{\"ok\":true,\"invoiceId\":%d,\"invoiceCode\":\"%s\",\"total\":%s}",
                             invoiceId,
                             inv != null ? esc(inv.getInvoiceCode()) : "",
                             inv != null ? inv.getFinalAmount() : "0");
                 } else {
-                    invoiceDAO.cancel(invoiceId);
-                    out.print("{\"ok\":false,\"msg\":\"Hoàn tất hóa đơn thất bại!\"}");
+                    out.print("{\"ok\":false,\"msg\":\"Thanh toán thất bại! Kiểm tra lại tồn kho.\"}");
                 }
 
             } catch (Exception e) {
@@ -151,6 +133,7 @@ public class PosServlet extends HttpServlet {
         out.print("{\"ok\":false,\"msg\":\"Unknown action\"}");
     }
 
+    // ── Helper methods ──────────────────────────────────────
     private Integer parseIntOrNull(String s) {
         if (s == null || s.trim().isEmpty()) return null;
         try { return Integer.parseInt(s.trim()); } catch (Exception e) { return null; }
