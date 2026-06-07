@@ -1,0 +1,37 @@
+@startuml
+class com.medivault.entity.PointTransaction {
+- int transId
+- int cardId
+- Integer invoiceId
+- String transType
+- int points
+- int balanceBefore
+- int balanceAfter
+- String note
+- LocalDateTime createdAt
+- Integer accountId
+
++ int getTransId()
++ void setTransId(int)
++ int getCardId()
++ void setCardId(int)
++ Integer getInvoiceId()
++ void setInvoiceId(Integer)
++ String getTransType()
++ void setTransType(String)
++ int getPoints()
++ void setPoints(int)
++ int getBalanceBefore()
++ void setBalanceBefore(int)
++ int getBalanceAfter()
++ void setBalanceAfter(int)
++ String getNote()
++ void setNote(String)
++ LocalDateTime getCreatedAt()
++ void setCreatedAt(LocalDateTime)
++ Integer getAccountId()
++ void setAccountId(Integer)
+}
+
+
+@enduml

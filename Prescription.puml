@@ -1,0 +1,30 @@
+@startuml
+class com.medivault.entity.Prescription {
+- int prescriptionId
+- Integer customerId
+- String doctorName
+- String hospitalName
+- LocalDate prescriptionDate
+- String imagePath
+- String notes
+- LocalDateTime createdAt
++ int getPrescriptionId()
++ void setPrescriptionId(int)
++ Integer getCustomerId()
++ void setCustomerId(Integer)
++ String getDoctorName()
++ void setDoctorName(String)
++ String getHospitalName()
++ void setHospitalName(String)
++ LocalDate getPrescriptionDate()
++ void setPrescriptionDate(LocalDate)
++ String getImagePath()
++ void setImagePath(String)
++ String getNotes()
++ void setNotes(String)
++ LocalDateTime getCreatedAt()
++ void setCreatedAt(LocalDateTime)
+}
+
+
+@enduml

@@ -1,0 +1,34 @@
+@startuml
+class com.medivault.entity.MachineCommand {
+- int commandId
+- int detailId
+- String machineSlotCode
+- int quantity
+- String status
+- LocalDateTime createdAt
+- LocalDateTime processedAt
+- int retryCount
+- String errorMessage
+
++ int getCommandId()
++ void setCommandId(int)
++ int getDetailId()
++ void setDetailId(int)
++ String getMachineSlotCode()
++ void setMachineSlotCode(String)
++ int getQuantity()
++ void setQuantity(int)
++ String getStatus()
++ void setStatus(String)
++ LocalDateTime getCreatedAt()
++ void setCreatedAt(LocalDateTime)
++ LocalDateTime getProcessedAt()
++ void setProcessedAt(LocalDateTime)
++ int getRetryCount()
++ void setRetryCount(int)
++ String getErrorMessage()
++ void setErrorMessage(String)
+}
+
+
+@enduml

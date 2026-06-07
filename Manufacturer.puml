@@ -1,0 +1,19 @@
+@startuml
+class com.medivault.entity.Manufacturer {
+- int manufacturerId
+- String name
+- String country
+- String address
+
++ int getManufacturerId()
++ void setManufacturerId(int)
++ String getName()
++ void setName(String)
++ String getCountry()
++ void setCountry(String)
++ String getAddress()
++ void setAddress(String)
+}
+
+
+@enduml
