@@ -373,7 +373,14 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 <% if ("created".equals(msg)) { %><div class="toast toast-ok">✅ Tạo tài khoản thành công!</div>
 <% } else if ("updated".equals(msg)) { %><div class="toast toast-ok">✅ Cập nhật thành công!</div>
 <% } else if ("locked".equals(msg)) { %><div class="toast toast-warn">🔒 Đã khóa tài khoản.</div>
-<% } else if ("unlocked".equals(msg)) { %><div class="toast toast-ok">🔓 Đã mở khóa tài khoản.</div>
+<% } else if ("unlocked".equals(msg)) {
+     String unlockedNameParam = request.getParameter("name");
+%><div class="toast toast-ok" style="flex-direction:column;align-items:flex-start;gap:3px">
+  <div>🔓 Đã mở khóa tài khoản thành công!</div>
+  <% if (unlockedNameParam != null && !unlockedNameParam.isEmpty()) { %>
+  <div style="font-size:12px;opacity:.8">📧 Đã gửi email thông báo đến <strong><%= unlockedNameParam %></strong></div>
+  <% } %>
+</div>
 <% } else if ("deleted".equals(msg)) { %><div class="toast toast-warn">🗑️ Đã chuyển vào thùng rác.</div>
 <% } else if ("nochange".equals(msg)) { %><div class="toast toast-warn">ℹ️ Không có thay đổi nào được ghi nhận.</div>
 <% } else if ("last-admin".equals(msg)) { %><div class="toast toast-warn">⚠️ Không thể thực hiện — đây là Admin duy nhất!</div>

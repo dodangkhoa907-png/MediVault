@@ -357,6 +357,18 @@ CREATE TABLE OrderLogs (
     CONSTRAINT CK_OL_Status CHECK (NewStatus IN ('PENDING','COMPLETED','CANCELLED','REFUNDED'))
 );
 GO
+CREATE TABLE PasswordResetRequests (
+    RequestID     INT IDENTITY(1,1) PRIMARY KEY,
+    AccountID     INT NOT NULL,
+    Token         VARCHAR(64) NOT NULL UNIQUE,  -- UUID link cho admin
+    Status        VARCHAR(20) DEFAULT 'PENDING', -- PENDING, CONFIRMED, COMPLETED, EXPIRED
+    RequestedAt   DATETIME DEFAULT GETDATE(),
+    ExpiresAt     DATETIME NOT NULL,             -- +24h từ lúc tạo
+    ConfirmedAt   DATETIME NULL,
+    CompletedAt   DATETIME NULL,
+    FOREIGN KEY (AccountID) REFERENCES Accounts(AccountID)
+);
+GO
 
 
 /* ================================================================

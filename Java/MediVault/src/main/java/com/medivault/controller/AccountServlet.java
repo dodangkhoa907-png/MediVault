@@ -1,7 +1,10 @@
 package com.medivault.controller;
 
 import com.medivault.dao.AccountDAO;
+import com.medivault.dao.PasswordResetDAO;
 import com.medivault.dao.interfaces.IAccountDAO;
+import com.medivault.dao.interfaces.IPasswordResetDAO;
+import com.medivault.entity.PasswordResetRequest;
 import com.medivault.entity.Account;
 import com.medivault.util.PasswordUtil;
 import com.medivault.util.ValidationUtil;
@@ -24,6 +27,7 @@ import java.time.LocalDate;
 public class AccountServlet extends HttpServlet {
 
     private final IAccountDAO dao = new AccountDAO();
+    private final IPasswordResetDAO resetDAO = new PasswordResetDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -79,6 +83,25 @@ public class AccountServlet extends HttpServlet {
             case "trash" -> {
                 req.setAttribute("deletedAccounts", dao.findDeleted());
                 req.getRequestDispatcher("/WEB-INF/views/account-trash.jsp").forward(req, resp);
+            }
+            case "admin-reset-otp-page" -> {
+                // Kiểm tra session còn đủ dữ liệu không
+                Integer targetId = (Integer) req.getSession().getAttribute("adminResetTargetId");
+                if (targetId == null) { resp.sendRedirect(req.getContextPath() + "/accounts"); return; }
+                Account staffInfo = dao.findById(targetId);
+                req.setAttribute("staffInfo", staffInfo);
+                req.getRequestDispatcher("/WEB-INF/views/admin-otp-confirm.jsp").forward(req, resp);
+            }
+            case "admin-set-password-page" -> {
+                // Hiện trang set mật khẩu mới sau khi OTP đã verified
+                Boolean otpOk = (Boolean) req.getSession().getAttribute("adminResetOtpVerified");
+                Integer tid   = (Integer) req.getSession().getAttribute("adminResetTargetId");
+                if (!Boolean.TRUE.equals(otpOk) || tid == null) {
+                    resp.sendRedirect(req.getContextPath() + "/accounts"); return;
+                }
+                Account staffInfo = dao.findById(tid);
+                req.setAttribute("staffInfo", staffInfo);
+                req.getRequestDispatcher("/WEB-INF/views/admin-set-password.jsp").forward(req, resp);
             }
             case "online-status" -> {
                 resp.setContentType("application/json;charset=UTF-8");
@@ -174,6 +197,18 @@ public class AccountServlet extends HttpServlet {
         if ("create-otp".equals(action)) {
             handleCreateWithOtp(req, resp);
             return;
+        }
+        // ── Admin gửi lại OTP (resend) ──
+        if ("admin-reset-otp-resend".equals(action)) {
+            handleAdminResetOtpResend(req, resp); return;
+        }
+        // ── Admin gửi OTP để xác nhận đặt lại mật khẩu cho staff ──
+        if ("admin-reset-otp".equals(action)) {
+            handleAdminResetOtp(req, resp); return;
+        }
+        // ── Admin xác nhận OTP + set mật khẩu mới ──
+        if ("admin-set-password".equals(action)) {
+            handleAdminSetPassword(req, resp); return;
         }
         // ── AJAX: Gửi OTP xác nhận thay đổi email/phone ──
         if ("send-otp".equals(action)) {
@@ -324,28 +359,48 @@ public class AccountServlet extends HttpServlet {
                 return;
             }
 
-            // ── Đổi mật khẩu: yêu cầu mật khẩu cũ ──
+            // ── Đổi mật khẩu: kiểm tra staff có pending reset không ──
             if (ValidationUtil.notBlank(password) && ValidationUtil.isValidPassword(password)) {
-                if (!ValidationUtil.notBlank(oldPassword)) {
-                    req.setAttribute("errors", java.util.List.of("Vui lòng nhập mật khẩu hiện tại để xác nhận đổi mật khẩu!"));
-                    req.setAttribute("account", a);
-                    req.getRequestDispatcher("/WEB-INF/views/account-form.jsp").forward(req, resp);
-                    return;
+                // Lấy account admin hiện tại
+                Account adminAcc = (Account) req.getSession().getAttribute("adminAccount");
+                String adminEmail = adminAcc != null ? adminAcc.getEmail() : null;
+
+                // Kiểm tra staff có pending reset request không
+                PasswordResetRequest pendingReset = resetDAO.findPendingByAccountId(editId);
+                if (pendingReset == null) pendingReset = resetDAO.findConfirmedByAccountId(editId);
+                boolean isResetFlow = (pendingReset != null);
+
+                // Lưu thông tin tạm vào session để dùng sau OTP
+                HttpSession sess = req.getSession();
+                sess.setAttribute("adminResetTargetId",       editId);
+                sess.setAttribute("adminResetNewPassword",    password);
+                sess.setAttribute("adminResetIsResetFlow",    isResetFlow);
+
+                // Tạo OTP + gửi về GMAIL ADMIN
+                String otp = OtpUtil.generate(6);
+                sess.setAttribute("adminResetOtpCode",   otp);
+                sess.setAttribute("adminResetOtpExpiry", System.currentTimeMillis() + 5 * 60 * 1000L);
+
+                String staffName = current != null ? current.getFullName() : "@" + String.valueOf(editId);
+                String otpEmailBody = "<div style=\"font-family:Arial,sans-serif;max-width:500px;margin:auto;padding:24px\">"
+                        + "<div style=\"background:linear-gradient(135deg,#1558A8,#0D3F85);border-radius:14px;"
+                        + "padding:20px 24px;margin-bottom:20px;color:#fff\">"
+                        + "<h2 style=\"margin:0;font-size:18px\">🔐 Xác nhận đặt lại mật khẩu</h2>"
+                        + "<p style=\"margin:6px 0 0;opacity:.8;font-size:13px\">Nhập mã bên dưới để xác nhận</p></div>"
+                        + "<p style=\"font-size:14px;color:#0B1628\">Bạn vừa yêu cầu đặt lại mật khẩu cho nhân viên "
+                        + "<strong>" + staffName + "</strong>.</p>"
+                        + "<div style=\"background:#F1F5FB;border-radius:12px;padding:20px;text-align:center;margin:20px 0\">"
+                        + "<div style=\"font-size:36px;font-weight:900;letter-spacing:10px;color:#1558A8\">" + otp + "</div>"
+                        + "<p style=\"font-size:12px;color:#7A90B0;margin-top:8px\">Hiệu lực 5 phút</p></div>"
+                        + "<p style=\"font-size:12px;color:#999\">Nếu không phải bạn thực hiện, bỏ qua email này.</p></div>";
+
+                if (adminEmail != null) {
+                    EmailUtil.sendEmail(adminEmail, "[MediVault] OTP xác nhận đặt lại mật khẩu — " + staffName, otpEmailBody);
                 }
-                if (current == null || !PasswordUtil.checkPassword(oldPassword, current.getPasswordHash())) {
-                    req.setAttribute("errors", java.util.List.of("Mật khẩu hiện tại không đúng!"));
-                    req.setAttribute("account", a);
-                    req.getRequestDispatcher("/WEB-INF/views/account-form.jsp").forward(req, resp);
-                    return;
-                }
-                dao.resetPassword(editId, PasswordUtil.hashPassword(password));
-                // Gửi thông báo đổi mật khẩu về email admin
-                try {
-                    String uname = current != null ? current.getUsername() : String.valueOf(editId);
-                    EmailUtil.sendEmail("dodangkhoa907@gmail.com",
-                            "[MediVault] Mat khau tai khoan @" + uname + " da duoc doi",
-                            "Admin da dat lai mat khau cho tai khoan @" + uname + ".\nNeu khong phai ban thuc hien, kiem tra ngay.");
-                } catch (Exception ignored) {}
+
+                // Redirect sang trang OTP xác nhận của admin
+                resp.sendRedirect(req.getContextPath() + "/accounts?action=admin-reset-otp-page");
+                return;
             }
 
             // Bảo vệ: không cho đổi role admin cuối cùng thành non-admin
@@ -470,5 +525,178 @@ public class AccountServlet extends HttpServlet {
         req.setAttribute("account", account);
         req.getRequestDispatcher("/WEB-INF/views/account-form.jsp").forward(req, resp);
     }
+
+    // ── Trang OTP xác nhận đặt lại mật khẩu (GET) ──────────────────
+    // Được gọi từ doGet khi action=admin-reset-otp-page
+    // (Thêm vào doGet case)
+
+    // ── Xử lý admin nhập OTP xác nhận đặt lại mk (POST action=admin-reset-otp) ──
+    private void handleAdminResetOtp(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        java.io.PrintWriter out = resp.getWriter();
+        HttpSession sess = req.getSession(false);
+        if (sess == null) { out.print(json(false, "Session hết hạn!")); return; }
+
+        String inputOtp  = req.getParameter("otp");
+        String storedOtp = (String)  sess.getAttribute("adminResetOtpCode");
+        Long   expiry    = (Long)    sess.getAttribute("adminResetOtpExpiry");
+
+        if (storedOtp == null || expiry == null) {
+            out.print(json(false, "OTP đã hết hạn hoặc không hợp lệ!")); return;
+        }
+        if (System.currentTimeMillis() > expiry) {
+            sess.removeAttribute("adminResetOtpCode");
+            out.print(json(false, "OTP đã hết hạn! Vui lòng thử lại.")); return;
+        }
+        if (!storedOtp.equals(inputOtp != null ? inputOtp.trim() : "")) {
+            out.print(json(false, "Mã OTP không đúng!")); return;
+        }
+
+        // OTP đúng → xóa otp, đánh dấu verified
+        sess.removeAttribute("adminResetOtpCode");
+        sess.removeAttribute("adminResetOtpExpiry");
+        sess.setAttribute("adminResetOtpVerified", true);
+
+        out.print(json(true, "OK"));
+    }
+
+    // ── Xử lý admin submit mật khẩu mới (POST action=admin-set-password) ──
+    private void handleAdminSetPassword(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+        req.setCharacterEncoding("UTF-8");
+        HttpSession sess = req.getSession(false);
+
+        // Kiểm tra OTP đã verified chưa
+        Boolean verified = (Boolean) (sess != null ? sess.getAttribute("adminResetOtpVerified") : null);
+        if (!Boolean.TRUE.equals(verified)) {
+            req.setAttribute("errors", java.util.List.of("Phiên xác nhận OTP không hợp lệ. Vui lòng thử lại."));
+            resp.sendRedirect(req.getContextPath() + "/accounts");
+            return;
+        }
+
+        Integer targetId    = (Integer) sess.getAttribute("adminResetTargetId");
+        Boolean isResetFlow = (Boolean) sess.getAttribute("adminResetIsResetFlow");
+        String newPassword  = req.getParameter("newPassword");
+        String confirmPw    = req.getParameter("confirmPassword");
+
+        if (targetId == null) {
+            resp.sendRedirect(req.getContextPath() + "/accounts");
+            return;
+        }
+
+        Account staff = dao.findById(targetId);
+        if (staff == null) {
+            resp.sendRedirect(req.getContextPath() + "/accounts?msg=error");
+            return;
+        }
+
+        // Validate mật khẩu
+        if (!ValidationUtil.notBlank(newPassword) || !ValidationUtil.isValidPassword(newPassword)) {
+            req.setAttribute("staffInfo", staff);
+            req.setAttribute("error", "Mật khẩu phải có ít nhất 6 ký tự!");
+            req.getRequestDispatcher("/WEB-INF/views/admin-set-password.jsp").forward(req, resp);
+            return;
+        }
+        if (!newPassword.equals(confirmPw)) {
+            req.setAttribute("staffInfo", staff);
+            req.setAttribute("error", "Mật khẩu xác nhận không khớp!");
+            req.getRequestDispatcher("/WEB-INF/views/admin-set-password.jsp").forward(req, resp);
+            return;
+        }
+
+        // Đặt mật khẩu mới
+        dao.resetPassword(targetId, PasswordUtil.hashPassword(newPassword));
+
+        // Hoàn tất reset request (nếu có) — xóa khỏi chuông thông báo
+        resetDAO.complete(targetId);
+
+        // Nếu là reset flow: mở khóa tài khoản
+        if (Boolean.TRUE.equals(isResetFlow)) {
+            if (!staff.isActive()) {
+                dao.toggleActive(targetId);
+            }
+        }
+
+        // Gửi email thông báo cho staff — kèm mật khẩu mới
+        String staffEmail = staff.getEmail();
+        if (staffEmail != null && !staffEmail.isEmpty()) {
+            String emailHtml = "<div style=\"font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px\">"
+                    + "<div style=\"background:linear-gradient(135deg,#059669,#047857);border-radius:14px;"
+                    + "padding:20px 24px;margin-bottom:20px;color:#fff\">"
+                    + "<h2 style=\"margin:0;font-size:18px\">✅ Mật khẩu đã được cập nhật!</h2>"
+                    + (Boolean.TRUE.equals(isResetFlow)
+                    ? "<p style=\"margin:6px 0 0;opacity:.8;font-size:13px\">Tài khoản của bạn đã được mở khóa</p>"
+                    : "<p style=\"margin:6px 0 0;opacity:.8;font-size:13px\">Admin vừa đặt lại mật khẩu cho bạn</p>")
+                    + "</div>"
+                    + "<p style=\"font-size:14px;color:#1C0F3F\">Xin chào <strong>" + staff.getFullName() + "</strong>,</p>"
+                    + "<p style=\"font-size:13.5px;color:#374151;line-height:1.7\">"
+                    + "Mật khẩu tài khoản <strong>@" + staff.getUsername() + "</strong> đã được đặt lại thành công."
+                    + (Boolean.TRUE.equals(isResetFlow) ? " Tài khoản của bạn đã được <strong>mở khóa</strong> và bạn có thể đăng nhập lại ngay." : "")
+                    + "</p>"
+                    // ── Hiện mật khẩu mới rõ ràng ──
+                    + "<div style=\"background:#F0FDF4;border:2px solid #86EFAC;border-radius:12px;padding:18px 20px;margin:18px 0;\">"
+                    + "<p style=\"margin:0 0 8px;font-size:12px;font-weight:700;color:#15803D;letter-spacing:1px;text-transform:uppercase\">🔑 Mật khẩu mới của bạn</p>"
+                    + "<div style=\"font-size:22px;font-weight:900;color:#166534;letter-spacing:3px;font-family:monospace;background:#fff;"
+                    + "border:1px solid #86EFAC;border-radius:8px;padding:10px 16px;display:inline-block\">"
+                    + newPassword
+                    + "</div>"
+                    + "<p style=\"margin:10px 0 0;font-size:12px;color:#D97706;font-weight:600\">"
+                    + "⚠️ Vui lòng <strong>không chia sẻ mật khẩu này</strong> với bất kỳ ai!</p>"
+                    + "<p style=\"margin:6px 0 0;font-size:12px;color:#6B7280\">"
+                    + "💡 Khuyến nghị: Đổi mật khẩu ngay sau khi đăng nhập lần đầu.</p>"
+                    + "</div>"
+                    + "<p style=\"font-size:12px;color:#999\">Nếu bạn không yêu cầu điều này, hãy liên hệ Admin ngay lập tức.</p>"
+                    + "</div>";
+            EmailUtil.sendEmail(staffEmail,
+                    "[MediVault] ✅ Tài khoản @" + staff.getUsername() + " đã được mở khóa — Mật khẩu mới",
+                    emailHtml);
+        }
+
+        // Xóa session tạm
+        sess.removeAttribute("adminResetOtpVerified");
+        sess.removeAttribute("adminResetTargetId");
+        sess.removeAttribute("adminResetNewPassword");
+        sess.removeAttribute("adminResetIsResetFlow");
+
+        String staffName = staff.getFullName() != null ? staff.getFullName() : staff.getUsername();
+        resp.sendRedirect(req.getContextPath() + "/accounts?msg=unlocked&name="
+                + java.net.URLEncoder.encode(staffName, "UTF-8"));
+    }
+
+
+    // ── Gửi lại OTP (resend) ──────────────────────────────────────────
+    private void handleAdminResetOtpResend(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        java.io.PrintWriter out = resp.getWriter();
+        HttpSession sess = req.getSession(false);
+        if (sess == null) { resp.setStatus(400); return; }
+
+        Integer targetId = (Integer) sess.getAttribute("adminResetTargetId");
+        if (targetId == null) { resp.setStatus(400); return; }
+
+        Account admin  = (Account) sess.getAttribute("adminAccount");
+        Account staff  = dao.findById(targetId);
+        if (admin == null || staff == null) { resp.setStatus(400); return; }
+
+        String otp = OtpUtil.generate(6);
+        sess.setAttribute("adminResetOtpCode",   otp);
+        sess.setAttribute("adminResetOtpExpiry", System.currentTimeMillis() + 5 * 60 * 1000L);
+
+        String staffName  = staff.getFullName() != null ? staff.getFullName() : "@" + staff.getUsername();
+        String adminEmail = admin.getEmail();
+        if (adminEmail != null) {
+            String body = "<div style=\"font-family:Arial,sans-serif;max-width:500px;margin:auto;padding:24px\">"
+                    + "<h2 style=\"color:#1558A8\">🔐 OTP mới — Đặt lại mật khẩu</h2>"
+                    + "<p>Nhân viên: <strong>" + staffName + "</strong></p>"
+                    + "<div style=\"background:#F1F5FB;border-radius:12px;padding:20px;text-align:center;margin:16px 0\">"
+                    + "<div style=\"font-size:36px;font-weight:900;letter-spacing:10px;color:#1558A8\">" + otp + "</div>"
+                    + "<p style=\"font-size:12px;color:#7A90B0;margin-top:8px\">Hiệu lực 5 phút</p></div></div>";
+            EmailUtil.sendEmail(adminEmail, "[MediVault] OTP mới — " + staffName, body);
+        }
+        out.print(json(true, null));
+    }
+
 
 }

@@ -1,20 +1,16 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%
-    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("staffAccount");
-    if (acc != null) { response.sendRedirect(request.getContextPath() + "/staff-dashboard"); return; }
-    String error           = (String)  request.getAttribute("error");
-    // lockedForReset CHỈ được set từ StaffLoginServlet khi đúng tài khoản đó cố đăng nhập
-    // KHÔNG đọc từ query param để tránh hiện banner cho tất cả staff-login
-    Boolean lockedForReset = (Boolean) request.getAttribute("lockedForReset");
-    String  lockedName     = (String)  request.getAttribute("lockedName");
-    boolean showLockBanner = Boolean.TRUE.equals(lockedForReset);
+    String error   = (String) request.getAttribute("error");
+    String success = request.getParameter("success");
+    String name    = request.getParameter("name");
+    if (name != null) name = java.net.URLDecoder.decode(name, "UTF-8");
 %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>MediVault — Đăng nhập nhân viên</title>
+<title>MediVault — Quên mật khẩu</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <style>
@@ -24,10 +20,12 @@
   --light:#A78BFA;--soft:#EDE9FE;--surface:#F5F3FF;
   --white:#fff;--muted:#7C6FAA;--border:#D8D0F5;
   --cyan:#5EEAD4;--gold:#FCD34D;
+  --green:#059669;--green-soft:#ECFDF5;--green-border:#A7F3D0;
 }
 html,body{height:100%;font-family:'Outfit',sans-serif}
 body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(--ink);overflow:hidden}
 
+/* ── LEFT ── */
 .left{
   position:relative;display:flex;flex-direction:column;justify-content:space-between;
   padding:52px 56px 44px;
@@ -59,7 +57,6 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
   padding:6px 13px;font-size:11.5px;font-weight:500;color:rgba(255,255,255,.55);
 }
 
-.brand{}
 .brand-badge{
   display:inline-flex;align-items:center;gap:10px;
   background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.22);
@@ -86,7 +83,7 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
 .feat{display:flex;align-items:center;gap:7px;color:rgba(255,255,255,.38);font-size:12px;font-weight:500}
 .feat-dot{width:5px;height:5px;border-radius:50%;background:var(--light);opacity:.7}
 
-/* Right panel */
+/* ── RIGHT ── */
 .right{
   display:flex;flex-direction:column;justify-content:center;align-items:center;
   padding:48px 52px;background:var(--surface);position:relative;overflow:hidden;
@@ -109,6 +106,7 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
 .form-title{font-family:'DM Serif Display',serif;font-size:30px;color:var(--ink);margin-bottom:6px}
 .form-sub{font-size:14px;color:var(--muted);margin-bottom:32px;line-height:1.5}
 
+/* Error box */
 .err-box{
   display:flex;align-items:flex-start;gap:10px;padding:12px 16px;
   background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;
@@ -117,6 +115,23 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
 }
 @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
 
+/* Success box */
+.success-card{
+  background:var(--green-soft);border:1.5px solid var(--green-border);
+  border-radius:16px;padding:28px 24px;text-align:center;
+}
+.success-icon{font-size:44px;margin-bottom:14px;display:block;
+  animation:popIn .5s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes popIn{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.success-title{font-family:'DM Serif Display',serif;font-size:22px;color:#065F46;margin-bottom:8px}
+.success-msg{font-size:13.5px;color:#047857;line-height:1.6;margin-bottom:20px}
+.success-name{
+  display:inline-block;background:#fff;border:1px solid var(--green-border);
+  border-radius:8px;padding:6px 16px;font-size:13px;font-weight:700;
+  color:#065F46;margin-bottom:20px;
+}
+
+/* Fields */
 .field{margin-bottom:18px}
 .field-label{font-size:12.5px;font-weight:600;color:var(--dp);letter-spacing:.3px;margin-bottom:7px;display:block}
 .field-wrap{position:relative}
@@ -129,13 +144,11 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
 }
 .field-input:focus{border-color:var(--light);box-shadow:0 0 0 3px rgba(167,139,250,.14)}
 .field-input::placeholder{color:var(--muted);font-weight:400}
-.pw-toggle{
-  position:absolute;right:14px;top:50%;transform:translateY(-50%);
-  background:none;border:none;cursor:pointer;font-size:16px;opacity:.45;
-  transition:opacity .2s;padding:0;
-}
-.pw-toggle:hover{opacity:.8}
 
+/* Hint */
+.field-hint{font-size:11.5px;color:var(--muted);margin-top:5px;padding-left:4px}
+
+/* Button */
 .btn-submit{
   width:100%;padding:13px;margin-top:8px;
   background:linear-gradient(135deg,var(--main),#5B21B6);
@@ -147,40 +160,44 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
 .btn-submit::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent,rgba(255,255,255,.08))}
 .btn-submit:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(109,40,217,.35)}
 .btn-submit:active{transform:translateY(0)}
+.btn-submit:disabled{opacity:.6;cursor:not-allowed;transform:none}
 
+/* Back link */
+.back-link{
+  display:flex;align-items:center;gap:6px;margin-top:20px;
+  font-size:13px;font-weight:600;color:var(--muted);
+  text-decoration:none;justify-content:center;transition:color .2s;
+}
+.back-link:hover{color:var(--main)}
 
+/* Divider */
+.divider{
+  display:flex;align-items:center;gap:10px;margin:20px 0;
+  font-size:12px;color:var(--muted);font-weight:500;
+}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* Info note */
+.info-note{
+  display:flex;gap:9px;padding:11px 14px;
+  background:#fff;border:1px solid var(--border);border-radius:11px;
+  margin-bottom:24px;font-size:12.5px;color:var(--muted);line-height:1.5;
+}
+.info-note-icon{font-size:15px;flex-shrink:0;margin-top:1px}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 .form-box>*{animation:fadeUp .45s ease both}
-
-/* Lock banner */
-.lock-banner{
-  background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(245,158,11,.08));
-  border:1.5px solid rgba(245,158,11,.35);border-radius:14px;
-  padding:16px 18px;margin-bottom:20px;
-}
-.lock-banner-icon{font-size:22px;margin-bottom:8px}
-.lock-banner-title{font-size:14px;font-weight:700;color:#92400E;margin-bottom:5px}
-.lock-banner-msg{font-size:13px;color:#78350F;line-height:1.6}
-.lock-banner-sub{font-size:11.5px;color:#B45309;margin-top:7px;display:flex;align-items:center;gap:5px}
-
-/* Forgot-password link */
-.forgot-link-wrap{text-align:center;margin-top:16px}
-.forgot-link{
-  font-size:12.5px;font-weight:600;color:var(--muted);
-  text-decoration:none;display:inline-flex;align-items:center;gap:5px;
-  transition:color .2s;
-}
-.forgot-link:hover{color:var(--main)}
 .form-box>*:nth-child(1){animation-delay:.05s}
 .form-box>*:nth-child(2){animation-delay:.1s}
 .form-box>*:nth-child(3){animation-delay:.15s}
 .form-box>*:nth-child(4){animation-delay:.2s}
-.form-box>*:nth-child(5){animation-delay:.3s}
+.form-box>*:nth-child(5){animation-delay:.25s}
+.form-box>*:nth-child(6){animation-delay:.3s}
 </style>
 </head>
 <body>
 
+<!-- ══ LEFT PANEL ══ -->
 <div class="left">
   <div class="left-mesh"></div>
   <div class="left-grid">
@@ -194,7 +211,7 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
   <div class="bubble bubble-2"></div>
   <div class="bubble bubble-3"></div>
 
-  <div class="brand">
+  <div>
     <div class="brand-badge">
       <div class="brand-badge-icon">💊</div>
       <div>
@@ -205,79 +222,104 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
   </div>
 
   <div class="left-headline">
-    <h1>Không gian<br>làm việc<br><em>của bạn</em></h1>
-    <p>Đăng nhập để truy cập ca làm việc, quầy bán hàng và thông tin cá nhân của bạn.</p>
+    <h1>Khôi phục<br>quyền truy cập<br><em>của bạn</em></h1>
+    <p>Gửi yêu cầu đặt lại mật khẩu. Admin sẽ xác nhận và cấp lại quyền truy cập cho bạn.</p>
   </div>
 
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-    <div class="pill">💊 Bán hàng POS</div>
-    <div class="pill">📦 Quản lý kho</div>
-    <div class="pill">📅 Ca làm việc</div>
+    <div class="pill">🔐 Bảo mật tài khoản</div>
+    <div class="pill">📧 Thông báo qua email</div>
   </div>
   <div class="left-footer">
-    <div class="feat"><div class="feat-dot"></div>Bán hàng POS</div>
-    <div class="feat"><div class="feat-dot"></div>Theo dõi ca làm</div>
-    <div class="feat"><div class="feat-dot"></div>Hồ sơ cá nhân</div>
+    <div class="feat"><div class="feat-dot"></div>Xác minh danh tính</div>
+    <div class="feat"><div class="feat-dot"></div>Admin duyệt yêu cầu</div>
+    <div class="feat"><div class="feat-dot"></div>Cấp lại mật khẩu</div>
   </div>
 </div>
 
+<!-- ══ RIGHT PANEL ══ -->
 <div class="right">
   <div class="form-box">
-    <div class="form-eyebrow">Nhân viên</div>
-    <div class="form-title">Đăng nhập</div>
-    <div class="form-sub">Chào mừng! Nhập thông tin tài khoản nhân viên của bạn để bắt đầu ca làm việc.</div>
 
-    <form method="post" action="${pageContext.request.contextPath}/staff-login" autocomplete="off">
+<% if ("sent".equals(success)) { %>
+    <!-- ── TRẠNG THÁI: Gửi thành công ── -->
+    <div class="success-card">
+      <span class="success-icon">📬</span>
+      <div class="success-title">Yêu cầu đã được gửi!</div>
+      <% if (name != null && !name.isEmpty()) { %>
+      <div class="success-name">👤 <%= name %></div>
+      <% } %>
+      <div class="success-msg">
+        Admin đã nhận được email thông báo và sẽ xác nhận yêu cầu của bạn.<br><br>
+        Sau khi admin xác nhận, tài khoản sẽ được <strong>khóa tạm thời</strong>.
+        Admin sẽ liên hệ và cấp mật khẩu mới cho bạn.
+      </div>
+      <a href="${pageContext.request.contextPath}/staff-login" class="btn-submit"
+         style="display:block;text-align:center;text-decoration:none;padding:12px">
+        ← Quay lại đăng nhập
+      </a>
+    </div>
+
+<% } else { %>
+    <!-- ── FORM NHẬP THÔNG TIN ── -->
+    <div class="form-eyebrow">Quên mật khẩu</div>
+    <div class="form-title">Đặt lại mật khẩu</div>
+    <div class="form-sub">Nhập tên đăng nhập và email tài khoản của bạn để gửi yêu cầu.</div>
+
+    <div class="info-note">
+      <span class="info-note-icon">ℹ️</span>
+      <span>Yêu cầu sẽ được gửi đến <strong>Admin</strong> để xác nhận. Vui lòng chờ admin xử lý và liên hệ lại với bạn.</span>
+    </div>
+
+    <% if (error != null) { %>
+    <div class="err-box">⚠️ <%= error %></div>
+    <% } %>
+
+    <form method="post" action="${pageContext.request.contextPath}/forgot-password" autocomplete="off" id="resetForm">
       <div class="field">
         <label class="field-label">Tên đăng nhập</label>
         <div class="field-wrap">
           <span class="field-icon">👤</span>
-          <input type="text" name="username" class="field-input" placeholder="Nhập tên đăng nhập" required autofocus>
+          <input type="text" name="username" class="field-input"
+                 placeholder="Nhập tên đăng nhập" required autofocus
+                 value="<%= request.getParameter("username") != null ? request.getParameter("username") : "" %>">
         </div>
       </div>
+
       <div class="field">
-        <label class="field-label">Mật khẩu</label>
+        <label class="field-label">Email đăng ký</label>
         <div class="field-wrap">
-          <span class="field-icon">🔑</span>
-          <input type="password" id="pw" name="password" class="field-input" placeholder="Nhập mật khẩu" required>
-          <button type="button" class="pw-toggle" id="togglePw">👁</button>
+          <span class="field-icon">📧</span>
+          <input type="email" name="email" class="field-input"
+                 placeholder="Nhập email liên kết với tài khoản" required
+                 value="<%= request.getParameter("email") != null ? request.getParameter("email") : "" %>">
         </div>
+        <div class="field-hint">Email phải khớp với email đã đăng ký trong hệ thống.</div>
       </div>
-      <button type="submit" class="btn-submit">Bắt đầu ca làm việc →</button>
+
+      <button type="submit" class="btn-submit" id="submitBtn">
+        Gửi yêu cầu đặt lại mật khẩu →
+      </button>
     </form>
 
-    <%-- ── Error / Lock banner ── --%>
-    <% if (showLockBanner) { %>
-    <div class="lock-banner" style="margin-top:16px">
-      <div class="lock-banner-icon">🔒</div>
-      <div class="lock-banner-title">Tài khoản đang bị tạm khóa</div>
-      <div class="lock-banner-msg">
-        Tài khoản <% if (lockedName != null && !lockedName.isEmpty()) { %><strong><%= lockedName %></strong><% } else { %><strong>này</strong><% } %>
-        hiện không thể đăng nhập. Quản trị viên đang xử lý.
-      </div>
-      <div class="lock-banner-sub">📬 Bạn sẽ nhận được thông báo qua email khi tài khoản sẵn sàng.</div>
-    </div>
-    <% } else if (error != null) { %>
-    <div class="err-box" style="margin-top:12px">⚠️ <%= error %></div>
-    <% } %>
+    <div class="divider">hoặc</div>
 
-    <%-- ── Link quên mật khẩu — LUÔN HIỆN ── --%>
-    <div class="forgot-link-wrap">
-      <a href="${pageContext.request.contextPath}/forgot-password" class="forgot-link">
-        🔑 Quên mật khẩu?
-      </a>
-    </div>
+    <a href="${pageContext.request.contextPath}/staff-login" class="back-link">
+      ← Quay lại đăng nhập
+    </a>
+<% } %>
 
   </div>
 </div>
 
 <script>
-document.getElementById('togglePw').addEventListener('click',function(){
-  const pw=document.getElementById('pw');
-  const isText=pw.type==='text';
-  pw.type=isText?'password':'text';
-  this.textContent=isText?'👁':'🙈';
-});
+// Disable button sau khi submit để tránh double-click
+document.getElementById('resetForm') && document.getElementById('resetForm')
+  .addEventListener('submit', function() {
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Đang gửi...';
+  });
 </script>
 </body>
 </html>
