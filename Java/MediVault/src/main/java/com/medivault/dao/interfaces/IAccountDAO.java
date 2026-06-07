@@ -11,5 +11,15 @@ public interface IAccountDAO {
     boolean updateLastLogin(int accountId);
     boolean toggleActive(int accountId);
     boolean resetPassword(int accountId, String newHash);
-
+    boolean isEmailTaken(String email, int excludeId);
+    boolean update(Account a);
+    boolean isUsernameTaken(String username);
+    int countActiveAdmins();
+    boolean softDelete(int accountId);
+    boolean restore(int accountId);
+    boolean hardDelete(int accountId);
+    List<Account> findDeleted();
+    List<Account> findAllStaff();
+    boolean forceDelete(int accountId);
+    boolean updateAvatar(int accountId, String path);
 }

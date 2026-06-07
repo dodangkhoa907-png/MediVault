@@ -208,4 +208,79 @@ public class InvoiceDAO implements IInvoiceDAO {
         } catch (Exception e) { e.printStackTrace(); }
         return BigDecimal.ZERO;
     }
+    /**
+     * Flow bán hàng trong 1 transaction duy nhất.
+     * createPending → addItemByFIFO × N → complete
+     * Nếu lỗi ở bất kỳ bước nào → rollback toàn bộ → không có dữ liệu lửng.
+     *
+     * @return invoiceId nếu thành công, -1 nếu lỗi
+     */
+    public int completeSaleTransaction(int accountId, Integer customerId,
+                                       String paymentMethod, java.math.BigDecimal discount,
+                                       int[] medicineIds, int[] quantities) {
+        Connection cn = null;
+        try {
+            cn = DBContext.getConnection();
+            cn.setAutoCommit(false);  // ── Bắt đầu transaction ──
+
+            // Bước 1: Tạo Invoice PENDING
+            String sqlInsert = "INSERT INTO Invoices (AccountID, CustomerID, PaymentMethod) " +
+                    "VALUES (?,?,?); SELECT SCOPE_IDENTITY();";
+            int invoiceId = -1;
+            try (PreparedStatement ps = cn.prepareStatement(sqlInsert)) {
+                ps.setInt(1, accountId);
+                if (customerId != null) ps.setInt(2, customerId);
+                else ps.setNull(2, Types.INTEGER);
+                ps.setString(3, paymentMethod != null ? paymentMethod : "CASH");
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) invoiceId = rs.getInt(1);
+                }
+            }
+            if (invoiceId < 0) throw new Exception("Không tạo được hóa đơn");
+
+            // Bước 2: Thêm từng sản phẩm qua SP (FIFO) — cùng connection, cùng transaction
+            String sqlSP = "EXEC SP_AddSaleByFIFO ?, ?, ?";
+            for (int i = 0; i < medicineIds.length; i++) {
+                try (CallableStatement cs = cn.prepareCall(sqlSP)) {
+                    cs.setInt(1, invoiceId);
+                    cs.setInt(2, medicineIds[i]);
+                    cs.setInt(3, quantities[i]);
+                    cs.execute();
+                } catch (SQLException spEx) {
+                    // SP ném lỗi (VD: không đủ tồn kho) → rollback
+                    throw new Exception("Thuốc ID " + medicineIds[i] + ": " + spEx.getMessage(), spEx);
+                }
+            }
+
+            // Bước 3: Complete Invoice
+            java.math.BigDecimal disc = discount != null ? discount : java.math.BigDecimal.ZERO;
+            String sqlComplete = "UPDATE Invoices SET Status = 'COMPLETED', " +
+                    "DiscountAmount = ?, " +
+                    "FinalAmount = (SELECT ISNULL(SUM(SubTotal),0) FROM InvoiceDetails WHERE InvoiceID = ?) - ? " +
+                    "WHERE InvoiceID = ? AND Status = 'PENDING'";
+            try (PreparedStatement ps = cn.prepareStatement(sqlComplete)) {
+                ps.setBigDecimal(1, disc);
+                ps.setInt(2, invoiceId);
+                ps.setBigDecimal(3, disc);
+                ps.setInt(4, invoiceId);
+                if (ps.executeUpdate() == 0) throw new Exception("Không complete được hóa đơn");
+            }
+
+            cn.commit();  // ── Commit thành công ──
+            return invoiceId;
+
+        } catch (Exception e) {
+            // ── Rollback toàn bộ nếu có lỗi ──
+            System.err.println("[InvoiceDAO] completeSaleTransaction rollback: " + e.getMessage());
+            if (cn != null) {
+                try { cn.rollback(); } catch (SQLException rb) { rb.printStackTrace(); }
+            }
+            return -1;
+        } finally {
+            if (cn != null) {
+                try { cn.setAutoCommit(true); cn.close(); } catch (SQLException ex) { ex.printStackTrace(); }
+            }
+        }
+    }
+
 }

@@ -20,11 +20,13 @@ public class Account {
     private String faceEnrollmentPath;
     private LocalDateTime createdAt;
     private LocalDateTime lastLoginAt;
+    private boolean deleted;
+    private java.time.LocalDateTime deletedAt;
 
     public Account() {
     }
 
-    public Account(int accountId, String username, String passwordHash, String fullName, String email, String phone, int roleId, String citizenId, String professionalCertNo, LocalDate professionalCertExp, String position, LocalDate trainingDate, boolean isActive, String faceEnrollmentPath, LocalDateTime createdAt, LocalDateTime lastLoginAt) {
+    public Account(int accountId, String username, String passwordHash, String fullName, String email, String phone, int roleId, String citizenId, String professionalCertNo, LocalDate professionalCertExp, String position, LocalDate trainingDate, boolean isActive, String faceEnrollmentPath, LocalDateTime createdAt, LocalDateTime lastLoginAt, boolean deleted, LocalDateTime deletedAt) {
         this.accountId = accountId;
         this.username = username;
         this.passwordHash = passwordHash;
@@ -41,6 +43,8 @@ public class Account {
         this.faceEnrollmentPath = faceEnrollmentPath;
         this.createdAt = createdAt;
         this.lastLoginAt = lastLoginAt;
+        this.deleted = deleted;
+        this.deletedAt = deletedAt;
     }
 
     public int getAccountId() {
@@ -169,5 +173,45 @@ public class Account {
 
     public void setLastLoginAt(LocalDateTime lastLoginAt) {
         this.lastLoginAt = lastLoginAt;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    @Override
+    public String toString() {
+        return "Account{" +
+                "accountId=" + accountId +
+                ", username='" + username + '\'' +
+                ", passwordHash='" + passwordHash + '\'' +
+                ", fullName='" + fullName + '\'' +
+                ", email='" + email + '\'' +
+                ", phone='" + phone + '\'' +
+                ", roleId=" + roleId +
+                ", citizenId='" + citizenId + '\'' +
+                ", professionalCertNo='" + professionalCertNo + '\'' +
+                ", professionalCertExp=" + professionalCertExp +
+                ", position='" + position + '\'' +
+                ", trainingDate=" + trainingDate +
+                ", isActive=" + isActive +
+                ", faceEnrollmentPath='" + faceEnrollmentPath + '\'' +
+                ", createdAt=" + createdAt +
+                ", lastLoginAt=" + lastLoginAt +
+                ", deleted=" + deleted +
+                ", deletedAt=" + deletedAt +
+                '}';
     }
 }
