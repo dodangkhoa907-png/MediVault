@@ -22,7 +22,7 @@ public class AccountDAO {
         a.setActive(rs.getBoolean("IsActive"));
         a.setDeleted(rs.getBoolean("IsDeleted"));
 
-        // ĐÃ THÊM: Ánh xạ cột trạng thái chờ khôi phục mật khẩu từ CSDL
+        // ĐÃ TÍCH HỢP: Ánh xạ cột trạng thái chờ khôi phục mật khẩu từ CSDL
         a.setPendingReset(rs.getBoolean("IsPendingReset"));
 
         a.setProfessionalCertNo(rs.getString("ProfessionalCertNo"));
@@ -32,7 +32,7 @@ public class AccountDAO {
         return a;
     }
 
-    // Tự động Khóa và Bật cờ chờ Reset khi nhân viên bấm Quên mật khẩu
+    // Tự động Khóa (IsActive = 0) và Bật cờ chờ Reset (IsPendingReset = 1) khi nhân viên bấm Quên mật khẩu
     public boolean lockAndSetPendingReset(String usernameOrEmail) {
         String sql = "UPDATE Accounts SET IsActive = 0, IsPendingReset = 1 WHERE Username = ? OR Email = ?";
         try (Connection cn = DBContext.getConnection();

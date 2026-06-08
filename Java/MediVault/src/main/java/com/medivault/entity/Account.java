@@ -15,7 +15,7 @@ public class Account {
     private boolean isActive;
     private boolean isDeleted;
 
-    // ĐÃ THÊM: Biến cờ hiệu trạng thái chờ reset mật khẩu
+    // ĐÃ TÍCH HỢP: Biến cờ hiệu trạng thái chờ reset mật khẩu
     private boolean isPendingReset;
 
     private String professionalCertNo;
@@ -59,7 +59,7 @@ public class Account {
     public boolean isDeleted() { return isDeleted; }
     public void setDeleted(boolean deleted) { this.isDeleted = deleted; }
 
-    // ĐÃ THÊM: Getter và Setter cho thuộc tính PendingReset
+    // ĐÃ TÍCH HỢP: Getter và Setter cho thuộc tính PendingReset
     public boolean isPendingReset() { return isPendingReset; }
     public void setPendingReset(boolean pendingReset) { this.isPendingReset = pendingReset; }
 

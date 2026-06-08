@@ -32,7 +32,7 @@ public class AccountServlet extends HttpServlet {
 
         switch (action) {
             case "list" -> {
-                // Giữ nguyên logic hiển thị danh sách tài khoản của bạn
+                // Giữ nguyên luồng hiển thị danh sách tài khoản cũ của bạn
                 req.getRequestDispatcher("/account-list.jsp").forward(req, resp);
             }
 
@@ -47,12 +47,14 @@ public class AccountServlet extends HttpServlet {
                         return;
                     }
 
-                    // KIỂM TRA BẢO MẬT CHÍNH: Chặn thay đổi trạng thái nếu tài khoản đang ĐỒNG THỜI khóa và chờ khôi phục mật khẩu
+                    // ==================== CHẶN TOGGLE KHI ĐANG PENDING RESET ====================
+                    // Nếu tài khoản đang KHÓA và có cờ PENDING RESET -> Chặn ngay lập tức!
                     if (!toggleAcc.isActive() && toggleAcc.isPendingReset()) {
-                        // Trả về trang danh sách kèm mã thông báo chặn 'maintenance-lock'
+                        // Redirect đẩy Admin ngược về kèm mã lỗi để Frontend báo lỗi chặn
                         resp.sendRedirect(req.getContextPath() + "/accounts?msg=maintenance-lock");
-                        return; // Chặn đứng tại đây, không cho hệ thống chạy tiếp xuống lệnh update ở dưới!
+                        return; // Ngắt luồng xử lý tại đây, không cho chạy xuống lệnh update ở dưới!
                     }
+                    // ============================================================================
 
                     // KIỂM TRA PHỤ: Không cho phép khóa tài khoản Admin duy nhất còn lại
                     if (toggleAcc.getRoleId() == 1 && toggleAcc.isActive() && dao.countActiveAdmins() <= 1) {
@@ -60,7 +62,7 @@ public class AccountServlet extends HttpServlet {
                         return;
                     }
 
-                    // Nếu vượt qua các bước kiểm tra an toàn ở trên -> Tiến hành cập nhật trạng thái
+                    // Nếu tài khoản bình thường (vượt qua bộ lọc check chặn trên), tiến hành đảo trạng thái
                     dao.toggleActive(toggleId);
                     resp.sendRedirect(req.getContextPath() + "/accounts?msg=updated");
 
