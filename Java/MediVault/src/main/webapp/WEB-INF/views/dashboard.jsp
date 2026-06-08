@@ -36,7 +36,13 @@
     if (pendingResets     == null) pendingResets     = new java.util.ArrayList<>();
     if (resetAccountMap   == null) resetAccountMap   = new java.util.HashMap<>();
     if (pendingResetCount == null) pendingResetCount = 0;
+
+    @SuppressWarnings("unchecked")
+    java.util.Map<Integer, com.medivault.entity.Account> blockedMap =
+        (java.util.Map<Integer, com.medivault.entity.Account>) request.getAttribute("blockedAccountMap");
+    if (blockedMap == null) blockedMap = new java.util.HashMap<>();
 %>
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -446,6 +452,22 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                         <button class="notif-clear" onclick="closeNotif()">Đóng ✕</button>
                     </div>
                     <div class="notif-list" id="notifList">
+                        <%-- ── Blocked accounts (quá 3 lần forgot-password hôm nay) ── --%>
+                        <% for (java.util.Map.Entry<Integer, com.medivault.entity.Account> bEntry : blockedMap.entrySet()) {
+                               com.medivault.entity.Account bAcc = bEntry.getValue(); %>
+                        <div class="notif-item" style="background:rgba(220,38,38,.04);border-left:3px solid #DC2626">
+                          <div class="notif-dot" style="background:#DC2626;animation:pulseDot 1.8s ease-in-out infinite"></div>
+                          <div style="flex:1">
+                            <div class="notif-text">🚫 <strong>@<%= bAcc.getUsername() %></strong> bị chặn gửi yêu cầu reset MK (quá 3 lần hôm nay)</div>
+                            <div class="notif-time" style="margin-top:4px">
+                              <a href="<%= request.getContextPath() %>/admin/reset-requests?action=unlock-reset&id=<%= bAcc.getAccountId() %>"
+                                 onclick="return confirm('Cho phép @<%= bAcc.getUsername() %> gửi lại yêu cầu reset mật khẩu?')"
+                                 style="color:#DC2626;font-weight:700;font-size:11.5px">🔓 Cho phép gửi lại</a>
+                            </div>
+                          </div>
+                        </div>
+                        <% } %>
+
                         <%-- ── Reset requests — hiện đầu tiên, ưu tiên cao nhất ── --%>
                         <% for (com.medivault.entity.PasswordResetRequest pr : pendingResets) {
                                com.medivault.entity.Account staffPr = resetAccountMap.get(pr.getAccountId());
@@ -730,6 +752,8 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 <div id="toast" class="toast-base" style="background:#7f1d1d;color:#fff">🔒 Đã khóa tài khoản.</div>
 <% } else if ("unlocked".equals(msg)) { %>
 <div id="toast" class="toast-base" style="background:#064e3b;color:#fff">🔓 Đã mở khóa tài khoản.</div>
+<% } else if ("reset-unblocked".equals(msg)) { %>
+<div id="toast" class="toast-base" style="background:#1e40af;color:#fff">🔓 Đã cho phép nhân viên gửi lại yêu cầu đặt lại mật khẩu!</div>
 <% } %>
 
 <script>

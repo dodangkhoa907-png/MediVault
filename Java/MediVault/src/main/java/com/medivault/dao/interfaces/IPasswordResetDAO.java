@@ -27,4 +27,13 @@ public interface IPasswordResetDAO {
 
     // Expire các request quá hạn — gọi định kỳ hoặc khi check
     boolean expireOld();
+
+    int countTodayByAccountId(int accountId);
+    // Lấy danh sách account bị chặn hôm nay (>= 3 lần)
+    List<Integer> findBlockedAccountIds();
+
+    // Reset count hôm nay về 0 — admin unlock
+    boolean resetTodayCount(int accountId);
+
+
 }

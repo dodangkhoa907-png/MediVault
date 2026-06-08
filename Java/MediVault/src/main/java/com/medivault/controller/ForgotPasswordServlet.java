@@ -62,6 +62,14 @@ public class ForgotPasswordServlet extends HttpServlet {
         // ── Expire các request quá hạn trước khi check ──
         resetDAO.expireOld();
 
+        int todayCount = resetDAO.countTodayByAccountId(staff.getAccountId());
+        if (todayCount >= 3) {
+            req.setAttribute("error", "Tài khoản @" + staff.getUsername()
+                    + " đã gửi quá 3 yêu cầu hôm nay. Vui lòng thử lại vào ngày mai hoặc liên hệ Admin trực tiếp!");
+            req.getRequestDispatcher("/WEB-INF/views/forgot-password.jsp").forward(req, resp);
+            return;
+        }
+
         // ── Kiểm tra đã có request PENDING/CONFIRMED chưa ──
         PasswordResetRequest existing = resetDAO.findPendingByAccountId(staff.getAccountId());
         if (existing == null) existing = resetDAO.findConfirmedByAccountId(staff.getAccountId());
@@ -109,7 +117,7 @@ public class ForgotPasswordServlet extends HttpServlet {
                 "Staff @" + staff.getUsername() + " gửi yêu cầu reset mật khẩu — tài khoản bị khóa tự động");
         // ── Redirect về forgot-password với success message ──
         resp.sendRedirect(req.getContextPath()
-                + "/forgot-password?success=sent&name="
+                + "/staff-login?success=reset-sent&name="
                 + java.net.URLEncoder.encode(staff.getFullName(), "UTF-8"));
     }
 
@@ -168,7 +176,7 @@ public class ForgotPasswordServlet extends HttpServlet {
                 <h2 style="margin:0;font-size:18px">📬 Yêu cầu đã được ghi nhận</h2>
                 <p style="margin:6px 0 0;opacity:.8;font-size:13px">Tài khoản của bạn đang được xử lý</p>
               </div>
-              <p style="font-size:14px;color:#1C0F3F">Xin chào <strong>%s</strong>,</p>
+              <p style="font-size:14px;color:#1C0F3F">📋 Thông tin yêu cầu từ nhân viên: <strong>%s</strong>,</p> 
               <p style="font-size:13.5px;color:#4C1D95;line-height:1.7">
                 Yêu cầu đặt lại mật khẩu của tài khoản <strong>@%s</strong> đã được ghi nhận.<br>
                 Tài khoản của bạn sẽ <strong>tạm thời bị khóa</strong> trong khi chờ Admin xử lý.

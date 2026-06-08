@@ -6,6 +6,7 @@ import com.medivault.dao.interfaces.IAccountDAO;
 import com.medivault.dao.interfaces.IPasswordResetDAO;
 import com.medivault.entity.Account;
 import com.medivault.entity.PasswordResetRequest;
+import com.medivault.util.AuditHelper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -40,6 +41,12 @@ public class ResetRequestServlet extends HttpServlet {
             handleCount(req, resp);
         } else if ("list-html".equals(action)) {
             handleListHtml(req, resp);
+        } else if ("unlock-reset".equals(action)) {   // ← THÊM VÀO ĐÂY
+            int accountId = Integer.parseInt(req.getParameter("id"));
+            resetDAO.resetTodayCount(accountId);
+            AuditHelper.log(req, "Mở khóa gửi lại forgot-password", "Auth", accountId,
+                    "Admin cho phép @" + accountId + " gửi lại yêu cầu reset MK");
+            resp.sendRedirect(req.getContextPath() + "/dashboard?msg=reset-unblocked");
         } else {
             resp.setStatus(400);
         }

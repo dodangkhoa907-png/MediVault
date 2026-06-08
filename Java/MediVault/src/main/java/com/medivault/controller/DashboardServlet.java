@@ -60,6 +60,13 @@ public class DashboardServlet extends HttpServlet {
 
         // Map accountId → Account để JSP hiện tên nhân viên
         java.util.Map<Integer, Account> resetAccountMap = new java.util.HashMap<>();
+        List<Integer> blockedIds = resetDAO.findBlockedAccountIds();
+        java.util.Map<Integer, Account> blockedAccountMap = new java.util.HashMap<>();
+        for (Integer bid : blockedIds) {
+            Account a = accountDAO.findById(bid);
+            if (a != null) blockedAccountMap.put(bid, a);
+        }
+        req.setAttribute("blockedAccountMap", blockedAccountMap);
         for (PasswordResetRequest pr : pendingResets) {
             Account a = accountDAO.findById(pr.getAccountId());
             if (a != null) resetAccountMap.put(pr.getAccountId(), a);

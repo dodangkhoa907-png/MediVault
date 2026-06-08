@@ -24,12 +24,15 @@ public class PasswordResetDAO implements IPasswordResetDAO {
 
     @Override
     public boolean insert(PasswordResetRequest req) {
-        String sql = "INSERT INTO PasswordResetRequests (AccountID, Token, ExpiresAt) VALUES (?,?,?)";
+        String sql = "INSERT INTO PasswordResetRequests (AccountID, Token, ExpiresAt) " +
+                "SELECT ?,?,? WHERE (SELECT COUNT(*) FROM PasswordResetRequests " +
+                "WHERE AccountID = ? AND CAST(RequestedAt AS DATE) = CAST(GETDATE() AS DATE)) < 3";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, req.getAccountId());
             ps.setString(2, req.getToken());
             ps.setTimestamp(3, Timestamp.valueOf(req.getExpiresAt()));
+            ps.setInt(4, req.getAccountId());  // ← THÊM DÒNG NÀY
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
@@ -112,6 +115,44 @@ public class PasswordResetDAO implements IPasswordResetDAO {
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql);) {
             return ps.executeUpdate() >= 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+    @Override
+    public int countTodayByAccountId(int accountId) {
+        String sql = "SELECT COUNT(*) FROM PasswordResetRequests " +
+                "WHERE AccountID = ? AND CAST(RequestedAt AS DATE) = CAST(GETDATE() AS DATE)";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, accountId);
+            ResultSet rs = ps.executeQuery();
+            return rs.next() ? rs.getInt(1) : 0;
+        } catch (Exception e) { return 0; }
+    }
+    @Override
+    public List<Integer> findBlockedAccountIds() {
+        String sql = "SELECT AccountID FROM PasswordResetRequests " +
+                "WHERE CAST(RequestedAt AS DATE) = CAST(GETDATE() AS DATE) " +
+                "GROUP BY AccountID HAVING COUNT(*) >= 3";
+        List<Integer> ids = new java.util.ArrayList<>();
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) ids.add(rs.getInt("AccountID"));
+        } catch (Exception e) { e.printStackTrace(); }
+        return ids;
+    }
+
+    @Override
+    public boolean resetTodayCount(int accountId) {
+        String sql = "DELETE FROM PasswordResetRequests " +
+                "WHERE AccountID = ? " +
+                "AND CAST(RequestedAt AS DATE) = CAST(GETDATE() AS DATE) " +
+                "AND Status = 'EXPIRED'";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, accountId);
+            ps.executeUpdate();
+            return true;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
 }
