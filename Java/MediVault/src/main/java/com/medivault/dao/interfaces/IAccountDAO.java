@@ -5,7 +5,7 @@ import java.util.List;
 
 public interface IAccountDAO {
     Account findByUsername(String username);
-    /** Tìm kể cả TK bị khóa — dùng cho login */
+    /** Tìm kể cả TK bị khóa (IsActive=0) — dùng cho login */
     Account findByUsernameAny(String username);
     Account findById(int id);
     List<Account> findAll();

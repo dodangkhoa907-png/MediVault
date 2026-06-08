@@ -1,6 +1,7 @@
 package com.medivault.controller;
 
 import com.medivault.entity.Account;
+import com.medivault.util.AuditHelper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -30,10 +31,12 @@ public class LogoutServlet extends HttpServlet {
                 redirectUrl = "/staff-login";
             }
             if (staffAcc != null) {
+                AuditHelper.log(req, "Đăng xuất", "Auth", "Staff @" + staffAcc.getUsername() + " đăng xuất");
                 com.medivault.util.SessionTracker.logout(staffAcc.getAccountId());
                 session.removeAttribute("staffAccount_" + staffAcc.getAccountId());
             }
             if (adminAcc != null) {
+                AuditHelper.log(req, "Đăng xuất Admin", "Auth", "Admin @" + adminAcc.getUsername() + " đăng xuất");
                 com.medivault.util.SessionTracker.logout(adminAcc.getAccountId());
                 session.removeAttribute("adminAccount");
             }

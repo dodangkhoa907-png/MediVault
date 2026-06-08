@@ -25,7 +25,7 @@
     java.lang.String currentPage = request.getParameter("view");
     if (currentPage == null) currentPage = "dashboard";
 
-    // Pending reset requests
+    // Pending reset requests — từ DashboardServlet
     @SuppressWarnings("unchecked")
     java.util.List<com.medivault.entity.PasswordResetRequest> pendingResets =
         (java.util.List<com.medivault.entity.PasswordResetRequest>) request.getAttribute("pendingResets");
@@ -158,7 +158,6 @@ body{display:flex;background:var(--surface);color:var(--ink)}
   display:flex;align-items:center;justify-content:center;position:relative;transition:all .18s;
 }
 .topbar-icon-btn:hover{border-color:var(--cyan);background:var(--cyan-soft)}
-@keyframes pulseBadge{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}
 .topbar-notif-badge{
   position:absolute;top:-4px;right:-4px;
   background:#DC2626;color:#fff;font-size:9px;font-weight:800;
@@ -180,16 +179,9 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .notif-item:last-child{border-bottom:none}
 .notif-dot{width:8px;height:8px;border-radius:50%;background:#DC2626;margin-top:4px;flex-shrink:0}
 .notif-dot.old{background:var(--muted);opacity:.4}
-.notif-dot-amber{width:8px;height:8px;border-radius:50%;background:#D97706;margin-top:4px;flex-shrink:0;animation:pulseDot 1.8s ease-in-out infinite}
-@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
 .notif-text{font-size:12.5px;color:var(--ink);font-weight:500}
 .notif-time{font-size:11px;color:var(--muted);margin-top:2px}
-.notif-item-reset{background:linear-gradient(90deg,rgba(251,191,36,.06),transparent);cursor:pointer}
-.notif-item-reset:hover{background:linear-gradient(90deg,rgba(251,191,36,.12),rgba(251,191,36,.04)) !important}
-.notif-status-badge{display:inline-block;padding:1px 7px;border-radius:10px;font-size:10.5px;font-weight:700;
-                    background:#FEF3C7;color:#92400E;margin-left:6px}
-.notif-badge-pending{background:#FEE2E2;color:#991B1B}
-.notif-arrow{font-size:13px;color:var(--muted);margin-left:auto;align-self:center;flex-shrink:0}
 .topbar-user{
   display:flex;align-items:center;gap:8px;padding:5px 12px 5px 7px;
   border:1.5px solid var(--border);border-radius:20px;text-decoration:none;color:inherit;
@@ -402,6 +394,9 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 
     <nav class="nav-section">
         <div class="nav-label">Phân tích</div>
+        <a href="${pageContext.request.contextPath}/audit-logs" class="nav-item">
+            <span class="nav-icon">📋</span> Nhật ký
+        </a>
         <a href="${pageContext.request.contextPath}/reports" class="nav-item">
             <span class="nav-icon">📊</span> Báo cáo
         </a>
@@ -451,7 +446,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                         <button class="notif-clear" onclick="closeNotif()">Đóng ✕</button>
                     </div>
                     <div class="notif-list" id="notifList">
-                        <%-- ── Reset requests — ưu tiên hiện trên cùng ── --%>
+                        <%-- ── Reset requests — hiện đầu tiên, ưu tiên cao nhất ── --%>
                         <% for (com.medivault.entity.PasswordResetRequest pr : pendingResets) {
                                com.medivault.entity.Account staffPr = resetAccountMap.get(pr.getAccountId());
                                String staffPrName = staffPr != null ? staffPr.getFullName() : ("ID " + pr.getAccountId());
@@ -459,16 +454,19 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                                String editUrl = request.getContextPath() + "/accounts?action=edit&id=" + pr.getAccountId();
                                boolean isConfirmed = "CONFIRMED".equals(pr.getStatus());
                         %>
-                        <a href="<%= editUrl %>" class="notif-item notif-item-reset" style="text-decoration:none;display:flex">
-                          <div class="notif-dot notif-dot-amber"></div>
+                        <a href="<%= editUrl %>" class="notif-item" style="text-decoration:none;display:flex;cursor:pointer;
+                           background:rgba(245,158,11,.06);border-left:3px solid #F59E0B">
+                          <div class="notif-dot" style="background:#D97706;animation:pulseDot 1.8s ease-in-out infinite"></div>
                           <div style="flex:1">
-                            <div class="notif-text">
-                              🔐 <strong><%= staffPrName %></strong> yêu cầu đổi mật khẩu
-                              <% if (isConfirmed) { %><span class="notif-status-badge">Đã xác nhận</span><% } else { %><span class="notif-status-badge notif-badge-pending">Chờ xử lý</span><% } %>
+                            <div class="notif-text">🔐 <strong><%= staffPrName %></strong> yêu cầu đổi mật khẩu
+                              <span style="display:inline-block;padding:1px 7px;border-radius:10px;font-size:10.5px;font-weight:700;margin-left:5px;
+                                   background:<%= isConfirmed ? "#FEF3C7" : "#FEE2E2" %>;color:<%= isConfirmed ? "#92400E" : "#991B1B" %>">
+                                <%= isConfirmed ? "Đã xác nhận" : "Chờ xử lý" %>
+                              </span>
                             </div>
-                            <div class="notif-time">@<%= staffPrUser %> • Bấm để đặt mật khẩu mới</div>
+                            <div class="notif-time">@<%= staffPrUser %> · Bấm để đặt mật khẩu mới</div>
                           </div>
-                          <span class="notif-arrow">→</span>
+                          <span style="font-size:13px;color:var(--muted);margin-left:auto;align-self:center">→</span>
                         </a>
                         <% } %>
 
@@ -800,57 +798,6 @@ body{display:flex;background:var(--surface);color:var(--ink)}
     // Auto-hide toast
     const toast = document.getElementById('toast');
     if (toast) setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 3000);
-
-    // ── Realtime polling: kiểm tra pending reset mới mỗi 20 giây ──
-    let lastKnownResetCount = <%= pendingResetCount %>;
-    async function pollPendingResets() {
-        try {
-            const r = await fetch('<%= request.getContextPath() %>/admin/reset-requests?action=count');
-            if (!r.ok) return;
-            const data = await r.json();
-            const newCount = data.count || 0;
-            if (newCount > lastKnownResetCount) {
-                // Có yêu cầu mới → hiện toast
-                const diff = newCount - lastKnownResetCount;
-                showResetToast(data.latestName || 'Nhân viên', diff);
-                // Cập nhật badge — tạo mới nếu chưa có
-                let badge = document.getElementById('notifBadge');
-                if (!badge) {
-                    // Badge chưa tồn tại (lúc load trang count=0) → tạo mới và gắn vào nút chuông
-                    badge = document.createElement('span');
-                    badge.id = 'notifBadge';
-                    badge.className = 'topbar-notif-badge';
-                    document.querySelector('.topbar-icon-btn').appendChild(badge);
-                }
-                const cur = parseInt(badge.textContent) || 0;
-                badge.textContent = (cur + diff) > 9 ? '9+' : String(cur + diff);
-                badge.style.display = '';
-                // Pulse animation để thu hút chú ý
-                badge.style.animation = 'none';
-                badge.offsetHeight; // reflow
-                badge.style.animation = 'pulseBadge .6s ease 3';
-                // Reload notif list
-                const listEl = document.getElementById('notifList');
-                if (listEl) {
-                    const nr = await fetch('<%= request.getContextPath() %>/admin/reset-requests?action=list-html');
-                    if (nr.ok) listEl.innerHTML = await nr.text();
-                }
-            }
-            lastKnownResetCount = newCount;
-        } catch(e) { /* silent */ }
-    }
-    setInterval(pollPendingResets, 20000);
-
-    function showResetToast(staffName, count) {
-        const existing = document.getElementById('resetToast');
-        if (existing) existing.remove();
-        const t = document.createElement('div');
-        t.id = 'resetToast';
-        t.className = 'toast toast-amber';
-        t.innerHTML = '🔐 <strong>' + staffName + '</strong> vừa yêu cầu đổi mật khẩu — <a href="<%= request.getContextPath() %>/accounts" style="color:#fff;font-weight:700;text-decoration:underline">Xử lý ngay →</a>';
-        document.body.appendChild(t);
-        setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 6000);
-    }
 
     // Realtime search with debounce
     let searchTimer;

@@ -19,10 +19,10 @@ import java.util.List;
 @WebServlet("/dashboard")
 public class DashboardServlet extends HttpServlet {
 
-    private final IMedicineDAO     medicineDAO = new MedicineDAO();
-    private final IBatchesDAO      batchesDAO  = new BatchesDAO();
-    private final IAccountDAO      accountDAO  = new AccountDAO();
-    private final IPasswordResetDAO resetDAO   = new PasswordResetDAO();
+    private final IMedicineDAO      medicineDAO = new MedicineDAO();
+    private final IBatchesDAO       batchesDAO  = new BatchesDAO();
+    private final IAccountDAO       accountDAO  = new AccountDAO();
+    private final IPasswordResetDAO resetDAO    = new PasswordResetDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -43,7 +43,7 @@ public class DashboardServlet extends HttpServlet {
         req.setAttribute("expiredCount",   batchesDAO.findExpired().size());
 
         List<Account> allAccounts = accountDAO.findAllStaff();
-        req.setAttribute("accounts", allAccounts);
+        req.setAttribute("accounts",       allAccounts);
         req.setAttribute("activeAccounts", allAccounts.stream()
                 .filter(Account::isActive).count());
 
@@ -53,7 +53,7 @@ public class DashboardServlet extends HttpServlet {
         }
         req.setAttribute("onlineStaff", onlineStaffStr);
 
-        // ── Pending Reset Requests — hiện trong chuông thông báo ──
+        // ── Pending Reset Requests → hiện trong chuông thông báo ──
         List<PasswordResetRequest> pendingResets = resetDAO.findAllPending();
         req.setAttribute("pendingResets",     pendingResets);
         req.setAttribute("pendingResetCount", pendingResets.size());

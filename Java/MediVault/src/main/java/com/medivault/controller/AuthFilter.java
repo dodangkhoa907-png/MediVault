@@ -198,10 +198,15 @@ public class AuthFilter implements Filter {
                 || uri.startsWith(ctx + "/customers")
                 || uri.startsWith(ctx + "/medicines")
                 || uri.startsWith(ctx + "/account-detail-api")
+                || uri.startsWith(ctx + "/audit-logs")            // nhật ký hệ thống
                 || uri.startsWith(ctx + "/admin/reset-requests"); // polling endpoint
 
         if (isAdminOnly) {
             if (adminAcc == null) {
+                // Lưu trang định vào để sau login redirect đúng chỗ
+                String qs = req.getQueryString();
+                String fullUri = uri + (qs != null ? "?" + qs : "");
+                req.getSession(true).setAttribute("redirectAfterLogin", fullUri);
                 resp.sendRedirect(ctx + "/login");
                 return;
             }

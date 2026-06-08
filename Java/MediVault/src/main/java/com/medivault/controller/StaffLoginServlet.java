@@ -5,6 +5,7 @@ import com.medivault.dao.interfaces.IPasswordResetDAO;
 import com.medivault.entity.Account;
 import com.medivault.entity.PasswordResetRequest;
 import com.medivault.util.PasswordUtil;
+import com.medivault.util.AuditHelper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -91,7 +92,7 @@ public class StaffLoginServlet extends HttpServlet {
 
         String token = com.medivault.util.SessionTracker.login(staffId);
         accountDAO.updateLastLogin(staffId);
-
+        AuditHelper.log(req, "Đăng nhập", "Auth", "Staff @" + account.getUsername() + " đăng nhập thành công");
         resp.sendRedirect(req.getContextPath()
                 + "/staff-dashboard?uid=" + staffId + "&token=" + token);
     }

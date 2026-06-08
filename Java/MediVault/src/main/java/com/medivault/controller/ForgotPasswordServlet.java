@@ -7,6 +7,7 @@ import com.medivault.dao.interfaces.IPasswordResetDAO;
 import com.medivault.entity.Account;
 import com.medivault.entity.PasswordResetRequest;
 import com.medivault.util.EmailUtil;
+import com.medivault.util.AuditHelper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -43,7 +44,8 @@ public class ForgotPasswordServlet extends HttpServlet {
         }
 
         // ── Tìm account ──
-        Account staff = accountDAO.findByUsername(username.trim());
+        // findByUsernameAny: tìm kể cả TK bị khóa (IsActive=0) — cần thiết vì TK đã bị khóa khi gửi lần 2
+        Account staff = accountDAO.findByUsernameAny(username.trim());
         if (staff == null || staff.getRoleId() == 1) {
             req.setAttribute("error", "Không tìm thấy tài khoản nhân viên!");
             req.getRequestDispatcher("/WEB-INF/views/forgot-password.jsp").forward(req, resp);
@@ -56,6 +58,9 @@ public class ForgotPasswordServlet extends HttpServlet {
             req.getRequestDispatcher("/WEB-INF/views/forgot-password.jsp").forward(req, resp);
             return;
         }
+
+        // ── Expire các request quá hạn trước khi check ──
+        resetDAO.expireOld();
 
         // ── Kiểm tra đã có request PENDING/CONFIRMED chưa ──
         PasswordResetRequest existing = resetDAO.findPendingByAccountId(staff.getAccountId());
@@ -100,6 +105,8 @@ public class ForgotPasswordServlet extends HttpServlet {
                 "[MediVault] Yêu cầu đặt lại mật khẩu đã được ghi nhận",
                 buildStaffConfirmEmail(staff));
 
+        AuditHelper.log(req, "Yêu cầu đặt lại mật khẩu", "Auth",
+                "Staff @" + staff.getUsername() + " gửi yêu cầu reset mật khẩu — tài khoản bị khóa tự động");
         // ── Redirect về forgot-password với success message ──
         resp.sendRedirect(req.getContextPath()
                 + "/forgot-password?success=sent&name="
