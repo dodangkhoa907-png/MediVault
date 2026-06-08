@@ -340,11 +340,17 @@ public class AccountDAO implements IAccountDAO {
                 ps.setInt(1, accountId); ps.executeUpdate();
             }
 
-            // 2. SET NULL cho AuditLogs (nullable, giữ lịch sử)
+            // 2. SET NULL cho AuditLog (nullable, giữ lịch sử)
             try (java.sql.PreparedStatement ps = cn.prepareStatement(
-                    "UPDATE AuditLogs SET AccountID = NULL WHERE AccountID = ?")) {
+                    "UPDATE AuditLog SET AccountID = NULL WHERE AccountID = ?")) {
                 ps.setInt(1, accountId); ps.executeUpdate();
             }
+
+            // 2b. SET NULL cho StaffAuditLogs (nullable, giữ lịch sử)
+            try (java.sql.PreparedStatement ps = cn.prepareStatement(
+                    "UPDATE StaffAuditLogs SET AccountID = NULL WHERE AccountID = ?")) {
+                ps.setInt(1, accountId); ps.executeUpdate();
+            } catch (Exception ignored) { /* bảng chưa tồn tại thì bỏ qua */ }
 
             // 3. SET NULL cho các bảng nullable khác nếu có
             for (String tbl : new String[]{"PointTransactions", "OrderLogs"}) {

@@ -52,6 +52,15 @@ public class AccountServlet extends HttpServlet {
                     resp.sendRedirect(req.getContextPath() + "/accounts?msg=last-admin");
                     return;
                 }
+                // Bảo vệ: không cho mở khóa khi TK đang trong reset flow (chờ admin set MK mới)
+                if (toggleAcc != null && !toggleAcc.isActive()) {
+                    PasswordResetRequest pr = resetDAO.findPendingByAccountId(toggleId);
+                    if (pr == null) pr = resetDAO.findConfirmedByAccountId(toggleId);
+                    if (pr != null) {
+                        resp.sendRedirect(req.getContextPath() + "/accounts?msg=in-reset");
+                        return;
+                    }
+                }
                 dao.toggleActive(toggleId);
                 resp.sendRedirect(req.getContextPath() + "/accounts?msg=updated");
             }
