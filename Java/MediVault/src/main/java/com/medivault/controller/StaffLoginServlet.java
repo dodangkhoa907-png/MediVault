@@ -44,7 +44,8 @@ public class StaffLoginServlet extends HttpServlet {
             return;
         }
 
-        Account account = accountDAO.findByUsername(username.trim());
+        // findByUsernameAny: tìm kể cả TK bị khóa (IsActive=0)
+        Account account = accountDAO.findByUsernameAny(username.trim());
 
         // ── 2. Tìm thấy tài khoản → kiểm tra khóa NGAY (trước cả check password) ──
         if (account != null && account.getRoleId() != 1 && !account.isActive()) {
@@ -60,7 +61,6 @@ public class StaffLoginServlet extends HttpServlet {
                 req.setAttribute("lockedName",
                         account.getFullName() != null
                                 ? account.getFullName() : account.getUsername());
-                req.setAttribute("error", "Tài khoản đang bị tạm khóa hoặc bảo trì. Vui lòng liên hệ quản trị viên.");
             } else {
                 // Khóa thông thường
                 req.setAttribute("error",
