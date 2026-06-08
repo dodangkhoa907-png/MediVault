@@ -518,9 +518,11 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                 <div class="breadcrumb">MediVault › Trang chủ</div>
                 <h1>Dashboard</h1>
             </div>
-            <a href="${pageContext.request.contextPath}/accounts?action=new" class="btn-primary">
-                ＋ Tạo tài khoản mới
-            </a>
+            <div style="display:flex;gap:10px;align-items:center">
+                <a href="${pageContext.request.contextPath}/accounts?action=new" class="btn-primary">
+                    ＋ Tạo tài khoản mới
+                </a>
+            </div>
         </div>
 
         <!-- Alert nếu có thuốc sắp hết hạn -->

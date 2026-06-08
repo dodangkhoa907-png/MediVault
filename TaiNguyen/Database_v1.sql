@@ -370,11 +370,28 @@ CREATE TABLE PasswordResetRequests (
 );
 GO
 
+-- Bảng ghi nhật ký hoạt động của từng nhân viên (Staff)
+CREATE TABLE StaffAuditLogs (
+    LogID       INT IDENTITY(1,1) PRIMARY KEY,
+    AccountID   INT            NOT NULL,
+    Action      NVARCHAR(100)  NOT NULL,
+    Details     NVARCHAR(500)  NULL,
+    IPAddress   VARCHAR(45)    NULL,
+    CreatedAt   DATETIME2      NOT NULL DEFAULT GETDATE(),
+ 
+    CONSTRAINT FK_StaffAuditLogs_Account
+        FOREIGN KEY (AccountID) REFERENCES Accounts(AccountID)
+);
+GO
+CREATE INDEX IX_StaffAuditLogs_AccountID ON StaffAuditLogs(AccountID);
+CREATE INDEX IX_StaffAuditLogs_CreatedAt ON StaffAuditLogs(CreatedAt DESC);
+GO
 
 /* ================================================================
    BƯỚC 2 — THÊM FOREIGN KEYS (sau khi tất cả bảng đã tồn tại)
    ================================================================ */
-
+ALTER TABLE AuditLog ALTER COLUMN Action     NVARCHAR(100) NOT NULL;
+ALTER TABLE AuditLog ALTER COLUMN EntityType NVARCHAR(50)  NULL;
 -- KV 1
 ALTER TABLE Accounts        ADD CONSTRAINT FK_Account_Role    FOREIGN KEY (RoleID)         REFERENCES Roles(RoleID);
 -- KV 2

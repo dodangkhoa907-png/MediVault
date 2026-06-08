@@ -15,8 +15,8 @@ public class AuditLogDAO implements IAuditLogDAO {
         AuditLog log = new AuditLog();
         log.setLogId(rs.getLong("LogID"));
         log.setAccountId((Integer) rs.getObject("AccountID"));
-        log.setAction(rs.getString("Action"));
-        log.setEntityType(rs.getString("EntityType"));
+        log.setAction(rs.getNString("Action"));
+        log.setEntityType(rs.getNString("EntityType"));
         log.setEntityId((Integer) rs.getObject("EntityID"));
         log.setDescription(rs.getNString("Description"));
         log.setIpAddress(rs.getString("IPAddress"));
@@ -40,8 +40,8 @@ public class AuditLogDAO implements IAuditLogDAO {
              PreparedStatement ps = cn.prepareStatement(sql)) {
             if (log.getAccountId() != null) ps.setInt(1, log.getAccountId());
             else ps.setNull(1, Types.INTEGER);
-            ps.setString(2, log.getAction());
-            ps.setString(3, log.getEntityType());
+            ps.setNString(2, log.getAction());
+            ps.setNString(3, log.getEntityType());
             if (log.getEntityId() != null) ps.setInt(4, log.getEntityId());
             else ps.setNull(4, Types.INTEGER);
             ps.setNString(5, log.getDescription());

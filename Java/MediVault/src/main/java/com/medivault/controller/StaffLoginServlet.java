@@ -92,7 +92,9 @@ public class StaffLoginServlet extends HttpServlet {
 
         String token = com.medivault.util.SessionTracker.login(staffId);
         accountDAO.updateLastLogin(staffId);
-        AuditHelper.log(req, "Đăng nhập", "Auth", "Staff @" + account.getUsername() + " đăng nhập thành công");
+        AuditHelper.log(req, "Đăng nhập", "Auth",
+                "Staff @" + account.getUsername() + " đăng nhập thành công",
+                staffId);
         resp.sendRedirect(req.getContextPath()
                 + "/staff-dashboard?uid=" + staffId + "&token=" + token);
     }

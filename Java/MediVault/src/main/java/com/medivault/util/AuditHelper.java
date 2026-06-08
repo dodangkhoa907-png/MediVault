@@ -63,10 +63,31 @@ public class AuditHelper {
         }
     }
 
-    /** Overload không cần entityId */
+    /** Overload không cần entityId — tự lấy accountId từ session */
     public static void log(HttpServletRequest req,
                            String action, String entityType, String description) {
         log(req, action, entityType, null, description);
+    }
+
+    /**
+     * Overload truyền accountId trực tiếp — dùng khi gọi từ StaffLoginServlet,
+     * LogoutServlet để tránh nhầm sang adminAccount trong cùng session.
+     */
+    public static void log(HttpServletRequest req,
+                           String action, String entityType,
+                           String description, int accountId) {
+        try {
+            AuditLog entry = new AuditLog();
+            entry.setAction(action);
+            entry.setEntityType(entityType);
+            entry.setEntityId(null);
+            entry.setDescription(description);
+            entry.setIpAddress(getIp(req));
+            entry.setAccountId(accountId);
+            getDao().insert(entry);
+        } catch (Exception e) {
+            System.err.println("[AuditHelper] Lỗi ghi log: " + e.getMessage());
+        }
     }
 
     private static String getIp(HttpServletRequest req) {
