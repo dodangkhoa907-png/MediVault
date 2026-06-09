@@ -114,7 +114,8 @@ public class ForgotPasswordServlet extends HttpServlet {
                 buildStaffConfirmEmail(staff));
 
         AuditHelper.log(req, "Yêu cầu đặt lại mật khẩu", "Auth",
-                "Staff @" + staff.getUsername() + " gửi yêu cầu reset mật khẩu — tài khoản bị khóa tự động");
+                "Staff @" + staff.getUsername() + " gửi yêu cầu reset mật khẩu — tài khoản bị khóa tự động",
+                staff.getAccountId());
         // ── Redirect về forgot-password với success message ──
         resp.sendRedirect(req.getContextPath()
                 + "/staff-login?success=reset-sent&name="

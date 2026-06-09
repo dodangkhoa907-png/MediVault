@@ -1,4 +1,4 @@
-package com.medivault.controller;
+package com.medivault.controller.staff;
 
 import com.medivault.entity.Account;
 import jakarta.servlet.ServletException;
@@ -29,7 +29,7 @@ public class StaffProfileServlet extends HttpServlet {
         if (staffAcc.getRoleId() == 1) { resp.sendRedirect(req.getContextPath() + "/dashboard"); return; }
         req.setAttribute("staffUid", uid);
 
-        req.getRequestDispatcher("/WEB-INF/views/staff-profile.jsp").forward(req, resp);
+        req.getRequestDispatcher("/WEB-INF/views/staff/staff-profile.jsp").forward(req, resp);
     }
     // Lấy staff uid từ cookie mv_staff_uid
     private String getStaffUid(jakarta.servlet.http.HttpServletRequest req) {

@@ -1,4 +1,4 @@
-package com.medivault.controller;
+package com.medivault.controller.admin;
 
 import com.medivault.dao.AccountDAO;
 import com.medivault.dao.PasswordResetDAO;
@@ -73,6 +73,6 @@ public class DashboardServlet extends HttpServlet {
         }
         req.setAttribute("resetAccountMap", resetAccountMap);
 
-        req.getRequestDispatcher("/WEB-INF/views/dashboard.jsp").forward(req, resp);
+        req.getRequestDispatcher("/WEB-INF/views/admin/dashboard.jsp").forward(req, resp);
     }
 }

@@ -251,6 +251,69 @@ body{display:flex;background:var(--surface);color:var(--navy)}
   align-items:center;justify-content:center;
 }
 .success-modal.show{display:flex}
+/* ── CASH MODAL ── */
+.cash-modal{
+  display:none;position:fixed;inset:0;z-index:600;
+  align-items:center;justify-content:center;
+}
+.cash-modal.show{display:flex}
+/* ── CASH RECEIPT PANEL ── */
+.cash-panel{
+  position:relative;width:640px;max-height:90vh;background:#fff;border-radius:20px;
+  display:flex;flex-direction:column;
+  box-shadow:0 24px 80px rgba(0,0,0,.22);
+  animation:popIn .25s cubic-bezier(.34,1.56,.64,1);
+  overflow:hidden;
+}
+.cash-rhead{padding:18px 24px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.cash-rhead-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.cash-rtitle{font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);display:flex;align-items:center;gap:8px}
+.cash-rdatetime{font-size:12px;color:var(--muted)}
+.cash-rbody{flex:1;overflow-y:auto;padding:0}
+/* Items table */
+.cash-items-table{width:100%;border-collapse:collapse}
+.cash-items-table thead th{padding:9px 16px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:#F8FAFE;border-bottom:1px solid var(--border);text-align:left}
+.cash-items-table tbody td{padding:10px 16px;font-size:13px;border-bottom:.5px solid #F0F4FB;vertical-align:top}
+.cash-items-table tbody tr:last-child td{border-bottom:none}
+.ci-name{font-weight:700;color:var(--navy);font-size:13.5px}
+.ci-code{font-size:11px;color:var(--muted);font-family:monospace;margin-top:1px}
+.ci-dosage{font-size:11.5px;color:#7C3AED;margin-top:4px;line-height:1.4;max-width:220px}
+.ci-rx{display:inline-flex;padding:1px 7px;background:#FEE2E2;color:#991B1B;border-radius:20px;font-size:10px;font-weight:700;margin-top:3px}
+.ci-otc{display:inline-flex;padding:1px 7px;background:#D1FAE5;color:#065F46;border-radius:20px;font-size:10px;font-weight:700;margin-top:3px}
+.ci-qty{font-weight:800;font-size:15px;color:var(--navy);text-align:center}
+.ci-unit{font-size:11px;color:var(--muted);text-align:center}
+.ci-price{font-weight:700;color:var(--blue);white-space:nowrap;text-align:right}
+.ci-subtotal{font-weight:800;color:var(--navy);white-space:nowrap;text-align:right}
+/* Summary */
+.cash-summary{padding:14px 20px;border-top:1px solid var(--border);background:#FAFBFF;flex-shrink:0}
+.cash-sum-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:13px;color:var(--muted)}
+.cash-sum-row.total-row{font-size:16px;font-weight:800;color:var(--navy);padding-top:8px;margin-top:4px;border-top:1.5px solid var(--border)}
+.cash-sum-row.total-row span:last-child{color:var(--blue);font-size:18px}
+/* Input section */
+.cash-input-section{padding:14px 20px;border-top:1px solid var(--border);flex-shrink:0}
+.cash-input-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.cash-input-lbl{font-size:13px;font-weight:700;color:var(--ink);min-width:120px}
+.cash-input{flex:1;height:44px;border:1.5px solid var(--border);border-radius:10px;
+  font-size:16px;font-weight:700;font-family:'Outfit',sans-serif;
+  color:var(--navy);padding:0 40px 0 14px;outline:none;transition:.15s}
+.cash-input:focus{border-color:var(--blue)}
+.cash-input-unit{font-size:13px;font-weight:700;color:var(--muted);flex-shrink:0}
+.cash-change-row{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;border-radius:10px;background:var(--surface);margin-bottom:0;min-height:40px}
+.cash-change-lbl{font-size:13px;color:var(--muted)}
+.cash-change-val{font-size:18px;font-weight:800;font-family:'Outfit',sans-serif}
+.cash-change-ok{color:var(--green)}.cash-change-err{color:var(--red)}
+/* Footer btns */
+.cash-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;flex-shrink:0}
+.cash-btn-cancel{flex:0 0 auto;height:42px;padding:0 20px;border-radius:10px;border:1.5px solid var(--border);
+  background:#fff;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+.cash-btn-cancel:hover{border-color:var(--red);color:var(--red)}
+.cash-btn-confirm{flex:1;height:42px;border-radius:10px;
+  background:linear-gradient(135deg,var(--green),#047857);
+  color:#fff;border:none;font-size:14px;font-weight:800;
+  cursor:pointer;font-family:'Outfit',sans-serif;transition:.2s}
+.cash-btn-confirm:disabled{opacity:.4;cursor:not-allowed}
+.cash-btn-confirm:not(:disabled):hover{box-shadow:0 6px 20px rgba(5,150,105,.35)}
 .sm-backdrop{position:absolute;inset:0;background:rgba(16,26,51,.6);backdrop-filter:blur(6px)}
 .sm-panel{
   position:relative;width:380px;background:#fff;border-radius:20px;
@@ -281,11 +344,6 @@ body{display:flex;background:var(--surface);color:var(--navy)}
 <!-- ── MINI SIDEBAR ── -->
 <aside class="msidebar">
   <a href="<%= ctx %>/pos" class="ms-logo" title="POS">💊</a>
-
-  <a href="<%= ctx %>/dashboard" class="ms-btn" title="">
-    <span>🏠</span>
-    <span class="ms-tooltip">Dashboard</span>
-  </a>
   <a href="<%= ctx %>/pos" class="ms-btn active" title="">
     <span>🛒</span>
     <span class="ms-tooltip">Bán hàng POS</span>
@@ -383,6 +441,8 @@ body{display:flex;background:var(--surface);color:var(--navy)}
            data-unit="${m.unit}"
            data-cat="${m.categoryId}"
            data-rx="${m.prescriptionRequired}"
+           data-dosage="${m.dosage}"
+           data-code="${m.medicineCode}"
            onclick="addToCart(this)">
         <div class="med-card-top">
           <div class="med-icon">💊</div>
@@ -491,6 +551,75 @@ body{display:flex;background:var(--surface);color:var(--navy)}
   </div>
 </div>
 
+<!-- ── CASH MODAL ── -->
+<div class="cash-modal" id="cashModal">
+  <div class="sm-backdrop" onclick="closeCash()"></div>
+  <div class="cash-panel">
+
+    <%-- Header --%>
+    <div class="cash-rhead">
+      <div class="cash-rhead-top">
+        <div class="cash-rtitle">💵 Xác nhận đơn hàng</div>
+        <div class="cash-rdatetime" id="cashDatetime"></div>
+      </div>
+    </div>
+
+    <%-- Items table --%>
+    <div class="cash-rbody">
+      <table class="cash-items-table">
+        <thead>
+          <tr>
+            <th style="width:45%">Thuốc</th>
+            <th style="width:10%;text-align:center">SL</th>
+            <th style="width:18%;text-align:right">Đơn giá</th>
+            <th style="width:18%;text-align:right">Thành tiền</th>
+          </tr>
+        </thead>
+        <tbody id="cashItemsBody"></tbody>
+      </table>
+    </div>
+
+    <%-- Summary --%>
+    <div class="cash-summary">
+      <div class="cash-sum-row">
+        <span>Tạm tính</span>
+        <span id="cashSubtotal">0đ</span>
+      </div>
+      <div class="cash-sum-row">
+        <span>Giảm giá</span>
+        <span id="cashDiscount" style="color:var(--red)">-0đ</span>
+      </div>
+      <div class="cash-sum-row total-row">
+        <span>TỔNG THANH TOÁN</span>
+        <span id="cashNeedAmt"></span>
+      </div>
+    </div>
+
+    <%-- Input tiền --%>
+    <div class="cash-input-section">
+      <div class="cash-input-row">
+        <span class="cash-input-lbl">Tiền khách đưa</span>
+        <input type="number" class="cash-input" id="cashInput"
+               placeholder="0" min="0" oninput="calcChange()" />
+        <span class="cash-input-unit">₫</span>
+      </div>
+      <div class="cash-change-row">
+        <span class="cash-change-lbl">Tiền thừa trả khách</span>
+        <span class="cash-change-val" id="cashChangeVal">—</span>
+      </div>
+    </div>
+
+    <%-- Footer --%>
+    <div class="cash-footer">
+      <button class="cash-btn-cancel" onclick="closeCash()">Hủy</button>
+      <button class="cash-btn-confirm" id="cashConfirmBtn" onclick="confirmCash()" disabled>
+        ✓ Xác nhận đã nhận tiền
+      </button>
+    </div>
+
+  </div>
+</div>
+
 <!-- ── SUCCESS MODAL ── -->
 <div class="success-modal" id="successModal">
   <div class="sm-backdrop" onclick="closeSuccess()"></div>
@@ -595,7 +724,10 @@ function addToCart(card) {
   if (existing) {
     existing.qty++;
   } else {
-    cart.push({ id, name, price, unit, qty: 1, batchNo: '' });
+    cart.push({ id, name, price, unit, qty: 1, batchNo: '',
+                dosage: card.dataset.dosage || '',
+                code:   card.dataset.code   || '',
+                rx:     card.dataset.rx === 'true' });
   }
   renderCart();
   card.style.transform = 'scale(.96)';
@@ -687,16 +819,16 @@ function searchCustomer() {
       const el = document.getElementById('custFound');
       if (data.found) {
         selectedCustomer = { id: data.id, name: data.name };
-        el.innerHTML = `<div class="cust-found">
-          <span>👤</span>
-          <span class="cust-found-name">${data.name}</span>
-          <span style="color:var(--muted);font-size:11px">${data.phone}</span>
-          <button class="cust-found-rm" onclick="removeCustomer()">✕</button>
-        </div>`;
+        el.innerHTML = '<div class="cust-found">' +
+          '<span>👤</span>' +
+          '<span class="cust-found-name">' + data.name + '</span>' +
+          '<span style="color:var(--muted);font-size:11px">' + data.phone + '</span>' +
+          '<button class="cust-found-rm" onclick="removeCustomer()">✕</button>' +
+          '</div>';
         el.style.display = 'block';
       } else {
         selectedCustomer = null;
-        el.innerHTML = `<div style="margin-top:6px;font-size:12px;color:var(--muted)">⚠️ Không tìm thấy khách hàng với SĐT này</div>`;
+        el.innerHTML = '<div style="margin-top:6px;font-size:12px;color:var(--muted)">⚠️ Không tìm thấy khách hàng với SĐT này</div>';
         el.style.display = 'block';
       }
     }).catch(() => {});
@@ -711,6 +843,101 @@ function removeCustomer() {
 // ── Checkout ──
 function doCheckout() {
   if (cart.length === 0) return;
+  if (selectedPayment === 'CASH') {
+    openCash();   // CASH → popup nhập tiền khách đưa trước
+  } else {
+    submitSale(); // Các PT khác → gọi backend thẳng
+  }
+}
+
+// ── Cash modal ──
+function openCash() {
+  const total    = calcTotal();
+  const sub      = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+
+  // Datetime
+  const now = new Date();
+  const days = ['CN','T2','T3','T4','T5','T6','T7'];
+  document.getElementById('cashDatetime').textContent =
+    days[now.getDay()] + ' ' + now.toLocaleDateString('vi-VN') +
+    ' · ' + now.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'});
+
+  // Summary
+  document.getElementById('cashSubtotal').textContent = fmtMoney(sub);
+  document.getElementById('cashDiscount').textContent  = discount > 0 ? '-' + fmtMoney(discount) : '-0đ';
+  document.getElementById('cashNeedAmt').textContent   = fmtMoney(total);
+
+  // Items table
+  const tbody = document.getElementById('cashItemsBody');
+  tbody.innerHTML = '';
+  cart.forEach(item => {
+    const tr = document.createElement('tr');
+    const subtotal = item.price * item.qty;
+    const rxBadge = item.rx
+      ? "<span class='ci-rx'>Kê toa</span>"
+      : "<span class='ci-otc'>OTC</span>";
+    const dosageHtml = item.dosage
+      ? '<div class=\'ci-dosage\'>📋 ' + item.dosage + '</div>' : '';
+    tr.innerHTML =
+      '<td>' +
+         '<div class=\'ci-name\'>' + item.name + '</div>' +
+         '<div class=\'ci-code\'>' + (item.code || '') + '</div>' +
+         rxBadge +
+         dosageHtml +
+       '</td>' +
+       '<td class=\'ci-qty\'>' + item.qty + '<div class=\'ci-unit\'>' + item.unit + '</div></td>' +
+       '<td class=\'ci-price\'>' + fmtMoney(item.price) + '</td>' +
+       '<td class=\'ci-subtotal\'>' + fmtMoney(subtotal) + '</td>';
+    tbody.appendChild(tr);
+  });
+
+  // Input reset
+  document.getElementById('cashInput').value = '';
+  document.getElementById('cashChangeVal').textContent = '—';
+  document.getElementById('cashChangeVal').className = 'cash-change-val';
+  document.getElementById('cashConfirmBtn').disabled = true;
+  document.getElementById('cashModal').classList.add('show');
+  setTimeout(() => document.getElementById('cashInput').focus(), 150);
+}
+
+function closeCash() {
+  document.getElementById('cashModal').classList.remove('show');
+}
+
+function calcChange() {
+  const total    = calcTotal();
+  const received = parseFloat(document.getElementById('cashInput').value) || 0;
+  const change   = received - total;
+  const valEl    = document.getElementById('cashChangeVal');
+  const confirmBtn = document.getElementById('cashConfirmBtn');
+  if (received <= 0) {
+    valEl.textContent = '—';
+    valEl.className = 'cash-change-val';
+    confirmBtn.disabled = true;
+  } else if (change < 0) {
+    valEl.textContent = '⚠ Thiếu ' + fmtMoney(Math.abs(change));
+    valEl.className = 'cash-change-val cash-change-err';
+    confirmBtn.disabled = true;
+  } else {
+    valEl.textContent = fmtMoney(change);
+    valEl.className = 'cash-change-val cash-change-ok';
+    confirmBtn.disabled = false;
+  }
+}
+
+function confirmCash() {
+  closeCash();
+  submitSale();
+}
+
+function calcTotal() {
+  const sub      = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+  return Math.max(0, sub - discount);
+}
+
+function submitSale() {
   const btn = document.getElementById('checkoutBtn');
   btn.disabled = true;
   btn.textContent = '⏳ Đang xử lý…';
@@ -729,10 +956,9 @@ function doCheckout() {
     .then(r => r.json())
     .then(data => {
       if (data.ok) {
-        const total = parseFloat(document.getElementById('discountInput').value||0);
-        const sub   = cart.reduce((s,i) => s + i.price * i.qty, 0);
+        const total = calcTotal();
         document.getElementById('smCode').textContent  = data.invoiceCode + ' · ' + new Date().toLocaleString('vi-VN');
-        document.getElementById('smTotal').textContent = fmtMoney(sub - total);
+        document.getElementById('smTotal').textContent = fmtMoney(total);
         document.getElementById('successModal').classList.add('show');
         showToast('✅ Thanh toán thành công!', 'ok');
       } else {
@@ -740,7 +966,7 @@ function doCheckout() {
         btn.disabled = false;
         btn.textContent = '✓ Thanh toán';
       }
-    }).catch(err => {
+    }).catch(() => {
       showToast('❌ Lỗi kết nối!', 'err');
       btn.disabled = false;
       btn.textContent = '✓ Thanh toán';

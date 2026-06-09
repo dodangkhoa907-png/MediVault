@@ -308,9 +308,11 @@ body{display:flex;background:var(--surface);color:var(--ink)}
     <a href="${pageContext.request.contextPath}/medicines" class="nav-item"><span>💊</span> Kho thuốc</a>
     <a href="${pageContext.request.contextPath}/invoices"  class="nav-item"><span>🧾</span> Hóa đơn</a>
     <a href="${pageContext.request.contextPath}/customers" class="nav-item"><span>👥</span> Khách hàng</a>
+    <a href="${pageContext.request.contextPath}/returns" class="nav-item"><span>↩️</span> Trả hàng</a>
   </nav>
   <nav class="nav-section">
     <div class="nav-label">Phân tích</div>
+    <a href="${pageContext.request.contextPath}/audit-logs" class="nav-item"><span>📋</span> Nhật ký</a>
     <a href="${pageContext.request.contextPath}/reports" class="nav-item"><span>📊</span> Báo cáo</a>
   </nav>
   <div class="sidebar-footer">

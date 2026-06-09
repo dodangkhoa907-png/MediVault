@@ -1,4 +1,4 @@
-package com.medivault.controller;
+package com.medivault.controller.pos;
 
 import com.medivault.dao.*;
 import com.medivault.dao.interfaces.*;
@@ -66,6 +66,40 @@ public class PosServlet extends HttpServlet {
                 out.printf("{\"found\":true,\"id\":%d,\"name\":\"%s\",\"phone\":\"%s\"}",
                         c.getCustomerId(), esc(c.getCustomerName()), esc(c.getPhone()));
             }
+            return;
+        }
+        if ("inventory".equals(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            PrintWriter out = resp.getWriter();
+            List<Medicines> meds = medicineDAO.findAll();
+            out.print("[");
+            boolean first = true;
+            for (Medicines m : meds) {
+                List<Batches> batches = batchesDAO.findAllByMedicine(m.getMedicineId());
+                int totalQty = batchesDAO.getTotalQuantity(m.getMedicineId());
+                for (Batches b : batches) {
+                    if (!first) out.print(",");
+                    out.printf("{\"medId\":%d,\"medName\":\"%s\",\"medCode\":\"%s\",\"unit\":\"%s\"," +
+                                    "\"totalStock\":%d,\"batchNo\":\"%s\",\"expiryDate\":\"%s\"," +
+                                    "\"currentQty\":%d,\"initialQty\":%d,\"importPrice\":%s}",
+                            m.getMedicineId(), esc(m.getMedicineName()), esc(m.getMedicineCode()),
+                            esc(m.getUnit()), totalQty, esc(b.getBatchNumber()),
+                            b.getExpiryDate().toString(), b.getCurrentQuantity(),
+                            b.getInitialQuantity(), b.getImportPrice());
+                    first = false;
+                }
+                // Thuốc không có lô nào vẫn hiển thị
+                if (batches.isEmpty()) {
+                    if (!first) out.print(",");
+                    out.printf("{\"medId\":%d,\"medName\":\"%s\",\"medCode\":\"%s\",\"unit\":\"%s\"," +
+                                    "\"totalStock\":0,\"batchNo\":\"\",\"expiryDate\":\"\"," +
+                                    "\"currentQty\":0,\"initialQty\":0,\"importPrice\":\"0\"}",
+                            m.getMedicineId(), esc(m.getMedicineName()),
+                            esc(m.getMedicineCode()), esc(m.getUnit()));
+                    first = false;
+                }
+            }
+            out.print("]");
             return;
         }
 

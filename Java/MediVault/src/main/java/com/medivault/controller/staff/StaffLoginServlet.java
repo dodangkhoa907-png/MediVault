@@ -1,4 +1,4 @@
-package com.medivault.controller;
+package com.medivault.controller.staff;
 
 import com.medivault.dao.interfaces.IAccountDAO;
 import com.medivault.dao.interfaces.IPasswordResetDAO;
@@ -28,7 +28,7 @@ public class StaffLoginServlet extends HttpServlet {
                 return;
             }
         }
-        req.getRequestDispatcher("/WEB-INF/views/staff-login.jsp").forward(req, resp);
+        req.getRequestDispatcher("/WEB-INF/views/staff/staff-login.jsp").forward(req, resp);
     }
 
     @Override
@@ -41,7 +41,7 @@ public class StaffLoginServlet extends HttpServlet {
         if (username == null || username.trim().isEmpty() ||
                 password == null || password.trim().isEmpty()) {
             req.setAttribute("error", "Vui lòng nhập đầy đủ thông tin!");
-            req.getRequestDispatcher("/WEB-INF/views/staff-login.jsp").forward(req, resp);
+            req.getRequestDispatcher("/WEB-INF/views/staff/staff-login.jsp").forward(req, resp);
             return;
         }
 
@@ -67,21 +67,21 @@ public class StaffLoginServlet extends HttpServlet {
                 req.setAttribute("error",
                         "Tài khoản đang bị tạm khóa hoặc bảo trì. Vui lòng liên hệ quản trị viên.");
             }
-            req.getRequestDispatcher("/WEB-INF/views/staff-login.jsp").forward(req, resp);
+            req.getRequestDispatcher("/WEB-INF/views/staff/staff-login.jsp").forward(req, resp);
             return;
         }
 
         // ── 3. Username không tồn tại hoặc sai mật khẩu ──
         if (account == null || !PasswordUtil.checkPassword(password, account.getPasswordHash())) {
             req.setAttribute("error", "Tên đăng nhập hoặc mật khẩu không đúng!");
-            req.getRequestDispatcher("/WEB-INF/views/staff-login.jsp").forward(req, resp);
+            req.getRequestDispatcher("/WEB-INF/views/staff/staff-login.jsp").forward(req, resp);
             return;
         }
 
         // ── 4. Tài khoản Admin không đăng nhập ở đây ──
         if (account.getRoleId() == 1) {
             req.setAttribute("error", "Tài khoản Admin vui lòng đăng nhập tại trang quản trị!");
-            req.getRequestDispatcher("/WEB-INF/views/staff-login.jsp").forward(req, resp);
+            req.getRequestDispatcher("/WEB-INF/views/staff/staff-login.jsp").forward(req, resp);
             return;
         }
 

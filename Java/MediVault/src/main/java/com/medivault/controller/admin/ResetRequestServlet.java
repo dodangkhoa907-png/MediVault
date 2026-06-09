@@ -1,4 +1,4 @@
-package com.medivault.controller;
+package com.medivault.controller.admin;
 
 import com.medivault.dao.AccountDAO;
 import com.medivault.dao.PasswordResetDAO;

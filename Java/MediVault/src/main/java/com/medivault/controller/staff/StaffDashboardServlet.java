@@ -1,4 +1,4 @@
-package com.medivault.controller;
+package com.medivault.controller.staff;
 
 import com.medivault.dao.BatchesDAO;
 import com.medivault.dao.MedicineDAO;
@@ -50,6 +50,6 @@ public class StaffDashboardServlet extends HttpServlet {
         // Lấy 10 hoạt động gần nhất của nhân viên này
         req.setAttribute("recentLogs", staffAuditDAO.findRecentByAccount(staffAcc.getAccountId(), 10));
 
-        req.getRequestDispatcher("/WEB-INF/views/staff-dashboard.jsp").forward(req, resp);
+        req.getRequestDispatcher("/WEB-INF/views/staff/staff-dashboard.jsp").forward(req, resp);
     }
 }

@@ -1,4 +1,4 @@
-package com.medivault.controller;
+package com.medivault.controller.admin;
 
 import com.medivault.dao.AuditLogDAO;
 import com.medivault.dao.interfaces.IAuditLogDAO;
@@ -72,6 +72,6 @@ public class AuditLogServlet extends HttpServlet {
             if (a != null) resetAccountMap.put(pr.getAccountId(), a);
         }
         req.setAttribute("resetAccountMap", resetAccountMap);
-        req.getRequestDispatcher("/WEB-INF/views/audit-log-list.jsp").forward(req, resp);
+        req.getRequestDispatcher("/WEB-INF/views/admin/audit-log-list.jsp").forward(req, resp);
     }
 }
