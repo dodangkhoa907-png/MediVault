@@ -60,6 +60,8 @@ h2{font-family:'DM Serif Display',serif;font-size:24px;color:var(--ink);margin-b
 </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/views/loading.jsp" %>
+
 <div class="card">
   <div class="logo-row">
     <div class="logo-icon">🗑️</div>

@@ -340,6 +340,7 @@ body{display:flex;background:var(--surface);color:var(--navy)}
 </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/views/loading.jsp" %>
 
 <!-- ── MINI SIDEBAR ── -->
 <aside class="msidebar">

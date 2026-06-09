@@ -60,6 +60,8 @@ html,body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--surfa
 </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/views/loading.jsp" %>
+
 <div class="topbar">
   <a href="${pageContext.request.contextPath}/medicines?action=detail&id=${medicine.medicineId}" class="btn-back">
     ← ${medicine.medicineName}

@@ -110,6 +110,8 @@ tbody tr:hover td{background:#FAFBFF}
 </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/views/loading.jsp" %>
+
 <%-- Toast --%>
 <% if ("created".equals(msg)) { %><div class="toast toast-ok">✅ Đã thêm thuốc mới thành công!</div>
 <% } else if ("updated".equals(msg)) { %><div class="toast toast-ok">✅ Đã cập nhật thông tin thuốc!</div>
