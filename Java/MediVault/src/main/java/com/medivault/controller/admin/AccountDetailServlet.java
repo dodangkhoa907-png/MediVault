@@ -1,4 +1,4 @@
-package com.medivault.controller;
+package com.medivault.controller.admin;
 
 import com.medivault.dao.interfaces.IAccountDAO;
 import com.medivault.entity.Account;

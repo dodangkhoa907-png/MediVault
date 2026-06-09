@@ -357,12 +357,42 @@ CREATE TABLE OrderLogs (
     CONSTRAINT CK_OL_Status CHECK (NewStatus IN ('PENDING','COMPLETED','CANCELLED','REFUNDED'))
 );
 GO
+CREATE TABLE PasswordResetRequests (
+    RequestID     INT IDENTITY(1,1) PRIMARY KEY,
+    AccountID     INT NOT NULL,
+    Token         VARCHAR(64) NOT NULL UNIQUE,  -- UUID link cho admin
+    Status        VARCHAR(20) DEFAULT 'PENDING', -- PENDING, CONFIRMED, COMPLETED, EXPIRED
+    RequestedAt   DATETIME DEFAULT GETDATE(),
+    ExpiresAt     DATETIME NOT NULL,             -- +24h từ lúc tạo
+    ConfirmedAt   DATETIME NULL,
+    CompletedAt   DATETIME NULL,
+    FOREIGN KEY (AccountID) REFERENCES Accounts(AccountID)
+);
+GO
 
+-- Bảng ghi nhật ký hoạt động của từng nhân viên (Staff)
+CREATE TABLE StaffAuditLogs (
+    LogID       INT IDENTITY(1,1) PRIMARY KEY,
+    AccountID   INT            NULL,
+    Action      NVARCHAR(100)  NOT NULL,
+    Details     NVARCHAR(500)  NULL,
+    IPAddress   VARCHAR(45)    NULL,
+    CreatedAt   DATETIME2      NOT NULL DEFAULT GETDATE(),
+ 
+    CONSTRAINT FK_StaffAuditLogs_Account
+        FOREIGN KEY (AccountID) REFERENCES Accounts(AccountID)
+);
+GO
+CREATE INDEX IX_StaffAuditLogs_AccountID ON StaffAuditLogs(AccountID);
+CREATE INDEX IX_StaffAuditLogs_CreatedAt ON StaffAuditLogs(CreatedAt DESC);
+GO
 
 /* ================================================================
    BƯỚC 2 — THÊM FOREIGN KEYS (sau khi tất cả bảng đã tồn tại)
    ================================================================ */
-
+ALTER TABLE AuditLog ALTER COLUMN Action     NVARCHAR(100) NOT NULL;
+ALTER TABLE AuditLog ALTER COLUMN EntityType NVARCHAR(50)  NULL;
+ALTER TABLE StaffAuditLogs ALTER COLUMN AccountID INT NULL;
 -- KV 1
 ALTER TABLE Accounts        ADD CONSTRAINT FK_Account_Role    FOREIGN KEY (RoleID)         REFERENCES Roles(RoleID);
 -- KV 2

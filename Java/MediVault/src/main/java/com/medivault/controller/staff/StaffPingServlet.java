@@ -1,4 +1,4 @@
-package com.medivault.controller;
+package com.medivault.controller.staff;
 
 import com.medivault.util.SessionTracker;
 import jakarta.servlet.ServletException;

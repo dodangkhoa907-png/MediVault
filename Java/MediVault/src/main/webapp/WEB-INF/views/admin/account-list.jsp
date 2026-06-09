@@ -155,9 +155,11 @@ body{display:flex;background:var(--surface);color:var(--ink)}
     <a href="${pageContext.request.contextPath}/medicines" class="nav-item"><span>💊</span> Kho thuốc</a>
     <a href="${pageContext.request.contextPath}/invoices" class="nav-item"><span>🧾</span> Hóa đơn</a>
     <a href="${pageContext.request.contextPath}/customers" class="nav-item"><span>👥</span> Khách hàng</a>
+    <a href="${pageContext.request.contextPath}/returns" class="nav-item"><span>↩️</span> Trả hàng</a>
   </nav>
   <nav class="nav-section">
     <div class="nav-label">Phân tích</div>
+    <a href="${pageContext.request.contextPath}/audit-logs" class="nav-item"><span>📋</span> Nhật ký</a>
     <a href="${pageContext.request.contextPath}/reports" class="nav-item"><span>📊</span> Báo cáo</a>
   </nav>
   <div class="sidebar-footer">
@@ -373,10 +375,18 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 <% if ("created".equals(msg)) { %><div class="toast toast-ok">✅ Tạo tài khoản thành công!</div>
 <% } else if ("updated".equals(msg)) { %><div class="toast toast-ok">✅ Cập nhật thành công!</div>
 <% } else if ("locked".equals(msg)) { %><div class="toast toast-warn">🔒 Đã khóa tài khoản.</div>
-<% } else if ("unlocked".equals(msg)) { %><div class="toast toast-ok">🔓 Đã mở khóa tài khoản.</div>
+<% } else if ("unlocked".equals(msg)) {
+     String unlockedNameParam = request.getParameter("name");
+%><div class="toast toast-ok" style="flex-direction:column;align-items:flex-start;gap:3px">
+  <div>🔓 Đã mở khóa tài khoản thành công!</div>
+  <% if (unlockedNameParam != null && !unlockedNameParam.isEmpty()) { %>
+  <div style="font-size:12px;opacity:.8">📧 Đã gửi email thông báo đến <strong><%= unlockedNameParam %></strong></div>
+  <% } %>
+</div>
 <% } else if ("deleted".equals(msg)) { %><div class="toast toast-warn">🗑️ Đã chuyển vào thùng rác.</div>
 <% } else if ("nochange".equals(msg)) { %><div class="toast toast-warn">ℹ️ Không có thay đổi nào được ghi nhận.</div>
 <% } else if ("last-admin".equals(msg)) { %><div class="toast toast-warn">⚠️ Không thể thực hiện — đây là Admin duy nhất!</div>
+<% } else if ("in-reset".equals(msg)) { %><div class="toast toast-warn">🔒 Không thể mở khóa — tài khoản đang chờ đặt lại mật khẩu!</div>
 <% } else if ("otp-expired".equals(msg)) { %><div class="toast toast-warn">⏱️ Mã OTP đã hết hạn.</div>
 <% } %>
 

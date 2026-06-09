@@ -24,7 +24,25 @@
     // Trang hiện tại
     java.lang.String currentPage = request.getParameter("view");
     if (currentPage == null) currentPage = "dashboard";
+
+    // Pending reset requests — từ DashboardServlet
+    @SuppressWarnings("unchecked")
+    java.util.List<com.medivault.entity.PasswordResetRequest> pendingResets =
+        (java.util.List<com.medivault.entity.PasswordResetRequest>) request.getAttribute("pendingResets");
+    @SuppressWarnings("unchecked")
+    java.util.Map<Integer, com.medivault.entity.Account> resetAccountMap =
+        (java.util.Map<Integer, com.medivault.entity.Account>) request.getAttribute("resetAccountMap");
+    Integer pendingResetCount = (Integer) request.getAttribute("pendingResetCount");
+    if (pendingResets     == null) pendingResets     = new java.util.ArrayList<>();
+    if (resetAccountMap   == null) resetAccountMap   = new java.util.HashMap<>();
+    if (pendingResetCount == null) pendingResetCount = 0;
+
+    @SuppressWarnings("unchecked")
+    java.util.Map<Integer, com.medivault.entity.Account> blockedMap =
+        (java.util.Map<Integer, com.medivault.entity.Account>) request.getAttribute("blockedAccountMap");
+    if (blockedMap == null) blockedMap = new java.util.HashMap<>();
 %>
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -167,6 +185,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .notif-item:last-child{border-bottom:none}
 .notif-dot{width:8px;height:8px;border-radius:50%;background:#DC2626;margin-top:4px;flex-shrink:0}
 .notif-dot.old{background:var(--muted);opacity:.4}
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
 .notif-text{font-size:12.5px;color:var(--ink);font-weight:500}
 .notif-time{font-size:11px;color:var(--muted);margin-top:2px}
 .topbar-user{
@@ -381,6 +400,9 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 
     <nav class="nav-section">
         <div class="nav-label">Phân tích</div>
+        <a href="${pageContext.request.contextPath}/audit-logs" class="nav-item">
+            <span class="nav-icon">📋</span> Nhật ký
+        </a>
         <a href="${pageContext.request.contextPath}/reports" class="nav-item">
             <span class="nav-icon">📊</span> Báo cáo
         </a>
@@ -417,8 +439,11 @@ body{display:flex;background:var(--surface);color:var(--ink)}
             <div class="notif-wrap">
                 <button class="topbar-icon-btn" onclick="toggleNotif()" title="Thông báo">
                     🔔
-                    <% if (expiryCount > 0) { %>
-                    <span class="topbar-notif-badge"><%= expiryCount > 9 ? "9+" : expiryCount %></span>
+                    <%
+                        int totalNotifCount = expiryCount + pendingResetCount;
+                    %>
+                    <% if (totalNotifCount > 0) { %>
+                    <span class="topbar-notif-badge" id="notifBadge"><%= totalNotifCount > 9 ? "9+" : totalNotifCount %></span>
                     <% } %>
                 </button>
                 <div class="notif-dropdown" id="notifDropdown">
@@ -426,7 +451,48 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                         <span class="notif-head-title">🔔 Thông báo</span>
                         <button class="notif-clear" onclick="closeNotif()">Đóng ✕</button>
                     </div>
-                    <div class="notif-list">
+                    <div class="notif-list" id="notifList">
+                        <%-- ── Blocked accounts (quá 3 lần forgot-password hôm nay) ── --%>
+                        <% for (java.util.Map.Entry<Integer, com.medivault.entity.Account> bEntry : blockedMap.entrySet()) {
+                               com.medivault.entity.Account bAcc = bEntry.getValue(); %>
+                        <div class="notif-item" style="background:rgba(220,38,38,.04);border-left:3px solid #DC2626">
+                          <div class="notif-dot" style="background:#DC2626;animation:pulseDot 1.8s ease-in-out infinite"></div>
+                          <div style="flex:1">
+                            <div class="notif-text">🚫 <strong>@<%= bAcc.getUsername() %></strong> bị chặn gửi yêu cầu reset MK (quá 3 lần hôm nay)</div>
+                            <div class="notif-time" style="margin-top:4px">
+                              <a href="<%= request.getContextPath() %>/admin/reset-requests?action=unlock-reset&id=<%= bAcc.getAccountId() %>"
+                                 onclick="return confirm('Cho phép @<%= bAcc.getUsername() %> gửi lại yêu cầu reset mật khẩu?')"
+                                 style="color:#DC2626;font-weight:700;font-size:11.5px">🔓 Cho phép gửi lại</a>
+                            </div>
+                          </div>
+                        </div>
+                        <% } %>
+
+                        <%-- ── Reset requests — hiện đầu tiên, ưu tiên cao nhất ── --%>
+                        <% for (com.medivault.entity.PasswordResetRequest pr : pendingResets) {
+                               com.medivault.entity.Account staffPr = resetAccountMap.get(pr.getAccountId());
+                               String staffPrName = staffPr != null ? staffPr.getFullName() : ("ID " + pr.getAccountId());
+                               String staffPrUser = staffPr != null ? staffPr.getUsername() : "";
+                               String editUrl = request.getContextPath() + "/accounts?action=edit&id=" + pr.getAccountId();
+                               boolean isConfirmed = "CONFIRMED".equals(pr.getStatus());
+                        %>
+                        <a href="<%= editUrl %>" class="notif-item" style="text-decoration:none;display:flex;cursor:pointer;
+                           background:rgba(245,158,11,.06);border-left:3px solid #F59E0B">
+                          <div class="notif-dot" style="background:#D97706;animation:pulseDot 1.8s ease-in-out infinite"></div>
+                          <div style="flex:1">
+                            <div class="notif-text">🔐 <strong><%= staffPrName %></strong> yêu cầu đổi mật khẩu
+                              <span style="display:inline-block;padding:1px 7px;border-radius:10px;font-size:10.5px;font-weight:700;margin-left:5px;
+                                   background:<%= isConfirmed ? "#FEF3C7" : "#FEE2E2" %>;color:<%= isConfirmed ? "#92400E" : "#991B1B" %>">
+                                <%= isConfirmed ? "Đã xác nhận" : "Chờ xử lý" %>
+                              </span>
+                            </div>
+                            <div class="notif-time">@<%= staffPrUser %> · Bấm để đặt mật khẩu mới</div>
+                          </div>
+                          <span style="font-size:13px;color:var(--muted);margin-left:auto;align-self:center">→</span>
+                        </a>
+                        <% } %>
+
+                        <%-- ── Thuốc hết hạn ── --%>
                         <% if (expiryCount > 0) { %>
                         <div class="notif-item"><div class="notif-dot"></div><div><div class="notif-text">⚠️ Có <%= expiryCount %> mặt hàng sắp hết hạn</div><div class="notif-time">Hôm nay</div></div></div>
                         <% } else { %>
@@ -452,9 +518,11 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                 <div class="breadcrumb">MediVault › Trang chủ</div>
                 <h1>Dashboard</h1>
             </div>
-            <a href="${pageContext.request.contextPath}/accounts?action=new" class="btn-primary">
-                ＋ Tạo tài khoản mới
-            </a>
+            <div style="display:flex;gap:10px;align-items:center">
+                <a href="${pageContext.request.contextPath}/accounts?action=new" class="btn-primary">
+                    ＋ Tạo tài khoản mới
+                </a>
+            </div>
         </div>
 
         <!-- Alert nếu có thuốc sắp hết hạn -->
@@ -686,6 +754,8 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 <div id="toast" class="toast-base" style="background:#7f1d1d;color:#fff">🔒 Đã khóa tài khoản.</div>
 <% } else if ("unlocked".equals(msg)) { %>
 <div id="toast" class="toast-base" style="background:#064e3b;color:#fff">🔓 Đã mở khóa tài khoản.</div>
+<% } else if ("reset-unblocked".equals(msg)) { %>
+<div id="toast" class="toast-base" style="background:#1e40af;color:#fff">🔓 Đã cho phép nhân viên gửi lại yêu cầu đặt lại mật khẩu!</div>
 <% } %>
 
 <script>

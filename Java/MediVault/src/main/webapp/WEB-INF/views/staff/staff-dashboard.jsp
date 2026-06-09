@@ -309,6 +309,42 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 
+/* ── Activity Log ── */
+.log-card{
+  background:var(--white);border:1px solid var(--border);border-radius:18px;
+  overflow:hidden;margin-top:16px;
+  animation:fadeUp .5s .2s ease both;
+}
+.log-head{
+  padding:18px 22px 14px;border-bottom:1px solid var(--border);
+  background:linear-gradient(135deg,#FAFAFA,#F5F3FF);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.log-head-title{font-size:14px;font-weight:700;color:var(--ink)}
+.log-head-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.log-table{width:100%;border-collapse:collapse}
+.log-table th{
+  font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  color:var(--muted);padding:10px 18px;background:var(--soft);
+  border-bottom:1px solid var(--border);text-align:left;
+}
+.log-table td{
+  padding:11px 18px;font-size:13px;color:var(--ink);
+  border-bottom:1px solid #F8F7FF;vertical-align:middle;
+}
+.log-table tr:last-child td{border-bottom:none}
+.log-table tr:hover td{background:#FAFAFA}
+.log-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600;
+}
+.lb-green{background:rgba(5,150,105,.1);color:var(--green)}
+.lb-gray{background:rgba(124,111,170,.1);color:var(--muted)}
+.lb-blue{background:rgba(109,40,217,.1);color:var(--main)}
+.log-ip{font-family:monospace;font-size:12px;color:var(--muted)}
+.log-time{font-size:12px;color:var(--muted);white-space:nowrap}
+.log-empty{text-align:center;padding:28px;color:var(--muted);font-size:13px}
+
 .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
 .b-purple{background:rgba(109,40,217,.1);color:var(--main)}
 .b-green{background:rgba(5,150,105,.1);color:var(--green)}
@@ -528,6 +564,56 @@ body{display:flex;background:var(--soft);color:var(--ink)}
       </div>
 
     </div>
+
+    <%-- ── Nhật ký hoạt động gần đây ── --%>
+    <div class="log-card">
+      <div class="log-head">
+        <div>
+          <div class="log-head-title">🕐 Nhật ký hoạt động</div>
+          <div class="log-head-sub">10 thao tác gần nhất của bạn</div>
+        </div>
+      </div>
+      <table class="log-table">
+        <thead>
+          <tr>
+            <th>Thời gian</th>
+            <th>Hành động</th>
+            <th>Chi tiết</th>
+            <th>IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          <c:choose>
+            <c:when test="${empty recentLogs}">
+              <tr><td colspan="4" class="log-empty">Chưa có hoạt động nào được ghi nhận.</td></tr>
+            </c:when>
+            <c:otherwise>
+              <c:forEach var="log" items="${recentLogs}">
+                <tr>
+                  <td class="log-time">${log.createdAt}</td>
+                  <td>
+                    <c:choose>
+                      <c:when test="${log.action == 'Đăng nhập'}">
+                        <span class="log-badge lb-green">✓ ${log.action}</span>
+                      </c:when>
+                      <c:when test="${log.action == 'Đăng xuất'}">
+                        <span class="log-badge lb-gray">↩ ${log.action}</span>
+                      </c:when>
+                      <c:otherwise>
+                        <span class="log-badge lb-blue">● ${log.action}</span>
+                      </c:otherwise>
+                    </c:choose>
+                  </td>
+                  <td>${log.details}</td>
+                  <td class="log-ip">${log.ipAddress}</td>
+                </tr>
+              </c:forEach>
+            </c:otherwise>
+          </c:choose>
+        </tbody>
+      </table>
+    </div>
+
   </div>
 </div>
 
@@ -598,12 +684,19 @@ function toggleTask(check){
 
   sessionStorage.setItem('tabId', Math.random().toString(36).slice(2) + Date.now());
 
+  // Chỉ logout khi đóng tab/cửa sổ thật sự — KHÔNG logout khi navigate sang trang khác
+  let _navigating = false;
+  document.addEventListener('click', function(e) {
+    const a = e.target.closest('a[href]');
+    if (a && !a.href.includes('logout')) _navigating = true;
+  });
   window.addEventListener('beforeunload', function() {
-      const uid   = sessionStorage.getItem('staffUid');
-      const ctx   = document.querySelector('meta[name="ctx"]')?.content || '';
-      if (uid) {
-          navigator.sendBeacon(ctx + '/logout?from=staff&uid=' + uid);
-      }
+    if (_navigating) { _navigating = false; return; } // đang navigate → bỏ qua
+    const uid = sessionStorage.getItem('staffUid');
+    const ctx = document.querySelector('meta[name="ctx"]')?.content || '';
+    if (uid) {
+      navigator.sendBeacon(ctx + '/logout?from=staff&uid=' + uid);
+    }
   });
   const uid   = sessionStorage.getItem('staffUid');
   const token = sessionStorage.getItem('staffToken');

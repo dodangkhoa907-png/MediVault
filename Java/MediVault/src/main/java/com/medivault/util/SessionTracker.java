@@ -21,19 +21,12 @@ public class SessionTracker {
     // Token mới ghi đè token cũ → tab cũ ping sẽ thấy token không khớp → bị kick
     private static final ConcurrentHashMap<Integer, String> loginTokens =
             new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<Integer, String> activeTabIds =
-            new ConcurrentHashMap<>();
 
     // ── Login: thêm vào online set + tạo token mới ──────────
-    /**
-     * Gọi khi staff login thành công.
-     * @return token mới — truyền xuống tab qua URL ?uid=X&token=TOKEN
-     */
     public static String login(int accountId) {
         onlineStaff.add(accountId);
         String token = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
         loginTokens.put(accountId, token);
-        activeTabIds.remove(accountId);
         return token;
     }
 
@@ -43,25 +36,10 @@ public class SessionTracker {
         loginTokens.remove(accountId);
     }
 
-    // ── Kiểm tra token còn hợp lệ không ────────────────────
-    /**
-     * @return true nếu token khớp (tab này vẫn là session hợp lệ)
-     *         false nếu token không khớp (đã bị tab mới kick)
-     */
-    // ── Kiểm tra session hợp lệ (token + tabId) ────────────
+    // ── Kiểm tra session hợp lệ (chỉ token, bỏ tabId) ──────
+    // tabId giữ trong signature để không đổi StaffPingServlet
     public static boolean isValidSession(int accountId, String token, String tabId) {
-        // Bước 1: token phải khớp
-        if (token == null || !token.equals(loginTokens.get(accountId))) return false;
-        // Bước 2: tabId phải hợp lệ
-        if (tabId == null || tabId.isEmpty()) return false;
-        String registered = activeTabIds.get(accountId);
-        if (registered == null) {
-            // Lần đầu ping → đăng ký tabId này
-            activeTabIds.put(accountId, tabId);
-            return true;
-        }
-        // Tab đã đăng ký → chỉ đúng tabId mới được
-        return registered.equals(tabId);
+        return token != null && token.equals(loginTokens.get(accountId));
     }
 
     // ── Getters ──────────────────────────────────────────────
@@ -73,4 +51,3 @@ public class SessionTracker {
         return Collections.unmodifiableSet(onlineStaff);
     }
 }
-

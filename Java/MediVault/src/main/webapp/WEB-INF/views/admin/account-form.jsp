@@ -28,6 +28,15 @@
     boolean hasErrors = (errs != null && !errs.isEmpty());
 
     java.lang.String successMsg = (java.lang.String) request.getAttribute("success");
+
+    // Kiểm tra pending reset request
+    com.medivault.entity.PasswordResetRequest pendingReset = null;
+    if (!isNew && form != null && form.getAccountId() > 0) {
+        com.medivault.dao.PasswordResetDAO prdao = new com.medivault.dao.PasswordResetDAO();
+        pendingReset = prdao.findPendingByAccountId(form.getAccountId());
+        if (pendingReset == null) pendingReset = prdao.findConfirmedByAccountId(form.getAccountId());
+    }
+    boolean hasPendingReset = pendingReset != null;
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -128,6 +137,20 @@ body{display:flex;flex-direction:column}
 .form-heading p{font-size:13px;color:var(--muted)}
 
 /* Error block */
+.pending-reset-banner{
+  background:linear-gradient(90deg,rgba(245,158,11,.1),rgba(251,191,36,.06));
+  border:1.5px solid rgba(245,158,11,.3);border-radius:14px;
+  padding:14px 18px;margin-bottom:20px;
+  display:flex;align-items:flex-start;gap:12px;
+}
+.pending-reset-banner-icon{font-size:20px;flex-shrink:0;margin-top:2px}
+.pending-reset-banner-title{font-size:13.5px;font-weight:700;color:#92400E;margin-bottom:4px}
+.pending-reset-banner-msg{font-size:12.5px;color:#78350F;line-height:1.5}
+.pending-reset-banner-action{
+  margin-top:10px;font-size:12px;font-weight:600;color:#B45309;
+  background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.2);
+  border-radius:7px;padding:5px 12px;display:inline-block;
+}
 .err-block{
   background:#FEF2F2;border:1.5px solid #FECACA;border-left:3px solid var(--red);
   border-radius:12px;padding:14px 18px;margin-bottom:18px;
@@ -348,6 +371,20 @@ select.field-input{
             <p><%= isNew ? "Điền đầy đủ thông tin bên dưới. OTP sẽ được gửi tới email nhân viên." : "Chỉnh sửa thông tin tài khoản, sau đó lưu lại." %></p>
         </div>
 
+        <% if (hasPendingReset) { %>
+        <div class="pending-reset-banner">
+          <div class="pending-reset-banner-icon">🔐</div>
+          <div>
+            <div class="pending-reset-banner-title">Nhân viên này đang yêu cầu đặt lại mật khẩu</div>
+            <div class="pending-reset-banner-msg">
+              Điền mật khẩu mới vào ô phía dưới và bấm "Lưu thay đổi" —
+              hệ thống sẽ gửi OTP về Gmail của bạn để xác nhận.
+            </div>
+            <span class="pending-reset-banner-action">⏳ Trạng thái: <%= pendingReset.getStatus() %></span>
+          </div>
+        </div>
+        <% } %>
+
         <% if (hasErrors) { %>
         <div class="err-block">
             <div class="err-block-title">⚠️ Vui lòng kiểm tra lại thông tin</div>
@@ -400,12 +437,25 @@ select.field-input{
                                 Mật khẩu
                                 <%= isNew ? "<span class='req'>*</span>" : "<span class='hint'>(để trống nếu không muốn đổi)</span>" %>
                             </label>
+                            <% if (isNew) { %>
+                            <%-- TẠO MỚI: nhập mật khẩu thực --%>
                             <div class="pw-wrap">
                                 <input type="password" id="password" name="password" class="field-input"
-                                       placeholder="<%= isNew ? "Ít nhất 6 ký tự, không có khoảng trắng" : "Nhập lại mật khẩu mới nếu muốn đổi" %>"
-                                       <%= isNew ? "required minlength='6'" : "minlength='6'" %> autocomplete="new-password">
+                                       placeholder="Ít nhất 6 ký tự, không có khoảng trắng"
+                                       required minlength="6" autocomplete="new-password">
                                 <button type="button" class="pw-toggle" id="togglePw" title="Hiện/ẩn mật khẩu">👁</button>
                             </div>
+                            <% } else { %>
+                            <%-- CHỈNH SỬA: nhập từ khóa "update" để xác nhận đổi mật khẩu --%>
+                            <input type="text" id="passwordTrigger" name="password" class="field-input"
+                                   placeholder='Gõ "update" để đổi mật khẩu qua OTP'
+                                   autocomplete="off" style="letter-spacing:.5px"
+                                   oninput="checkUpdateTrigger(this)">
+                            <div id="updateTriggerHint" style="margin-top:6px;font-size:12px"></div>
+                            <span class="field-note" style="color:#1558A8;margin-top:6px;display:block">
+                              🔐 Nhập <strong>"update"</strong> rồi bấm "Lưu thay đổi" — OTP sẽ gửi về Gmail của bạn để xác nhận.
+                            </span>
+                            <% } %>
                         </div>
                     </div>
                 </div>
@@ -534,7 +584,45 @@ function emailOrPhoneChanged() {
     return curEmail !== origEmail || curPhone !== origPhone;
 }
 
+// ── Kiểm tra trigger "update" cho field mật khẩu khi edit ──
+function checkUpdateTrigger(inp) {
+    const hint = document.getElementById('updateTriggerHint');
+    const val  = inp.value.toLowerCase().trim();
+    if (!val) {
+        hint.textContent = '';
+        inp.style.borderColor = '';
+        return;
+    }
+    if (val === 'update') {
+        hint.innerHTML = '✅ <span style="color:#059669;font-weight:600">Xác nhận — OTP sẽ gửi về Gmail của bạn khi bấm Lưu.</span>';
+        inp.style.borderColor = '#059669';
+        inp.style.boxShadow   = '0 0 0 3px rgba(5,150,105,.1)';
+    } else {
+        hint.innerHTML = '❌ <span style="color:#DC2626;font-weight:600">Phải gõ đúng chữ <strong>"update"</strong> (không phân biệt hoa thường).</span>';
+        inp.style.borderColor = '#DC2626';
+        inp.style.boxShadow   = '0 0 0 3px rgba(220,38,38,.1)';
+    }
+}
+
 document.getElementById('mainForm').addEventListener('submit', async function(e) {
+    // Kiểm tra trigger field "update" khi edit
+    const triggerInp = document.getElementById('passwordTrigger');
+    if (triggerInp) {
+        const val = triggerInp.value.trim();
+        if (val !== '' && val.toLowerCase() !== 'update') {
+            e.preventDefault();
+            const hint = document.getElementById('updateTriggerHint');
+            hint.innerHTML = '❌ <span style="color:#DC2626;font-weight:600">Phải gõ đúng chữ <strong>"update"</strong> để xác nhận đổi mật khẩu!</span>';
+            triggerInp.style.borderColor = '#DC2626';
+            triggerInp.focus();
+            return;
+        }
+        // Nếu để trống → không đổi mk, xóa giá trị trước khi submit
+        if (val === '') {
+            triggerInp.value = '';
+        }
+    }
+
     if (emailOrPhoneChanged() && !otpVerifiedOk) {
         e.preventDefault();
         if (!otpSent) await sendOtp();

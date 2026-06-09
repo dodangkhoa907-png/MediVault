@@ -299,19 +299,11 @@ select.field-input{cursor:pointer}
                      onclick="return confirm('Khôi phục tài khoản @<%= a.getUsername() %>?')">
                     ↩️ Khôi phục
                   </a>
-                  <% if (canPurge) { %>
+                  <%-- Cả 2 trường hợp (đủ/chưa đủ 30 ngày) đều vào cùng 1 flow: nhập "delete" → OTP --%>
                   <a href="${pageContext.request.contextPath}/accounts?action=purge&id=<%= a.getAccountId() %>"
-                     class="act-btn act-purge"
-                     onclick="return confirm('XÓA VĨNH VIỄN @<%= a.getUsername() %>? Không thể hoàn tác!')">
-                    🗑️ Xóa vĩnh viễn
+                     class="act-btn act-purge">
+                    🗑️ Xóa ngay
                   </a>
-                  <% } else { %>
-                  <a href="${pageContext.request.contextPath}/accounts?action=force-purge&id=<%= a.getAccountId() %>"
-                     class="act-btn act-force"
-                     onclick="return confirm('XÓA NGAY @<%= a.getUsername() %>?\nChưa đủ 30 ngày — xác nhận xóa vĩnh viễn ngay bây giờ?\nHành động này KHÔNG THỂ HOÀN TÁC!')">
-                    ⚠️ Xóa ngay
-                  </a>
-                  <% } %>
                 </div>
               </td>
             </tr>

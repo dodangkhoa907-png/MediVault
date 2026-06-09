@@ -9,6 +9,10 @@
     com.medivault.entity.Account a = (com.medivault.entity.Account) request.getAttribute("account");
     if (a == null) { response.sendRedirect(request.getContextPath() + "/accounts"); return; }
 
+    com.medivault.entity.PasswordResetRequest pendingReset =
+        (com.medivault.entity.PasswordResetRequest) request.getAttribute("pendingReset");
+    boolean hasPendingReset = pendingReset != null;
+
     java.lang.String fullName = acc.getFullName() != null ? acc.getFullName() : acc.getUsername();
     java.lang.String initials = fullName.length() >= 2
         ? fullName.substring(0,1).toUpperCase() + fullName.substring(1,2).toUpperCase()
@@ -172,6 +176,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .b-blue{background:rgba(21,88,168,.1);color:var(--blue)}
 .b-gold{background:rgba(217,119,6,.1);color:var(--gold)}
 .b-gray{background:#F1F5F9;color:#64748B}
+.b-amber{background:rgba(245,158,11,.12);color:#B45309;border:1px solid rgba(245,158,11,.25)}
 
 /* Animations */
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
@@ -303,9 +308,11 @@ body{display:flex;background:var(--surface);color:var(--ink)}
     <a href="${pageContext.request.contextPath}/medicines" class="nav-item"><span>💊</span> Kho thuốc</a>
     <a href="${pageContext.request.contextPath}/invoices"  class="nav-item"><span>🧾</span> Hóa đơn</a>
     <a href="${pageContext.request.contextPath}/customers" class="nav-item"><span>👥</span> Khách hàng</a>
+    <a href="${pageContext.request.contextPath}/returns" class="nav-item"><span>↩️</span> Trả hàng</a>
   </nav>
   <nav class="nav-section">
     <div class="nav-label">Phân tích</div>
+    <a href="${pageContext.request.contextPath}/audit-logs" class="nav-item"><span>📋</span> Nhật ký</a>
     <a href="${pageContext.request.contextPath}/reports" class="nav-item"><span>📊</span> Báo cáo</a>
   </nav>
   <div class="sidebar-footer">
@@ -385,6 +392,12 @@ body{display:flex;background:var(--surface);color:var(--ink)}
           <span class="profile-status-text <%= a.isActive() ? "status-text-active" : "status-text-locked" %>">
             ● <%= a.isActive() ? "Đang hoạt động" : "Đã khóa" %>
           </span>
+          <% if (hasPendingReset) { %>
+          <br><br>
+          <span class="badge b-amber" style="font-size:12px;padding:5px 12px">
+            ⏳ Chờ cấp lại mật khẩu
+          </span>
+          <% } %>
 
           <!-- ── PHOTO PROFILE SECTION ── -->
           <div class="photo-section">
@@ -561,6 +574,9 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                 <%= a.isActive()
                     ? "<span class='badge b-green'>● Đang hoạt động</span>"
                     : "<span class='badge b-gray'>● Đã khóa</span>" %>
+                <% if (hasPendingReset) { %>
+                <span class="badge b-amber" style="margin-left:6px">⏳ Chờ cấp lại mật khẩu</span>
+                <% } %>
               </div>
             </div>
             <div class="info-field">
