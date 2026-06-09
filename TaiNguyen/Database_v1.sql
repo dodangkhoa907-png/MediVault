@@ -357,12 +357,41 @@ CREATE TABLE OrderLogs (
     CONSTRAINT CK_OL_Status CHECK (NewStatus IN ('PENDING','COMPLETED','CANCELLED','REFUNDED'))
 );
 GO
+CREATE TABLE PasswordResetRequests (
+    RequestID     INT IDENTITY(1,1) PRIMARY KEY,
+    AccountID     INT NOT NULL,
+    Token         VARCHAR(64) NOT NULL UNIQUE,  -- UUID link cho admin
+    Status        VARCHAR(20) DEFAULT 'PENDING', -- PENDING, CONFIRMED, COMPLETED, EXPIRED
+    RequestedAt   DATETIME DEFAULT GETDATE(),
+    ExpiresAt     DATETIME NOT NULL,             -- +24h từ lúc tạo
+    ConfirmedAt   DATETIME NULL,
+    CompletedAt   DATETIME NULL,
+    FOREIGN KEY (AccountID) REFERENCES Accounts(AccountID)
+);
+GO
 
+-- Bảng ghi nhật ký hoạt động của từng nhân viên (Staff)
+CREATE TABLE StaffAuditLogs (
+    LogID       INT IDENTITY(1,1) PRIMARY KEY,
+    AccountID   INT            NOT NULL,
+    Action      NVARCHAR(100)  NOT NULL,
+    Details     NVARCHAR(500)  NULL,
+    IPAddress   VARCHAR(45)    NULL,
+    CreatedAt   DATETIME2      NOT NULL DEFAULT GETDATE(),
+ 
+    CONSTRAINT FK_StaffAuditLogs_Account
+        FOREIGN KEY (AccountID) REFERENCES Accounts(AccountID)
+);
+GO
+CREATE INDEX IX_StaffAuditLogs_AccountID ON StaffAuditLogs(AccountID);
+CREATE INDEX IX_StaffAuditLogs_CreatedAt ON StaffAuditLogs(CreatedAt DESC);
+GO
 
 /* ================================================================
    BƯỚC 2 — THÊM FOREIGN KEYS (sau khi tất cả bảng đã tồn tại)
    ================================================================ */
-
+ALTER TABLE AuditLog ALTER COLUMN Action     NVARCHAR(100) NOT NULL;
+ALTER TABLE AuditLog ALTER COLUMN EntityType NVARCHAR(50)  NULL;
 -- KV 1
 ALTER TABLE Accounts        ADD CONSTRAINT FK_Account_Role    FOREIGN KEY (RoleID)         REFERENCES Roles(RoleID);
 -- KV 2
@@ -410,6 +439,9 @@ ALTER TABLE PointTransactions ADD CONSTRAINT FK_PT_Account     FOREIGN KEY (Acco
 -- KV 11
 ALTER TABLE OrderLogs        ADD CONSTRAINT FK_OL_Invoice      FOREIGN KEY (InvoiceID)      REFERENCES Invoices(InvoiceID);
 ALTER TABLE OrderLogs        ADD CONSTRAINT FK_OL_Account      FOREIGN KEY (AccountID)      REFERENCES Accounts(AccountID);
+ALTER TABLE Accounts 
+ADD IsDeleted BIT NOT NULL DEFAULT 0,
+    DeletedAt DATETIME NULL;
 GO
 
 
@@ -825,8 +857,8 @@ INSERT INTO Roles (RoleName) VALUES (N'Admin'), (N'Manager'), (N'Staff');
 
 INSERT INTO Accounts (Username, PasswordHash, FullName, Email, Phone, RoleID,
     CitizenId, ProfessionalCertNo, ProfessionalCertExp, Position) VALUES
-('admin',   '$2a$10$vk6YUYLb4LByJLSQX5LoEOAOXtxFSVDE1m.4OyTeEohHHgm8AFN7.', N'Quan tri he thong',
- 'admin@pharmacy.vn',   '0900000001', 1, '012345678901', NULL, NULL, N'Quan tri vien'),
+('admin',   '$2a$10$vk6YUYLb4LByJLSQX5LoEOAOXtxFSVDE1m.4OyTeEohHHgm8AFN7.', N'Đỗ Đăng Khoa',
+ 'dodangkhoa907@gmail.com',   '0835352009', 1, '012345678901', NULL, NULL, N'Quan tri vien'),
 ('manager', '$2a$10$vk6YUYLb4LByJLSQX5LoEOAOXtxFSVDE1m.4OyTeEohHHgm8AFN7.', N'Tran Quan Ly',
  'manager@pharmacy.vn', '0900000002', 2, '012345678902', 'DS-0001-2020', '2025-12-31', N'Duoc si phu trach'),
 ('staff01', '$2a$10$vk6YUYLb4LByJLSQX5LoEOAOXtxFSVDE1m.4OyTeEohHHgm8AFN7.', N'Nguyen Van Ban',

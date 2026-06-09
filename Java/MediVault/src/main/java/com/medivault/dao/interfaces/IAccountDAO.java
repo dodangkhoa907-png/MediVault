@@ -5,6 +5,8 @@ import java.util.List;
 
 public interface IAccountDAO {
     Account findByUsername(String username);
+    /** Tìm kể cả TK bị khóa (IsActive=0) — dùng cho login */
+    Account findByUsernameAny(String username);
     Account findById(int id);
     List<Account> findAll();
     boolean insert(Account a);
@@ -14,4 +16,12 @@ public interface IAccountDAO {
     boolean isEmailTaken(String email, int excludeId);
     boolean update(Account a);
     boolean isUsernameTaken(String username);
+    int countActiveAdmins();
+    boolean softDelete(int accountId);
+    boolean restore(int accountId);
+    boolean hardDelete(int accountId);
+    List<Account> findDeleted();
+    List<Account> findAllStaff();
+    boolean forceDelete(int accountId);
+    boolean updateAvatar(int accountId, String path);
 }

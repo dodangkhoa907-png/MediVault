@@ -3,6 +3,7 @@ package com.medivault.controller;
 import com.medivault.dao.interfaces.IAccountDAO;
 import com.medivault.entity.Account;
 import com.medivault.util.PasswordUtil;
+import com.medivault.util.AuditHelper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -64,14 +65,21 @@ public class LoginServlet extends HttpServlet {
             return;
         }
 
-        // OK → chỉ set "adminAccount", KHÔNG set "account" chung
-        // (nếu set "account" thì staff login sau sẽ thấy key này → nhảy vào admin dashboard!)
-        HttpSession old = req.getSession(false);
-        if (old != null) old.invalidate();
+        // OK → chỉ set "adminAccount"
+        // KHÔNG invalidate session vì admin và staff có thể chạy song song
         HttpSession session = req.getSession(true);
         session.setAttribute("adminAccount", account);
-        session.removeAttribute("staffAccount"); // Đảm bảo không còn staffAccount thừa
+        session.removeAttribute("staffAccount");
         accountDAO.updateLastLogin(account.getAccountId());
-        resp.sendRedirect(req.getContextPath() + "/dashboard");
+        AuditHelper.log(req, "Đăng nhập Admin", "Auth", "Admin @" + account.getUsername() + " đăng nhập thành công");
+
+        // Redirect về trang định vào trước khi bị đá về login (nếu có)
+        String redirectUrl = (String) session.getAttribute("redirectAfterLogin");
+        session.removeAttribute("redirectAfterLogin");
+        if (redirectUrl != null && !redirectUrl.isEmpty()) {
+            resp.sendRedirect(redirectUrl);
+        } else {
+            resp.sendRedirect(req.getContextPath() + "/dashboard");
+        }
     }
 }

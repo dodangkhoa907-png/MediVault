@@ -2,12 +2,13 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%
+    // POS PUBLIC — không cần login để bán hàng
+    // Nếu staff đã login → hiển thị thông tin, nút điểm danh
     com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("staffAccount");
-    if (acc == null) { response.sendRedirect(request.getContextPath() + "/staff-login"); return; }
-    if (acc.getRoleId() == 1) { response.sendRedirect(request.getContextPath() + "/dashboard"); return; }
-    String fullName = acc.getFullName() != null ? acc.getFullName() : acc.getUsername();
-    String initials = fullName.length()>=2
-        ? fullName.substring(0,1).toUpperCase()+fullName.substring(1,2).toUpperCase()
+    boolean isLoggedIn = (acc != null && acc.getRoleId() != 1);
+    String fullName  = isLoggedIn ? (acc.getFullName() != null ? acc.getFullName() : acc.getUsername()) : "Khách";
+    String initials  = fullName.length() >= 2
+        ? fullName.substring(0,1).toUpperCase() + fullName.substring(1,2).toUpperCase()
         : fullName.toUpperCase();
     String ctx = request.getContextPath();
 %>
@@ -18,7 +19,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>MediVault POS — Bán hàng</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -30,7 +31,7 @@
   --mid:calc(100vw - 64px - 420px);
   --right:420px;
 }
-html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden}
+html,body{height:100%;font-family:'Outfit',sans-serif;overflow:hidden}
 body{display:flex;background:var(--surface);color:var(--navy)}
 
 /* ── MINI SIDEBAR ── */
@@ -61,7 +62,7 @@ body{display:flex;background:var(--surface);color:var(--navy)}
   height:56px;background:#fff;border-bottom:1px solid var(--border);
   display:flex;align-items:center;padding: 20px;gap:12px;flex-shrink:0;
 }
-.pos-title{font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;color:var(--navy);flex-shrink:0}
+.pos-title{font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:var(--navy);flex-shrink:0}
 .search-wrap{flex:1;max-width:340px;position:relative}
 .search-wrap input{
   width:100%;height:36px;padding:0 36px 0 14px;
@@ -115,14 +116,14 @@ body{display:flex;background:var(--surface);color:var(--navy)}
 .mb-box{background:rgba(17,76,125,.1);color:var(--blue)}
 .mb-warn{background:rgba(217,119,6,.12);color:var(--gold)}
 
-.med-name{font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;color:var(--navy);line-height:1.3}
+.med-name{font-family:'Outfit',sans-serif;font-size:13px;font-weight:800;color:var(--navy);line-height:1.3}
 .med-code{font-size:10.5px;color:var(--muted)}
 
 .med-batch{font-size:10.5px;color:var(--muted);background:var(--surface);padding:4px 8px;border-radius:6px}
 .med-batch span{color:var(--navy);font-weight:600}
 
 .med-footer{display:flex;align-items:center;justify-content:space-between;margin-top:2px}
-.med-price{font-family:'Nunito',sans-serif;font-size:15px;font-weight:900;color:var(--blue)}
+.med-price{font-family:'Outfit',sans-serif;font-size:15px;font-weight:900;color:var(--blue)}
 .med-stock{font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px}
 .stock-ok{background:rgba(5,150,105,.1);color:var(--green)}
 .stock-low{background:rgba(217,119,6,.1);color:var(--gold)}
@@ -150,7 +151,7 @@ body{display:flex;background:var(--surface);color:var(--navy)}
   background:linear-gradient(135deg,#101A33,#114C7D);
   display:flex;align-items:center;justify-content:space-between;
 }
-.inv-head-left h3{font-family:'Nunito',sans-serif;font-size:15px;font-weight:900;color:#fff}
+.inv-head-left h3{font-family:'Outfit',sans-serif;font-size:15px;font-weight:900;color:#fff}
 .inv-code{font-size:11px;color:rgba(255,255,255,.5);margin-top:1px}
 .inv-clear{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;padding:5px 10px;border-radius:7px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
 .inv-clear:hover{background:rgba(255,255,255,.25)}
@@ -198,13 +199,13 @@ body{display:flex;background:var(--surface);color:var(--navy)}
 .inv-item-rm:hover{color:var(--red)}
 
 /* Subtotal per item */
-.inv-item-sub{font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;color:var(--navy);white-space:nowrap;min-width:70px;text-align:right}
+.inv-item-sub{font-family:'Outfit',sans-serif;font-size:13px;font-weight:800;color:var(--navy);white-space:nowrap;min-width:70px;text-align:right}
 
 /* Summary */
 .inv-summary{padding:12px 18px;border-top:1.5px solid var(--border);background:#FAFCFF}
 .sum-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:6px;color:var(--muted)}
 .sum-row.total{color:var(--navy);font-size:15px;font-weight:800;margin-top:8px;padding-top:8px;border-top:1.5px solid var(--border)}
-.sum-row.total .sum-val{font-family:'Nunito',sans-serif;font-size:18px;font-weight:900;color:var(--blue)}
+.sum-row.total .sum-val{font-family:'Outfit',sans-serif;font-size:18px;font-weight:900;color:var(--blue)}
 .discount-input{width:100px;height:28px;padding:0 8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;text-align:right}
 .discount-input:focus{border-color:var(--sky)}
 
@@ -237,7 +238,7 @@ body{display:flex;background:var(--surface);color:var(--navy)}
   flex:2;height:44px;border-radius:10px;border:none;
   background:linear-gradient(135deg,var(--blue),#0d3d63);
   color:#fff;font-size:14px;font-weight:800;
-  cursor:pointer;font-family:'Nunito',sans-serif;
+  cursor:pointer;font-family:'Outfit',sans-serif;
   display:flex;align-items:center;justify-content:center;gap:8px;
   transition:all .2s;letter-spacing:-.2px;
 }
@@ -259,11 +260,11 @@ body{display:flex;background:var(--surface);color:var(--navy)}
 }
 @keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
 .sm-icon{font-size:52px;margin-bottom:16px;display:block}
-.sm-title{font-family:'Nunito',sans-serif;font-size:22px;font-weight:900;color:var(--navy);margin-bottom:6px}
+.sm-title{font-family:'DM Serif Display',serif;font-size:22px;font-weight:400;color:var(--navy);margin-bottom:6px}
 .sm-code{font-size:13px;color:var(--muted);margin-bottom:20px}
-.sm-total{font-family:'Nunito',sans-serif;font-size:32px;font-weight:900;color:var(--blue);margin-bottom:24px}
+.sm-total{font-family:'DM Serif Display',serif;font-size:32px;font-weight:400;color:var(--blue);margin-bottom:24px}
 .sm-btns{display:flex;gap:10px}
-.sm-btn-new{flex:1;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--blue),#0d3d63);color:#fff;border:none;font-size:14px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;transition:all .2s}
+.sm-btn-new{flex:1;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--blue),#0d3d63);color:#fff;border:none;font-size:14px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s}
 .sm-btn-new:hover{box-shadow:0 6px 20px rgba(17,76,125,.4)}
 .sm-btn-print{flex:1;height:44px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--navy);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
 .sm-btn-print:hover{border-color:var(--blue);color:var(--blue)}
@@ -281,7 +282,7 @@ body{display:flex;background:var(--surface);color:var(--navy)}
 <aside class="msidebar">
   <a href="<%= ctx %>/pos" class="ms-logo" title="POS">💊</a>
 
-  <a href="<%= ctx %>/staff-dashboard" class="ms-btn" title="">
+  <a href="<%= ctx %>/dashboard" class="ms-btn" title="">
     <span>🏠</span>
     <span class="ms-tooltip">Dashboard</span>
   </a>
@@ -298,15 +299,51 @@ body{display:flex;background:var(--surface);color:var(--navy)}
     <span class="ms-tooltip">Khách hàng</span>
   </a>
   <div class="ms-sep"></div>
-  <a href="#" class="ms-btn" title="">
-    <span>📅</span>
-    <span class="ms-tooltip">Ca làm việc</span>
-  </a>
-  <a href="<%= ctx %>/logout?from=staff" class="ms-btn" title="" style="margin-top:auto">
-    <span>⏻</span>
-    <span class="ms-tooltip">Đăng xuất</span>
-  </a>
-  <div class="ms-av" title="<%= fullName %>"><%= initials %></div>
+  <!-- Nút điểm danh / đăng nhập staff — hover hiện panel -->
+  <div class="ms-checkin-wrap" style="margin-top:auto;position:relative">
+    <button class="ms-btn" id="checkinBtn" title="" onclick="toggleCheckinPanel()" style="width:44px;height:44px">
+      <span><%= isLoggedIn ? "🟢" : "👤" %></span>
+      <span class="ms-tooltip"><%= isLoggedIn ? "Điểm danh / " + fullName : "Nhân viên đăng nhập" %></span>
+    </button>
+    <!-- Panel hiện khi hover/click -->
+    <div id="checkinPanel" style="display:none;position:absolute;left:54px;bottom:0;width:220px;
+         background:#1e1035;border:1px solid rgba(167,139,250,.3);border-radius:14px;
+         padding:16px;box-shadow:0 8px 32px rgba(0,0,0,.4);z-index:9999">
+      <% if (isLoggedIn) { %>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="width:36px;height:36px;background:linear-gradient(135deg,#a78bfa,#7c3aed);
+             border-radius:10px;display:flex;align-items:center;justify-content:center;
+             font-size:13px;font-weight:800;color:#fff"><%= initials %></div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#fff"><%= fullName %></div>
+          <div style="font-size:11px;color:rgba(255,255,255,.4)">Đã đăng nhập</div>
+        </div>
+      </div>
+      <a href="<%= ctx %>/staff-dashboard" style="display:block;padding:8px 12px;
+         background:rgba(167,139,250,.15);border-radius:8px;color:#a78bfa;
+         font-size:12px;font-weight:600;text-decoration:none;margin-bottom:6px;text-align:center">
+        📅 Xem ca làm việc
+      </a>
+      <a href="<%= ctx %>/logout?from=staff" style="display:block;padding:8px 12px;
+         background:rgba(239,68,68,.1);border-radius:8px;color:#f87171;
+         font-size:12px;font-weight:600;text-decoration:none;text-align:center">
+        ⏻ Kết thúc ca
+      </a>
+      <% } else { %>
+      <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:10px">
+        Nhân viên đăng nhập để điểm danh ca làm
+      </div>
+      <a href="<%= ctx %>/staff-login" style="display:block;padding:10px 12px;
+         background:linear-gradient(135deg,#7c3aed,#5b21b6);border-radius:8px;color:#fff;
+         font-size:13px;font-weight:700;text-decoration:none;text-align:center">
+        👤 Đăng nhập nhân viên
+      </a>
+      <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:8px;text-align:center">
+        POS vẫn hoạt động không cần đăng nhập
+      </div>
+      <% } %>
+    </div>
+  </div>
 </aside>
 
 <!-- ── CENTER: MEDICINE GRID ── -->
@@ -739,6 +776,19 @@ function showToast(msg, type) {
   document.body.appendChild(t);
   setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 2500);
 }
+
+// Checkin panel toggle
+function toggleCheckinPanel() {
+  const panel = document.getElementById('checkinPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+document.addEventListener('click', function(e) {
+  const wrap = document.querySelector('.ms-checkin-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    const panel = document.getElementById('checkinPanel');
+    if (panel) panel.style.display = 'none';
+  }
+});
 </script>
 </body>
 </html>

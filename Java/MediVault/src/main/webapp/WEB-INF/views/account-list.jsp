@@ -19,133 +19,115 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Quản lý tài khoản — MediVault</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --navy:#101A33;--navy2:#1D2D50;--blue:#114C7D;--sky:#46CAF4;
-  --surface:#F0F4F9;--border:#DDE6F0;--muted:#6B82A0;--white:#fff;
-  --green:#1a7a4a;--red:#e74c3c;--gold:#b8750a;--sidebar:220px;
+  --ink:#0B1628;--navy:#0F2645;--blue:#1558A8;--cyan:#3ABDE0;--cyan-soft:#EBF8FD;
+  --surface:#F1F5FB;--white:#fff;--muted:#7A90B0;--border:#D5E0F0;
+  --green:#059669;--red:#DC2626;--gold:#D97706;--sidebar:232px;
 }
-html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif}
-body{display:flex;background:var(--surface);color:var(--navy)}
-
-/* ── SIDEBAR ── */
-.sidebar{width:var(--sidebar);min-height:100vh;background:linear-gradient(180deg,var(--navy) 0%,#182845 55%,var(--blue) 100%);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100}
-.sidebar-logo{padding:20px 18px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.07)}
-.logo-icon{width:38px;height:38px;background:rgba(70,202,244,.15);border:1.5px solid rgba(70,202,244,.3);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
-.logo-text{font-family:'Nunito',sans-serif;font-size:17px;font-weight:900;color:#fff;letter-spacing:-.3px;line-height:1.1}
-.logo-text span{color:var(--sky)}
-.logo-sub{font-size:9.5px;color:rgba(255,255,255,.35);letter-spacing:1px;text-transform:uppercase}
-.nav-section{padding:16px 0 8px}
-.nav-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.25);padding:0 18px 8px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;margin:1px 8px;border-radius:10px;font-size:13px;font-weight:500;color:rgba(255,255,255,.55);text-decoration:none;transition:all .18s;position:relative}
-.nav-item:hover{color:#fff;background:rgba(255,255,255,.06)}
-.nav-item.active{color:#fff;background:rgba(70,202,244,.13);font-weight:600}
-.nav-item.active::before{content:'';position:absolute;left:-8px;top:50%;transform:translateY(-50%);width:3px;height:60%;background:var(--sky);border-radius:4px}
-.sidebar-footer{margin-top:auto;padding:16px 18px;border-top:1px solid rgba(255,255,255,.07)}
-.sidebar-user{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.05)}
-.user-av{width:32px;height:32px;background:linear-gradient(135deg,var(--sky),var(--blue));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0}
+html,body{height:100%;font-family:'Outfit',sans-serif}
+body{display:flex;background:var(--surface);color:var(--ink)}
+.sidebar{width:var(--sidebar);min-height:100vh;background:linear-gradient(175deg,#071022 0%,#0F2645 45%,#1558A8 100%);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;box-shadow:4px 0 32px rgba(0,0,0,.18)}
+.sidebar::after{content:'';position:absolute;top:0;right:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,rgba(58,189,224,.12) 30%,rgba(58,189,224,.12) 70%,transparent)}
+.sidebar-logo{height:66px;padding:0 20px;display:flex;align-items:center;gap:11px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
+.logo-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;box-shadow:0 4px 16px rgba(58,189,224,.35)}
+.logo-text{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:#fff;letter-spacing:-.2px;line-height:1.1}
+.logo-text span{color:var(--cyan)}
+.logo-sub{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1.2px;text-transform:uppercase;margin-top:1px}
+.nav-section{padding:12px 0 4px;flex-shrink:0}
+.nav-label{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:500;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
+.nav-item:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.06)}
+.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:600}
+.nav-item.active::before{content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:56%;background:var(--cyan);border-radius:2px}
+.nav-icon{width:18px;text-align:center;font-size:14px;flex-shrink:0;opacity:.8}
+.nav-item.active .nav-icon{opacity:1}
+.nav-badge{margin-left:auto;background:#DC2626;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;min-width:20px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
+.sidebar-user{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
+.user-av{width:34px;height:34px;flex-shrink:0;border-radius:9px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
 .user-name{font-size:12.5px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}
-.user-role{font-size:10.5px;color:rgba(255,255,255,.35)}
-.logout-btn{margin-left:auto;color:rgba(255,255,255,.3);text-decoration:none;font-size:13px;transition:color .15s}
-.logout-btn:hover{color:var(--red)}
-
-/* ── MAIN ── */
+.user-role{font-size:10px;color:rgba(255,255,255,.35);margin-top:1px}
+.logout-btn{margin-left:auto;width:28px;height:28px;flex-shrink:0;border-radius:8px;background:rgba(220,38,38,.12);border:none;display:flex;align-items:center;justify-content:center;color:rgba(220,38,38,.7);font-size:13px;cursor:pointer;text-decoration:none;transition:all .18s}
+.logout-btn:hover{background:rgba(220,38,38,.2);color:#DC2626}
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0;overflow-x:hidden}
-.topbar{height:60px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:50}
-.topbar-title{font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;color:var(--navy)}
-.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
-.topbar-user{display:flex;align-items:center;gap:8px;padding:4px 10px;border:1.5px solid var(--border);border-radius:10px;text-decoration:none;color:inherit}
-.topbar-av{width:28px;height:28px;background:linear-gradient(135deg,var(--sky),var(--blue));border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
-.topbar-name{font-size:13px;font-weight:600;color:var(--navy);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-
-.content{padding:28px;flex:1;min-width:0;overflow-x:auto}
-.page-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px}
+.topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50}
+.topbar-title{font-family:'DM Serif Display',serif;font-size:16px;color:var(--ink)}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.topbar-user{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 7px;border:1.5px solid var(--border);border-radius:20px;text-decoration:none;color:inherit;transition:all .18s}
+.topbar-user:hover{border-color:var(--cyan);background:var(--cyan-soft)}
+.topbar-av{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
+.topbar-name{font-size:13px;font-weight:600;color:var(--navy);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.content{padding:26px 28px;flex:1;min-width:0;overflow-x:auto}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px}
 .breadcrumb{font-size:11.5px;color:var(--muted);font-weight:500;margin-bottom:4px}
-.page-head h1{font-family:'Nunito',sans-serif;font-size:24px;font-weight:900;letter-spacing:-.4px}
-.btn-primary{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:13.5px;font-weight:600;font-family:inherit;cursor:pointer;text-decoration:none;transition:background .2s}
-.btn-primary:hover{background:#0d3d63}
-
-/* STATS */
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
-.stat-mini{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:14px}
+.page-head h1{font-family:'DM Serif Display',serif;font-size:26px;color:var(--ink)}
+.btn-primary{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;border:none;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .22s;box-shadow:0 4px 14px rgba(21,88,168,.25)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(21,88,168,.35)}
+.btn-trash{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--red);text-decoration:none;transition:all .18s}
+.btn-trash:hover{background:#FEE2E2;border-color:#FCA5A5}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat-mini{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:14px;transition:box-shadow .2s,transform .18s}
+.stat-mini:hover{box-shadow:0 4px 16px rgba(21,88,168,.08);transform:translateY(-1px)}
 .stat-mini-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.ic-blue{background:rgba(70,202,244,.12)}
-.ic-green{background:rgba(26,122,74,.1)}
-.ic-red{background:rgba(231,76,60,.1)}
-.ic-gold{background:rgba(252,218,124,.2)}
-.stat-mini-val{font-family:'Nunito',sans-serif;font-size:22px;font-weight:900;color:var(--navy);line-height:1}
+.ic-blue{background:rgba(58,189,224,.12)}.ic-green{background:rgba(5,150,105,.1)}.ic-red{background:rgba(220,38,38,.1)}.ic-gold{background:rgba(217,119,6,.12)}
+.stat-mini-val{font-family:'DM Serif Display',serif;font-size:24px;color:var(--ink);line-height:1}
 .stat-mini-lbl{font-size:11.5px;color:var(--muted);font-weight:500;margin-top:2px}
-
-/* TABLE CARD */
-.card{background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden}
-.card-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 14px;border-bottom:1px solid var(--border)}
-.card-title{font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;color:var(--navy)}
-.card-sub{font-size:12px;color:var(--muted)}
-
-.filter-bar{display:flex;align-items:center;gap:10px;padding:12px 22px;border-bottom:1px solid var(--border);background:#fafcff;flex-wrap:wrap}
-.fsearch{flex:1;min-width:200px;max-width:280px;position:relative}
-.fsearch input{width:100%;height:34px;padding:0 12px 0 32px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;transition:border-color .2s;background:#fff}
-.fsearch input:focus{border-color:var(--sky)}
-.fsearch::before{content:'🔍';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:11px}
-.fselect{height:34px;padding:0 28px 0 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--navy);background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath stroke='%236B82A0' stroke-width='1.5' stroke-linecap='round' d='M1 1l4 4 4-4'/%3E%3C/svg%3E") no-repeat right 8px center;appearance:none;cursor:pointer;outline:none}
-.fselect:focus{border-color:var(--sky)}
-.fchip{height:34px;padding:0 14px;border:1.5px solid var(--border);border-radius:8px;font-size:12.5px;font-weight:500;color:var(--muted);background:#fff;cursor:pointer;transition:all .15s;white-space:nowrap}
-.fchip:hover{background:var(--blue);border-color:var(--blue);color:#fff}
-.fchip.clear:hover{background:#e74c3c;border-color:#e74c3c;color:#fff}
-
-.tbl{width:100%;border-collapse:collapse}
-.tbl thead{background:#f8fbff}
-.tbl th{padding:11px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border);white-space:nowrap}
-.tbl td{padding:12px 16px;font-size:13.5px;border-bottom:1px solid #f0f4f9;vertical-align:middle}
-.tbl tr:last-child td{border-bottom:none}
-.tbl tbody tr{transition:background .12s;cursor:pointer}
-.tbl tbody tr:hover{background:#f4f8ff}
-
-.cell-user{display:flex;align-items:center;gap:10px}
-.av{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--sky),var(--blue));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;overflow:hidden}
-.av img{width:100%;height:100%;object-fit:cover}
-.cell-name{font-weight:600;color:var(--navy);font-size:13.5px}
-.cell-sub{font-size:11.5px;color:var(--muted)}
-
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap}
-.badge::before{content:'●';font-size:7px}
-.b-blue{background:rgba(70,202,244,.12);color:var(--blue)}
-.b-green{background:rgba(26,122,74,.1);color:var(--green)}
-.b-red{background:rgba(231,76,60,.1);color:var(--red)}
-.b-gold{background:rgba(252,218,124,.2);color:var(--gold)}
-.b-gray{background:#f0f4f9;color:var(--muted)}
-
-.act-group{display:flex;gap:6px}
-.act-btn{height:30px;padding:0 12px;border-radius:7px;border:1.5px solid;font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px;transition:all .15s;font-family:inherit;white-space:nowrap}
-.act-view{border-color:var(--border);color:var(--navy);background:#fff}
-.act-view:hover{border-color:var(--sky);color:var(--blue);background:#f0fbff}
-.act-edit{border-color:#c0d9f0;color:var(--blue);background:#e8f2fc}
-.act-edit:hover{background:#d1e8f8}
-.act-lock{border-color:#f5dfa8;color:var(--gold);background:#fff8e6}
-.act-lock:hover{background:#ffefc2}
-.act-unlock{border-color:#c0d9f0;color:var(--blue);background:#e8f2fc}
-.act-unlock:hover{background:#d1e8f8}
-
-.empty{text-align:center;padding:60px;color:var(--muted)}
-.empty .ei{font-size:40px;margin-bottom:12px}
-
-.pagination{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-top:1px solid var(--border);background:#fafcff}
-.pg-info{font-size:12.5px;color:var(--muted)}
-.pg-btns{display:flex;gap:4px}
-.pg-btn{min-width:32px;height:32px;padding:0 8px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:500;color:var(--navy);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;transition:all .15s}
-.pg-btn:hover{border-color:var(--blue);color:var(--blue)}
-.pg-btn.on{background:var(--blue);border-color:var(--blue);color:#fff}
-.pg-btn.off{opacity:.4;pointer-events:none}
-
+.card{background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+.card-head{padding:20px 24px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-family:'DM Serif Display',serif;font-size:18px;color:var(--ink)}
+.card-sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+/* Filter */
+.filter-bar{display:flex;gap:10px;align-items:center;padding:13px 22px;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap}
+.fsearch{flex:1;min-width:200px;max-width:300px;position:relative}
+.fsearch input{width:100%;height:36px;padding:0 13px 0 36px;background:#fff;border:1.5px solid var(--border);border-radius:10px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);outline:none;transition:all .18s}
+.fsearch input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(58,189,224,.1)}
+.fsearch::before{content:'🔍';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:12px;pointer-events:none;opacity:.45}
+.fselect{height:36px;padding:0 12px;background:#fff;border:1.5px solid var(--border);border-radius:10px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);outline:none;cursor:pointer;transition:all .18s}
+.fselect:focus{border-color:var(--cyan)}
+.fchip{height:36px;padding:0 14px;background:#fff;border:1.5px solid var(--border);border-radius:10px;font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:600;color:var(--navy);cursor:pointer;transition:all .18s;white-space:nowrap}
+.fchip:hover{border-color:var(--cyan);color:var(--blue)}
+.fchip.clear{color:var(--muted)}.fchip.clear:hover{border-color:var(--red);color:var(--red)}
+/* Table */
 .tbl-wrap{overflow-x:auto}
-
-/* TOAST */
-.toast{position:fixed;top:20px;right:24px;padding:12px 20px;border-radius:10px;font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,.2);z-index:999;animation:toastIn .3s ease}
-@keyframes toastIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
-.toast-ok{background:#064e3b;color:#fff}
-.toast-warn{background:#7f1d1d;color:#fff}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);text-align:left;white-space:nowrap}
+.tbl td{padding:12px 16px;border-bottom:1px solid #F4F7FC;vertical-align:middle}
+.tbl tbody tr{cursor:pointer;transition:background .12s}
+.tbl tbody tr:hover{background:#F7FBFF}
+.tbl tbody tr:last-child td{border-bottom:none}
+.cell-user{display:flex;align-items:center;gap:10px}
+.av{width:34px;height:34px;border-radius:9px;flex-shrink:0;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;overflow:hidden}
+.cell-name{font-size:13.5px;font-weight:600;color:var(--ink)}
+.cell-sub{font-size:11.5px;color:var(--muted);margin-top:1px}
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.b-green{background:rgba(5,150,105,.1);color:var(--green)}
+.b-red{background:rgba(220,38,38,.1);color:var(--red)}
+.b-blue{background:rgba(21,88,168,.1);color:var(--blue)}
+.b-gold{background:rgba(217,119,6,.1);color:var(--gold)}
+.b-gray{background:#F1F5F9;color:#64748B}
+/* Row actions */
+.act-group{display:flex;gap:6px}
+.act-btn{padding:5px 10px;border-radius:7px;font-size:12px;font-weight:600;text-decoration:none;cursor:pointer;border:none;font-family:'Outfit',sans-serif;transition:all .15s;white-space:nowrap}
+.act-view{background:rgba(21,88,168,.08);color:var(--blue)}.act-view:hover{background:rgba(21,88,168,.16)}
+.act-del{background:rgba(220,38,38,.08);color:var(--red)}.act-del:hover{background:rgba(220,38,38,.16)}
+/* Pagination */
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-top:1px solid var(--border)}
+.pg-info{font-size:12.5px;color:var(--muted)}
+.pg-btns{display:flex;gap:5px}
+.pg-btn{width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;text-decoration:none;color:var(--navy);background:var(--surface);border:1.5px solid var(--border);transition:all .15s}
+.pg-btn:hover{border-color:var(--cyan);color:var(--blue)}.pg-btn.on{background:var(--blue);border-color:var(--blue);color:#fff}.pg-btn.off{opacity:.4;pointer-events:none}
+/* Empty */
+.empty{padding:48px 24px;text-align:center;color:var(--muted)}.empty .ei{font-size:36px;margin-bottom:10px}
+/* Toast */
+.toast{position:fixed;top:20px;right:24px;padding:12px 20px;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,.2);z-index:999;transition:opacity .4s}
+.toast-ok{background:#064e3b;color:#fff}.toast-warn{background:#92400E;color:#fff}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.stat-mini:nth-child(1){animation:fadeUp .3s .05s ease both}.stat-mini:nth-child(2){animation:fadeUp .3s .1s ease both}.stat-mini:nth-child(3){animation:fadeUp .3s .15s ease both}.stat-mini:nth-child(4){animation:fadeUp .3s .2s ease both}
+.card{animation:fadeUp .35s .1s ease both}
 </style>
 </head>
 <body>
@@ -208,7 +190,10 @@ body{display:flex;background:var(--surface);color:var(--navy)}
         <div class="breadcrumb">MediVault › Quản lý › Tài khoản</div>
         <h1>Tài khoản nhân viên</h1>
       </div>
+      <div style="display:flex;gap:10px;align-items:center">
+      <a href="${pageContext.request.contextPath}/accounts?action=trash" class="btn-secondary" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">🗑️ Thùng rác</a>
       <a href="${pageContext.request.contextPath}/accounts?action=new" class="btn-primary">＋ Tạo tài khoản</a>
+    </div>
     </div>
 
     <%-- STATS --%>
@@ -249,26 +234,24 @@ body{display:flex;background:var(--surface);color:var(--navy)}
         </div>
       </div>
 
-      <form method="get" action="${pageContext.request.contextPath}/accounts" id="ff">
-        <div class="filter-bar">
+      <div class="filter-bar">
           <div class="fsearch">
-            <input type="text" name="q" placeholder="Tìm tên, email, CCCD…" value="${param.q}">
+            <input type="text" id="searchInput" placeholder="Tìm tên, email, CCCD…" autocomplete="off">
           </div>
-          <select name="role" class="fselect" onchange="ff.submit()">
+          <select id="roleFilter" class="fselect">
             <option value="">Tất cả chức vụ</option>
-            <option value="1" ${param.role=='1'?'selected':''}>🛡️ Admin</option>
-            <option value="2" ${param.role=='2'?'selected':''}>💊 Dược sĩ</option>
-            <option value="3" ${param.role=='3'?'selected':''}>📦 Thủ kho</option>
+            <option value="2">💊 Dược sĩ</option>
+            <option value="3">📦 Thủ kho</option>
           </select>
-          <select name="status" class="fselect" onchange="ff.submit()">
+          <select id="statusFilter" class="fselect">
             <option value="">Tất cả trạng thái</option>
-            <option value="1" ${param.status=='1'?'selected':''}>Hoạt động</option>
-            <option value="0" ${param.status=='0'?'selected':''}>Đã khóa</option>
+            <option value="1">🟢 Đang online</option>
+            <option value="active">✅ Hoạt động</option>
+            <option value="0">🔒 Đã khóa</option>
           </select>
-          <button type="submit" class="fchip">🔍 Lọc</button>
-          <a href="${pageContext.request.contextPath}/accounts" class="fchip clear">✕ Xóa lọc</a>
+          <button type="button" class="fchip" onclick="applyFilter()">🔍 Lọc</button>
+          <button type="button" class="fchip clear" onclick="clearFilter()">✕ Xóa lọc</button>
         </div>
-      </form>
 
       <div class="tbl-wrap">
         <table class="tbl">
@@ -279,7 +262,7 @@ body{display:flex;background:var(--surface);color:var(--navy)}
               <th>Email</th>
               <th>Điện thoại</th>
               <th>CCCD</th>
-              <th>Chức vụ</th>
+              <th style="min-width:95px">Chức vụ</th>
               <th>Chuyên môn</th>
               <th>Trạng thái</th>
               <th>Đăng nhập cuối</th>
@@ -295,20 +278,16 @@ body{display:flex;background:var(--surface);color:var(--navy)}
               </c:when>
               <c:otherwise>
                 <c:forEach var="a" items="${accounts}" varStatus="st">
-                  <tr onclick="location.href='${pageContext.request.contextPath}/accounts?action=view&id=${a.accountId}'">
+                  <tr onclick="location.href='${pageContext.request.contextPath}/accounts?action=view&id=${a.accountId}'"
+                      data-name="${fn:toLowerCase(not empty a.fullName ? a.fullName : a.username)} @${fn:toLowerCase(a.username)} ${not empty a.email ? fn:toLowerCase(a.email) : ''} ${not empty a.citizenId ? a.citizenId : ''}"
+                      data-role="${a.roleId}"
+                      data-status="${a.active ? '1' : '0'}" data-acc-id="${a.accountId}">
                     <td style="color:var(--muted);font-size:12px">${st.count}</td>
                     <td>
                       <div class="cell-user">
                         <c:set var="dn" value="${not empty a.fullName ? a.fullName : a.username}"/>
                         <div class="av">
-                          <c:choose>
-                            <c:when test="${not empty a.faceEnrollmentPath}">
-                              <img src="${pageContext.request.contextPath}/${a.faceEnrollmentPath}" alt="">
-                            </c:when>
-                            <c:otherwise>
-                              ${fn:toUpperCase(fn:substring(dn,0,1))}${fn:toUpperCase(fn:substring(dn,1,2))}
-                            </c:otherwise>
-                          </c:choose>
+                          ${fn:toUpperCase(fn:substring(dn,0,1))}${fn:toUpperCase(fn:substring(dn,1,2))}
                         </div>
                         <div>
                           <div class="cell-name">${not empty a.fullName ? a.fullName : '—'}</div>
@@ -327,11 +306,18 @@ body{display:flex;background:var(--surface);color:var(--navy)}
                       </c:choose>
                     </td>
                     <td style="color:var(--muted);font-size:12.5px">${not empty a.position ? a.position : '—'}</td>
-                    <td>
+                    <td class="status-badge-cell">
                       <c:choose>
-                        <c:when test="${a.active}"><span class="badge b-green">Hoạt động</span></c:when>
-                        <c:otherwise><span class="badge b-gray">Đã khóa</span></c:otherwise>
-                      </c:choose>
+                          <c:when test="${!a.active}">
+                            <span class="badge b-red">🔒 Đã khóa</span>
+                          </c:when>
+                          <c:when test="${onlineStaff != null && onlineStaff.contains(a.accountId.toString())}">
+                            <span class="badge b-green">🟢 Đang online</span>
+                          </c:when>
+                          <c:otherwise>
+                            <span class="badge" style="background:#F1F5F9;color:#64748B">⚫ Offline</span>
+                          </c:otherwise>
+                        </c:choose>
                     </td>
                     <td style="color:var(--muted);font-size:12px">
                       <c:choose>
@@ -344,6 +330,9 @@ body{display:flex;background:var(--surface);color:var(--navy)}
                     <td onclick="event.stopPropagation()">
                       <div class="act-group">
                         <a href="${pageContext.request.contextPath}/accounts?action=view&id=${a.accountId}" class="act-btn act-view">👁 Xem</a>
+                        <a href="${pageContext.request.contextPath}/accounts?action=delete&id=${a.accountId}"
+                           onclick="return confirm('Chuyển tài khoản @${a.username} vào thùng rác?')"
+                           class="act-btn" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca">🗑️</a>
                       </div>
                     </td>
                   </tr>
@@ -384,12 +373,104 @@ body{display:flex;background:var(--surface);color:var(--navy)}
 <% if ("created".equals(msg)) { %><div class="toast toast-ok">✅ Tạo tài khoản thành công!</div>
 <% } else if ("updated".equals(msg)) { %><div class="toast toast-ok">✅ Cập nhật thành công!</div>
 <% } else if ("locked".equals(msg)) { %><div class="toast toast-warn">🔒 Đã khóa tài khoản.</div>
-<% } else if ("unlocked".equals(msg)) { %><div class="toast toast-ok">🔓 Đã mở khóa tài khoản.</div>
+<% } else if ("unlocked".equals(msg)) {
+     String unlockedNameParam = request.getParameter("name");
+%><div class="toast toast-ok" style="flex-direction:column;align-items:flex-start;gap:3px">
+  <div>🔓 Đã mở khóa tài khoản thành công!</div>
+  <% if (unlockedNameParam != null && !unlockedNameParam.isEmpty()) { %>
+  <div style="font-size:12px;opacity:.8">📧 Đã gửi email thông báo đến <strong><%= unlockedNameParam %></strong></div>
+  <% } %>
+</div>
+<% } else if ("deleted".equals(msg)) { %><div class="toast toast-warn">🗑️ Đã chuyển vào thùng rác.</div>
+<% } else if ("nochange".equals(msg)) { %><div class="toast toast-warn">ℹ️ Không có thay đổi nào được ghi nhận.</div>
+<% } else if ("last-admin".equals(msg)) { %><div class="toast toast-warn">⚠️ Không thể thực hiện — đây là Admin duy nhất!</div>
+<% } else if ("otp-expired".equals(msg)) { %><div class="toast toast-warn">⏱️ Mã OTP đã hết hạn.</div>
 <% } %>
 
 <script>
 const t = document.querySelector('.toast');
 if (t) setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .4s'; setTimeout(()=>t.remove(),400); }, 3000);
+
+// ── REALTIME FILTER ──────────────────────────────────────────
+function applyFilter() {
+    const q      = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+    const role   = document.getElementById('roleFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    let visible  = 0;
+
+    document.querySelectorAll('tbody tr[data-name]').forEach(row => {
+        const name   = (row.dataset.name   || '').toLowerCase();
+        const rId    = row.dataset.role    || '';
+        const isAct  = row.dataset.status  || '';
+        // online: check badge text
+        const badge  = row.querySelector('td:nth-child(8) .badge');
+        const isOnline = badge && badge.textContent.includes('online');
+
+        const matchQ = !q || name.includes(q);
+        const matchRole = !role || rId === role;
+        let matchStatus = true;
+        if (status === '1')      matchStatus = isOnline;
+        else if (status === 'active') matchStatus = isAct === '1';
+        else if (status === '0') matchStatus = isAct === '0';
+
+        const show = matchQ && matchRole && matchStatus;
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+
+    // Cập nhật empty state
+    const empty = document.getElementById('emptyRow');
+    const emptyMsg = document.getElementById('noResultMsg');
+    if (empty) empty.style.display = visible === 0 ? '' : 'none';
+    if (emptyMsg) emptyMsg.style.display = visible === 0 ? '' : 'none';
+}
+
+function clearFilter() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('roleFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    applyFilter();
+}
+
+// Realtime: gõ là lọc ngay
+document.getElementById('searchInput').addEventListener('input', applyFilter);
+document.getElementById('roleFilter').addEventListener('change', applyFilter);
+document.getElementById('statusFilter').addEventListener('change', applyFilter);
+
+// Enter trong search box cũng lọc
+document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); applyFilter(); }
+});
+</script>
+<script>
+// Polling online status mỗi 15s — không reload trang
+async function refreshOnlineStatus() {
+  try {
+    const res = await fetch('${pageContext.request.contextPath}/accounts?action=online-status', {
+      headers: {'X-Requested-With': 'XMLHttpRequest'}
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.onlineIds) return;
+    document.querySelectorAll('tbody tr[data-status]').forEach(row => {
+      const accId = row.dataset.accId;
+      if (!accId) return;
+      const td = row.querySelector('.status-badge-cell');
+      if (!td) return;
+      const isActive = row.dataset.status === '1';
+      const isOnline = data.onlineIds.includes(accId);
+      if (!isActive) {
+        td.innerHTML = '<span class="badge b-red">🔒 Đã khóa</span>';
+      } else if (isOnline) {
+        td.innerHTML = '<span class="badge b-green" style="background:rgba(5,150,105,.1);color:#059669">🟢 Đang online</span>';
+      } else {
+        td.innerHTML = '<span class="badge" style="background:#F1F5F9;color:#64748B">⚫ Offline</span>';
+      }
+    });
+  } catch(e) {}
+}
+refreshOnlineStatus();
+setInterval(refreshOnlineStatus, 15000);
 </script>
 </body>
 </html>

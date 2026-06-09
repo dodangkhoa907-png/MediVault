@@ -23,6 +23,9 @@ public class AccountDAO implements IAccountDAO {
         a.setCitizenId(rs.getString("CitizenId"));
         a.setPosition(rs.getString("Position"));
         a.setProfessionalCertNo(rs.getString("ProfessionalCertNo"));
+        a.setDeleted(rs.getBoolean("IsDeleted"));
+        if (rs.getTimestamp("DeletedAt") != null)
+            a.setDeletedAt(rs.getTimestamp("DeletedAt").toLocalDateTime());
         if (rs.getDate("ProfessionalCertExp") != null)
             a.setProfessionalCertExp(rs.getDate("ProfessionalCertExp").toLocalDate());
         if (rs.getDate("TrainingDate") != null)
@@ -93,7 +96,21 @@ public class AccountDAO implements IAccountDAO {
     // ================================================================
 
     public Account findByUsername(String username) {
-        String sql = "SELECT * FROM Accounts WHERE Username = ? AND IsActive = 1";
+        String sql = "SELECT * FROM Accounts WHERE Username = ? AND IsActive = 1 AND IsDeleted = 0";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapRow(rs);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return null;
+    }
+
+    /** Tìm kể cả TK bị khóa (IsActive=0) — dùng cho staff-login để phát hiện TK bị khóa */
+    @Override
+    public Account findByUsernameAny(String username) {
+        String sql = "SELECT * FROM Accounts WHERE Username = ? AND IsDeleted = 0";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, username);
@@ -118,7 +135,18 @@ public class AccountDAO implements IAccountDAO {
 
     public List<Account> findAll() {
         List<Account> list = new ArrayList<>();
-        String sql = "SELECT * FROM Accounts ORDER BY FullName";
+        String sql = "SELECT * FROM Accounts WHERE IsDeleted = 0 ORDER BY FullName";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) list.add(mapRow(rs));
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
+    }
+
+    public List<Account> findAllStaff() {
+        List<Account> list = new ArrayList<>();
+        String sql = "SELECT * FROM Accounts WHERE RoleID != 1 AND IsDeleted = 0 ORDER BY FullName";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -147,6 +175,7 @@ public class AccountDAO implements IAccountDAO {
         String sql = "INSERT INTO Accounts " +
                 "(Username, PasswordHash, FullName, Email, Phone, RoleID, CitizenId, Position, IsActive) " +
                 "VALUES (?,?,?,?,?,?,?,?,1)";
+
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, a.getUsername().trim());
@@ -170,17 +199,11 @@ public class AccountDAO implements IAccountDAO {
      * Không cho đổi Username và PasswordHash ở đây (có method riêng).
      */
     public boolean update(Account a) {
-        List<String> errors = ValidationUtil.validateAccount(
-                a.getUsername(), a.getFullName(),
-                a.getEmail(), a.getPhone(),
-                a.getCitizenId(), a.getPosition()
-        );
-        if (!errors.isEmpty()) {
-            System.err.println("[AccountDAO] update thất bại — lỗi validate: "
-                    + ValidationUtil.joinErrors(errors));
+        // Validate chỉ các field có trong form edit (không validate username vì không đổi được)
+        if (a.getFullName() == null || a.getFullName().trim().isEmpty()) {
+            System.err.println("[AccountDAO] update thất bại — FullName trống");
             return false;
         }
-
         String sql = "UPDATE Accounts SET " +
                 "FullName=?, Email=?, Phone=?, RoleID=?, CitizenId=?, Position=?, " +
                 "ProfessionalCertNo=?, ProfessionalCertExp=?, TrainingDate=? " +
@@ -193,6 +216,7 @@ public class AccountDAO implements IAccountDAO {
             ps.setInt(4, a.getRoleId());
             ps.setString(5, a.getCitizenId() != null ? a.getCitizenId().trim() : null);
             ps.setString(6, a.getPosition() != null ? a.getPosition().trim() : null);
+            // 3 field chuyên môn — nullable
             ps.setString(7, a.getProfessionalCertNo());
             if (a.getProfessionalCertExp() != null)
                 ps.setDate(8, java.sql.Date.valueOf(a.getProfessionalCertExp()));
@@ -201,7 +225,9 @@ public class AccountDAO implements IAccountDAO {
                 ps.setDate(9, java.sql.Date.valueOf(a.getTrainingDate()));
             else ps.setNull(9, java.sql.Types.DATE);
             ps.setInt(10, a.getAccountId());
-            return ps.executeUpdate() > 0;
+            int rows = ps.executeUpdate();
+            System.out.println("[AccountDAO] update accountId=" + a.getAccountId() + " → rows=" + rows);
+            return rows > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
 
@@ -216,6 +242,62 @@ public class AccountDAO implements IAccountDAO {
             ps.setInt(1, accountId);
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+
+    /** Đếm số tài khoản Admin đang active — dùng để bảo vệ admin cuối cùng */
+    public int countActiveAdmins() {
+        String sql = "SELECT COUNT(*) FROM Accounts WHERE RoleID = 1 AND IsActive = 1";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) return rs.getInt(1);
+        } catch (Exception e) { e.printStackTrace(); }
+        return 0;
+    }
+
+
+    /** Soft delete — đánh dấu xóa, giữ trong DB 30 ngày */
+    public boolean softDelete(int accountId) {
+        String sql = "UPDATE Accounts SET IsDeleted = 1, DeletedAt = GETDATE() WHERE AccountID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, accountId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    /** Khôi phục tài khoản đã soft delete */
+    public boolean restore(int accountId) {
+        String sql = "UPDATE Accounts SET IsDeleted = 0, DeletedAt = NULL WHERE AccountID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, accountId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    /** Hard delete — xóa vĩnh viễn (chỉ dùng sau 30 ngày) */
+    public boolean hardDelete(int accountId) {
+        String sql = "DELETE FROM Accounts WHERE AccountID = ? AND IsDeleted = 1 " +
+                "AND DATEDIFF(day, DeletedAt, GETDATE()) >= 30";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, accountId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    /** Lấy danh sách đã soft delete — trang thùng rác */
+    public List<Account> findDeleted() {
+        List<Account> list = new ArrayList<>();
+        String sql = "SELECT * FROM Accounts WHERE IsDeleted = 1 ORDER BY DeletedAt DESC";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) list.add(mapRow(rs));
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
     }
 
     public boolean toggleActive(int accountId) {
@@ -233,6 +315,68 @@ public class AccountDAO implements IAccountDAO {
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, newHash);
+            ps.setInt(2, accountId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    /** Force delete — xóa vĩnh viễn NGAY (không cần đủ 30 ngày, dành cho admin) */
+    /**
+     * Xóa vĩnh viễn tài khoản (đã trong thùng rác).
+     * Xử lý FK constraints trước khi DELETE:
+     *   - Xóa PasswordResetRequests (không có giá trị lưu trữ)
+     *   - SET NULL cho AuditLogs (lịch sử vẫn giữ, chỉ mất tên người dùng)
+     *   - Các bảng kinh doanh (Invoices, Shifts...) giữ nguyên — không xóa
+     */
+    public boolean forceDelete(int accountId) {
+        java.sql.Connection cn = null;
+        try {
+            cn = DBContext.getConnection();
+            cn.setAutoCommit(false);
+
+            // 1. Xóa PasswordResetRequests — không có giá trị lưu trữ
+            try (java.sql.PreparedStatement ps = cn.prepareStatement(
+                    "DELETE FROM PasswordResetRequests WHERE AccountID = ?")) {
+                ps.setInt(1, accountId); ps.executeUpdate();
+            }
+
+            // 2. SET NULL cho AuditLogs (nullable, giữ lịch sử)
+            try (java.sql.PreparedStatement ps = cn.prepareStatement(
+                    "UPDATE AuditLogs SET AccountID = NULL WHERE AccountID = ?")) {
+                ps.setInt(1, accountId); ps.executeUpdate();
+            }
+
+            // 3. SET NULL cho các bảng nullable khác nếu có
+            for (String tbl : new String[]{"PointTransactions", "OrderLogs"}) {
+                try (java.sql.PreparedStatement ps = cn.prepareStatement(
+                        "UPDATE " + tbl + " SET AccountID = NULL WHERE AccountID = ?")) {
+                    ps.setInt(1, accountId); ps.executeUpdate();
+                } catch (Exception ignored) { /* bảng có thể chưa có */ }
+            }
+
+            // 4. Xóa tài khoản
+            try (java.sql.PreparedStatement ps = cn.prepareStatement(
+                    "DELETE FROM Accounts WHERE AccountID = ? AND IsDeleted = 1")) {
+                ps.setInt(1, accountId);
+                int rows = ps.executeUpdate();
+                if (rows == 0) { cn.rollback(); return false; }
+            }
+
+            cn.commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (cn != null) { try { cn.rollback(); } catch (Exception ignored) {} }
+            return false;
+        } finally {
+            if (cn != null) { try { cn.setAutoCommit(true); cn.close(); } catch (Exception ignored) {} }
+        }
+    }
+    public boolean updateAvatar(int accountId, String path) {
+        String sql = "UPDATE Accounts SET FaceEnrollmentPath = ? WHERE AccountID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, path);
             ps.setInt(2, accountId);
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
