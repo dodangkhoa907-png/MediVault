@@ -1,4 +1,4 @@
-package com.medivault.controller;
+package com.medivault.controller.admin;
 
 import com.medivault.entity.Category;
 import jakarta.servlet.ServletException;
@@ -81,12 +81,12 @@ public class CategoryServlet extends HttpServlet {
             throws ServletException, IOException {
         List<Category> list = dao.findAll();
         req.setAttribute("categories", list);
-        req.getRequestDispatcher("/WEB-INF/views/category-list.jsp").forward(req, resp);
+        req.getRequestDispatcher("/WEB-INF/views/admin/category-list.jsp").forward(req, resp);
     }
 
     private void showForm(HttpServletRequest req, HttpServletResponse resp, Category category)
             throws ServletException, IOException {
         req.setAttribute("category", category); // null = new, có giá trị = edit
-        req.getRequestDispatcher("/WEB-INF/views/category-form.jsp").forward(req, resp);
+        req.getRequestDispatcher("/WEB-INF/views/admin/category-form.jsp").forward(req, resp);
     }
 }

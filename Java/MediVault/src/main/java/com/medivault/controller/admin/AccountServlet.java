@@ -1,4 +1,4 @@
-package com.medivault.controller;
+package com.medivault.controller.admin;
 
 import com.medivault.dao.AccountDAO;
 import com.medivault.dao.PasswordResetDAO;
@@ -68,7 +68,7 @@ public class AccountServlet extends HttpServlet {
                 int id = Integer.parseInt(req.getParameter("id"));
                 Account a = dao.findById(id);
                 req.setAttribute("account", a);
-                req.getRequestDispatcher("/WEB-INF/views/account-detail.jsp").forward(req, resp);
+                req.getRequestDispatcher("/WEB-INF/views/admin/account-detail.jsp").forward(req, resp);
             }
             case "delete" -> {
                 // Bước 1: Chuyển vào thùng rác — KHÔNG cần OTP
@@ -103,11 +103,11 @@ public class AccountServlet extends HttpServlet {
                         del.getFullName() != null ? del.getFullName() : del.getUsername());
                 // Forward sang trang nhập "delete" (Bước 1/2)
                 req.setAttribute("deleteTarget", del);
-                req.getRequestDispatcher("/WEB-INF/views/admin-delete-confirm.jsp").forward(req, resp);
+                req.getRequestDispatcher("/WEB-INF/views/admin/admin-delete-confirm.jsp").forward(req, resp);
             }
             case "trash" -> {
                 req.setAttribute("deletedAccounts", dao.findDeleted());
-                req.getRequestDispatcher("/WEB-INF/views/account-trash.jsp").forward(req, resp);
+                req.getRequestDispatcher("/WEB-INF/views/admin/account-trash.jsp").forward(req, resp);
             }
             case "admin-reset-otp-page" -> {
                 // Kiểm tra session còn đủ dữ liệu không
@@ -115,7 +115,7 @@ public class AccountServlet extends HttpServlet {
                 if (targetId == null) { resp.sendRedirect(req.getContextPath() + "/accounts"); return; }
                 Account staffInfo = dao.findById(targetId);
                 req.setAttribute("staffInfo", staffInfo);
-                req.getRequestDispatcher("/WEB-INF/views/admin-otp-confirm.jsp").forward(req, resp);
+                req.getRequestDispatcher("/WEB-INF/views/admin/admin-otp-confirm.jsp").forward(req, resp);
             }
             case "admin-set-password-page" -> {
                 // Hiện trang set mật khẩu mới sau khi OTP đã verified
@@ -126,7 +126,7 @@ public class AccountServlet extends HttpServlet {
                 }
                 Account staffInfo = dao.findById(tid);
                 req.setAttribute("staffInfo", staffInfo);
-                req.getRequestDispatcher("/WEB-INF/views/admin-set-password.jsp").forward(req, resp);
+                req.getRequestDispatcher("/WEB-INF/views/admin/admin-set-password.jsp").forward(req, resp);
             }
             case "online-status" -> {
                 resp.setContentType("application/json;charset=UTF-8");
@@ -175,7 +175,7 @@ public class AccountServlet extends HttpServlet {
                 }
 
                 req.setAttribute("deleteTarget", delTarget);
-                req.getRequestDispatcher("/WEB-INF/views/admin-delete-otp.jsp").forward(req, resp);
+                req.getRequestDispatcher("/WEB-INF/views/admin/admin-delete-otp.jsp").forward(req, resp);
             }
             default -> showList(req, resp);
         }
@@ -216,7 +216,7 @@ public class AccountServlet extends HttpServlet {
             req.setAttribute("account", draft);  // JSP dùng để fill lại form
             req.setAttribute("errors", errors);
             req.setAttribute("errorMsg", ValidationUtil.joinErrors(errors));
-            req.getRequestDispatcher("/WEB-INF/views/account-form.jsp").forward(req, resp);
+            req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
             return;
         }
 
@@ -244,7 +244,7 @@ public class AccountServlet extends HttpServlet {
             resp.sendRedirect(req.getContextPath() + "/otp-verify");
         } catch (Exception e) {
             req.setAttribute("error", "Không gửi được email OTP!");
-            req.getRequestDispatcher("/WEB-INF/views/account-form.jsp").forward(req, resp);
+            req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
         }
     }
 
@@ -357,7 +357,7 @@ public class AccountServlet extends HttpServlet {
             if (ValidationUtil.notBlank(roleStr)) draft.setRoleId(Integer.parseInt(roleStr));
 
             req.setAttribute("account", draft);     // JSP dùng để pre-fill form
-            req.getRequestDispatcher("/WEB-INF/views/account-form.jsp").forward(req, resp);
+            req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
             return;
         }
 
@@ -421,7 +421,7 @@ public class AccountServlet extends HttpServlet {
                 req.setAttribute("errors", java.util.List.of(
                         "Email/SĐT thay đổi cần xác nhận OTP. Vui lòng dùng trình duyệt hỗ trợ JavaScript."));
                 req.setAttribute("account", a);
-                req.getRequestDispatcher("/WEB-INF/views/account-form.jsp").forward(req, resp);
+                req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
                 return;
             }
 
@@ -475,7 +475,7 @@ public class AccountServlet extends HttpServlet {
                 req.setAttribute("errors", java.util.List.of(
                         "Không thể thay đổi role — đây là tài khoản Admin duy nhất đang hoạt động!"));
                 req.setAttribute("account", a);
-                req.getRequestDispatcher("/WEB-INF/views/account-form.jsp").forward(req, resp);
+                req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
                 return;
             }
 
@@ -483,7 +483,7 @@ public class AccountServlet extends HttpServlet {
             if (!saved) {
                 req.setAttribute("errors", java.util.List.of("Lưu thất bại — kiểm tra log Tomcat!"));
                 req.setAttribute("account", a);
-                req.getRequestDispatcher("/WEB-INF/views/account-form.jsp").forward(req, resp);
+                req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
                 return;
             }
             resp.sendRedirect(req.getContextPath() + "/accounts?msg=updated");
@@ -583,13 +583,13 @@ public class AccountServlet extends HttpServlet {
             throws ServletException, IOException {
         req.setAttribute("accounts", dao.findAllStaff());
         req.setAttribute("onlineStaff", com.medivault.util.SessionTracker.getOnlineSet());
-        req.getRequestDispatcher("/WEB-INF/views/account-list.jsp").forward(req, resp);
+        req.getRequestDispatcher("/WEB-INF/views/admin/account-list.jsp").forward(req, resp);
     }
 
     private void showForm(HttpServletRequest req, HttpServletResponse resp, Account account)
             throws ServletException, IOException {
         req.setAttribute("account", account);
-        req.getRequestDispatcher("/WEB-INF/views/account-form.jsp").forward(req, resp);
+        req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
     }
 
     // ── Trang OTP xác nhận đặt lại mật khẩu (GET) ──────────────────
@@ -661,13 +661,13 @@ public class AccountServlet extends HttpServlet {
         if (!ValidationUtil.notBlank(newPassword) || !ValidationUtil.isValidPassword(newPassword)) {
             req.setAttribute("staffInfo", staff);
             req.setAttribute("error", "Mật khẩu phải có ít nhất 6 ký tự!");
-            req.getRequestDispatcher("/WEB-INF/views/admin-set-password.jsp").forward(req, resp);
+            req.getRequestDispatcher("/WEB-INF/views/admin/admin-set-password.jsp").forward(req, resp);
             return;
         }
         if (!newPassword.equals(confirmPw)) {
             req.setAttribute("staffInfo", staff);
             req.setAttribute("error", "Mật khẩu xác nhận không khớp!");
-            req.getRequestDispatcher("/WEB-INF/views/admin-set-password.jsp").forward(req, resp);
+            req.getRequestDispatcher("/WEB-INF/views/admin/admin-set-password.jsp").forward(req, resp);
             return;
         }
 
@@ -780,7 +780,7 @@ public class AccountServlet extends HttpServlet {
         if (storedOtp == null || expiry == null || targetId == null) {
             req.setAttribute("deleteError", "Phiên xác nhận đã hết hạn!");
             req.setAttribute("deleteTarget", dao.findById(targetId != null ? targetId : -1));
-            req.getRequestDispatcher("/WEB-INF/views/admin-delete-otp.jsp").forward(req, resp);
+            req.getRequestDispatcher("/WEB-INF/views/admin/admin-delete-otp.jsp").forward(req, resp);
             return;
         }
         if (System.currentTimeMillis() > expiry) {
@@ -794,7 +794,7 @@ public class AccountServlet extends HttpServlet {
         if (!storedOtp.equals(inputOtp != null ? inputOtp.trim() : "")) {
             req.setAttribute("deleteTarget", dao.findById(targetId));
             req.setAttribute("deleteError", "❌ Mã OTP không đúng! Vui lòng thử lại.");
-            req.getRequestDispatcher("/WEB-INF/views/admin-delete-otp.jsp").forward(req, resp);
+            req.getRequestDispatcher("/WEB-INF/views/admin/admin-delete-otp.jsp").forward(req, resp);
             return;
         }
 

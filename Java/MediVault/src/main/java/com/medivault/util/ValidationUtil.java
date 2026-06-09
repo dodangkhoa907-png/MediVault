@@ -148,4 +148,7 @@ public class ValidationUtil {
     public static String joinErrors(List<String> errors) {
         return String.join(" | ", errors);
     }
+    public static boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
+    }
 }
