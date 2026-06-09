@@ -19,7 +19,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Quản lý tài khoản — MediVault</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -54,7 +54,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .logout-btn:hover{background:rgba(220,38,38,.2);color:#DC2626}
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0;overflow-x:hidden}
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50}
-.topbar-title{font-family:'DM Serif Display',serif;font-size:16px;color:var(--ink)}
+.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;color:var(--ink)}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-shrink:0}
 .topbar-user{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 7px;border:1.5px solid var(--border);border-radius:20px;text-decoration:none;color:inherit;transition:all .18s}
 .topbar-user:hover{border-color:var(--cyan);background:var(--cyan-soft)}
@@ -63,7 +63,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .content{padding:26px 28px;flex:1;min-width:0;overflow-x:auto}
 .page-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px}
 .breadcrumb{font-size:11.5px;color:var(--muted);font-weight:500;margin-bottom:4px}
-.page-head h1{font-family:'DM Serif Display',serif;font-size:26px;color:var(--ink)}
+.page-head h1{font-family:'Outfit',sans-serif;font-size:26px;color:var(--ink)}
 .btn-primary{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;border:none;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .22s;box-shadow:0 4px 14px rgba(21,88,168,.25)}
 .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(21,88,168,.35)}
 .btn-trash{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--red);text-decoration:none;transition:all .18s}
@@ -73,11 +73,11 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .stat-mini:hover{box-shadow:0 4px 16px rgba(21,88,168,.08);transform:translateY(-1px)}
 .stat-mini-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .ic-blue{background:rgba(58,189,224,.12)}.ic-green{background:rgba(5,150,105,.1)}.ic-red{background:rgba(220,38,38,.1)}.ic-gold{background:rgba(217,119,6,.12)}
-.stat-mini-val{font-family:'DM Serif Display',serif;font-size:24px;color:var(--ink);line-height:1}
+.stat-mini-val{font-family:'Outfit',sans-serif;font-size:24px;color:var(--ink);line-height:1}
 .stat-mini-lbl{font-size:11.5px;color:var(--muted);font-weight:500;margin-top:2px}
 .card{background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden}
 .card-head{padding:20px 24px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.card-title{font-family:'DM Serif Display',serif;font-size:18px;color:var(--ink)}
+.card-title{font-family:'Outfit',sans-serif;font-size:18px;color:var(--ink)}
 .card-sub{font-size:12.5px;color:var(--muted);margin-top:2px}
 /* Filter */
 .filter-bar{display:flex;gap:10px;align-items:center;padding:13px 22px;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap}
@@ -265,7 +265,6 @@ body{display:flex;background:var(--surface);color:var(--ink)}
               <th>Điện thoại</th>
               <th>CCCD</th>
               <th style="min-width:95px">Chức vụ</th>
-              <th>Chuyên môn</th>
               <th>Trạng thái</th>
               <th>Đăng nhập cuối</th>
               <th style="width:180px">Thao tác</th>
@@ -274,7 +273,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
           <tbody>
             <c:choose>
               <c:when test="${empty accounts}">
-                <tr><td colspan="10">
+                <tr><td colspan="9">
                   <div class="empty"><div class="ei">👤</div><p>Không tìm thấy tài khoản nào.</p></div>
                 </td></tr>
               </c:when>
@@ -307,7 +306,6 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                         <c:otherwise><span class="badge b-gold">Thủ kho</span></c:otherwise>
                       </c:choose>
                     </td>
-                    <td style="color:var(--muted);font-size:12.5px">${not empty a.position ? a.position : '—'}</td>
                     <td class="status-badge-cell">
                       <c:choose>
                           <c:when test="${!a.active}">

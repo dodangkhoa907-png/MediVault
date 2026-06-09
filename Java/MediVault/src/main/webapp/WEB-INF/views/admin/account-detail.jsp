@@ -31,7 +31,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title><%= dn %> — Chi tiết — MediVault</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -69,7 +69,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 
 /* ── TOPBAR ── */
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50}
-.topbar-title{font-family:'DM Serif Display',serif;font-size:16px;color:var(--ink)}
+.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;color:var(--ink)}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-shrink:0}
 .back-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;transition:all .18s}
 .back-btn:hover{border-color:var(--cyan);color:var(--blue)}
@@ -82,7 +82,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .content{padding:26px 28px;flex:1}
 .page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
 .page-head-left .breadcrumb{font-size:11.5px;color:var(--muted);font-weight:500;margin-bottom:4px}
-.page-head-left h1{font-family:'DM Serif Display',serif;font-size:28px;color:var(--ink)}
+.page-head-left h1{font-family:'Outfit',sans-serif;font-size:28px;color:var(--ink)}
 .head-actions{display:flex;gap:10px;align-items:center}
 
 /* ── BUTTONS ── */
@@ -106,7 +106,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
   width:64px;height:64px;border-radius:16px;
   background:linear-gradient(135deg,var(--cyan),var(--blue));
   display:flex;align-items:center;justify-content:center;
-  font-family:'DM Serif Display',serif;font-size:24px;color:#fff;
+  font-family:'Outfit',sans-serif;font-size:24px;color:#fff;
   border:3px solid var(--white);overflow:hidden;
   box-shadow:0 4px 20px rgba(21,88,168,.3);
 }
@@ -130,7 +130,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .photo-upload-btn:hover{border-color:var(--cyan);color:var(--blue);background:var(--cyan-soft)}
 #photoInput{display:none}
 
-.profile-name{font-family:'DM Serif Display',serif;font-size:18px;color:var(--ink);margin-bottom:2px}
+.profile-name{font-family:'Outfit',sans-serif;font-size:18px;color:var(--ink);margin-bottom:2px}
 .profile-username{font-size:12.5px;color:var(--muted);margin-bottom:8px}
 .profile-role-badge{
   display:inline-flex;align-items:center;gap:5px;
@@ -160,7 +160,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .ici-blue{background:rgba(58,189,224,.12)}
 .ici-green{background:rgba(5,150,105,.1)}
 .ici-gold{background:rgba(217,119,6,.1)}
-.info-card-title{font-family:'DM Serif Display',serif;font-size:15px;color:var(--ink)}
+.info-card-title{font-family:'Outfit',sans-serif;font-size:15px;color:var(--ink)}
 .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
 .info-field{padding:13px 20px;border-bottom:1px solid #F2F6FC}
 .info-field:nth-last-child(-n+2){border-bottom:none}
@@ -246,7 +246,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
   padding:18px 22px 14px;border-bottom:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-between;
 }
-.crop-modal-title{font-family:'DM Serif Display',serif;font-size:17px;color:var(--ink)}
+.crop-modal-title{font-family:'Outfit',sans-serif;font-size:17px;color:var(--ink)}
 .crop-modal-close{width:28px;height:28px;border-radius:7px;border:none;background:var(--surface);cursor:pointer;font-size:14px;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:all .15s}
 .crop-modal-close:hover{background:#FEE2E2;color:var(--red)}
 .crop-body{padding:20px 22px}

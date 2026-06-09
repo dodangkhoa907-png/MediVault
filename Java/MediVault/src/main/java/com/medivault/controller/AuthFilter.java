@@ -14,7 +14,7 @@ public class AuthFilter implements Filter {
     // ── Tên cookie lưu nhận dạng đăng nhập ──
     private static final String COOKIE_ADMIN = "mv_admin_uid";
     private static final String COOKIE_STAFF = "mv_staff_uid";
-    private static final int    COOKIE_MAX_AGE = 60 * 60 * 8; // 8 tiếng (giây)
+    private static final int    COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 ngày (Remember Me)
 
     private final IAccountDAO accountDAO = new AccountDAO();
 
@@ -54,6 +54,15 @@ public class AuthFilter implements Filter {
         resp.addCookie(c);
     }
 
+    /** Remember Me: cookie với thời gian tùy chỉnh (giây) */
+    public static void writeAdminCookieLong(HttpServletResponse resp, int accountId, int maxAgeSeconds) {
+        Cookie c = new Cookie("mv_admin_uid", String.valueOf(accountId));
+        c.setMaxAge(maxAgeSeconds);
+        c.setPath("/");
+        c.setHttpOnly(true);
+        resp.addCookie(c);
+    }
+
     public static void writeStaffCookie(HttpServletResponse resp, int accountId) {
         Cookie c = new Cookie("mv_staff_uid", String.valueOf(accountId));
         c.setMaxAge(60 * 60 * 8);
@@ -87,6 +96,7 @@ public class AuthFilter implements Filter {
                 || uri.startsWith(ctx + "/js")
                 || uri.startsWith(ctx + "/WEB-INF")
                 || uri.equals(ctx + "/otp-verify")
+                || uri.startsWith(ctx + "/staff-shift")
                 || uri.equals(ctx + "/forgot-password")         // staff yêu cầu reset
                 || uri.startsWith(ctx + "/admin/confirm-reset") // admin xác nhận qua link mail
                 || uri.equals(ctx + "/staff-ping"); // ping không cần auth
@@ -220,7 +230,8 @@ public class AuthFilter implements Filter {
 
         // ── 8. Trang chỉ dành cho Staff ──
         if (uri.startsWith(ctx + "/staff-dashboard")
-                || uri.equals(ctx + "/staff-profile")) {
+                || uri.equals(ctx + "/staff-profile")
+                || uri.startsWith(ctx + "/staff-my-shifts")) {
             if (staffAcc == null) {
                 resp.sendRedirect(ctx + "/staff-login");
                 return;

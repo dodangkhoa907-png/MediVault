@@ -10,15 +10,52 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
- * StaffShiftServlet — Nhân viên tự mở/đóng ca của mình.
- * URL: POST /staff-shift?action=open|close&uid={staffId}
+ * StaffShiftServlet — Nhân viên xem / mở / đóng ca của mình.
+ * GET  /staff-my-shifts?uid={staffId}    → hiện trang ca làm việc
+ * POST /staff-shift?action=open|close&uid={staffId} → xử lý mở/đóng
  */
-@WebServlet("/staff-shift")
+@WebServlet(urlPatterns = {"/staff-my-shifts", "/staff-shift"})
 public class StaffShiftServlet extends HttpServlet {
 
     private final IShiftDAO shiftDAO = new ShiftDAO();
+
+    // ── GET: hiện trang xem ca ────────────────────────────────────────────────
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+
+        String uid = req.getParameter("uid");
+        if (uid == null || uid.isEmpty()) {
+            resp.sendRedirect(req.getContextPath() + "/staff-login");
+            return;
+        }
+
+        HttpSession session = req.getSession(false);
+        Account staffAcc = session != null
+                ? (Account) session.getAttribute("staffAccount_" + uid) : null;
+        if (staffAcc == null) {
+            resp.sendRedirect(req.getContextPath() + "/staff-login");
+            return;
+        }
+        if (staffAcc.getRoleId() == 1) {
+            resp.sendRedirect(req.getContextPath() + "/dashboard");
+            return;
+        }
+
+        // Ca đang mở
+        Shift currentShift = shiftDAO.findCurrent(staffAcc.getAccountId());
+        req.setAttribute("currentShift", currentShift);
+
+        // Toàn bộ lịch sử ca (mới nhất trước)
+        List<Shift> allShifts = shiftDAO.findByAccount(staffAcc.getAccountId());
+        req.setAttribute("allShifts", allShifts);
+
+        req.getRequestDispatcher("/WEB-INF/views/staff/staff-my-shifts.jsp")
+                .forward(req, resp);
+    }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
@@ -63,8 +100,8 @@ public class StaffShiftServlet extends HttpServlet {
                     staffAcc.getAccountId());
         }
 
-        String msg = ok ? "shift-opened" : "shift-already-open";
-        resp.sendRedirect(req.getContextPath() + "/staff-dashboard?uid=" + uid + "&msg=" + msg);
+        String msg = ok ? "opened" : "already-open";
+        resp.sendRedirect(req.getContextPath() + "/staff-my-shifts?uid=" + uid + "&msg=" + msg);
     }
 
     // ── Đóng ca ───────────────────────────────────────────────────────────────
@@ -102,8 +139,8 @@ public class StaffShiftServlet extends HttpServlet {
                     staffAcc.getAccountId());
         }
 
-        String msg = ok ? "shift-closed" : "error";
-        resp.sendRedirect(req.getContextPath() + "/staff-dashboard?uid=" + uid + "&msg=" + msg);
+        String msg = ok ? "closed" : "error";
+        resp.sendRedirect(req.getContextPath() + "/staff-my-shifts?uid=" + uid + "&msg=" + msg);
     }
 
     // ── Helper ────────────────────────────────────────────────────────────────

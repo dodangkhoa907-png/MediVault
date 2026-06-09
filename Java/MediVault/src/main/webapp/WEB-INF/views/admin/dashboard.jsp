@@ -50,7 +50,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MediVault — Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -139,7 +139,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
   display:flex;align-items:center;padding:0 28px;gap:14px;
   position:sticky;top:0;z-index:50;
 }
-.topbar-title{font-family:'DM Serif Display',serif;font-size:16px;color:var(--ink)}
+.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;color:var(--ink)}
 .topbar-search{flex:1;max-width:340px;position:relative}
 .topbar-search input{
   width:100%;padding:8px 14px 8px 36px;
@@ -206,7 +206,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .content{padding:26px 28px;flex:1;min-width:0;overflow-x:auto}
 .page-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px}
 .page-head-left .breadcrumb{font-size:11.5px;color:var(--muted);font-weight:500;margin-bottom:4px}
-.page-head-left h1{font-family:'DM Serif Display',serif;font-size:28px;color:var(--ink)}
+.page-head-left h1{font-family:'Outfit',sans-serif;font-size:28px;color:var(--ink)}
 .btn-primary{
   display:inline-flex;align-items:center;gap:7px;padding:10px 20px;
   background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;
@@ -250,7 +250,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .stat-icon.green{background:rgba(5,150,105,.1)}
 .stat-icon.red{background:rgba(220,38,38,.1)}
 .stat-icon.blue{background:rgba(58,189,224,.12)}
-.stat-value{font-family:'DM Serif Display',serif;font-size:32px;color:var(--ink);line-height:1;margin-bottom:8px}
+.stat-value{font-family:'Outfit',sans-serif;font-size:32px;color:var(--ink);line-height:1;margin-bottom:8px}
 .stat-diff{font-size:12px;color:var(--muted)}
 .stat-diff .up{color:var(--green);font-weight:600}
 .stat-diff .down{color:var(--red);font-weight:600}
@@ -258,7 +258,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 /* Table card */
 .table-card{background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden}
 .table-card-header{padding:20px 24px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.table-card-title{font-family:'DM Serif Display',serif;font-size:18px;color:var(--ink)}
+.table-card-title{font-family:'Outfit',sans-serif;font-size:18px;color:var(--ink)}
 .table-card-subtitle{font-size:12.5px;color:var(--muted);margin-top:2px}
 
 /* Filter */

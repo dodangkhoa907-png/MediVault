@@ -30,19 +30,19 @@ public class StaffDashboardServlet extends HttpServlet {
 
         String uid = req.getParameter("uid");
         if (uid == null || uid.isEmpty()) {
-            resp.sendRedirect(req.getContextPath() + "/staff-login");
+            resp.sendRedirect(req.getContextPath() + "/staff/staff-login");
             return;
         }
 
         HttpSession session = req.getSession(false);
         if (session == null) {
-            resp.sendRedirect(req.getContextPath() + "/staff-login");
+            resp.sendRedirect(req.getContextPath() + "/staff/staff-login");
             return;
         }
 
         Account staffAcc = (Account) session.getAttribute("staffAccount_" + uid);
         if (staffAcc == null) {
-            resp.sendRedirect(req.getContextPath() + "/staff-login");
+            resp.sendRedirect(req.getContextPath() + "/staff/staff-login");
             return;
         }
         if (staffAcc.getRoleId() == 1) {
