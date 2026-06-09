@@ -11,7 +11,7 @@
     }
     if (_uid == null || _uid.isEmpty()) { response.sendRedirect(request.getContextPath() + "/staff-login"); return; }
 
-    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("staffAccount_" + request.getAttribute("staffUid"));
+    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("staffAccount_" + _uid);
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/staff-login"); return; }
     if (acc.getRoleId() == 1) { response.sendRedirect(request.getContextPath() + "/dashboard"); return; }
 
@@ -406,45 +406,48 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 
   <nav class="nav-block">
     <div class="nav-label">Tổng quan</div>
-    <a href="${pageContext.request.contextPath}/staff-dashboard" class="nav-item active">
+    <a href="${pageContext.request.contextPath}/staff-dashboard?uid=<%= _uid %>" class="nav-item active">
       <span class="nav-icon">🏠</span> Trang chủ
     </a>
   </nav>
 
   <nav class="nav-block">
     <div class="nav-label">Cá nhân</div>
-    <a href="${pageContext.request.contextPath}/staff-profile" class="nav-item">
+    <a href="${pageContext.request.contextPath}/staff-profile?uid=<%= _uid %>" class="nav-item">
       <span class="nav-icon">👤</span> Hồ sơ của tôi
     </a>
-    <a href="#" class="nav-item">
-      <span class="nav-icon">📅</span> Ca làm việc
+    <a href="${pageContext.request.contextPath}/staff-checkin?uid=<%= _uid %>" class="nav-item">
+      <span class="nav-icon">✅</span> Điểm danh
     </a>
-    <a href="#" class="nav-item">
-      <span class="nav-icon">📈</span> Tiến độ hôm nay
+    <a href="${pageContext.request.contextPath}/staff-my-shifts?uid=<%= _uid %>" class="nav-item">
+      <span class="nav-icon">🕐</span> Ca làm việc
+    </a>
+    <a href="${pageContext.request.contextPath}/leave-requests?action=my&uid=<%= _uid %>" class="nav-item">
+      <span class="nav-icon">🏖️</span> Xin nghỉ phép
     </a>
   </nav>
 
   <% if (acc.getRoleId() == 2) { %>
   <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
-    <a href="${pageContext.request.contextPath}/pos" class="nav-item">
+    <a href="${pageContext.request.contextPath}/pos?uid=<%= _uid %>" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
     </a>
-    <a href="#" class="nav-item">
+    <a href="${pageContext.request.contextPath}/staff-dashboard?uid=<%= _uid %>" class="nav-item" style="opacity:.5;cursor:default">
       <span class="nav-icon">🧾</span> Hóa đơn của tôi
     </a>
   </nav>
   <% } else { %>
   <nav class="nav-block">
     <div class="nav-label">Kho hàng</div>
-    <a href="#" class="nav-item">
+    <a href="${pageContext.request.contextPath}/staff-dashboard?uid=<%= _uid %>" class="nav-item" style="opacity:.5;cursor:default">
       <span class="nav-icon">📦</span> Quản lý kho
     </a>
-    <a href="#" class="nav-item">
+    <a href="${pageContext.request.contextPath}/staff-dashboard?uid=<%= _uid %>" class="nav-item" style="opacity:.5;cursor:default">
       <span class="nav-icon">⚠️</span> Hàng sắp hết
       <% if (lowStock > 0) { %><span class="nav-badge"><%= lowStock %></span><% } %>
     </a>
-    <a href="#" class="nav-item">
+    <a href="${pageContext.request.contextPath}/staff-dashboard?uid=<%= _uid %>" class="nav-item" style="opacity:.5;cursor:default">
       <span class="nav-icon">⏰</span> Sắp hết hạn
       <% if (expiryCount > 0) { %><span class="nav-badge"><%= expiryCount %></span><% } %>
     </a>
@@ -458,7 +461,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
         <div class="user-name"><%= fullName %></div>
         <div class="user-role"><%= roleName %></div>
       </div>
-      <a href="${pageContext.request.contextPath}/logout?from=staff" class="logout-btn" title="Đăng xuất">⏻</a>
+      <a href="${pageContext.request.contextPath}/logout?from=staff&uid=<%= _uid %>" class="logout-btn" title="Đăng xuất">⏻</a>
     </div>
   </div>
 </aside>
@@ -814,14 +817,16 @@ updateClock(); setInterval(updateClock,1000);
 
   sessionStorage.setItem('tabId', Math.random().toString(36).slice(2) + Date.now());
 
-  // Chỉ logout khi đóng tab/cửa sổ thật sự — KHÔNG logout khi navigate sang trang khác
+  // Chỉ logout khi đóng tab thật sự — dùng pagehide (đáng tin hơn beforeunload)
   let _navigating = false;
   document.addEventListener('click', function(e) {
     const a = e.target.closest('a[href]');
-    if (a && !a.href.includes('logout')) _navigating = true;
+    if (a && a.hostname === location.hostname) _navigating = true;
   });
-  window.addEventListener('beforeunload', function() {
-    if (_navigating) { _navigating = false; return; } // đang navigate → bỏ qua
+  document.addEventListener('submit', function() { _navigating = true; });
+  window.addEventListener('pagehide', function(e) {
+    // e.persisted = true → BFCache (không đóng thật), _navigating = đang chuyển trang
+    if (e.persisted || _navigating) { _navigating = false; return; }
     const uid = sessionStorage.getItem('staffUid');
     const ctx = document.querySelector('meta[name="ctx"]')?.content || '';
     if (uid) {

@@ -38,34 +38,35 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --ink:#0B1628;--navy:#0F2645;--blue:#1558A8;--cyan:#3ABDE0;
-  --surface:#F1F5FB;--white:#fff;--muted:#7A90B0;--border:#D5E0F0;
-  --green:#059669;--red:#DC2626;--gold:#D97706;
-  --sidebar:220px;
+  --ink:#12082A;--dp:#1C0F3F;--mid:#2D1B69;--main:#6D28D9;
+  --light:#A78BFA;--soft:#F5F3FF;--white:#fff;
+  --muted:#7C6FAA;--border:#E2DCF5;--surface:#FAFAFA;
+  --green:#059669;--red:#DC2626;--gold:#D97706;--cyan:#5EEAD4;
+  --sidebar:228px;--radius:14px;
 }
-html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--surface);color:var(--ink)}
+html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--soft);color:var(--ink)}
 body{display:flex}
 
 /* ── SIDEBAR ── */
-.sidebar{width:var(--sidebar);min-height:100vh;background:linear-gradient(175deg,#071022 0%,#0F2645 45%,#1558A8 100%);
+.sidebar{width:var(--sidebar);min-height:100vh;background:linear-gradient(175deg,#0E0520 0%,#1C0F3F 45%,#3B1FA0 100%);box-shadow:4px 0 24px rgba(0,0,0,.2);
   display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;
   box-shadow:4px 0 24px rgba(0,0,0,.18)}
 .sidebar-logo{height:62px;padding:0 18px;display:flex;align-items:center;gap:10px;
   border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0}
-.logo-icon{width:34px;height:34px;border-radius:9px;
+.logo-gem{width:34px;height:34px;border-radius:9px;
   background:linear-gradient(135deg,var(--cyan),var(--blue));
   display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
-.logo-text{font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:#fff;letter-spacing:-.2px}
-.logo-text span{color:var(--cyan)}
+.logo-name{font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:#fff;letter-spacing:-.2px}
+.logo-name span{color:var(--cyan)}
 .logo-sub{font-size:9px;color:rgba(255,255,255,.28);letter-spacing:1px;text-transform:uppercase;margin-top:1px}
-.nav-section{padding:10px 0 2px;flex-shrink:0}
+.nav-block{padding:10px 0 2px;flex-shrink:0}
 .nav-label{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;
   color:rgba(255,255,255,.2);padding:0 18px 5px}
-.nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px 9px 18px;
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 12px 9px 20px;
   margin:1px 8px;border-radius:9px;font-size:13px;font-weight:500;
   color:rgba(255,255,255,.5);text-decoration:none;transition:all .16s;position:relative}
 .nav-item:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.06)}
-.nav-item.active{color:#fff;background:rgba(58,189,224,.15);font-weight:700}
+.nav-item.active{color:#fff;background:rgba(167,139,250,.15);font-weight:600}
 .nav-item.active::before{content:'';position:absolute;left:-8px;top:50%;transform:translateY(-50%);
   width:3px;height:54%;background:var(--cyan);border-radius:2px}
 .sidebar-footer{margin-top:auto;padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
@@ -201,44 +202,49 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
 <!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-icon">💊</div>
+    <div class="logo-gem">💊</div>
     <div>
-      <div class="logo-text">Medi<span>Vault</span></div>
+      <div class="logo-name">Medi<span>Vault</span></div>
       <div class="logo-sub">Staff Portal</div>
     </div>
   </div>
-  <nav class="nav-section">
+  <nav class="nav-block">
     <div class="nav-label">Tổng quan</div>
     <a href="<%= request.getContextPath() %>/staff-dashboard?uid=<%= uid %>" class="nav-item">
-      <span>🏠</span> Trang chủ
+      <span class="nav-icon">🏠</span> Trang chủ
     </a>
   </nav>
-  <nav class="nav-section">
+  <nav class="nav-block">
     <div class="nav-label">Cá nhân</div>
     <a href="<%= request.getContextPath() %>/staff-profile?uid=<%= uid %>" class="nav-item">
-      <span>👤</span> Hồ sơ của tôi
+      <span class="nav-icon">👤</span> Hồ sơ của tôi
+    </a>
+    <a href="<%= request.getContextPath() %>/staff-checkin?uid=<%= uid %>" class="nav-item">
+      <span class="nav-icon">✅</span> Điểm danh
     </a>
     <a href="<%= request.getContextPath() %>/staff-my-shifts?uid=<%= uid %>" class="nav-item active">
-      <span>📅</span> Ca làm việc
+      <span class="nav-icon">🕐</span> Ca làm việc
+    </a>
+    <a href="<%= request.getContextPath() %>/leave-requests?action=my&uid=<%= uid %>" class="nav-item">
+      <span class="nav-icon">🏖️</span> Xin nghỉ phép
     </a>
   </nav>
   <% if (staffAcc.getRoleId() == 2) { %>
-  <nav class="nav-section">
+  <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
-    <a href="<%= request.getContextPath() %>/pos" class="nav-item">
-      <span>🛒</span> Bán thuốc (POS)
+    <a href="<%= request.getContextPath() %>/pos?uid=<%= uid %>" class="nav-item">
+      <span class="nav-icon">🛒</span> Bán thuốc (POS)
     </a>
   </nav>
   <% } %>
-  <div style="flex:1"></div>
   <div class="sidebar-footer">
     <div class="user-card">
       <div class="user-av"><%= initials %></div>
-      <div>
+      <div style="min-width:0">
         <div class="user-name"><%= dn %></div>
         <div class="user-role"><%= roleName %></div>
       </div>
-      <a href="<%= request.getContextPath() %>/logout?from=staff" class="logout-btn" title="Đăng xuất">⏻</a>
+      <a href="<%= request.getContextPath() %>/logout?from=staff&uid=<%= uid %>" class="logout-btn" title="Đăng xuất">⏻</a>
     </div>
   </div>
 </aside>
@@ -438,9 +444,9 @@ updateClock();
 
 // Duration live counter
 <% if (currentShift != null && currentShift.getStartTime() != null) { %>
-const shiftStartMs = <%= currentShift.getStartTime().atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().toEpochMilli() %>;
+const shiftStartMs = <%= currentShift.getStartTime().atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().toEpochMilli() %>n;
 function updateDuration() {
-  const diffMs = Date.now() - shiftStartMs;
+  const diffMs = Date.now() - Number(shiftStartMs);
   const h = Math.floor(diffMs / 3600000);
   const m = Math.floor((diffMs % 3600000) / 60000);
   const s = Math.floor((diffMs % 60000) / 1000);

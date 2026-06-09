@@ -209,7 +209,10 @@ public class AuthFilter implements Filter {
                 || uri.startsWith(ctx + "/medicines")
                 || uri.startsWith(ctx + "/account-detail-api")
                 || uri.startsWith(ctx + "/audit-logs")            // nhật ký hệ thống
-                || uri.startsWith(ctx + "/admin/reset-requests"); // polling endpoint
+                || uri.startsWith(ctx + "/admin/reset-requests")   // polling endpoint
+                || uri.startsWith(ctx + "/shift-schedules")
+                || uri.startsWith(ctx + "/attendance")
+                || uri.startsWith(ctx + "/payroll");
 
         if (isAdminOnly) {
             if (adminAcc == null) {
@@ -231,7 +234,9 @@ public class AuthFilter implements Filter {
         // ── 8. Trang chỉ dành cho Staff ──
         if (uri.startsWith(ctx + "/staff-dashboard")
                 || uri.equals(ctx + "/staff-profile")
-                || uri.startsWith(ctx + "/staff-my-shifts")) {
+                || uri.startsWith(ctx + "/staff-my-shifts")
+                || uri.startsWith(ctx + "/staff-checkin")
+                || (uri.startsWith(ctx + "/leave-requests") && req.getParameter("uid") != null)) {
             if (staffAcc == null) {
                 resp.sendRedirect(ctx + "/staff-login");
                 return;

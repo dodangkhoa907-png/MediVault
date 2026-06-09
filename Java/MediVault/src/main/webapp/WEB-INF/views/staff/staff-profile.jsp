@@ -10,7 +10,7 @@
         _staffUid = (String) session.getAttribute("staffUid");
     }
     if (_staffUid == null) _staffUid = "";
-    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("staffAccount_" + request.getAttribute("staffUid"));
+    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("staffAccount_" + _staffUid);
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/staff-login"); return; }
     if (acc.getRoleId() == 1) { response.sendRedirect(request.getContextPath() + "/dashboard"); return; }
 
@@ -155,25 +155,38 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 <!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-icon">💊</div>
+    <div class="logo-gem">💊</div>
     <div>
-      <div class="logo-text">Medi<span>Vault</span></div>
+      <div class="logo-name">Medi<span>Vault</span></div>
       <div class="logo-sub">Staff Portal</div>
     </div>
   </div>
-  <nav class="nav-section">
+  <nav class="nav-block">
     <div class="nav-label">Tổng quan</div>
-    <a href="<%= request.getContextPath() %>/staff-dashboard" class="nav-item"><span>🏠</span> Trang chủ</a>
+    <a href="<%= request.getContextPath() %>/staff-dashboard?uid=<%= _staffUid %>" class="nav-item">
+      <span class="nav-icon">🏠</span> Trang chủ
+    </a>
   </nav>
-  <nav class="nav-section">
+  <nav class="nav-block">
     <div class="nav-label">Cá nhân</div>
-    <a href="<%= request.getContextPath() %>/staff-profile" class="nav-item active"><span>👤</span> Hồ sơ của tôi</a>
-    <a href="#" class="nav-item"><span>📅</span> Ca làm việc</a>
-    <a href="#" class="nav-item"><span>📈</span> Tiến độ hôm nay</a>
+    <a href="<%= request.getContextPath() %>/staff-profile?uid=<%= _staffUid %>" class="nav-item active">
+      <span class="nav-icon">👤</span> Hồ sơ của tôi
+    </a>
+    <a href="<%= request.getContextPath() %>/staff-checkin?uid=<%= _staffUid %>" class="nav-item">
+      <span class="nav-icon">✅</span> Điểm danh
+    </a>
+    <a href="<%= request.getContextPath() %>/staff-my-shifts?uid=<%= _staffUid %>" class="nav-item">
+      <span class="nav-icon">🕐</span> Ca làm việc
+    </a>
+    <a href="<%= request.getContextPath() %>/leave-requests?action=my&uid=<%= _staffUid %>" class="nav-item">
+      <span class="nav-icon">🏖️</span> Xin nghỉ phép
+    </a>
   </nav>
-  <nav class="nav-section">
+  <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
-    <a href="<%= request.getContextPath() %>/pos" class="nav-item"><span>🛒</span> Bán thuốc (POS)</a>
+    <a href="<%= request.getContextPath() %>/pos?uid=<%= _staffUid %>" class="nav-item">
+      <span class="nav-icon">🛒</span> Bán thuốc (POS)
+    </a>
   </nav>
   <div style="flex:1"></div>
   <div class="sidebar-footer">
@@ -392,13 +405,26 @@ body{display:flex;background:var(--soft);color:var(--ink)}
   if (urlToken) sessionStorage.setItem('staffToken', urlToken);
   sessionStorage.setItem('tabId', Math.random().toString(36).slice(2) + Date.now());
 
-  window.addEventListener('beforeunload', function() {
-      const uid   = sessionStorage.getItem('staffUid');
-      const ctx   = document.querySelector('meta[name="ctx"]')?.content || '';
+  // Chỉ logout khi tab/browser đóng thật sự — KHÔNG logout khi navigate sang trang khác
+  window.addEventListener('pagehide', function(e) {
+      // e.persisted = true → trang được cache (BFCache), không đóng thật
+      if (e.persisted) return;
+      // Kiểm tra xem có đang navigate nội bộ không
+      if (window._navigating) return;
+      const uid = sessionStorage.getItem('staffUid');
+      const ctx = document.querySelector('meta[name="ctx"]')?.content || '';
       if (uid) {
           navigator.sendBeacon(ctx + '/logout?from=staff&uid=' + uid);
       }
   });
+  // Đánh dấu đang navigate nội bộ khi click link
+  document.addEventListener('click', function(e) {
+      const a = e.target.closest('a[href]');
+      if (a && a.href && !a.href.includes('logout') && a.hostname === location.hostname) {
+          window._navigating = true;
+      }
+  });
+  document.addEventListener('submit', function() { window._navigating = true; });
 
   const uid   = sessionStorage.getItem('staffUid');
   const token = sessionStorage.getItem('staffToken');
