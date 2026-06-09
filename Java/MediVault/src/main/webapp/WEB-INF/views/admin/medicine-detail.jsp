@@ -96,6 +96,8 @@ tbody tr:hover td{background:#FAFBFF}
 </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/views/loading.jsp" %>
+
 <% if ("batch-added".equals(msg)) { %><div class="toast toast-ok">✅ Đã nhập lô hàng mới!</div>
 <% } else if ("batch-updated".equals(msg)) { %><div class="toast toast-ok">✅ Đã cập nhật lô hàng!</div>
 <% } else if ("batch-deleted".equals(msg)) { %><div class="toast toast-warn">🗑️ Đã xóa lô hàng.</div>

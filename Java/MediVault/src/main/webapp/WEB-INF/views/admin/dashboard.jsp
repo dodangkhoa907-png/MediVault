@@ -355,6 +355,8 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/views/loading.jsp" %>
+
 
 <!-- ───────── SIDEBAR ───────── -->
 <aside class="sidebar">
