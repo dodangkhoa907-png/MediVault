@@ -107,6 +107,20 @@ public class AccountDAO implements IAccountDAO {
         return null;
     }
 
+    /** Tìm kể cả TK bị khóa (IsActive=0) — dùng cho staff-login để phát hiện TK bị khóa */
+    @Override
+    public Account findByUsernameAny(String username) {
+        String sql = "SELECT * FROM Accounts WHERE Username = ? AND IsDeleted = 0";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapRow(rs);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return null;
+    }
+
     public Account findById(int id) {
         String sql = "SELECT * FROM Accounts WHERE AccountID = ?";
         try (Connection cn = DBContext.getConnection();
@@ -307,13 +321,62 @@ public class AccountDAO implements IAccountDAO {
     }
 
     /** Force delete — xóa vĩnh viễn NGAY (không cần đủ 30 ngày, dành cho admin) */
+    /**
+     * Xóa vĩnh viễn tài khoản (đã trong thùng rác).
+     * Xử lý FK constraints trước khi DELETE:
+     *   - Xóa PasswordResetRequests (không có giá trị lưu trữ)
+     *   - SET NULL cho AuditLogs (lịch sử vẫn giữ, chỉ mất tên người dùng)
+     *   - Các bảng kinh doanh (Invoices, Shifts...) giữ nguyên — không xóa
+     */
     public boolean forceDelete(int accountId) {
-        String sql = "DELETE FROM Accounts WHERE AccountID = ? AND IsDeleted = 1";
-        try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
-            ps.setInt(1, accountId);
-            return ps.executeUpdate() > 0;
-        } catch (Exception e) { e.printStackTrace(); return false; }
+        java.sql.Connection cn = null;
+        try {
+            cn = DBContext.getConnection();
+            cn.setAutoCommit(false);
+
+            // 1. Xóa PasswordResetRequests — không có giá trị lưu trữ
+            try (java.sql.PreparedStatement ps = cn.prepareStatement(
+                    "DELETE FROM PasswordResetRequests WHERE AccountID = ?")) {
+                ps.setInt(1, accountId); ps.executeUpdate();
+            }
+
+            // 2. SET NULL cho AuditLog (nullable, giữ lịch sử)
+            try (java.sql.PreparedStatement ps = cn.prepareStatement(
+                    "UPDATE AuditLog SET AccountID = NULL WHERE AccountID = ?")) {
+                ps.setInt(1, accountId); ps.executeUpdate();
+            }
+
+            // 2b. SET NULL cho StaffAuditLogs (nullable, giữ lịch sử)
+            try (java.sql.PreparedStatement ps = cn.prepareStatement(
+                    "UPDATE StaffAuditLogs SET AccountID = NULL WHERE AccountID = ?")) {
+                ps.setInt(1, accountId); ps.executeUpdate();
+            } catch (Exception ignored) { /* bảng chưa tồn tại thì bỏ qua */ }
+
+            // 3. SET NULL cho các bảng nullable khác nếu có
+            for (String tbl : new String[]{"PointTransactions", "OrderLogs"}) {
+                try (java.sql.PreparedStatement ps = cn.prepareStatement(
+                        "UPDATE " + tbl + " SET AccountID = NULL WHERE AccountID = ?")) {
+                    ps.setInt(1, accountId); ps.executeUpdate();
+                } catch (Exception ignored) { /* bảng có thể chưa có */ }
+            }
+
+            // 4. Xóa tài khoản
+            try (java.sql.PreparedStatement ps = cn.prepareStatement(
+                    "DELETE FROM Accounts WHERE AccountID = ? AND IsDeleted = 1")) {
+                ps.setInt(1, accountId);
+                int rows = ps.executeUpdate();
+                if (rows == 0) { cn.rollback(); return false; }
+            }
+
+            cn.commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (cn != null) { try { cn.rollback(); } catch (Exception ignored) {} }
+            return false;
+        } finally {
+            if (cn != null) { try { cn.setAutoCommit(true); cn.close(); } catch (Exception ignored) {} }
+        }
     }
     public boolean updateAvatar(int accountId, String path) {
         String sql = "UPDATE Accounts SET FaceEnrollmentPath = ? WHERE AccountID = ?";

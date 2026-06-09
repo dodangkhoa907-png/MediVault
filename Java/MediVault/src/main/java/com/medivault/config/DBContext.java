@@ -1,34 +1,51 @@
 package com.medivault.config;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+
 import java.io.InputStream;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
 
 public class DBContext {
 
-    private static final Properties props = new Properties();
+    private static final HikariDataSource ds;
 
     static {
         try (InputStream in = DBContext.class
                 .getClassLoader()
                 .getResourceAsStream("db.properties")) {
+
+            Properties props = new Properties();
             props.load(in);
-            Class.forName(props.getProperty("db.driver"));
+
+            HikariConfig config = new HikariConfig();
+            config.setDriverClassName(props.getProperty("db.driver"));
+            config.setJdbcUrl(props.getProperty("db.url"));
+            config.setUsername(props.getProperty("db.username"));
+            config.setPassword(props.getProperty("db.password"));
+
+            // Pool settings
+            config.setMaximumPoolSize(10);       // tối đa 10 connection dùng song song
+            config.setMinimumIdle(2);            // giữ sẵn 2 connection
+            config.setConnectionTimeout(3000);   // timeout 3s nếu pool đầy
+            config.setIdleTimeout(600000);       // đóng connection rảnh sau 10 phút
+            config.setMaxLifetime(1800000);      // tái tạo connection sau 30 phút
+            config.setPoolName("MediVault-Pool");
+
+            ds = new HikariDataSource(config);
+
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi kết nối DB: " + e.getMessage(), e);
+            throw new RuntimeException("Lỗi khởi tạo connection pool: " + e.getMessage(), e);
         }
     }
 
     public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(
-                props.getProperty("db.url"),
-                props.getProperty("db.username"),
-                props.getProperty("db.password"));
+        return ds.getConnection(); // lấy từ pool — nhanh hơn ~100x so với tạo mới
     }
 
-    // Chạy main này để test kết nối DB
+    // Test kết nối
     public static void main(String[] args) {
         try (Connection c = getConnection()) {
             System.out.println("Kết nối thành công: " + c.getCatalog());

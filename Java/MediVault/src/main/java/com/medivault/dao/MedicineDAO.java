@@ -188,4 +188,26 @@ public class MedicineDAO implements IMedicineDAO {
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
+
+    // Lấy tất cả kể cả đã ẩn — dùng cho trang quản lý kho
+    public List<Medicines> findAllIncludeInactive() {
+        List<Medicines> list = new ArrayList<>();
+        String sql = "SELECT * FROM Medicines ORDER BY Status DESC, MedicineName";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) list.add(mapRow(rs));
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
+    }
+
+    // Toggle Status 0 ↔ 1
+    public boolean toggleStatus(int id) {
+        String sql = "UPDATE Medicines SET Status = 1 - Status WHERE MedicineID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
 }

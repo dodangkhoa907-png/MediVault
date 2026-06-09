@@ -32,7 +32,9 @@ public class BatchesDAO implements IBatchesDAO {
              PreparedStatement ps = cn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return list;
     }
 
@@ -45,7 +47,25 @@ public class BatchesDAO implements IBatchesDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) list.add(mapRow(rs));
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    // Tất cả lô của 1 thuốc kể cả hết hàng — dùng cho trang quản lý lô
+    public List<Batches> findAllByMedicine(int medicineId) {
+        List<Batches> list = new ArrayList<>();
+        String sql = "SELECT * FROM Batches WHERE MedicineID = ? ORDER BY ExpiryDate DESC";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, medicineId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) list.add(mapRow(rs));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return list;
     }
 
@@ -56,7 +76,9 @@ public class BatchesDAO implements IBatchesDAO {
              PreparedStatement ps = cn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return list;
     }
 
@@ -67,7 +89,9 @@ public class BatchesDAO implements IBatchesDAO {
              PreparedStatement ps = cn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return list;
     }
 
@@ -88,10 +112,15 @@ public class BatchesDAO implements IBatchesDAO {
             ps.setInt(9, b.getInitialQuantity());
             ps.setInt(10, b.getInitialQuantity());
             return ps.executeUpdate() > 0;
-        } catch (Exception e) { e.printStackTrace(); return false; }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
-    /** Tổng tồn kho của 1 thuốc từ tất cả lô còn hàng */
+    /**
+     * Tổng tồn kho của 1 thuốc từ tất cả lô còn hàng
+     */
     public int getTotalQuantity(int medicineId) {
         String sql = "SELECT ISNULL(SUM(CurrentQuantity),0) FROM Batches " +
                 "WHERE MedicineID=? AND ExpiryDate > CAST(GETDATE() AS DATE)";
@@ -101,11 +130,15 @@ public class BatchesDAO implements IBatchesDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return 0;
     }
 
-    /** Lô gần hết hạn nhất còn tồn kho (FIFO) */
+    /**
+     * Lô gần hết hạn nhất còn tồn kho (FIFO)
+     */
     public Batches findNearestExpiry(int medicineId) {
         String sql = "SELECT TOP 1 * FROM Batches " +
                 "WHERE MedicineID=? AND CurrentQuantity>0 " +
@@ -117,7 +150,77 @@ public class BatchesDAO implements IBatchesDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return mapRow(rs);
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return null;
     }
+
+    public Batches findById(int batchId) {
+        String sql = "SELECT * FROM Batches WHERE BatchID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, batchId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapRow(rs);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Cập nhật lô — chỉ cho sửa giá nhập và ngày hết hạn, không sửa số lượng
+     */
+    public boolean update(Batches b) {
+        String sql = "UPDATE Batches SET BatchNumber=?, ManufactureDate=?, ImportDate=?, " +
+                "ExpiryDate=?, ImportPrice=? WHERE BatchID=?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, b.getBatchNumber());
+            ps.setObject(2, b.getManufactureDate() != null ? Date.valueOf(b.getManufactureDate()) : null);
+            ps.setObject(3, b.getImportDate() != null ? Date.valueOf(b.getImportDate()) : null);
+            ps.setDate(4, Date.valueOf(b.getExpiryDate()));
+            ps.setBigDecimal(5, b.getImportPrice());
+            ps.setInt(6, b.getBatchId());
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Xóa lô — chỉ cho xóa khi CurrentQuantity = 0
+     */
+    public boolean delete(int batchId) {
+        String sql = "DELETE FROM Batches WHERE BatchID = ? AND CurrentQuantity = 0";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, batchId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Tổng số lô theo thuốc
+     */
+    public int countByMedicine(int medicineId) {
+        String sql = "SELECT COUNT(*) FROM Batches WHERE MedicineID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, medicineId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+    
 }

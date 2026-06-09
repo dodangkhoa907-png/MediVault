@@ -87,6 +87,8 @@ public class AuthFilter implements Filter {
                 || uri.startsWith(ctx + "/js")
                 || uri.startsWith(ctx + "/WEB-INF")
                 || uri.equals(ctx + "/otp-verify")
+                || uri.equals(ctx + "/forgot-password")         // staff yêu cầu reset
+                || uri.startsWith(ctx + "/admin/confirm-reset") // admin xác nhận qua link mail
                 || uri.equals(ctx + "/staff-ping"); // ping không cần auth
 
         // ── 2. Lấy session hiện tại (không tạo mới) ──
@@ -195,10 +197,16 @@ public class AuthFilter implements Filter {
                 || uri.startsWith(ctx + "/invoices")
                 || uri.startsWith(ctx + "/customers")
                 || uri.startsWith(ctx + "/medicines")
-                || uri.startsWith(ctx + "/account-detail-api");
+                || uri.startsWith(ctx + "/account-detail-api")
+                || uri.startsWith(ctx + "/audit-logs")            // nhật ký hệ thống
+                || uri.startsWith(ctx + "/admin/reset-requests"); // polling endpoint
 
         if (isAdminOnly) {
             if (adminAcc == null) {
+                // Lưu trang định vào để sau login redirect đúng chỗ
+                String qs = req.getQueryString();
+                String fullUri = uri + (qs != null ? "?" + qs : "");
+                req.getSession(true).setAttribute("redirectAfterLogin", fullUri);
                 resp.sendRedirect(ctx + "/login");
                 return;
             }

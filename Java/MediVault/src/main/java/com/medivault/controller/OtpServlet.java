@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import com.medivault.util.AuditHelper;
 
 import java.io.IOException;
 
@@ -67,6 +68,9 @@ public class OtpServlet extends HttpServlet {
             if (ValidationUtil.notBlank(newPw) && ValidationUtil.isValidPassword(newPw)) {
                 accDao.resetPassword(pendingUpdate.getAccountId(), PasswordUtil.hashPassword(newPw));
             }
+            AuditHelper.log(req, "Cập nhật tài khoản", "Account",
+                    "Cập nhật thông tin @" + pendingUpdate.getUsername()
+                            + (ValidationUtil.notBlank(newPw) ? " + đổi mật khẩu" : ""));
             session.removeAttribute("pendingUpdateAccount");
             session.removeAttribute("updateAccOtpCode");
             session.removeAttribute("updateAccOtpExpiry");
@@ -98,6 +102,10 @@ public class OtpServlet extends HttpServlet {
 
             // OTP đúng → save DB
             new com.medivault.dao.AccountDAO().insert(pendingNew);
+            AuditHelper.log(req, "Tạo tài khoản", "Account",
+                    "Tạo tài khoản @" + pendingNew.getUsername()
+                            + " (" + (pendingNew.getRoleId() == 2 ? "Dược sĩ" : "Thủ kho") + ")"
+                            + " - " + pendingNew.getEmail());
             session.removeAttribute("pendingNewAccount");
             session.removeAttribute("newAccOtpCode");
             session.removeAttribute("newAccOtpExpiry");
