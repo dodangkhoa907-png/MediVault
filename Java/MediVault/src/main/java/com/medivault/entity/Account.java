@@ -1,77 +1,217 @@
 package com.medivault.entity;
 
-import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class Account {
     private int accountId;
     private String username;
-    private String password;
+    private String passwordHash;
     private String fullName;
     private String email;
     private String phone;
-    private String citizenId;
-    private String position;
     private int roleId;
-    private boolean isActive;
-    private boolean isDeleted;
-
-    // ĐÃ TÍCH HỢP: Biến cờ hiệu trạng thái chờ reset mật khẩu
-    private boolean isPendingReset;
-
+    private String citizenId;
     private String professionalCertNo;
+    private LocalDate professionalCertExp;
+    private String position;
+    private LocalDate trainingDate;
+    private boolean isActive;
     private String faceEnrollmentPath;
-    private Timestamp createdAt;
-    private Timestamp lastLoginAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime lastLoginAt;
+    private boolean deleted;
+    private java.time.LocalDateTime deletedAt;
 
-    public Account() {}
+    public Account() {
+    }
 
-    // --- GETTER & SETTER ---
-    public int getAccountId() { return accountId; }
-    public void setAccountId(int accountId) { this.accountId = accountId; }
+    public Account(int accountId, String username, String passwordHash, String fullName, String email, String phone, int roleId, String citizenId, String professionalCertNo, LocalDate professionalCertExp, String position, LocalDate trainingDate, boolean isActive, String faceEnrollmentPath, LocalDateTime createdAt, LocalDateTime lastLoginAt, boolean deleted, LocalDateTime deletedAt) {
+        this.accountId = accountId;
+        this.username = username;
+        this.passwordHash = passwordHash;
+        this.fullName = fullName;
+        this.email = email;
+        this.phone = phone;
+        this.roleId = roleId;
+        this.citizenId = citizenId;
+        this.professionalCertNo = professionalCertNo;
+        this.professionalCertExp = professionalCertExp;
+        this.position = position;
+        this.trainingDate = trainingDate;
+        this.isActive = isActive;
+        this.faceEnrollmentPath = faceEnrollmentPath;
+        this.createdAt = createdAt;
+        this.lastLoginAt = lastLoginAt;
+        this.deleted = deleted;
+        this.deletedAt = deletedAt;
+    }
 
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
+    public int getAccountId() {
+        return accountId;
+    }
 
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
+    public void setAccountId(int accountId) {
+        this.accountId = accountId;
+    }
 
-    public String getFullName() { return fullName; }
-    public void setFullName(String fullName) { this.fullName = fullName; }
+    public String getUsername() {
+        return username;
+    }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public void setUsername(String username) {
+        this.username = username;
+    }
 
-    public String getPhone() { return phone; }
-    public void setPhone(String phone) { this.phone = phone; }
+    public String getPasswordHash() {
+        return passwordHash;
+    }
 
-    public String getCitizenId() { return citizenId; }
-    public void setCitizenId(String citizenId) { this.citizenId = citizenId; }
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
 
-    public String getPosition() { return position; }
-    public void setPosition(String position) { this.position = position; }
+    public String getFullName() {
+        return fullName;
+    }
 
-    public int getRoleId() { return roleId; }
-    public void setRoleId(int roleId) { this.roleId = roleId; }
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
 
-    public boolean isActive() { return isActive; }
-    public void setActive(boolean active) { this.isActive = active; }
+    public String getEmail() {
+        return email;
+    }
 
-    public boolean isDeleted() { return isDeleted; }
-    public void setDeleted(boolean deleted) { this.isDeleted = deleted; }
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
-    // ĐÃ TÍCH HỢP: Getter và Setter cho thuộc tính PendingReset
-    public boolean isPendingReset() { return isPendingReset; }
-    public void setPendingReset(boolean pendingReset) { this.isPendingReset = pendingReset; }
+    public String getPhone() {
+        return phone;
+    }
 
-    public String getProfessionalCertNo() { return professionalCertNo; }
-    public void setProfessionalCertNo(String professionalCertNo) { this.professionalCertNo = professionalCertNo; }
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
 
-    public String getFaceEnrollmentPath() { return faceEnrollmentPath; }
-    public void setFaceEnrollmentPath(String faceEnrollmentPath) { this.faceEnrollmentPath = faceEnrollmentPath; }
+    public int getRoleId() {
+        return roleId;
+    }
 
-    public Timestamp getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
+    public void setRoleId(int roleId) {
+        this.roleId = roleId;
+    }
 
-    public Timestamp getLastLoginAt() { return lastLoginAt; }
-    public void setLastLoginAt(Timestamp lastLoginAt) { this.lastLoginAt = lastLoginAt; }
+    public String getCitizenId() {
+        return citizenId;
+    }
+
+    public void setCitizenId(String citizenId) {
+        this.citizenId = citizenId;
+    }
+
+    public String getProfessionalCertNo() {
+        return professionalCertNo;
+    }
+
+    public void setProfessionalCertNo(String professionalCertNo) {
+        this.professionalCertNo = professionalCertNo;
+    }
+
+    public LocalDate getProfessionalCertExp() {
+        return professionalCertExp;
+    }
+
+    public void setProfessionalCertExp(LocalDate professionalCertExp) {
+        this.professionalCertExp = professionalCertExp;
+    }
+
+    public String getPosition() {
+        return position;
+    }
+
+    public void setPosition(String position) {
+        this.position = position;
+    }
+
+    public LocalDate getTrainingDate() {
+        return trainingDate;
+    }
+
+    public void setTrainingDate(LocalDate trainingDate) {
+        this.trainingDate = trainingDate;
+    }
+
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean active) {
+        isActive = active;
+    }
+
+    public String getFaceEnrollmentPath() {
+        return faceEnrollmentPath;
+    }
+
+    public void setFaceEnrollmentPath(String faceEnrollmentPath) {
+        this.faceEnrollmentPath = faceEnrollmentPath;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getLastLoginAt() {
+        return lastLoginAt;
+    }
+
+    public void setLastLoginAt(LocalDateTime lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    @Override
+    public String toString() {
+        return "Account{" +
+                "accountId=" + accountId +
+                ", username='" + username + '\'' +
+                ", passwordHash='" + passwordHash + '\'' +
+                ", fullName='" + fullName + '\'' +
+                ", email='" + email + '\'' +
+                ", phone='" + phone + '\'' +
+                ", roleId=" + roleId +
+                ", citizenId='" + citizenId + '\'' +
+                ", professionalCertNo='" + professionalCertNo + '\'' +
+                ", professionalCertExp=" + professionalCertExp +
+                ", position='" + position + '\'' +
+                ", trainingDate=" + trainingDate +
+                ", isActive=" + isActive +
+                ", faceEnrollmentPath='" + faceEnrollmentPath + '\'' +
+                ", createdAt=" + createdAt +
+                ", lastLoginAt=" + lastLoginAt +
+                ", deleted=" + deleted +
+                ", deletedAt=" + deletedAt +
+                '}';
+    }
 }
