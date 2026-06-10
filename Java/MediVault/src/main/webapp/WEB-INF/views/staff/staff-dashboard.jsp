@@ -615,26 +615,12 @@ body{display:flex;background:var(--soft);color:var(--ink)}
               </div>
             </div>
             <div class="shift-close-form">
-              <h4>📤 Kết thúc ca làm việc</h4>
-              <form method="post" action="${pageContext.request.contextPath}/staff-shift">
-                <input type="hidden" name="action"  value="close">
-                <input type="hidden" name="shiftId" value="${currentShift.shiftId}">
-                <input type="hidden" name="uid"     value="${staffUid}">
-                <div class="shift-close-row">
-                  <div class="fg">
-                    <label>Tiền cuối ca (VNĐ)</label>
-                    <input type="number" name="closingCash" min="0" step="1000" placeholder="0">
-                  </div>
-                  <div class="fg" style="flex:2">
-                    <label>Ghi chú bàn giao</label>
-                    <input type="text" name="notes" placeholder="Ghi chú ca làm việc...">
-                  </div>
-                  <button type="submit" class="btn-close-shift"
-                          onclick="return confirm('Kết thúc ca làm việc?')">
-                    ✅ Kết thúc ca
-                  </button>
+                <div style="background:linear-gradient(135deg,#FEF3C7,#FFFBEB);border:1.5px solid #FDE68A;border-radius:10px;padding:12px 16px;margin-top:8px">
+                    <div style="font-size:12.5px;font-weight:700;color:#92400E;margin-bottom:4px">🔒 Đóng ca qua NFC hoặc Admin</div>
+                    <div style="font-size:11.5px;color:#B45309;line-height:1.6">
+                        • Ca tự đóng sau 20 phút kết thúc giờ<br>• Trễ &gt; 5 phút → bị trừ tiền phạt
+                    </div>
                 </div>
-              </form>
             </div>
           </c:when>
 
@@ -645,18 +631,27 @@ body{display:flex;background:var(--soft);color:var(--ink)}
               <p>Bạn chưa có ca làm việc đang mở.<br>Bắt đầu ca mới để ghi nhận thời gian.</p>
             </div>
             <div class="shift-open-form">
-              <h4>🚀 Bắt đầu ca mới</h4>
-              <form method="post" action="${pageContext.request.contextPath}/staff-shift">
-                <input type="hidden" name="action" value="open">
-                <input type="hidden" name="uid"    value="${staffUid}">
-                <div class="shift-open-row">
-                  <div class="fg">
-                    <label>Tiền đầu ca (VNĐ)</label>
-                    <input type="number" name="openingCash" min="0" step="1000" value="0" placeholder="0">
-                  </div>
-                  <button type="submit" class="btn-open-shift">🟢 Bắt đầu ca</button>
-                </div>
-              </form>
+                <c:choose>
+                    <c:when test="${not empty todaySchedule}">
+                        <div style="background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:10px;padding:12px 16px">
+                            <div style="font-size:13px;font-weight:700;color:#065F46;margin-bottom:4px">📋 ${todaySchedule.shiftTypeName}</div>
+                            <div style="font-size:11.5px;color:#059669;margin-bottom:8px">
+                                🕐 <c:if test="${not empty todaySchedule.plannedStart}">${fn:substring(todaySchedule.plannedStart.toString(),11,16)}</c:if>–<c:if test="${not empty todaySchedule.plannedEnd}">${fn:substring(todaySchedule.plannedEnd.toString(),11,16)}</c:if>
+                            </div>
+                            <a href="${pageContext.request.contextPath}/staff-checkin?uid=${staffUid}"
+                               style="display:block;text-align:center;background:#10B981;color:#fff;padding:8px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none">
+                                ✅ Đến trang Điểm danh
+                            </a>
+                        </div>
+                    </c:when>
+                    <c:otherwise>
+                        <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:10px;padding:12px 16px;text-align:center">
+                            <div style="font-size:16px;margin-bottom:4px">🚫</div>
+                            <div style="font-size:12.5px;font-weight:700;color:#991B1B">Không có lịch ca hôm nay</div>
+                            <div style="font-size:11.5px;color:#B91C1C;margin-top:3px">Liên hệ Admin để xếp ca</div>
+                        </div>
+                    </c:otherwise>
+                </c:choose>
             </div>
           </c:otherwise>
         </c:choose>

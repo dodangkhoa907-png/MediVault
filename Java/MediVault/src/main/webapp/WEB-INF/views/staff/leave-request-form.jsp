@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="fn"  uri="jakarta.tags.functions" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%
     String uid = request.getParameter("uid");
@@ -204,6 +205,21 @@ body{display:flex}
                    min="<%= todayStr %>"
                    required>
           </div>
+              <%-- Chọn ca cụ thể (nếu có lịch) --%>
+              <c:if test="${not empty mySchedules}">
+              <div class="fg-section">
+                <label class="fg-label">📅 Ca nghỉ</label>
+                <select name="scheduleId" class="fg-input">
+                  <option value="">-- Nghỉ cả ngày --</option>
+                  <c:forEach var="sch" items="${mySchedules}">
+                    <option value="${sch.scheduleId}">
+                      ${sch.workDate} — ${sch.shiftTypeName}
+                      (<c:if test="${not empty sch.plannedStart}">${fn:substring(sch.plannedStart.toString(),11,16)}</c:if>–<c:if test="${not empty sch.plannedEnd}">${fn:substring(sch.plannedEnd.toString(),11,16)}</c:if>)
+                    </option>
+                  </c:forEach>
+                </select>
+              </div>
+              </c:if>
         </div>
       </div>
 

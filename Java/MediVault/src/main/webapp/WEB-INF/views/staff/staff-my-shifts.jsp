@@ -312,45 +312,31 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
           </div>
         </div>
 
-        <%-- Đóng ca --%>
-        <form method="post" action="<%= request.getContextPath() %>/staff-shift?uid=<%= uid %>">
-          <input type="hidden" name="action" value="close">
-          <input type="hidden" name="shiftId" value="<%= currentShift.getShiftId() %>">
-          <div class="shift-action-row">
-            <div class="fg">
-              <label>Tiền cuối ca (₫)</label>
-              <input type="number" name="closingCash" min="0" step="1000"
-                     placeholder="0" style="width:160px"
-                     value="<%= currentShift.getOpeningCash() != null ? currentShift.getOpeningCash().toPlainString() : "0" %>">
-            </div>
-            <div class="fg">
-              <label>Ghi chú</label>
-              <textarea name="notes" placeholder="Ghi chú khi đóng ca (tùy chọn)..."></textarea>
-            </div>
-            <button type="submit" class="btn-close"
-                    onclick="return confirm('Xác nhận đóng ca #<%= currentShift.getShiftId() %>?')">
-              🔴 Đóng ca
-            </button>
+        <%-- Thông báo: Chỉ Admin đóng ca hoặc quẹt thẻ NFC ─-%>
+        <div style="background:linear-gradient(135deg,#FEF3C7,#FFFBEB);
+                    border:1.5px solid #FDE68A;border-radius:12px;
+                    padding:14px 18px;margin-top:8px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+            <span style="font-size:20px">🔒</span>
+            <span style="font-size:13.5px;font-weight:700;color:#92400E">
+              Đóng ca qua thẻ NFC hoặc liên hệ Admin
+            </span>
           </div>
-        </form>
+          <div style="font-size:12.5px;color:#B45309;line-height:1.6">
+            • Quẹt thẻ NFC tại thiết bị để check-out tự động<br>
+            • Ca sẽ tự động đóng sau <strong>20 phút</strong> kể từ khi kết thúc giờ ca<br>
+            • Trễ hơn 5 phút sau giờ ca → bị trừ <strong>15 phút tiền lương</strong>
+          </div>
+        </div>
 
         <% } else { %>
 
         <%-- Mở ca --%>
-        <p style="font-size:13.5px;color:var(--muted);margin-bottom:16px">
-          Bạn hiện không có ca nào đang mở. Mở ca để bắt đầu làm việc.
-        </p>
-        <form method="post" action="<%= request.getContextPath() %>/staff-shift?uid=<%= uid %>">
-          <input type="hidden" name="action" value="open">
-          <div class="shift-action-row">
-            <div class="fg">
-              <label>Tiền đầu ca (₫)</label>
-              <input type="number" name="openingCash" min="0" step="1000"
-                     placeholder="0" style="width:160px">
-            </div>
-            <button type="submit" class="btn-open">🟢 Mở ca</button>
-          </div>
-        </form>
+        <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:12px;padding:14px 18px;text-align:center;margin:12px 0">
+          <div style="font-size:22px;margin-bottom:8px">🔒</div>
+          <div style="font-size:13px;font-weight:700;color:#991B1B;margin-bottom:4px">Chưa có ca đang mở</div>
+          <div style="font-size:12px;color:#B91C1C">Vào trang <a href="${pageContext.request.contextPath}/staff-checkin?uid=<%= uid %>" style="color:#1558A8;font-weight:700">Điểm danh</a> để check-in khi có lịch ca.</div>
+        </div>
 
         <% } %>
       </div>

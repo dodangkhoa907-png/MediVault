@@ -502,9 +502,22 @@ select.field-input{
                 </div>
 
                 <div class="action-row">
-                    <button type="submit" class="btn-submit" id="submitBtn">
-                        <%= isNew ? "✅ Tạo tài khoản" : "💾 Lưu thay đổi" %>
+                    <% if (isNew) { %>
+                    <%-- Khi tạo mới: 2 nút --%>
+                    <button type="submit" name="redirect" value="schedule" class="btn-submit" id="submitBtn">
+                        📅 Lưu &amp; Xếp lịch ngay
                     </button>
+                    <button type="submit" name="redirect" value="more"
+                            class="btn-submit" id="submitBtnMore"
+                            style="background:var(--surface);color:var(--blue);border:2px solid var(--blue);margin-left:10px">
+                        ➕ Lưu &amp; Thêm tiếp
+                    </button>
+                    <% } else { %>
+                    <%-- Khi chỉnh sửa: 1 nút bình thường --%>
+                    <button type="submit" class="btn-submit" id="submitBtn">
+                        💾 Lưu thay đổi
+                    </button>
+                    <% } %>
                     <a href="${pageContext.request.contextPath}/accounts" class="btn-cancel">Hủy</a>
                 </div>
             </div>

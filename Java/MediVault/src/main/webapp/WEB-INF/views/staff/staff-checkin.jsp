@@ -160,6 +160,13 @@ tbody tr:last-child td{border-bottom:none}
       <c:when test="${param.msg=='checked-in'}"><div class="toast toast-ok" id="toast">✅ Check-in thành công!</div></c:when>
       <c:when test="${param.msg=='checked-out'}"><div class="toast toast-ok" id="toast">✅ Check-out thành công!</div></c:when>
       <c:when test="${param.msg=='already-in'}"><div class="toast toast-warn" id="toast">⚠️ Bạn đang có ca đang mở!</div></c:when>
+      <c:when test="${param.msg=='no-schedule'}"><div class="toast toast-err" id="toast">🚫 Hôm nay bạn không có lịch làm việc!</div></c:when>
+      <c:when test="${param.msg=='too-early'}"><div class="toast toast-warn" id="toast">⏰ Chưa đến giờ ca! Vui lòng đợi đến giờ bắt đầu.</div></c:when>
+      <c:when test="${param.msg=='too-late'}"><div class="toast toast-err" id="toast">❌ Ca đã kết thúc hơn 20 phút, không thể check-in!</div></c:when>
+      <c:when test="${param.msg=='checked-in'}"><div class="toast toast-ok" id="toast">✅ Check-in thành công — Đúng giờ!</div></c:when>
+      <c:when test="${param.msg=='checked-in-late'}"><div class="toast toast-warn" id="toast">⚠️ Check-in thành công — Ghi nhận trễ giờ!</div></c:when>
+      <c:when test="${param.msg=='checked-in-absent'}"><div class="toast toast-err" id="toast">❌ Check-in ghi nhận VẮNG — Trễ quá giờ cho phép!</div></c:when>
+      <c:when test="${param.msg=='checked-out'}"><div class="toast toast-ok" id="toast">👋 Check-out thành công!</div></c:when>
       <c:otherwise><div class="toast toast-err" id="toast">❌ Có lỗi xảy ra!</div></c:otherwise>
     </c:choose>
   </c:if>
@@ -241,8 +248,7 @@ tbody tr:last-child td{border-bottom:none}
               <form method="post" action="${pageContext.request.contextPath}/staff-checkin">
                 <input type="hidden" name="action" value="checkout">
                 <input type="hidden" name="uid"    value="${staffUid}">
-                <div class="fg"><label>Tiền cuối ca (VNĐ)</label>
-                  <input type="number" name="closingCash" min="0" step="1000" value="0" placeholder="0"></div>
+
                 <div class="fg"><label>Ghi chú bàn giao</label>
                   <textarea name="notes" rows="3" placeholder="Ghi chú tình trạng ca, bàn giao..."></textarea></div>
                 <button type="submit" class="btn-checkout"
@@ -257,25 +263,44 @@ tbody tr:last-child td{border-bottom:none}
           <div class="form-card">
             <div class="form-head"><span>📥</span><h3>Check-in bắt đầu ca</h3></div>
             <div class="form-body">
-              <form method="post" action="${pageContext.request.contextPath}/staff-checkin">
-                <input type="hidden" name="action" value="checkin">
-                <input type="hidden" name="uid"    value="${staffUid}">
-                <div class="fg"><label>Tiền đầu ca (VNĐ)</label>
-                  <input type="number" name="openingCash" min="0" step="1000" value="0" placeholder="0"></div>
-                <c:if test="${not empty todaySchedule}">
-                  <div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12.5px;color:#065F46">
-                    ✅ Lịch ca hôm nay: <strong>${todaySchedule.shiftTypeName}</strong>
-                    (${fn:substring(todaySchedule.plannedStart.toString(),11,16)} – ${fn:substring(todaySchedule.plannedEnd.toString(),11,16)})
-                    — Cho phép trễ ${todaySchedule.lateToleranceMinutes} phút
+              <c:choose>
+                <c:when test="${not empty todaySchedule}">
+                  <%-- Có lịch ca → cho check-in --%>
+                  <div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:8px;padding:12px 16px;margin-bottom:14px">
+                    <div style="font-size:13px;font-weight:700;color:#065F46;margin-bottom:4px">
+                      ✅ Ca hôm nay: <strong>${todaySchedule.shiftTypeName}</strong>
+                    </div>
+                    <div style="font-size:12px;color:#059669">
+                      🕐 ${fn:substring(todaySchedule.plannedStart.toString(),11,16)} – ${fn:substring(todaySchedule.plannedEnd.toString(),11,16)}
+                      &nbsp;|&nbsp; ⏱️ Cho phép trễ ${todaySchedule.lateToleranceMinutes} phút
+                    </div>
+                    <c:if test="${not empty todaySchedule.openingCash}">
+                      <div style="font-size:12px;color:#059669;margin-top:4px">
+                        💰 Tiền đầu ca: <strong><fmt:formatNumber value="${todaySchedule.openingCash}" type="number" maxFractionDigits="0"/>đ</strong>
+                        (do Admin thiết lập)
+                      </div>
+                    </c:if>
                   </div>
-                </c:if>
-                <c:if test="${empty todaySchedule}">
-                  <div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12.5px;color:#92400E">
-                    ⚠️ Không có lịch ca hôm nay. Check-in sẽ được ghi nhận là ca tự do.
+                  <form method="post" action="${pageContext.request.contextPath}/staff-checkin">
+                    <input type="hidden" name="action" value="checkin">
+                    <input type="hidden" name="uid"    value="${staffUid}">
+                    <button type="submit" class="btn-checkin">🟢 Check-in — Bắt đầu ca</button>
+                  </form>
+                </c:when>
+                <c:otherwise>
+                  <%-- Không có lịch ca → ẩn nút, hiện alert --%>
+                  <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:10px;padding:16px;text-align:center">
+                    <div style="font-size:22px;margin-bottom:8px">🚫</div>
+                    <div style="font-size:13.5px;font-weight:700;color:#991B1B;margin-bottom:6px">
+                      Hôm nay bạn không có lịch làm việc
+                    </div>
+                    <div style="font-size:12.5px;color:#B91C1C;line-height:1.6">
+                      Nếu có sự nhầm lẫn, vui lòng liên hệ Admin<br>
+                      để được xếp ca trước khi điểm danh.
+                    </div>
                   </div>
-                </c:if>
-                <button type="submit" class="btn-checkin">🟢 Check-in — Bắt đầu ca</button>
-              </form>
+                </c:otherwise>
+              </c:choose>
             </div>
           </div>
         </c:otherwise>

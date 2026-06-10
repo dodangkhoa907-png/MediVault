@@ -3,11 +3,15 @@ package com.medivault.dao;
 import com.medivault.config.DBContext;
 import com.medivault.dao.interfaces.IShiftTypeDAO;
 import com.medivault.entity.ShiftType;
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ShiftTypeDAO implements IShiftTypeDAO {
+
+    /** Lương tối thiểu 50,000đ/giờ */
+    public static final BigDecimal MIN_HOURLY_RATE = new BigDecimal("50000");
 
     private ShiftType mapRow(ResultSet rs) throws SQLException {
         ShiftType s = new ShiftType();
@@ -26,12 +30,21 @@ public class ShiftTypeDAO implements IShiftTypeDAO {
         return s;
     }
 
+    /** Validate lương trước khi lưu — throw nếu vi phạm */
+    private void validateHourlyRate(BigDecimal rate) {
+        if (rate == null || rate.compareTo(MIN_HOURLY_RATE) < 0) {
+            throw new IllegalArgumentException(
+                    "Lương giờ tối thiểu là 50,000đ/giờ. Giá trị nhập: "
+                            + (rate != null ? rate.toPlainString() : "null"));
+        }
+    }
+
     @Override
     public List<ShiftType> findAll() {
         List<ShiftType> list = new ArrayList<>();
-        String sql = "SELECT * FROM ShiftTypes ORDER BY ShiftTypeID";
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql);
+             PreparedStatement ps = cn.prepareStatement(
+                     "SELECT * FROM ShiftTypes ORDER BY ShiftTypeID");
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
         } catch (Exception e) { e.printStackTrace(); }
@@ -41,9 +54,9 @@ public class ShiftTypeDAO implements IShiftTypeDAO {
     @Override
     public List<ShiftType> findAllActive() {
         List<ShiftType> list = new ArrayList<>();
-        String sql = "SELECT * FROM ShiftTypes WHERE IsActive = 1 ORDER BY StartHour";
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql);
+             PreparedStatement ps = cn.prepareStatement(
+                     "SELECT * FROM ShiftTypes WHERE IsActive=1 ORDER BY StartHour");
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
         } catch (Exception e) { e.printStackTrace(); }
@@ -51,11 +64,11 @@ public class ShiftTypeDAO implements IShiftTypeDAO {
     }
 
     @Override
-    public ShiftType findById(int shiftTypeId) {
-        String sql = "SELECT * FROM ShiftTypes WHERE ShiftTypeID = ?";
+    public ShiftType findById(int id) {
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
-            ps.setInt(1, shiftTypeId);
+             PreparedStatement ps = cn.prepareStatement(
+                     "SELECT * FROM ShiftTypes WHERE ShiftTypeID=?")) {
+            ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return mapRow(rs);
             }
@@ -65,9 +78,12 @@ public class ShiftTypeDAO implements IShiftTypeDAO {
 
     @Override
     public boolean insert(ShiftType st) {
+        // Java-side validation trước khi đến DB
+        validateHourlyRate(st.getHourlyRate());
+
         String sql = "INSERT INTO ShiftTypes "
-                + "(Name, StartHour, StartMinute, EndHour, EndMinute, "
-                + "HourlyRate, OvertimeMultiplier, AllowanceAmount) "
+                + "(Name,StartHour,StartMinute,EndHour,EndMinute,"
+                + "HourlyRate,OvertimeMultiplier,AllowanceAmount) "
                 + "VALUES (?,?,?,?,?,?,?,?)";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
@@ -77,17 +93,25 @@ public class ShiftTypeDAO implements IShiftTypeDAO {
             ps.setInt(4, st.getEndHour());
             ps.setInt(5, st.getEndMinute());
             ps.setBigDecimal(6, st.getHourlyRate());
-            ps.setBigDecimal(7, st.getOvertimeMultiplier());
-            ps.setBigDecimal(8, st.getAllowanceAmount());
+            ps.setBigDecimal(7, st.getOvertimeMultiplier() != null
+                    ? st.getOvertimeMultiplier() : new BigDecimal("1.5"));
+            ps.setBigDecimal(8, st.getAllowanceAmount() != null
+                    ? st.getAllowanceAmount() : BigDecimal.ZERO);
             return ps.executeUpdate() > 0;
-        } catch (Exception e) { e.printStackTrace(); return false; }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     @Override
     public boolean update(ShiftType st) {
-        String sql = "UPDATE ShiftTypes SET Name=?, StartHour=?, StartMinute=?, "
-                + "EndHour=?, EndMinute=?, HourlyRate=?, OvertimeMultiplier=?, "
-                + "AllowanceAmount=? WHERE ShiftTypeID=?";
+        // Java-side validation
+        validateHourlyRate(st.getHourlyRate());
+
+        String sql = "UPDATE ShiftTypes SET Name=?,StartHour=?,StartMinute=?,"
+                + "EndHour=?,EndMinute=?,HourlyRate=?,OvertimeMultiplier=?,AllowanceAmount=? "
+                + "WHERE ShiftTypeID=?";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setNString(1, st.getName());
@@ -100,16 +124,28 @@ public class ShiftTypeDAO implements IShiftTypeDAO {
             ps.setBigDecimal(8, st.getAllowanceAmount());
             ps.setInt(9, st.getShiftTypeId());
             return ps.executeUpdate() > 0;
-        } catch (Exception e) { e.printStackTrace(); return false; }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     @Override
-    public boolean setActive(int shiftTypeId, boolean active) {
-        String sql = "UPDATE ShiftTypes SET IsActive=? WHERE ShiftTypeID=?";
+    public boolean setActive(int id, boolean active) {
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(
+                     "UPDATE ShiftTypes SET IsActive=? WHERE ShiftTypeID=?")) {
+            ps.setBoolean(1, active); ps.setInt(2, id);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+    @Override
+    public boolean delete(int id) {
+        String sql = "DELETE FROM ShiftTypes WHERE ShiftTypeID = ? AND IsActive = 0 "
+                + "AND NOT EXISTS (SELECT 1 FROM ShiftSchedules WHERE ShiftTypeID = ?)";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
-            ps.setBoolean(1, active);
-            ps.setInt(2, shiftTypeId);
+            ps.setInt(1, id); ps.setInt(2, id);
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }

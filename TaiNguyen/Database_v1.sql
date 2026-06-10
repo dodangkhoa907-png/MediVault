@@ -1,20 +1,11 @@
-/* ================================================================
-   MEDIVAULT DB v3.1 FINAL — PHIEN BAN HOAN CHINH
-   ----------------------------------------------------------------
-   Nhóm  : MediVault | DBMS: SQL Server 2019/2022
-   ----------------------------------------------------------------
-   11 Khu vuc | 6 Triggers | 7 Views | 4 Stored Procedures
-   ================================================================ */
-
 USE master;
 GO
-IF DB_ID('PharmacyPro_DB') IS NOT NULL
+-- Tạo DB mới (phải chạy sau step0_drop_db.sql)
+IF DB_ID('PharmacyPro_DB') IS NULL
 BEGIN
-    ALTER DATABASE PharmacyPro_DB SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-    DROP DATABASE PharmacyPro_DB;
+    CREATE DATABASE PharmacyPro_DB;
+    PRINT 'PharmacyPro_DB created';
 END
-GO
-CREATE DATABASE PharmacyPro_DB;
 GO
 USE PharmacyPro_DB;
 GO
@@ -45,6 +36,7 @@ CREATE TABLE Accounts (
     IsActive     BIT           NOT NULL DEFAULT 1,
     CreatedAt    DATETIME      NOT NULL DEFAULT GETDATE(),
     LastLoginAt  DATETIME      NULL,
+    NfcCardId VARCHAR(64) NULL UNIQUE,
     FaceEnrollmentPath NVARCHAR(500) NULL,   -- Duong dan du lieu khuon mat / Để chấm công !!!
     CONSTRAINT CK_Account_Email CHECK (Email IS NULL OR Email LIKE '%_@_%._%')
 );
@@ -58,7 +50,10 @@ CREATE TABLE Shifts (
     OpeningCash  DECIMAL(18,2) NOT NULL DEFAULT 0,
     ClosingCash  DECIMAL(18,2) NULL,
     Notes        NVARCHAR(255) NULL,
+    LateCloseDeductAmount DECIMAL(12,2) NULL DEFAULT 0,
     GracePeriodMinutes INT NOT NULL DEFAULT 5,
+    Status         VARCHAR(20)    NOT NULL DEFAULT 'OPEN',     -- OPEN|CLOSED|FORCE_CLOSED|ABANDONED
+    LateCloseDeductAmount DECIMAL(12,2) NULL DEFAULT 0,           -- Tiền trừ nếu đóng ca trễ
 CONSTRAINT CK_Shift_Grace CHECK (GracePeriodMinutes >= 0 AND GracePeriodMinutes <= 8),    -- Gioi han thoi gian cho phep cham cong muon
     CONSTRAINT CK_Shift_Time CHECK (EndTime IS NULL OR EndTime >= StartTime),
     CONSTRAINT CK_Shift_Cash CHECK (OpeningCash >= 0 AND (ClosingCash IS NULL OR ClosingCash >= 0))
@@ -96,8 +91,14 @@ CREATE TABLE ShiftTypes (
     )
 );
 GO
+IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_ShiftType_MinWage')
+    ALTER TABLE ShiftTypes DROP CONSTRAINT CK_ShiftType_MinWage;
+GO
+ALTER TABLE ShiftTypes ADD CONSTRAINT CK_ShiftType_MinWage
+    CHECK (HourlyRate >= 50000);
+GO
  
--- Bảng 2: Lịch ca được xếp (admin xếp trước)
+-- Bảng 2: Lịch ca được xếp (admin xếp trước) - thêm status để quản lý tình trạng ca, xin nghỉ, đi sớm or muộn
 CREATE TABLE ShiftSchedules (
     ScheduleID    INT PRIMARY KEY IDENTITY(1,1),
     AccountID     INT            NOT NULL,
@@ -112,7 +113,7 @@ CREATE TABLE ShiftSchedules (
     CreatedBy     INT            NOT NULL,           -- Admin tạo lịch
     CreatedAt     DATETIME       NOT NULL DEFAULT GETDATE(),
     CONSTRAINT CK_Schedule_Status CHECK (
-        Status IN ('SCHEDULED','CONFIRMED','ABSENT','ON_LEAVE','CANCELLED')
+        Status IN ('SCHEDULED','CONFIRMED','LATE','ABSENT','ON_LEAVE','LEAVE_PENDING','CANCELLED')
     ),
     CONSTRAINT CK_Schedule_Time CHECK (PlannedEnd > PlannedStart),
     CONSTRAINT UQ_Schedule_Staff_Date UNIQUE (AccountID, WorkDate, ShiftTypeID)
@@ -140,6 +141,8 @@ CREATE TABLE Attendance (
     ) PERSISTED,                                         -- Tính tự động
     OvertimeHours     DECIMAL(5,2)   NOT NULL DEFAULT 0, -- Admin điều chỉnh nếu cần
     IsAutoClose       BIT            NOT NULL DEFAULT 0, -- 1 = hệ thống tự đóng
+    AttendanceStatus  VARCHAR(20)    NOT NULL DEFAULT 'CHECKED_IN', -- CHECKED_IN|ON_TIME|LATE|EARLY_LEAVE|LATE_EARLY|OVERTIME|NO_SCHEDULE|FORCE_CHECKOUT
+    CONSTRAINT CK_Att_Status CHECK (AttendanceStatus IN ('CHECKED_IN','ON_TIME','LATE','EARLY_LEAVE','LATE_EARLY','OVERTIME','NO_SCHEDULE','FORCE_CHECKOUT')),
     CONSTRAINT CK_Attendance_Method CHECK (
         CheckInMethod IN ('WEB_BUTTON','QR_CODE','NFC_CARD','ADMIN')
     ),
@@ -570,6 +573,40 @@ ALTER TABLE Attendance ADD CONSTRAINT FK_Att_Shift
     FOREIGN KEY (ShiftID)     REFERENCES Shifts(ShiftID);
 ALTER TABLE Attendance ADD CONSTRAINT FK_Att_Account
     FOREIGN KEY (AccountID)   REFERENCES Accounts(AccountID);
+ALTER TABLE Shifts ADD Status VARCHAR(20) NOT NULL DEFAULT 'OPEN'
+    CONSTRAINT CK_Shift_Status CHECK (Status IN (
+        'OPEN',          -- Đang mở
+        'CLOSED',        -- Đã đóng bình thường
+        'FORCE_CLOSED',  -- Admin đóng cưỡng chế
+        'ABANDONED'      -- Mở nhưng không có activity (tự hệ thống đánh dấu)
+    ));
+GO
+ALTER TABLE Attendance ADD AttendanceStatus VARCHAR(20) NOT NULL DEFAULT 'CHECKED_IN'
+    CONSTRAINT CK_Attendance_Status CHECK (AttendanceStatus IN (
+        'CHECKED_IN',     -- Đang làm (chưa check-out)
+        'ON_TIME',        -- Đã check-out, đúng giờ (late=0, early=0)
+        'LATE',           -- Đến trễ (LateMinutes > 0)
+        'EARLY_LEAVE',    -- Về sớm (EarlyLeaveMinutes > 0)
+        'LATE_EARLY',     -- Vừa trễ vừa về sớm
+        'OVERTIME',       -- Làm thêm giờ (OvertimeHours > 0)
+        'NO_SCHEDULE',    -- Check-in tự do (không theo lịch)
+        'FORCE_CHECKOUT'  -- Admin đóng ca cưỡng chế
+    ));
+GO
+ALTER TABLE ShiftSchedules DROP CONSTRAINT CK_Schedule_Status;
+GO
+ALTER TABLE ShiftSchedules ADD CONSTRAINT CK_Schedule_Status CHECK (
+    Status IN (
+        'SCHEDULED',    -- Admin đã xếp, chưa đến ngày
+        'CONFIRMED',    -- Nhân viên đã check-in đúng
+        'LATE',         -- Nhân viên check-in nhưng trễ
+        'ABSENT',       -- Không đến (quá giờ mà không check-in)
+        'ON_LEAVE',     -- Đã được duyệt nghỉ
+        'LEAVE_PENDING',-- Xin nghỉ chưa duyệt
+        'CANCELLED'     -- Admin hủy lịch
+    )
+);
+GO
  
 ALTER TABLE LeaveRequests ADD CONSTRAINT FK_LR_Account
     FOREIGN KEY (AccountID)   REFERENCES Accounts(AccountID);
@@ -637,6 +674,12 @@ CREATE INDEX IX_Att_Schedule     ON Attendance(ScheduleID);
 CREATE INDEX IX_LR_Account_Date  ON LeaveRequests(AccountID, LeaveDate);
 CREATE INDEX IX_LR_Status        ON LeaveRequests(Status, LeaveDate);
 CREATE INDEX IX_Pay_Account      ON Payroll(AccountID, PayYear, PayMonth);
+GO
+IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_ShiftType_MinWage')
+    ALTER TABLE ShiftTypes DROP CONSTRAINT CK_ShiftType_MinWage;
+GO
+ALTER TABLE ShiftTypes ADD CONSTRAINT CK_ShiftType_MinWage
+    CHECK (HourlyRate >= 50000);
 GO
 
 
@@ -719,7 +762,18 @@ BEGIN
     LEFT JOIN PurchaseOrders p ON p.POID = i.POID;
 END;
 GO
-
+CREATE OR ALTER TRIGGER TRG_ShiftType_MinWage
+ON ShiftTypes AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    IF EXISTS (SELECT 1 FROM inserted WHERE HourlyRate < 50000)
+    BEGIN
+        RAISERROR(N'Lương giờ tối thiểu là 50,000đ/giờ. Vui lòng nhập lại.', 16, 1);
+        ROLLBACK TRANSACTION;
+    END
+END;
+GO
 -- TRG 4: Trả hàng → cập nhật kho + log
 CREATE OR ALTER TRIGGER TRG_ProcessReturn
 ON Returns
@@ -850,6 +904,24 @@ BEGIN
        );
 END;
 GO
+CREATE OR ALTER TRIGGER TRG_Attendance_UpdateStatus
+ON Attendance AFTER UPDATE
+AS BEGIN
+    SET NOCOUNT ON;
+    UPDATE a SET a.AttendanceStatus =
+        CASE
+            WHEN i.IsAutoClose = 1                              THEN 'FORCE_CHECKOUT'
+            WHEN i.ScheduleID IS NULL                           THEN 'NO_SCHEDULE'
+            WHEN i.OvertimeHours > 0                            THEN 'OVERTIME'
+            WHEN i.LateMinutes > 0 AND i.EarlyLeaveMinutes > 0 THEN 'LATE_EARLY'
+            WHEN i.LateMinutes > 0                              THEN 'LATE'
+            WHEN i.EarlyLeaveMinutes > 0                        THEN 'EARLY_LEAVE'
+            ELSE 'ON_TIME'
+        END
+    FROM Attendance a JOIN inserted i ON a.AttendanceID = i.AttendanceID
+    WHERE i.CheckOutTime IS NOT NULL;
+END;
+GO
 
 -- TRG 7: Khi check-in → tự tính LateMinutes và update Schedule status
 CREATE OR ALTER TRIGGER TRG_Attendance_CheckIn
@@ -898,6 +970,20 @@ BEGIN
       AND NOT EXISTS (
           SELECT 1 FROM Attendance a WHERE a.ScheduleID = ss.ScheduleID
       );
+END;
+GO
+CREATE OR ALTER TRIGGER TRG_Shift_UpdateStatus
+ON Shifts AFTER UPDATE
+AS BEGIN
+    SET NOCOUNT ON;
+    UPDATE s SET s.Status =
+        CASE
+            WHEN i.Notes LIKE '%Admin%' OR i.Notes LIKE '%[Admin%' THEN 'FORCE_CLOSED'
+            WHEN i.EndTime IS NOT NULL THEN 'CLOSED'
+            ELSE 'OPEN'
+        END
+    FROM Shifts s JOIN inserted i ON s.ShiftID = i.ShiftID
+    WHERE i.EndTime IS NOT NULL;
 END;
 GO
 
@@ -956,7 +1042,38 @@ JOIN Accounts a ON a.AccountID = s.AccountID
 LEFT JOIN Invoices inv ON inv.ShiftID = s.ShiftID AND inv.Status = 'COMPLETED'
 GROUP BY s.ShiftID, a.FullName, s.StartTime, s.EndTime, s.OpeningCash, s.ClosingCash;
 GO
+CREATE OR ALTER VIEW V_GraceWindowShifts AS
+SELECT
+    att.AttendanceID,
+    att.AccountID,
+    att.CheckInTime,
+    ss.PlannedEnd,
+    a.FullName,
+    a.NfcCardId,
+    -- Phút còn lại trước khi bị tự đóng
+    DATEDIFF(MINUTE, GETDATE(), DATEADD(MINUTE, 20, ss.PlannedEnd)) AS MinutesBeforeAutoClose,
+    -- Giai đoạn nào
+    CASE
+        WHEN GETDATE() <= DATEADD(MINUTE, 5, ss.PlannedEnd)  THEN 'IN_SHIFT'      -- đang trong ca
+        WHEN GETDATE() <= DATEADD(MINUTE, 20, ss.PlannedEnd) THEN 'GRACE_WINDOW'  -- 5-20p sau ca
+        ELSE 'OVERDUE'                                                              -- quá 20p
+    END AS Phase
+FROM Attendance att
+JOIN Accounts        a  ON a.AccountID    = att.AccountID
+JOIN ShiftSchedules  ss ON ss.ScheduleID  = att.ScheduleID
+WHERE att.CheckOutTime IS NULL
+  AND att.ScheduleID IS NOT NULL;
+GO
 
+PRINT N'================================================';
+PRINT N'Auto-close + Min Wage + NFC addon loaded!';
+PRINT N'ShiftTypes: HourlyRate >= 50000';
+PRINT N'Shifts: +LateCloseDeductAmount';
+PRINT N'SP_AutoCloseOverdueShifts: auto-close after 20p';
+PRINT N'SP_CheckNFCCard: NFC toggle check-in/out';
+PRINT N'V_GraceWindowShifts: monitor grace window';
+PRINT N'================================================';
+GO
 -- View: Lịch ca tuần hiện tại (admin + staff xem)
 CREATE OR ALTER VIEW V_WeekSchedule AS
 SELECT
@@ -1107,7 +1224,134 @@ BEGIN
     END CATCH
 END;
 GO
+CREATE OR ALTER PROCEDURE SP_AutoCloseOverdueShifts
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRANSACTION;
+    BEGIN TRY
+        -- Tìm tất cả Attendance đang active (chưa check-out)
+        -- mà PlannedEnd + 20 phút đã qua
+        DECLARE @now DATETIME = GETDATE();
+ 
+        -- Cursor qua từng attendance quá giờ
+        DECLARE cur CURSOR FOR
+            SELECT
+                att.AttendanceID,
+                att.AccountID,
+                att.ShiftID,
+                ss.PlannedEnd,
+                st.HourlyRate,
+                -- Tiền trừ: 15 phút × (HourlyRate/60)
+                CAST(15.0 * st.HourlyRate / 60.0 AS DECIMAL(12,2)) AS DeductAmt
+            FROM Attendance att
+            JOIN ShiftSchedules ss ON ss.ScheduleID = att.ScheduleID
+            JOIN ShiftTypes st     ON st.ShiftTypeID = ss.ShiftTypeID
+            WHERE att.CheckOutTime IS NULL
+              AND att.ScheduleID IS NOT NULL
+              -- Đã qua PlannedEnd + 20 phút
+              AND DATEADD(MINUTE, 20, ss.PlannedEnd) < @now;
+ 
+        DECLARE @attId INT, @accId INT, @shiftId INT,
+                @plannedEnd DATETIME, @hourlyRate DECIMAL(12,2), @deductAmt DECIMAL(12,2);
+ 
+        OPEN cur;
+        FETCH NEXT FROM cur INTO @attId, @accId, @shiftId, @plannedEnd, @hourlyRate, @deductAmt;
+ 
+        WHILE @@FETCH_STATUS = 0
+        BEGIN
+            -- Đóng Attendance tại thời điểm PlannedEnd + 20p
+            DECLARE @closeTime DATETIME = DATEADD(MINUTE, 20, @plannedEnd);
+ 
+            UPDATE Attendance SET
+                CheckOutTime      = @closeTime,
+                IsAutoClose       = 1,
+                AttendanceStatus  = 'FORCE_CHECKOUT',
+                EarlyLeaveMinutes = 0
+            WHERE AttendanceID = @attId;
+ 
+            -- Đóng Shift thực tế
+            IF @shiftId IS NOT NULL
+            BEGIN
+                UPDATE Shifts SET
+                    EndTime              = @closeTime,
+                    Status               = 'FORCE_CLOSED',
+                    LateCloseDeductAmount = @deductAmt,
+                    Notes                = ISNULL(Notes, '') +
+                        N' [Auto-đóng: quá 20p sau ca, trừ ' +
+                        CAST(CAST(@deductAmt AS INT) AS VARCHAR) + N'đ]'
+                WHERE ShiftID = @shiftId AND EndTime IS NULL;
+            END
+ 
+            -- Cập nhật ShiftSchedules → ABSENT nếu chưa confirm
+            UPDATE ss SET ss.Status = 'ABSENT'
+            FROM ShiftSchedules ss
+            JOIN Attendance att ON att.ScheduleID = ss.ScheduleID
+            WHERE att.AttendanceID = @attId
+              AND ss.Status NOT IN ('CONFIRMED','ON_LEAVE');
+ 
+            FETCH NEXT FROM cur INTO @attId, @accId, @shiftId, @plannedEnd, @hourlyRate, @deductAmt;
+        END
+ 
+        CLOSE cur; DEALLOCATE cur;
+        COMMIT TRANSACTION;
+ 
+        SELECT @@ROWCOUNT AS ClosedCount;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END;
+GO
 
+CREATE OR ALTER PROCEDURE SP_CheckNFCCard
+    @NfcCardId VARCHAR(64)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRANSACTION;
+    BEGIN TRY
+        -- Tìm account từ NfcCardId
+        DECLARE @accountId INT;
+        SELECT @accountId = AccountID
+        FROM Accounts
+        WHERE NfcCardId = @NfcCardId AND IsActive = 1;
+ 
+        IF @accountId IS NULL
+        BEGIN
+            SELECT 'NOT_FOUND' AS Result, NULL AS AccountID, NULL AS Action;
+            ROLLBACK TRANSACTION; RETURN;
+        END
+ 
+        -- Kiểm tra đang có check-in chưa
+        DECLARE @activeAttId INT;
+        SELECT TOP 1 @activeAttId = AttendanceID
+        FROM Attendance
+        WHERE AccountID = @accountId AND CheckOutTime IS NULL
+        ORDER BY CheckInTime DESC;
+ 
+        IF @activeAttId IS NULL
+        BEGIN
+            -- ── Chưa check-in → check-in ──
+            EXEC SP_CheckIn @accountId, 'NFC_CARD', 0, NULL;
+            SELECT 'CHECKED_IN' AS Result, @accountId AS AccountID, 'CHECK_IN' AS Action;
+        END
+        ELSE
+        BEGIN
+            -- ── Đang check-in → check-out ──
+            EXEC SP_CheckOut @accountId, 0, '[NFC Check-out]', 0;
+            SELECT 'CHECKED_OUT' AS Result, @accountId AS AccountID, 'CHECK_OUT' AS Action;
+        END
+ 
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END;
+GO
 CREATE OR ALTER PROCEDURE SP_OpenShift
     @AccountID INT, @OpeningCash DECIMAL(18,2)
 AS
@@ -1488,28 +1732,30 @@ INSERT INTO LoyaltyCards (CustomerID, TierID, TotalPoints) VALUES
 
 INSERT INTO Shifts (AccountID, StartTime, OpeningCash) VALUES (3, GETDATE(), 500000);
 GO
--- Thêm cột NfcCardId vào Accounts (chuẩn bị cho NFC sau này)
-ALTER TABLE Accounts ADD NfcCardId VARCHAR(64) NULL;
-GO
-CREATE INDEX IX_Account_NFC ON Accounts(NfcCardId) WHERE NfcCardId IS NOT NULL;
+-- NfcCardId đã được định nghĩa trong CREATE TABLE Accounts
+-- Index cho NFC lookup
+CREATE UNIQUE INDEX IX_Account_NFC ON Accounts(NfcCardId) WHERE NfcCardId IS NOT NULL;
 GO
  
 -- Tạo 3 loại ca mẫu
 INSERT INTO ShiftTypes
     (Name, StartHour, StartMinute, EndHour, EndMinute, HourlyRate, AllowanceAmount)
 VALUES
-    (N'Ca sáng',  6, 0, 14, 0, 25000,  10000),  -- 6:00 - 14:00, 25k/h + 10k phụ cấp
-    (N'Ca chiều', 14, 0, 22, 0, 25000,  15000),  -- 14:00 - 22:00, 25k/h + 15k phụ cấp
-    (N'Ca tối',   22, 0,  6, 0, 30000,  25000);  -- 22:00 - 6:00 (qua đêm), 30k/h + 25k
+    (N'Ca sáng',  6, 0, 14, 0, 50000,  15000),  -- 6:00 - 14:00, 50k/h + 15k phụ cấp
+    (N'Ca chiều', 14, 0, 22, 0, 55000,  20000),  -- 14:00 - 22:00, 55k/h + 20k phụ cấp
+    (N'Ca tối',   22, 0,  6, 0, 65000,  30000);  -- 22:00 - 6:00 (qua đêm), 65k/h + 30k
 GO
  
 -- Xếp lịch ca mẫu cho staff01 (AccountID=3) và staff02 (AccountID=4)
 -- Admin (AccountID=1) xếp ca cho hôm nay và 2 ngày tới
-EXEC SP_ScheduleShift @AccountID=3, @ShiftTypeID=1, @WorkDate=CAST(GETDATE() AS DATE),          @CreatedBy=1;
-EXEC SP_ScheduleShift @AccountID=4, @ShiftTypeID=2, @WorkDate=CAST(GETDATE() AS DATE),          @CreatedBy=1;
-EXEC SP_ScheduleShift @AccountID=3, @ShiftTypeID=2, @WorkDate=CAST(DATEADD(DAY,1,GETDATE()) AS DATE), @CreatedBy=1;
-EXEC SP_ScheduleShift @AccountID=4, @ShiftTypeID=1, @WorkDate=CAST(DATEADD(DAY,1,GETDATE()) AS DATE), @CreatedBy=1;
-EXEC SP_ScheduleShift @AccountID=3, @ShiftTypeID=1, @WorkDate=CAST(DATEADD(DAY,2,GETDATE()) AS DATE), @CreatedBy=1;
+DECLARE @today  DATE = CAST(GETDATE() AS DATE);
+DECLARE @tom1   DATE = CAST(DATEADD(DAY,1,GETDATE()) AS DATE);
+DECLARE @tom2   DATE = CAST(DATEADD(DAY,2,GETDATE()) AS DATE);
+EXEC SP_ScheduleShift @AccountID=3, @ShiftTypeID=1, @WorkDate=@today, @CreatedBy=1;
+EXEC SP_ScheduleShift @AccountID=4, @ShiftTypeID=2, @WorkDate=@today, @CreatedBy=1;
+EXEC SP_ScheduleShift @AccountID=3, @ShiftTypeID=2, @WorkDate=@tom1,  @CreatedBy=1;
+EXEC SP_ScheduleShift @AccountID=4, @ShiftTypeID=1, @WorkDate=@tom1,  @CreatedBy=1;
+EXEC SP_ScheduleShift @AccountID=3, @ShiftTypeID=1, @WorkDate=@tom2,  @CreatedBy=1;
 GO
 PRINT N'================================================';
 PRINT N'PharmacyPro_DB v3.1 FINAL tao thanh cong!';

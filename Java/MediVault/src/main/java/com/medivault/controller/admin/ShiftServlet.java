@@ -1,9 +1,16 @@
 package com.medivault.controller.admin;
 
 import com.medivault.dao.AccountDAO;
+import com.medivault.dao.InvoiceDAO;
 import com.medivault.dao.ShiftDAO;
+import com.medivault.dao.ShiftScheduleDAO;
+import com.medivault.dao.ShiftTypeDAO;
 import com.medivault.dao.interfaces.IAccountDAO;
+import com.medivault.dao.interfaces.IInvoiceDAO;
 import com.medivault.dao.interfaces.IShiftDAO;
+import com.medivault.dao.interfaces.IShiftScheduleDAO;
+import com.medivault.dao.interfaces.IShiftTypeDAO;
+import com.medivault.entity.ShiftSchedule;
 import com.medivault.entity.Account;
 import com.medivault.entity.Shift;
 import com.medivault.util.AuditHelper;
@@ -19,8 +26,11 @@ import java.util.*;
 @WebServlet("/shifts")
 public class ShiftServlet extends HttpServlet {
 
-    private final IShiftDAO   shiftDAO   = new ShiftDAO();
-    private final IAccountDAO accountDAO = new AccountDAO();
+    private final IShiftDAO         shiftDAO    = new ShiftDAO();
+    private final IAccountDAO       accountDAO  = new AccountDAO();
+    private final IInvoiceDAO       invoiceDAO  = new InvoiceDAO();
+    private final IShiftScheduleDAO scheduleDAO = new ShiftScheduleDAO();
+    private final IShiftTypeDAO     shiftTypeDAO = new ShiftTypeDAO();
 
     // ── GET ───────────────────────────────────────────────────────────────────
     @Override
@@ -101,15 +111,21 @@ public class ShiftServlet extends HttpServlet {
             allShifts = shiftDAO.findAll();
         }
 
-        // Lọc theo status
-        if ("open".equals(statusStr)) {
-            allShifts = allShifts.stream()
-                    .filter(s -> s.getEndTime() == null)
-                    .collect(java.util.stream.Collectors.toList());
-        } else if ("closed".equals(statusStr)) {
-            allShifts = allShifts.stream()
-                    .filter(s -> s.getEndTime() != null)
-                    .collect(java.util.stream.Collectors.toList());
+        // Lọc theo status — dùng Status field (OPEN/CLOSED/FORCE_CLOSED)
+        if (statusStr != null && !statusStr.isEmpty()) {
+            if ("open".equals(statusStr)) {
+                allShifts = allShifts.stream()
+                        .filter(s -> s.isOpen())
+                        .collect(java.util.stream.Collectors.toList());
+            } else if ("closed".equals(statusStr)) {
+                allShifts = allShifts.stream()
+                        .filter(s -> s.isClosed() || s.isForceClose())
+                        .collect(java.util.stream.Collectors.toList());
+            } else if ("force-closed".equals(statusStr)) {
+                allShifts = allShifts.stream()
+                        .filter(s -> s.isForceClose())
+                        .collect(java.util.stream.Collectors.toList());
+            }
         }
 
         // Map accountId → Account để hiển thị tên nhân viên
@@ -121,10 +137,12 @@ public class ShiftServlet extends HttpServlet {
             }
         }
 
-        // Thống kê tổng quan
+        // Thống kê tổng quan — dùng Status field
         List<Shift> openShifts = allShifts.stream()
-                .filter(s -> s.getEndTime() == null)
+                .filter(s -> s.isOpen())
                 .collect(java.util.stream.Collectors.toList());
+        long forceClosedCount = allShifts.stream().filter(s -> s.isForceClose()).count();
+        req.setAttribute("forceClosedCount", forceClosedCount);
 
         req.setAttribute("shifts",       allShifts);
         req.setAttribute("accountMap",   accountMap);
@@ -136,6 +154,35 @@ public class ShiftServlet extends HttpServlet {
         req.setAttribute("filterTo",     toStr);
         req.setAttribute("filterAcc",    accountStr);
         req.setAttribute("filterStatus", statusStr);
+        // Status summary cho filter dropdown
+        req.setAttribute("openCount",        openShifts.size());
+        req.setAttribute("forceClosedShifts", allShifts.stream()
+                .filter(s -> s.isForceClose()).count());
+
+        // ── Dữ liệu cho Tab Lịch ca (tuần) ──────────────────────────────────
+        java.time.LocalDate today2 = java.time.LocalDate.now();
+        java.time.LocalDate monday = today2.minusDays(today2.getDayOfWeek().getValue() - 1);
+        // Navigate tuần
+        String wStr = req.getParameter("w");
+        if (wStr != null) {
+            try { monday = monday.plusWeeks(Integer.parseInt(wStr)); } catch (Exception ignored) {}
+        }
+        java.time.LocalDate sunday = monday.plusDays(6);
+        // 7 ngày trong tuần
+        java.util.List<java.time.LocalDate> weekDays = new java.util.ArrayList<>();
+        java.util.List<String> weekDayNames = java.util.Arrays.asList("T2","T3","T4","T5","T6","T7","CN");
+        for (int i = 0; i < 7; i++) weekDays.add(monday.plusDays(i));
+        // Lịch ca tuần này
+        java.util.List<com.medivault.entity.ShiftSchedule> weekSchedules =
+                scheduleDAO.findByDateRange(monday, sunday);
+        req.setAttribute("weekDays",     weekDays);
+        req.setAttribute("weekDayNames", weekDayNames);
+        req.setAttribute("weekStart",    monday.toString());
+        req.setAttribute("weekEnd",      sunday.toString());
+        req.setAttribute("today",        today2);
+        req.setAttribute("schedules",    weekSchedules);
+        // ── Dữ liệu cho Tab Loại ca ──────────────────────────────────────────
+        req.setAttribute("shiftTypes",   shiftTypeDAO.findAll());
 
         // Navbar badges (giống các servlet khác)
         loadNavbarData(req);
@@ -164,7 +211,7 @@ public class ShiftServlet extends HttpServlet {
             throws ServletException, IOException {
         int id = parseIntOr(req.getParameter("id"), 0);
         Shift shift = shiftDAO.findById(id);
-        if (shift == null || shift.getEndTime() != null) {
+        if (shift == null || !shift.isOpen()) {
             resp.sendRedirect(req.getContextPath() + "/shifts?msg=already-closed");
             return;
         }
@@ -182,6 +229,17 @@ public class ShiftServlet extends HttpServlet {
         String notes = req.getParameter("notes");
         Shift shift = shiftDAO.findById(shiftId);
         if (shift == null) { resp.sendRedirect(req.getContextPath() + "/shifts"); return; }
+
+        // ── Tự tính ClosingCash = OpeningCash + Doanh thu tiền mặt trong ca ──
+        try {
+            java.math.BigDecimal cashRevenue =
+                    invoiceDAO.sumCashRevenueByShift(shiftId);
+            java.math.BigDecimal opening =
+                    shift.getOpeningCash() != null ? shift.getOpeningCash() : java.math.BigDecimal.ZERO;
+            java.math.BigDecimal closing = opening.add(
+                    cashRevenue != null ? cashRevenue : java.math.BigDecimal.ZERO);
+            shiftDAO.setClosingCash(shiftId, closing);
+        } catch (Exception ignored) {}
 
         boolean ok = shiftDAO.forceClose(shiftId, notes);
         if (ok) {

@@ -233,7 +233,18 @@ public class AccountServlet extends HttpServlet {
         if (ok) {
             AuditHelper.log(req, "Tạo tài khoản", "Account",
                     "Admin tạo tài khoản @" + username + " (" + fullName + ")");
-            resp.sendRedirect(req.getContextPath() + "/accounts?msg=created");
+            // Lấy AccountID vừa tạo để redirect xếp lịch
+            Account created = dao.findByUsername(username.trim());
+            String redirect = req.getParameter("redirect");
+            if ("schedule".equals(redirect) && created != null) {
+                // Lưu & Xếp lịch ngay → redirect sang trang xếp lịch pre-fill
+                resp.sendRedirect(req.getContextPath()
+                        + "/shift-schedules?action=new&accountId=" + created.getAccountId()
+                        + "&msg=account-created");
+            } else {
+                // Lưu & Thêm tiếp → ở lại form mới
+                resp.sendRedirect(req.getContextPath() + "/accounts?action=new&msg=created");
+            }
         } else {
             req.setAttribute("error", "Tạo tài khoản thất bại — kiểm tra log Tomcat!");
             req.setAttribute("account", a);

@@ -97,9 +97,12 @@ public class AuthFilter implements Filter {
                 || uri.startsWith(ctx + "/WEB-INF")
                 || uri.equals(ctx + "/otp-verify")
                 || uri.startsWith(ctx + "/staff-shift")
-                || uri.equals(ctx + "/forgot-password")         // staff yêu cầu reset
-                || uri.startsWith(ctx + "/admin/confirm-reset") // admin xác nhận qua link mail
-                || uri.equals(ctx + "/staff-ping"); // ping không cần auth
+                || uri.equals(ctx + "/forgot-password")
+                || uri.startsWith(ctx + "/admin/confirm-reset")
+                || uri.equals(ctx + "/staff-ping")
+                // ── NFC: không cần session — xác thực bằng cardId ──
+                || uri.startsWith(ctx + "/nfc-checkin")
+                || uri.startsWith(ctx + "/api/nfc");
 
         // ── 2. Lấy session hiện tại (không tạo mới) ──
         HttpSession session = req.getSession(false);
@@ -208,11 +211,12 @@ public class AuthFilter implements Filter {
                 || uri.startsWith(ctx + "/customers")
                 || uri.startsWith(ctx + "/medicines")
                 || uri.startsWith(ctx + "/account-detail-api")
-                || uri.startsWith(ctx + "/audit-logs")            // nhật ký hệ thống
-                || uri.startsWith(ctx + "/admin/reset-requests")   // polling endpoint
+                || uri.startsWith(ctx + "/audit-logs")
+                || uri.startsWith(ctx + "/admin/reset-requests")
                 || uri.startsWith(ctx + "/shift-schedules")
                 || uri.startsWith(ctx + "/attendance")
-                || uri.startsWith(ctx + "/payroll");
+                || uri.startsWith(ctx + "/payroll")
+                || uri.startsWith(ctx + "/shift-types");
 
         if (isAdminOnly) {
             if (adminAcc == null) {
@@ -236,7 +240,8 @@ public class AuthFilter implements Filter {
                 || uri.equals(ctx + "/staff-profile")
                 || uri.startsWith(ctx + "/staff-my-shifts")
                 || uri.startsWith(ctx + "/staff-checkin")
-                || (uri.startsWith(ctx + "/leave-requests") && req.getParameter("uid") != null)) {
+                || (uri.startsWith(ctx + "/leave-requests")
+                && req.getParameter("uid") != null)) {
             if (staffAcc == null) {
                 resp.sendRedirect(ctx + "/staff-login");
                 return;

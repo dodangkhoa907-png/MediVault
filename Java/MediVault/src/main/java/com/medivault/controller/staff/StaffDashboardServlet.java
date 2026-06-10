@@ -1,15 +1,9 @@
 package com.medivault.controller.staff;
 
-import com.medivault.dao.BatchesDAO;
-import com.medivault.dao.MedicineDAO;
-import com.medivault.dao.ShiftDAO;
-import com.medivault.dao.StaffAuditLogDAO;
-import com.medivault.dao.interfaces.IBatchesDAO;
-import com.medivault.dao.interfaces.IMedicineDAO;
-import com.medivault.dao.interfaces.IShiftDAO;
-import com.medivault.dao.interfaces.IStaffAuditLogDAO;
-import com.medivault.entity.Account;
-import com.medivault.entity.Shift;
+import com.medivault.dao.*;
+import com.medivault.dao.interfaces.*;
+import com.medivault.entity.*;
+import com.medivault.util.NotificationUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -23,6 +17,7 @@ public class StaffDashboardServlet extends HttpServlet {
     private final IBatchesDAO       batchesDAO    = new BatchesDAO();
     private final IStaffAuditLogDAO staffAuditDAO = new StaffAuditLogDAO();
     private final IShiftDAO         shiftDAO      = new ShiftDAO();
+    private final IShiftScheduleDAO scheduleDAO   = new ShiftScheduleDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -30,52 +25,52 @@ public class StaffDashboardServlet extends HttpServlet {
 
         String uid = req.getParameter("uid");
         if (uid == null || uid.isEmpty()) {
-            resp.sendRedirect(req.getContextPath() + "/staff/staff-login");
-            return;
+            resp.sendRedirect(req.getContextPath() + "/staff-login"); return;
         }
-
         HttpSession session = req.getSession(false);
         if (session == null) {
-            resp.sendRedirect(req.getContextPath() + "/staff/staff-login");
-            return;
+            resp.sendRedirect(req.getContextPath() + "/staff-login"); return;
         }
-
         Account staffAcc = (Account) session.getAttribute("staffAccount_" + uid);
         if (staffAcc == null) {
-            resp.sendRedirect(req.getContextPath() + "/staff/staff-login");
-            return;
+            resp.sendRedirect(req.getContextPath() + "/staff-login"); return;
         }
         if (staffAcc.getRoleId() == 1) {
-            resp.sendRedirect(req.getContextPath() + "/dashboard");
-            return;
+            resp.sendRedirect(req.getContextPath() + "/dashboard"); return;
         }
 
-        // ── Toast messages ──
-        String msg = req.getParameter("msg");
-        if (msg != null) req.setAttribute("msg", msg);
+        req.setAttribute("staffUid", uid);
+        req.setAttribute("staffAcc", staffAcc);
 
-        // ── Staff info ──
-        req.setAttribute("staffUid",       uid);
-        req.setAttribute("staffAcc",       staffAcc);
-
-        // ── Inventory stats ──
+        // Inventory stats
         req.setAttribute("totalMedicines", medicineDAO.countAll());
         req.setAttribute("lowStockCount",  medicineDAO.countLowStock());
         req.setAttribute("expiryCount",    batchesDAO.findExpiringSoon().size());
 
-        // ── Ca làm việc hiện tại ──
+        // Ca làm việc hiện tại
         Shift currentShift = shiftDAO.findCurrent(staffAcc.getAccountId());
         req.setAttribute("currentShift", currentShift);
 
-        // ── Lịch sử ca gần nhất (3 ca) ──
+        // Lịch sử ca gần nhất (3 ca đã đóng)
         List<Shift> recentShifts = shiftDAO.findByAccount(staffAcc.getAccountId());
-        // Bỏ ca đang mở ra khỏi lịch sử
-        recentShifts.removeIf(s -> s.getEndTime() == null);
-        req.setAttribute("recentShifts", recentShifts.subList(0, Math.min(3, recentShifts.size())));
+        recentShifts.removeIf(s -> s.isOpen());
+        req.setAttribute("recentShifts",
+                recentShifts.subList(0, Math.min(3, recentShifts.size())));
 
-        // ── Activity log ──
+        // ── Lịch ca sắp tới (7 ngày) — hiển thị widget ──
+        req.setAttribute("upcomingSchedules",
+                scheduleDAO.findUpcoming(staffAcc.getAccountId(), 7));
+
+        // ── Lịch ca hôm nay ──
+        req.setAttribute("todaySchedule",
+                scheduleDAO.findTodaySchedule(staffAcc.getAccountId()));
+
+        // Activity log
         req.setAttribute("recentLogs",
                 staffAuditDAO.findRecentByAccount(staffAcc.getAccountId(), 10));
+
+        // ── Staff notifications (đơn nghỉ được duyệt/từ chối hôm nay) ──
+        NotificationUtil.loadStaffNotifications(req, staffAcc.getAccountId());
 
         req.getRequestDispatcher("/WEB-INF/views/staff/staff-dashboard.jsp")
                 .forward(req, resp);
