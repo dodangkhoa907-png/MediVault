@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
+<% String activeNav = "audit"; %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%
@@ -43,7 +44,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MediVault — Nhật ký hệ thống</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -83,7 +84,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 
 /* TOPBAR */
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding: 28px;gap:14px;position:sticky;top:0;z-index:50}
-.topbar-title{font-family:'DM Serif Display',serif;font-size:16px;color:var(--ink)}
+.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;color:var(--ink)}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-shrink:0}
 .topbar-clock{display:flex;align-items:center;gap:5px;padding:6px 13px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;font-size:13px;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums}
 .clock-sep{animation:blink 1s step-end infinite}
@@ -113,12 +114,12 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .content{padding:26px 28px;flex:1;min-width:0}
 .page-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px}
 .page-head-left .breadcrumb{font-size:11.5px;color:var(--muted);font-weight:500;margin-bottom:4px}
-.page-head-left h1{font-family:'DM Serif Display',serif;font-size:28px;color:var(--ink)}
+.page-head-left h1{font-family:'Outfit',sans-serif;font-size:28px;color:var(--ink)}
 
 /* Table card */
 .table-card{background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden}
 .table-card-header{padding:20px 24px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.table-card-title{font-family:'DM Serif Display',serif;font-size:18px;color:var(--ink)}
+.table-card-title{font-family:'Outfit',sans-serif;font-size:18px;color:var(--ink)}
 .table-card-subtitle{font-size:12.5px;color:var(--muted);margin-top:2px}
 
 /* Filter */
@@ -174,64 +175,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 <%@ include file="/WEB-INF/views/loading.jsp" %>
 
 <!-- SIDEBAR -->
-<aside class="sidebar">
-    <div class="sidebar-logo">
-        <div class="logo-icon">💊</div>
-        <div>
-            <div class="logo-text">Medi<span>Vault</span></div>
-            <div class="logo-sub">Admin Console</div>
-        </div>
-    </div>
-    <nav class="nav-section">
-        <div class="nav-label">Tổng quan</div>
-        <a href="${pageContext.request.contextPath}/dashboard" class="nav-item">
-            <span class="nav-icon">🏠</span> Trang chủ
-        </a>
-    </nav>
-    <nav class="nav-section">
-        <div class="nav-label">Quản lý</div>
-        <a href="${pageContext.request.contextPath}/accounts" class="nav-item">
-            <span class="nav-icon">👤</span> Tài khoản
-        </a>
-        <a href="${pageContext.request.contextPath}/shifts" class="nav-item">
-            <span class="nav-icon">🕐</span> Ca làm việc
-        </a>
-        <a href="${pageContext.request.contextPath}/medicines" class="nav-item">
-            <span class="nav-icon">💊</span> Kho thuốc
-            <% if (expiryCount > 0) { %>
-            <span class="nav-badge"><%= expiryCount %></span>
-            <% } %>
-        </a>
-        <a href="${pageContext.request.contextPath}/invoices" class="nav-item">
-            <span class="nav-icon">🧾</span> Hóa đơn
-        </a>
-        <a href="${pageContext.request.contextPath}/customers" class="nav-item">
-            <span class="nav-icon">👥</span> Khách hàng
-        </a>
-        <a href="${pageContext.request.contextPath}/returns" class="nav-item">
-            <span class="nav-icon">↩️</span> Trả hàng
-        </a>
-    </nav>
-    <nav class="nav-section">
-        <div class="nav-label">Phân tích</div>
-        <a href="${pageContext.request.contextPath}/audit-logs" class="nav-item active">
-            <span class="nav-icon">📋</span> Nhật ký
-        </a>
-        <a href="${pageContext.request.contextPath}/reports" class="nav-item">
-            <span class="nav-icon">📊</span> Báo cáo
-        </a>
-    </nav>
-    <div class="sidebar-footer">
-        <div class="sidebar-user">
-            <div class="user-avatar-sm"><%= initials %></div>
-            <div class="user-info-sm">
-                <div class="name"><%= fullName %></div>
-                <div class="role"><% if (roleId==1){%>Admin<%}else if(roleId==2){%>Dược sĩ<%}else{%>Thủ kho<%}%></div>
-            </div>
-            <a href="${pageContext.request.contextPath}/logout" class="logout-btn" title="Đăng xuất">⏻</a>
-        </div>
-    </div>
-</aside>
+<%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
 
 <!-- MAIN -->
 <div class="main">

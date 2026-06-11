@@ -12,9 +12,10 @@ import java.io.IOException;
 public class AuthFilter implements Filter {
 
     // ── Tên cookie lưu nhận dạng đăng nhập ──
-    private static final String COOKIE_ADMIN = "mv_admin_uid";
+    private static final String COOKIE_ADMIN          = "mv_admin_uid";       // session 8h, KHÔNG auto-restore
+    private static final String COOKIE_ADMIN_REMEMBER = "mv_admin_remember";  // 7 ngày, CÓ auto-restore
     private static final String COOKIE_STAFF = "mv_staff_uid";
-    private static final int    COOKIE_MAX_AGE = 60 * 60 * 8; // 8 tiếng (giây)
+    private static final int    COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 ngày (Remember Me)
 
     private final IAccountDAO accountDAO = new AccountDAO();
 
@@ -54,6 +55,22 @@ public class AuthFilter implements Filter {
         resp.addCookie(c);
     }
 
+    /** Remember Me: ghi cookie dài hạn mv_admin_remember (7 ngày) — KHÁC cookie session thường */
+    public static void writeAdminCookieLong(HttpServletResponse resp, int accountId, int maxAgeSeconds) {
+        // Ghi cookie Remember Me riêng (mv_admin_remember) — AuthFilter chỉ restore loại này
+        Cookie c = new Cookie("mv_admin_remember", String.valueOf(accountId));
+        c.setMaxAge(maxAgeSeconds);
+        c.setPath("/");
+        c.setHttpOnly(true);
+        resp.addCookie(c);
+        // Cũng ghi cookie session bình thường để request hiện tại hoạt động
+        Cookie s = new Cookie("mv_admin_uid", String.valueOf(accountId));
+        s.setMaxAge(60 * 60 * 8);
+        s.setPath("/");
+        s.setHttpOnly(true);
+        resp.addCookie(s);
+    }
+
     public static void writeStaffCookie(HttpServletResponse resp, int accountId) {
         Cookie c = new Cookie("mv_staff_uid", String.valueOf(accountId));
         c.setMaxAge(60 * 60 * 8);
@@ -62,10 +79,12 @@ public class AuthFilter implements Filter {
         resp.addCookie(c);
     }
 
-    // ── Xóa cả 2 cookie khi logout ──
+    // ── Xóa tất cả cookie khi logout ──
     public static void clearAllCookies(HttpServletResponse resp) {
         Cookie a = new Cookie("mv_admin_uid", "");
         a.setMaxAge(0); a.setPath("/"); resp.addCookie(a);
+        Cookie r = new Cookie("mv_admin_remember", ""); // xóa Remember Me
+        r.setMaxAge(0); r.setPath("/"); resp.addCookie(r);
         Cookie s = new Cookie("mv_staff_uid", "");
         s.setMaxAge(0); s.setPath("/"); resp.addCookie(s);
     }
@@ -87,9 +106,13 @@ public class AuthFilter implements Filter {
                 || uri.startsWith(ctx + "/js")
                 || uri.startsWith(ctx + "/WEB-INF")
                 || uri.equals(ctx + "/otp-verify")
-                || uri.equals(ctx + "/forgot-password")         // staff yêu cầu reset
-                || uri.startsWith(ctx + "/admin/confirm-reset") // admin xác nhận qua link mail
-                || uri.equals(ctx + "/staff-ping"); // ping không cần auth
+                || uri.startsWith(ctx + "/staff-shift")
+                || uri.equals(ctx + "/forgot-password")
+                || uri.startsWith(ctx + "/admin/confirm-reset")
+                || uri.equals(ctx + "/staff-ping")
+                // ── NFC: không cần session — xác thực bằng cardId ──
+                || uri.startsWith(ctx + "/nfc-checkin")
+                || uri.startsWith(ctx + "/api/nfc");
 
         // ── 2. Lấy session hiện tại (không tạo mới) ──
         HttpSession session = req.getSession(false);
@@ -121,26 +144,25 @@ public class AuthFilter implements Filter {
         //    Không áp dụng cho trang public và logout
         if (!isPublic && !uri.equals(ctx + "/logout") && !uri.startsWith(ctx + "/pos")) {
 
-            // Restore adminAccount từ cookie nếu chưa có trong session
+            // Restore adminAccount — CHỈ khi có cookie Remember Me (mv_admin_remember)
+            // Cookie session thường (mv_admin_uid) KHÔNG restore → admin phải login lại sau khi đóng browser
             if (adminAcc == null) {
-                String adminCookieVal = getCookieValue(req, COOKIE_ADMIN);
-                if (adminCookieVal != null && !adminCookieVal.isEmpty()) {
+                String rememberVal = getCookieValue(req, COOKIE_ADMIN_REMEMBER);
+                if (rememberVal != null && !rememberVal.isEmpty()) {
                     try {
-                        int uid = Integer.parseInt(adminCookieVal);
+                        int uid = Integer.parseInt(rememberVal);
                         Account a = accountDAO.findById(uid);
-                        // Validate: tồn tại + active + là admin + chưa bị xóa
                         if (a != null && a.isActive() && a.getRoleId() == 1 && !a.isDeleted()) {
                             if (session == null) session = req.getSession(true);
                             session.setAttribute("adminAccount", a);
                             adminAcc = a;
-                            // Gia hạn cookie thêm 8 tiếng nữa
-                            setRememberCookie(resp, COOKIE_ADMIN, adminCookieVal);
+                            // Gia hạn Remember Me thêm 7 ngày
+                            setRememberCookie(resp, COOKIE_ADMIN_REMEMBER, rememberVal);
                         } else {
-                            // Cookie không hợp lệ → xóa đi
-                            clearCookie(resp, COOKIE_ADMIN);
+                            clearCookie(resp, COOKIE_ADMIN_REMEMBER);
                         }
                     } catch (NumberFormatException ignored) {
-                        clearCookie(resp, COOKIE_ADMIN);
+                        clearCookie(resp, COOKIE_ADMIN_REMEMBER);
                     }
                 }
             }
@@ -161,10 +183,26 @@ public class AuthFilter implements Filter {
             }
         }
 
-        // ── 4. Xử lý login page redirect ──
+        // ── 4. Root URL "/" — redirect theo trạng thái login ──
+        if (uri.equals(ctx + "/") || uri.equals(ctx)) {
+            if (adminAcc != null) {
+                resp.sendRedirect(ctx + "/dashboard");      // đã login admin → vào dashboard
+            } else if (staffAcc != null) {
+                resp.sendRedirect(ctx + "/staff-dashboard?uid=" + staffAcc.getAccountId());
+            } else {
+                resp.sendRedirect(ctx + "/login");           // chưa login → về login
+            }
+            return;
+        }
+
+        // ── 4b. /login — nếu đã login admin thì redirect vào dashboard ──
         if (uri.equals(ctx + "/login")) {
-            if (adminAcc != null) { resp.sendRedirect(ctx + "/dashboard"); return; }
-            chain.doFilter(request, response); return;
+            if (adminAcc != null) {
+                resp.sendRedirect(ctx + "/dashboard");
+                return;
+            }
+            chain.doFilter(request, response);
+            return;
         }
         if (uri.equals(ctx + "/staff-login")) {
             // Không redirect nếu đang ở staff-login (cho phép login staff mới)
@@ -198,8 +236,12 @@ public class AuthFilter implements Filter {
                 || uri.startsWith(ctx + "/customers")
                 || uri.startsWith(ctx + "/medicines")
                 || uri.startsWith(ctx + "/account-detail-api")
-                || uri.startsWith(ctx + "/audit-logs")            // nhật ký hệ thống
-                || uri.startsWith(ctx + "/admin/reset-requests"); // polling endpoint
+                || uri.startsWith(ctx + "/audit-logs")
+                || uri.startsWith(ctx + "/admin/reset-requests")
+                || uri.startsWith(ctx + "/shift-schedules")
+                || uri.startsWith(ctx + "/attendance")
+                || uri.startsWith(ctx + "/payroll")
+                || uri.startsWith(ctx + "/shift-types");
 
         if (isAdminOnly) {
             if (adminAcc == null) {
@@ -220,7 +262,11 @@ public class AuthFilter implements Filter {
 
         // ── 8. Trang chỉ dành cho Staff ──
         if (uri.startsWith(ctx + "/staff-dashboard")
-                || uri.equals(ctx + "/staff-profile")) {
+                || uri.equals(ctx + "/staff-profile")
+                || uri.startsWith(ctx + "/staff-my-shifts")
+                || uri.startsWith(ctx + "/staff-checkin")
+                || (uri.startsWith(ctx + "/leave-requests")
+                && req.getParameter("uid") != null)) {
             if (staffAcc == null) {
                 resp.sendRedirect(ctx + "/staff-login");
                 return;

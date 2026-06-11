@@ -283,4 +283,21 @@ public class InvoiceDAO implements IInvoiceDAO {
         }
     }
 
+    // ── NEW ───────────────────────────────────────────────────────────────────
+
+    /** Tổng doanh thu TIỀN MẶT trong ca — dùng để tự tính ClosingCash */
+    @Override
+    public BigDecimal sumCashRevenueByShift(int shiftId) {
+        String sql = "SELECT ISNULL(SUM(FinalAmount), 0) FROM Invoices " +
+                "WHERE ShiftID = ? AND PaymentMethod = 'CASH' AND Status = 'COMPLETED'";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, shiftId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getBigDecimal(1);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return BigDecimal.ZERO;
+    }
+
 }

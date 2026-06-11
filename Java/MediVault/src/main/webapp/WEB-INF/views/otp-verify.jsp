@@ -31,7 +31,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MediVault — Xác nhận OTP</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -80,7 +80,7 @@ body::before{
   animation:iconPulse 2s ease-in-out infinite;
 }
 @keyframes iconPulse{0%,100%{box-shadow:0 8px 24px rgba(58,189,224,.3)}50%{box-shadow:0 8px 32px rgba(58,189,224,.5)}}
-.card-title{font-family:'DM Serif Display',serif;font-size:26px;color:var(--ink);margin-bottom:6px}
+.card-title{font-family:'Outfit',sans-serif;font-size:26px;color:var(--ink);margin-bottom:6px}
 .card-sub{font-size:13.5px;color:var(--muted);line-height:1.5}
 .card-email{font-weight:700;color:var(--blue)}
 
@@ -100,7 +100,7 @@ body::before{
 .otp-box{
   width:52px;height:60px;border-radius:12px;
   border:2px solid var(--border);background:#fff;
-  font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;
+  font-family:'Outfit',sans-serif;font-size:28px;font-weight:400;
   color:var(--ink);text-align:center;outline:none;
   transition:all .18s;cursor:text;
 }

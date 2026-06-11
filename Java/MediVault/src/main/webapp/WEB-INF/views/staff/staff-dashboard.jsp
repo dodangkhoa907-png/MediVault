@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
-<%@ taglib prefix="c"  uri="jakarta.tags.core" %>
-<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+<%@ taglib prefix="c"   uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn"  uri="jakarta.tags.functions" %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%
     // Lấy uid: từ URL param (login redirect) hoặc session
     String _uid = request.getParameter("uid");
@@ -10,7 +11,7 @@
     }
     if (_uid == null || _uid.isEmpty()) { response.sendRedirect(request.getContextPath() + "/staff-login"); return; }
 
-    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("staffAccount_" + request.getAttribute("staffUid"));
+    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("staffAccount_" + _uid);
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/staff-login"); return; }
     if (acc.getRoleId() == 1) { response.sendRedirect(request.getContextPath() + "/dashboard"); return; }
 
@@ -227,6 +228,47 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .sec-title{font-family:'DM Serif Display',serif;font-size:18px;color:var(--ink)}
 .sec-sub{font-size:12.5px;color:var(--muted);margin-top:1px}
+/* ── Shift widget (inline — staff-dashboard-shift-section removed) ── */
+.shift-widget{background:#fff;border:1.5px solid #E8EDF5;border-radius:16px;overflow:hidden;margin-bottom:20px}
+.shift-widget-header{padding:16px 20px;border-bottom:1px solid #F1F5F9;display:flex;align-items:center;justify-content:space-between}
+.shift-widget-header h3{margin:0;font-size:15px;font-weight:800;color:#0B1628;display:flex;align-items:center;gap:8px}
+.shift-active{background:linear-gradient(135deg,#ECFDF5,#F0FFF4);border:1.5px solid #A7F3D0;border-radius:12px;margin:16px;padding:18px 20px}
+.shift-active-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.shift-live-badge{display:inline-flex;align-items:center;gap:7px;background:#D1FAE5;color:#065F46;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:800}
+.dot-live{width:8px;height:8px;border-radius:50%;background:#10B981;animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.shift-timer{font-size:28px;font-weight:900;color:#059669;font-variant-numeric:tabular-nums;letter-spacing:-1px}
+.shift-timer-label{font-size:11px;color:#6EE7B7;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.shift-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.shift-meta-item{background:rgba(255,255,255,.7);border-radius:8px;padding:9px 12px}
+.shift-meta-label{font-size:10px;font-weight:800;color:#6EE7B7;text-transform:uppercase;letter-spacing:.5px}
+.shift-meta-val{font-size:13px;font-weight:700;color:#065F46;margin-top:3px}
+.shift-close-form{padding:16px 20px;border-top:1px solid #D1FAE5;background:rgba(236,253,245,.5)}
+.shift-close-form h4{font-size:13px;font-weight:800;color:#065F46;margin:0 0 12px}
+.shift-close-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.shift-close-row .fg{display:flex;flex-direction:column;gap:5px;flex:1;min-width:140px}
+.shift-close-row label{font-size:11px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:.5px}
+.shift-close-row input,.shift-close-row textarea{border:1.5px solid #A7F3D0;border-radius:8px;padding:8px 12px;font-size:13px;background:#fff;font-family:'Outfit',sans-serif}
+.shift-close-row input:focus,.shift-close-row textarea:focus{outline:none;border-color:#059669}
+.btn-close-shift{background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:800;cursor:pointer;align-self:flex-end;white-space:nowrap}
+.btn-close-shift:hover{opacity:.9}
+.shift-empty{padding:30px 20px;text-align:center;color:#94A3B8}
+.shift-empty .icon{font-size:36px;margin-bottom:10px}
+.shift-empty p{font-size:13px;margin:0}
+.shift-open-form{padding:16px 20px;border-top:1px solid #F1F5F9}
+.shift-open-form h4{font-size:13px;font-weight:800;color:#1558A8;margin:0 0 12px}
+.shift-open-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.shift-open-row .fg{display:flex;flex-direction:column;gap:5px}
+.shift-open-row label{font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px}
+.shift-open-row input{border:1.5px solid #BFDBFE;border-radius:8px;padding:8px 12px;font-size:13px;min-width:150px;font-family:'Outfit',sans-serif}
+.btn-open-shift{background:linear-gradient(135deg,#1558A8,#0D3F85);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:800;cursor:pointer}
+.btn-open-shift:hover{opacity:.9}
+.shift-history{padding:0 20px 16px}
+.shift-history-title{font-size:12px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px;margin:14px 0 10px}
+.shift-history-item{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:#F8FAFC;border-radius:8px;margin-bottom:6px;font-size:12px}
+.shift-history-item .hi-date{color:#475569;font-weight:600}
+.shift-history-item .hi-dur{color:#64748B}
+.shift-history-item .hi-cash{color:#059669;font-weight:700}
 
 /* Bottom grid */
 .bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -365,45 +407,48 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 
   <nav class="nav-block">
     <div class="nav-label">Tổng quan</div>
-    <a href="${pageContext.request.contextPath}/staff-dashboard" class="nav-item active">
+    <a href="${pageContext.request.contextPath}/staff-dashboard?uid=<%= _uid %>" class="nav-item active">
       <span class="nav-icon">🏠</span> Trang chủ
     </a>
   </nav>
 
   <nav class="nav-block">
     <div class="nav-label">Cá nhân</div>
-    <a href="${pageContext.request.contextPath}/staff-profile" class="nav-item">
+    <a href="${pageContext.request.contextPath}/staff-profile?uid=<%= _uid %>" class="nav-item">
       <span class="nav-icon">👤</span> Hồ sơ của tôi
     </a>
-    <a href="#" class="nav-item">
-      <span class="nav-icon">📅</span> Ca làm việc
+    <a href="${pageContext.request.contextPath}/staff-checkin?uid=<%= _uid %>" class="nav-item">
+      <span class="nav-icon">✅</span> Điểm danh
     </a>
-    <a href="#" class="nav-item">
-      <span class="nav-icon">📈</span> Tiến độ hôm nay
+    <a href="${pageContext.request.contextPath}/staff-my-shifts?uid=<%= _uid %>" class="nav-item">
+      <span class="nav-icon">🕐</span> Ca làm việc
+    </a>
+    <a href="${pageContext.request.contextPath}/leave-requests?action=my&uid=<%= _uid %>" class="nav-item">
+      <span class="nav-icon">🏖️</span> Xin nghỉ phép
     </a>
   </nav>
 
   <% if (acc.getRoleId() == 2) { %>
   <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
-    <a href="${pageContext.request.contextPath}/pos" class="nav-item">
+    <a href="${pageContext.request.contextPath}/pos?uid=<%= _uid %>" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
     </a>
-    <a href="#" class="nav-item">
+    <a href="${pageContext.request.contextPath}/staff-dashboard?uid=<%= _uid %>" class="nav-item" style="opacity:.5;cursor:default">
       <span class="nav-icon">🧾</span> Hóa đơn của tôi
     </a>
   </nav>
   <% } else { %>
   <nav class="nav-block">
     <div class="nav-label">Kho hàng</div>
-    <a href="#" class="nav-item">
+    <a href="${pageContext.request.contextPath}/staff-dashboard?uid=<%= _uid %>" class="nav-item" style="opacity:.5;cursor:default">
       <span class="nav-icon">📦</span> Quản lý kho
     </a>
-    <a href="#" class="nav-item">
+    <a href="${pageContext.request.contextPath}/staff-dashboard?uid=<%= _uid %>" class="nav-item" style="opacity:.5;cursor:default">
       <span class="nav-icon">⚠️</span> Hàng sắp hết
       <% if (lowStock > 0) { %><span class="nav-badge"><%= lowStock %></span><% } %>
     </a>
-    <a href="#" class="nav-item">
+    <a href="${pageContext.request.contextPath}/staff-dashboard?uid=<%= _uid %>" class="nav-item" style="opacity:.5;cursor:default">
       <span class="nav-icon">⏰</span> Sắp hết hạn
       <% if (expiryCount > 0) { %><span class="nav-badge"><%= expiryCount %></span><% } %>
     </a>
@@ -417,7 +462,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
         <div class="user-name"><%= fullName %></div>
         <div class="user-role"><%= roleName %></div>
       </div>
-      <a href="${pageContext.request.contextPath}/logout?from=staff" class="logout-btn" title="Đăng xuất">⏻</a>
+      <a href="${pageContext.request.contextPath}/logout?from=staff&uid=<%= _uid %>" class="logout-btn" title="Đăng xuất">⏻</a>
     </div>
   </div>
 </aside>
@@ -520,49 +565,123 @@ body{display:flex;background:var(--soft);color:var(--ink)}
         <a href="${pageContext.request.contextPath}/staff-profile" class="edit-link">Xem & Cập nhật hồ sơ →</a>
       </div>
 
-      <!-- Shift & Tasks -->
-      <div class="shift-card">
-        <div class="shift-head">
-          <div class="shift-head-title">📅 Ca làm việc hôm nay</div>
-          <div class="shift-head-sub">Tiến độ công việc trong ngày</div>
+      <!-- Shift widget — kết nối thực từ DB -->
+      <div class="shift-widget">
+        <div class="shift-widget-header">
+          <h3>🕐 Ca làm việc</h3>
+          <c:if test="${not empty currentShift}">
+            <a href="${pageContext.request.contextPath}/staff-my-shifts?uid=${staffUid}"
+               style="font-size:12px;color:#059669;font-weight:700;text-decoration:none">
+              Ca #${currentShift.shiftId} →
+            </a>
+          </c:if>
+          <c:if test="${empty currentShift}">
+            <a href="${pageContext.request.contextPath}/staff-my-shifts?uid=${staffUid}"
+               style="font-size:12px;color:#7A90B0;text-decoration:none">Xem lịch sử →</a>
+          </c:if>
         </div>
-        <div class="shift-body">
-          <div class="shift-today">
-            <div class="shift-today-lbl">Ca hiện tại</div>
-            <div class="shift-today-time" id="shiftTime">--:-- → --:--</div>
-            <div class="shift-today-note">Dữ liệu chấm công sẽ cập nhật sau khi tích hợp thẻ</div>
-          </div>
 
-          <div class="task-section-lbl">Tiến độ hôm nay</div>
-          <div id="taskList">
-            <div class="task-item">
-              <div class="task-check pending" onclick="toggleTask(this)"></div>
-              <div class="task-text">Bàn giao ca trước</div>
-              <div class="task-time">Đầu ca</div>
+        <c:choose>
+          <%-- Ca đang mở --%>
+          <c:when test="${not empty currentShift}">
+            <div class="shift-active">
+              <div class="shift-active-top">
+                <span class="shift-live-badge">
+                  <span class="dot-live"></span> Đang làm việc
+                </span>
+                <div style="text-align:right">
+                  <div class="shift-timer" id="shiftTimer">00:00:00</div>
+                  <div class="shift-timer-label">Thời gian làm việc</div>
+                </div>
+              </div>
+              <div class="shift-meta">
+                <div class="shift-meta-item">
+                  <div class="shift-meta-label">Bắt đầu</div>
+                  <div class="shift-meta-val" id="shiftStartDisplay">
+                    ${fn:substring(currentShift.startTime.toString(),11,16)}
+                    <span style="font-size:11px;opacity:.7">
+                      ${fn:substring(currentShift.startTime.toString(),8,10)}/${fn:substring(currentShift.startTime.toString(),5,7)}
+                    </span>
+                  </div>
+                </div>
+                <div class="shift-meta-item">
+                  <div class="shift-meta-label">Tiền đầu ca</div>
+                  <div class="shift-meta-val">
+                    <c:if test="${not empty currentShift.openingCash}">
+                      <fmt:formatNumber value="${currentShift.openingCash}" type="number" maxFractionDigits="0"/>đ
+                    </c:if>
+                    <c:if test="${empty currentShift.openingCash}">0đ</c:if>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="task-item">
-              <div class="task-check pending" onclick="toggleTask(this)"></div>
-              <div class="task-text">Kiểm tra hàng sắp hết</div>
-              <div class="task-time">Buổi sáng</div>
+            <div class="shift-close-form">
+                <div style="background:linear-gradient(135deg,#FEF3C7,#FFFBEB);border:1.5px solid #FDE68A;border-radius:10px;padding:12px 16px;margin-top:8px">
+                    <div style="font-size:12.5px;font-weight:700;color:#92400E;margin-bottom:4px">🔒 Đóng ca qua NFC hoặc Admin</div>
+                    <div style="font-size:11.5px;color:#B45309;line-height:1.6">
+                        • Ca tự đóng sau 20 phút kết thúc giờ<br>• Trễ &gt; 5 phút → bị trừ tiền phạt
+                    </div>
+                </div>
             </div>
-            <div class="task-item">
-              <div class="task-check pending" onclick="toggleTask(this)"></div>
-              <div class="task-text">Cập nhật tồn kho</div>
-              <div class="task-time">Trước 12:00</div>
+          </c:when>
+
+          <%-- Chưa có ca --%>
+          <c:otherwise>
+            <div class="shift-empty">
+              <div class="icon">🌙</div>
+              <p>Bạn chưa có ca làm việc đang mở.<br>Bắt đầu ca mới để ghi nhận thời gian.</p>
             </div>
-            <div class="task-item">
-              <div class="task-check pending" onclick="toggleTask(this)"></div>
-              <div class="task-text">Kiểm tra thuốc sắp hết hạn</div>
-              <div class="task-time">Chiều</div>
+            <div class="shift-open-form">
+                <c:choose>
+                    <c:when test="${not empty todaySchedule}">
+                        <div style="background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:10px;padding:12px 16px">
+                            <div style="font-size:13px;font-weight:700;color:#065F46;margin-bottom:4px">📋 ${todaySchedule.shiftTypeName}</div>
+                            <div style="font-size:11.5px;color:#059669;margin-bottom:8px">
+                                🕐 <c:if test="${not empty todaySchedule.plannedStart}">${fn:substring(todaySchedule.plannedStart.toString(),11,16)}</c:if>–<c:if test="${not empty todaySchedule.plannedEnd}">${fn:substring(todaySchedule.plannedEnd.toString(),11,16)}</c:if>
+                            </div>
+                            <a href="${pageContext.request.contextPath}/staff-checkin?uid=${staffUid}"
+                               style="display:block;text-align:center;background:#10B981;color:#fff;padding:8px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none">
+                                ✅ Đến trang Điểm danh
+                            </a>
+                        </div>
+                    </c:when>
+                    <c:otherwise>
+                        <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:10px;padding:12px 16px;text-align:center">
+                            <div style="font-size:16px;margin-bottom:4px">🚫</div>
+                            <div style="font-size:12.5px;font-weight:700;color:#991B1B">Không có lịch ca hôm nay</div>
+                            <div style="font-size:11.5px;color:#B91C1C;margin-top:3px">Liên hệ Admin để xếp ca</div>
+                        </div>
+                    </c:otherwise>
+                </c:choose>
             </div>
-            <div class="task-item">
-              <div class="task-check pending" onclick="toggleTask(this)"></div>
-              <div class="task-text">Bàn giao cuối ca</div>
-              <div class="task-time">Cuối ca</div>
-            </div>
+          </c:otherwise>
+        </c:choose>
+
+        <%-- Lịch sử ca gần nhất --%>
+        <c:if test="${not empty recentShifts}">
+          <div class="shift-history">
+            <div class="shift-history-title">Ca gần nhất</div>
+            <c:forEach var="s" items="${recentShifts}">
+              <div class="shift-history-item">
+                <span class="hi-date">
+                  ${fn:substring(s.startTime.toString(),8,10)}/${fn:substring(s.startTime.toString(),5,7)}
+                  ${fn:substring(s.startTime.toString(),11,16)} →
+                  <c:choose>
+                    <c:when test="${not empty s.endTime}">${fn:substring(s.endTime.toString(),11,16)}</c:when>
+                    <c:otherwise>—</c:otherwise>
+                  </c:choose>
+                </span>
+                <span class="hi-cash">
+                  <c:if test="${not empty s.closingCash}">
+                    <fmt:formatNumber value="${s.closingCash}" type="number" maxFractionDigits="0"/>đ
+                  </c:if>
+                </span>
+              </div>
+            </c:forEach>
           </div>
-        </div>
-      </div>
+        </c:if>
+
+      </div><%-- /shift-widget --%>
 
     </div>
 
@@ -638,17 +757,26 @@ function updateClock(){
 }
 updateClock(); setInterval(updateClock,1000);
 
-function toggleTask(check){
-  const item=check.closest('.task-item');
-  const txt=item.querySelector('.task-text');
-  if(check.classList.contains('done')){
-    check.classList.remove('done');check.classList.add('pending');
-    check.textContent='';txt.classList.remove('done');
-  } else {
-    check.classList.remove('pending');check.classList.add('done');
-    check.textContent='✓';txt.classList.add('done');
+// ── Shift timer — đếm giờ ca đang mở ──────────────────────────────
+<c:if test="${not empty currentShift}">
+(function(){
+  const startRaw = '${currentShift.startTime}';
+  // LocalDateTime format: "2026-06-09T19:00:00" hoặc "2026-06-09 19:00:00"
+  const shiftStart = new Date(startRaw.replace('T', ' '));
+  const timerEl    = document.getElementById('shiftTimer');
+  function tick() {
+    if (!timerEl) return;
+    const diff = Math.floor((new Date() - shiftStart) / 1000);
+    if (isNaN(diff) || diff < 0) { timerEl.textContent = '00:00:00'; return; }
+    const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+    const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+    const s = String(diff % 60).padStart(2, '0');
+    timerEl.textContent = h + ':' + m + ':' + s;
   }
-}
+  tick(); setInterval(tick, 1000);
+})();
+</c:if>
+
 </script>
 <script>
 // Lưu staffUid vào sessionStorage của tab này
@@ -685,14 +813,16 @@ function toggleTask(check){
 
   sessionStorage.setItem('tabId', Math.random().toString(36).slice(2) + Date.now());
 
-  // Chỉ logout khi đóng tab/cửa sổ thật sự — KHÔNG logout khi navigate sang trang khác
+  // Chỉ logout khi đóng tab thật sự — dùng pagehide (đáng tin hơn beforeunload)
   let _navigating = false;
   document.addEventListener('click', function(e) {
     const a = e.target.closest('a[href]');
-    if (a && !a.href.includes('logout')) _navigating = true;
+    if (a && a.hostname === location.hostname) _navigating = true;
   });
-  window.addEventListener('beforeunload', function() {
-    if (_navigating) { _navigating = false; return; } // đang navigate → bỏ qua
+  document.addEventListener('submit', function() { _navigating = true; });
+  window.addEventListener('pagehide', function(e) {
+    // e.persisted = true → BFCache (không đóng thật), _navigating = đang chuyển trang
+    if (e.persisted || _navigating) { _navigating = false; return; }
     const uid = sessionStorage.getItem('staffUid');
     const ctx = document.querySelector('meta[name="ctx"]')?.content || '';
     if (uid) {

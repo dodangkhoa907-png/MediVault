@@ -36,7 +36,6 @@ public class AccountServlet extends HttpServlet {
         java.lang.String action = req.getParameter("action");
         if (action == null) action = "list";
         switch (action) {
-            case "create-otp" -> handleCreateWithOtp(req, resp);
             case "list"   -> showList(req, resp);
             case "new"    -> showForm(req, resp, null);
             case "edit"   -> {
@@ -147,11 +146,24 @@ public class AccountServlet extends HttpServlet {
                 Integer tid = (Integer) req.getSession().getAttribute("deleteTargetId");
                 if (tid == null) { resp.sendRedirect(req.getContextPath() + "/accounts?action=trash"); return; }
                 Account delTarget = dao.findById(tid);
+                String idParam = req.getParameter("id");
+                if (idParam != null) {
+                    tid = Integer.parseInt(idParam);
+                    req.getSession().setAttribute("deleteTargetId", tid); // restore lại session
+                }
                 if (delTarget == null) { resp.sendRedirect(req.getContextPath() + "/accounts?action=trash"); return; }
-
                 // Tạo OTP + gửi email admin
                 Account adminAcc2 = (Account) req.getSession().getAttribute("adminAccount");
-                String adminEmail2 = adminAcc2 != null ? adminAcc2.getEmail() : null;
+                String adminEmail2 = null;
+                if (adminAcc2 != null) {
+                    Account freshAdmin = dao.findById(adminAcc2.getAccountId());
+                    adminEmail2 = freshAdmin != null ? freshAdmin.getEmail() : null;
+                }
+// Nếu vẫn null → block luôn, không cho tiếp tục
+                if (adminEmail2 == null || adminEmail2.isEmpty()) {
+                    resp.sendRedirect(req.getContextPath() + "/accounts?action=trash&msg=no-email");
+                    return;
+                }
                 String otp2 = OtpUtil.generate(6);
                 req.getSession().setAttribute("deleteOtpCode",   otp2);
                 req.getSession().setAttribute("deleteOtpExpiry", System.currentTimeMillis() + 5 * 60 * 1000L);
@@ -183,7 +195,9 @@ public class AccountServlet extends HttpServlet {
 
 
 
-    private void handleCreateWithOtp(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    // ── Tạo tài khoản trực tiếp — Admin tự cấp, không cần OTP ──────────
+    private void handleCreate(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
         String username  = req.getParameter("username");
         String fullName  = req.getParameter("fullName");
         String email     = req.getParameter("email");
@@ -193,8 +207,8 @@ public class AccountServlet extends HttpServlet {
         String password  = req.getParameter("password");
         String roleStr   = req.getParameter("roleId");
 
-        List<String> errors = ValidationUtil.validateAccount(
-                username, fullName, email, phone, citizenId, position);
+        List<String> errors = new java.util.ArrayList<>(ValidationUtil.validateAccount(
+                username, fullName, email, phone, citizenId, position));
         if (!ValidationUtil.isValidPassword(password))
             errors.add("Mật khẩu phải có ít nhất 6 ký tự.");
         if (ValidationUtil.notBlank(username) && dao.isUsernameTaken(username))
@@ -203,7 +217,6 @@ public class AccountServlet extends HttpServlet {
             errors.add("Email '" + email + "' đã được dùng.");
 
         if (!errors.isEmpty()) {
-            // Giữ lại toàn bộ form data đã nhập → account-form.jsp dùng để pre-populate
             Account draft = new Account();
             draft.setUsername(username != null ? username : "");
             draft.setFullName(fullName != null ? fullName : "");
@@ -211,41 +224,79 @@ public class AccountServlet extends HttpServlet {
             draft.setPhone(phone != null ? phone : "");
             draft.setCitizenId(citizenId != null ? citizenId : "");
             draft.setPosition(position != null ? position : "");
-            draft.setRoleId(roleStr != null ? Integer.parseInt(roleStr) : 2);
-            // Không set passwordHash (không re-populate password vì bảo mật)
-            req.setAttribute("account", draft);  // JSP dùng để fill lại form
+            draft.setRoleId(roleStr != null && !roleStr.isEmpty() ? Integer.parseInt(roleStr) : 2);
+            req.setAttribute("account", draft);
             req.setAttribute("errors", errors);
             req.setAttribute("errorMsg", ValidationUtil.joinErrors(errors));
             req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
             return;
         }
 
-        // Build pending account — chưa save DB
-        Account pending = new Account();
-        pending.setUsername(username.trim());
-        pending.setFullName(fullName.trim());
-        pending.setEmail(email != null ? email.trim() : null);
-        pending.setPhone(phone != null ? phone.trim() : null);
-        pending.setCitizenId(citizenId != null ? citizenId.trim() : null);
-        pending.setPosition(position != null ? position.trim() : null);
-        pending.setRoleId(Integer.parseInt(roleStr));
-        pending.setPasswordHash(PasswordUtil.hashPassword(password));
+        Account a = new Account();
+        a.setUsername(username.trim());
+        a.setFullName(fullName.trim());
+        a.setEmail(email != null ? email.trim() : null);
+        a.setPhone(phone != null ? phone.trim() : null);
+        a.setCitizenId(citizenId != null ? citizenId.trim() : null);
+        a.setPosition(position != null ? position.trim() : null);
+        a.setRoleId(Integer.parseInt(roleStr));
+        a.setPasswordHash(PasswordUtil.hashPassword(password));
 
-        String otp = OtpUtil.generate(6);
-        HttpSession session = req.getSession();
-        session.setAttribute("pendingNewAccount", pending);
-        session.setAttribute("newAccOtpCode",     otp);
-        session.setAttribute("newAccOtpExpiry",   System.currentTimeMillis() + 5 * 60 * 1000L);
+        boolean ok = dao.insert(a);
+        if (ok) {
+            // 1. Ghi log lịch sử hệ thống (Giữ nguyên chức năng cũ)
+            AuditHelper.log(req, "Tạo tài khoản", "Account",
+                    "Admin tạo tài khoản @" + username + " (" + fullName + ")");
 
-        try {
-            EmailUtil.sendEmail(email,
-                    "[MediVault] Mã xác nhận tài khoản",
-                    "Mã OTP của bạn là: " + otp + "\nHiệu lực 5 phút.");
-            resp.sendRedirect(req.getContextPath() + "/otp-verify");
-        } catch (Exception e) {
-            req.setAttribute("error", "Không gửi được email OTP!");
-            req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
+            // 2. TỰ ĐỘNG GỬI EMAIL THÔNG BÁO TÀI KHOẢN MỚI CHO NHÂN VIÊN (Thêm mới)
+            if (email != null && !email.trim().isEmpty()) {
+                String staffEmail = email.trim();
+                String emailHtml = "<div style=\"font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px\">"
+                        + "<div style=\"background:linear-gradient(135deg,#1E3A8A,#3B82F6);border-radius:14px;padding:20px 24px;margin-bottom:20px;color:#fff\">"
+                        + "<h2 style=\"margin:0;font-size:18px\">🎉 Tài khoản MediVault của bạn đã được tạo!</h2>"
+                        + "<p style=\"margin:6px 0 0;opacity:.8;font-size:13px\">Hệ thống quản lý kho dược và ca trực MediVault</p>"
+                        + "</div>"
+                        + "<p style=\"font-size:14px;color:#1C0F3F\">Xin chào <strong>" + fullName.trim() + "</strong>,</p>"
+                        + "<p style=\"font-size:13.5px;color:#374151;line-height:1.7\">"
+                        + "Tài khoản của bạn đã được khởi tạo thành công trên hệ thống bởi Ban quản trị. Dưới đây là thông tin đăng nhập chi tiết của bạn:"
+                        + "</p>"
+                        + "<div style=\"background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:18px 20px;margin:18px 0;\">"
+                        + "<p style=\"margin:0 0 6px;font-size:14px;color:#334155\">👤 Tên đăng nhập: <strong style=\"color:#0F172A;\">@" + username.trim() + "</strong></p>"
+                        + "<p style=\"margin:0 0 12px;font-size:14px;color:#334155\">💼 Chức vụ: <strong>" + (position != null ? position.trim() : "Nhân viên") + "</strong></p>"
+                        + "<hr style=\"border:0;border-top:1px solid #E2E8F0;margin:12px 0;\">"
+                        + "<p style=\"margin:0 0 8px;font-size:12px;font-weight:700;color:#1E3A8A;letter-spacing:1px;text-transform:uppercase\">🔑 Mật khẩu đăng nhập lần đầu</p>"
+                        + "<div style=\"font-size:20px;font-weight:900;color:#1E40AF;letter-spacing:2px;font-family:monospace;background:#fff;border:1px solid #BFDBFE;border-radius:8px;padding:10px 16px;display:inline-block\">"
+                        + password
+                        + "</div>"
+                        + "<p style=\"margin:10px 0 0;font-size:12px;color:#D97706;font-weight:600\">⚠️ Lưu ý an toàn: Không chia sẻ thông tin này với người khác.</p>"
+                        + "<p style=\"margin:4px 0 0;font-size:12px;color:#6B7280\">💡 Bạn nên tiến hành thay đổi mật khẩu ngay sau khi đăng nhập lần đầu để bảo mật tài khoản.</p>"
+                        + "</div>"
+                        + "<p style=\"font-size:12px;color:#999\">Đây là email tự động từ hệ thống MediVault, vui lòng không phản hồi email này.</p>"
+                        + "</div>";
+
+                // Thực hiện gửi email thông báo tài khoản
+                EmailUtil.sendEmail(staffEmail, "[MediVault] 🎉 Tài khoản của bạn đã được tạo thành công", emailHtml);
+            }
+
+            // 3. Xử lý điều hướng trang (Giữ nguyên chức năng cũ - LUÔN ĐẶT Ở CUỐI KHỐI LỆNH)
+            Account created = dao.findByUsername(username.trim());
+            String redirect = req.getParameter("redirect");
+            if ("schedule".equals(redirect) && created != null) {
+                // Lưu & Xếp lịch ngay → redirect sang trang xếp lịch pre-fill
+                resp.sendRedirect(req.getContextPath()
+                        + "/shift-schedules?action=new&accountId=" + created.getAccountId()
+                        + "&msg=account-created");
+            } else {
+                // Lưu & Thêm tiếp → ở lại form mới
+                resp.sendRedirect(req.getContextPath() + "/accounts?action=new&msg=created");
+            }
+        } else {
+            // Thất bại (Giữ nguyên chức năng cũ)
+            req.setAttribute("error", "Tạo tài khoản thất bại — kiểm tra log Tomcat!");
+            req.setAttribute("account", a);
+            req.getRequestDispatcher("/WEB-INF/views/admin/dashboard.jsp").forward(req, resp);
         }
+
     }
 
     @Override
@@ -254,8 +305,9 @@ public class AccountServlet extends HttpServlet {
         req.setCharacterEncoding("UTF-8");
 
         String action = req.getParameter("action");
-        if ("create-otp".equals(action)) {
-            handleCreateWithOtp(req, resp);
+        // Tạo tài khoản trực tiếp (không OTP) — admin tự cấp
+        if ("create-otp".equals(action) || "create".equals(action)) {
+            handleCreate(req, resp);
             return;
         }
         // ── Admin gửi lại OTP (resend) ──
@@ -287,6 +339,7 @@ public class AccountServlet extends HttpServlet {
             return;
         }
 
+
         java.lang.String idStr    = req.getParameter("accountId");
         java.lang.String username = req.getParameter("username");
         java.lang.String fullName = req.getParameter("fullName");
@@ -315,6 +368,10 @@ public class AccountServlet extends HttpServlet {
             errors = new java.util.ArrayList<>(ValidationUtil.validateAccount(
                     "skip", fullName, email, phone, citizenId, position));
             errors.removeIf(e -> e.toLowerCase().contains("tên đăng nhập"));
+            // Password để trống = giữ nguyên, không bắt buộc khi edit
+            // Nếu nhập thì phải hợp lệ (≥6 ký tự)
+            if (ValidationUtil.notBlank(password) && !ValidationUtil.isValidPassword(password))
+                errors.add("Mật khẩu mới phải có ít nhất 6 ký tự.");
         }
 
         // ── BƯỚC 2: Validate trùng lặp ──────────────────────────
@@ -379,101 +436,111 @@ public class AccountServlet extends HttpServlet {
 
 
         if (isNew) {
+            // ── TẠO MỚI: admin tự cấp MK, lưu thẳng không OTP ──
             a.setPasswordHash(PasswordUtil.hashPassword(password));
-            dao.insert(a);
-            resp.sendRedirect(req.getContextPath() + "/accounts?msg=created");
+            boolean ok = dao.insert(a);
+            if (ok) {
+                AuditHelper.log(req, "Tạo tài khoản", "Account",
+                        "Admin tạo @" + (username != null ? username : "") + " (" + fullName + ")");
+                resp.sendRedirect(req.getContextPath() + "/accounts?msg=created");
+            } else {
+                req.setAttribute("errors", java.util.List.of("Tạo tài khoản thất bại — kiểm tra log!"));
+                req.setAttribute("account", a);
+                req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
+            }
+
         } else {
+            // ── CHỈNH SỬA ──────────────────────────────────────────────────────
             int editId = Integer.parseInt(idStr);
             a.setAccountId(editId);
 
-            // ── Thông tin chuyên môn ──
-            if (ValidationUtil.notBlank(certNo)) a.setProfessionalCertNo(certNo.trim());
-            try { if (ValidationUtil.notBlank(certExpStr))
-                a.setProfessionalCertExp(LocalDate.parse(certExpStr)); } catch (Exception ignored) {}
-            try { if (ValidationUtil.notBlank(trainingStr))
-                a.setTrainingDate(LocalDate.parse(trainingStr)); } catch (Exception ignored) {}
+            // Giữ lại thông tin chuyên môn từ DB (không có trong form edit)
+            if (current != null) {
+                if (current.getProfessionalCertNo()  != null) a.setProfessionalCertNo(current.getProfessionalCertNo());
+                if (current.getProfessionalCertExp() != null) a.setProfessionalCertExp(current.getProfessionalCertExp());
+                if (current.getTrainingDate()        != null) a.setTrainingDate(current.getTrainingDate());
+            }
 
-            // ── No-change detection ──
+            // ── Admin có muốn đổi MK không? ────────────────────────────────────
+            // JS gửi hidden field "confirmWord" = "update" (viết thường) khi admin
+            // chủ động nhập MK mới và bấm xác nhận.
+            String confirmWord = req.getParameter("confirmWord");
+            boolean wantChangePw = "update".equals(
+                    confirmWord != null ? confirmWord.trim().toLowerCase() : "");
+            boolean pwBlank = !ValidationUtil.notBlank(password);
+
+            if (wantChangePw && !pwBlank) {
+                // ── Luồng đổi MK: cần OTP gửi về Gmail admin ──────────────────
+                if (!ValidationUtil.isValidPassword(password)) {
+                    req.setAttribute("errors", java.util.List.of(
+                            "Mật khẩu mới phải có ít nhất 6 ký tự."));
+                    req.setAttribute("account", a);
+                    req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
+                    return;
+                }
+
+                // Kiểm tra có pending reset (luồng forgot-password) không
+                PasswordResetRequest pendingReset = resetDAO.findPendingByAccountId(editId);
+                if (pendingReset == null) pendingReset = resetDAO.findConfirmedByAccountId(editId);
+                boolean isResetFlow = (pendingReset != null);
+
+                HttpSession sess = req.getSession();
+                sess.setAttribute("adminResetTargetId",    editId);
+                sess.setAttribute("adminResetNewPassword", password);
+                sess.setAttribute("adminResetIsResetFlow", isResetFlow);
+                sess.setAttribute("pendingUpdateAccount",  a); // update thông tin khác sau OTP
+
+                Account adminAccPw = (Account) sess.getAttribute("adminAccount");
+                String  adminEmail = adminAccPw != null ? adminAccPw.getEmail() : null;
+                String  staffName  = current != null ? current.getFullName()
+                        : "@" + editId;
+
+                String otp = OtpUtil.generate(6);
+                sess.setAttribute("adminResetOtpCode",   otp);
+                sess.setAttribute("adminResetOtpExpiry", System.currentTimeMillis() + 5 * 60 * 1000L);
+
+                if (adminEmail != null) {
+                    String body =
+                            "<div style=\"font-family:Arial,sans-serif;max-width:500px;margin:auto;padding:24px\">"
+                                    + "<div style=\"background:linear-gradient(135deg,#1558A8,#0D3F85);border-radius:14px;"
+                                    + "padding:20px 24px;margin-bottom:20px;color:#fff\">"
+                                    + "<h2 style=\"margin:0;font-size:18px\">🔐 Xác nhận đổi mật khẩu</h2>"
+                                    + "<p style=\"margin:6px 0 0;opacity:.8;font-size:13px\">Nhập mã để xác nhận</p></div>"
+                                    + "<p style=\"font-size:14px;color:#0B1628\">Đổi mật khẩu cho <strong>"
+                                    + staffName + "</strong>.</p>"
+                                    + "<div style=\"background:#F1F5FB;border-radius:12px;padding:20px;"
+                                    + "text-align:center;margin:20px 0\">"
+                                    + "<div style=\"font-size:36px;font-weight:900;letter-spacing:10px;"
+                                    + "color:#1558A8\">" + otp + "</div>"
+                                    + "<p style=\"font-size:12px;color:#7A90B0;margin-top:8px\">Hiệu lực 5 phút</p>"
+                                    + "</div><p style=\"font-size:12px;color:#999\">Nếu không phải bạn, "
+                                    + "bỏ qua email này.</p></div>";
+                    EmailUtil.sendEmail(adminEmail,
+                            "[MediVault] OTP đổi mật khẩu — " + staffName, body);
+                }
+                resp.sendRedirect(req.getContextPath() + "/accounts?action=admin-reset-otp-page");
+                return;
+            }
+
+            // ── Luồng thông tin thường (không đổi MK) ──────────────────────────
             boolean nothingChanged = current != null
-                    && eq(fullName, current.getFullName())
-                    && eq(email, current.getEmail())
-                    && eq(phone, current.getPhone())
-                    && eq(citizenId, current.getCitizenId())
-                    && eq(position, current.getPosition())
-                    && a.getRoleId() == current.getRoleId()
-                    && eq(certNo, current.getProfessionalCertNo())
-                    && eq(certExpStr, current.getProfessionalCertExp() != null ? current.getProfessionalCertExp().toString() : "")
-                    && eq(trainingStr, current.getTrainingDate() != null ? current.getTrainingDate().toString() : "")
-                    && !ValidationUtil.notBlank(password);
+                    && eq(fullName,   current.getFullName())
+                    && eq(email,      current.getEmail())
+                    && eq(phone,      current.getPhone())
+                    && eq(citizenId,  current.getCitizenId())
+                    && eq(position,   current.getPosition())
+                    && a.getRoleId() == current.getRoleId();
 
             if (nothingChanged) {
                 resp.sendRedirect(req.getContextPath() + "/accounts?msg=nochange");
                 return;
             }
 
-
-            // Nếu JS đã verify OTP inline → bỏ qua, tiếp tục lưu
-            String otpVerifiedFlag = req.getParameter("otpVerified");
-            boolean otpAlreadyDone = "true".equals(otpVerifiedFlag);
-
-            if (!otpAlreadyDone && (emailChanged || phoneChanged)) {
-                // Trường hợp JS bị tắt hoặc bypass → vẫn an toàn
-                req.setAttribute("errors", java.util.List.of(
-                        "Email/SĐT thay đổi cần xác nhận OTP. Vui lòng dùng trình duyệt hỗ trợ JavaScript."));
-                req.setAttribute("account", a);
-                req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
-                return;
-            }
-
-            // ── Đổi mật khẩu: kiểm tra staff có pending reset không ──
-            if (ValidationUtil.notBlank(password) && ValidationUtil.isValidPassword(password)) {
-                // Lấy account admin hiện tại
-                Account adminAcc = (Account) req.getSession().getAttribute("adminAccount");
-                String adminEmail = adminAcc != null ? adminAcc.getEmail() : null;
-
-                // Kiểm tra staff có pending reset request không
-                PasswordResetRequest pendingReset = resetDAO.findPendingByAccountId(editId);
-                if (pendingReset == null) pendingReset = resetDAO.findConfirmedByAccountId(editId);
-                boolean isResetFlow = (pendingReset != null);
-
-                // Lưu thông tin tạm vào session để dùng sau OTP
-                HttpSession sess = req.getSession();
-                sess.setAttribute("adminResetTargetId",       editId);
-                sess.setAttribute("adminResetNewPassword",    password);
-                sess.setAttribute("adminResetIsResetFlow",    isResetFlow);
-
-                // Tạo OTP + gửi về GMAIL ADMIN
-                String otp = OtpUtil.generate(6);
-                sess.setAttribute("adminResetOtpCode",   otp);
-                sess.setAttribute("adminResetOtpExpiry", System.currentTimeMillis() + 5 * 60 * 1000L);
-
-                String staffName = current != null ? current.getFullName() : "@" + String.valueOf(editId);
-                String otpEmailBody = "<div style=\"font-family:Arial,sans-serif;max-width:500px;margin:auto;padding:24px\">"
-                        + "<div style=\"background:linear-gradient(135deg,#1558A8,#0D3F85);border-radius:14px;"
-                        + "padding:20px 24px;margin-bottom:20px;color:#fff\">"
-                        + "<h2 style=\"margin:0;font-size:18px\">🔐 Xác nhận đặt lại mật khẩu</h2>"
-                        + "<p style=\"margin:6px 0 0;opacity:.8;font-size:13px\">Nhập mã bên dưới để xác nhận</p></div>"
-                        + "<p style=\"font-size:14px;color:#0B1628\">Bạn vừa yêu cầu đặt lại mật khẩu cho nhân viên "
-                        + "<strong>" + staffName + "</strong>.</p>"
-                        + "<div style=\"background:#F1F5FB;border-radius:12px;padding:20px;text-align:center;margin:20px 0\">"
-                        + "<div style=\"font-size:36px;font-weight:900;letter-spacing:10px;color:#1558A8\">" + otp + "</div>"
-                        + "<p style=\"font-size:12px;color:#7A90B0;margin-top:8px\">Hiệu lực 5 phút</p></div>"
-                        + "<p style=\"font-size:12px;color:#999\">Nếu không phải bạn thực hiện, bỏ qua email này.</p></div>";
-
-                if (adminEmail != null) {
-                    EmailUtil.sendEmail(adminEmail, "[MediVault] OTP xác nhận đặt lại mật khẩu — " + staffName, otpEmailBody);
-                }
-
-                // Redirect sang trang OTP xác nhận của admin
-                resp.sendRedirect(req.getContextPath() + "/accounts?action=admin-reset-otp-page");
-                return;
-            }
-
-            // Bảo vệ: không cho đổi role admin cuối cùng thành non-admin
+            // Bảo vệ: không cho đổi role của admin cuối cùng
             if (current != null && current.getRoleId() == 1
                     && a.getRoleId() != 1 && dao.countActiveAdmins() <= 1) {
                 req.setAttribute("errors", java.util.List.of(
-                        "Không thể thay đổi role — đây là tài khoản Admin duy nhất đang hoạt động!"));
+                        "Không thể đổi role — đây là Admin duy nhất đang hoạt động!"));
                 req.setAttribute("account", a);
                 req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
                 return;
@@ -486,9 +553,12 @@ public class AccountServlet extends HttpServlet {
                 req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
                 return;
             }
+            AuditHelper.log(req, "Cập nhật tài khoản", "Account",
+                    "Cập nhật thông tin @" + (current != null ? current.getUsername() : editId));
             resp.sendRedirect(req.getContextPath() + "/accounts?msg=updated");
         }
     }
+
 
     /** So sánh 2 string null-safe, trim cả 2 trước khi so sánh */
     private static boolean eq(String formVal, String dbVal) {
@@ -592,9 +662,9 @@ public class AccountServlet extends HttpServlet {
         req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
     }
 
-    // ── Trang OTP xác nhận đặt lại mật khẩu (GET) ──────────────────
-    // Được gọi từ doGet khi action=admin-reset-otp-page
-    // (Thêm vào doGet case)
+// ── Trang OTP xác nhận đặt lại mật khẩu (GET) ──────────────────
+// Được gọi từ doGet khi action=admin-reset-otp-page
+// (Thêm vào doGet case)
 
     // ── Xử lý admin nhập OTP xác nhận đặt lại mk (POST action=admin-reset-otp) ──
     private void handleAdminResetOtp(HttpServletRequest req, HttpServletResponse resp)
@@ -777,6 +847,18 @@ public class AccountServlet extends HttpServlet {
         Long    expiry    = (Long)    sess.getAttribute("deleteOtpExpiry");
         Integer targetId  = (Integer) sess.getAttribute("deleteTargetId");
 
+        // Fallback: lấy targetId từ URL param nếu session mất (logout/timeout)
+        if (targetId == null) {
+            String idParam = req.getParameter("id");
+            if (idParam != null && !idParam.isEmpty()) {
+                try {
+                    targetId = Integer.parseInt(idParam);
+                    sess.setAttribute("deleteTargetId", targetId); // restore session
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+
+        // 1. Kiểm tra OTP hết hạn hoặc không tồn tại
         if (storedOtp == null || expiry == null || targetId == null) {
             req.setAttribute("deleteError", "Phiên xác nhận đã hết hạn!");
             req.setAttribute("deleteTarget", dao.findById(targetId != null ? targetId : -1));
@@ -791,6 +873,7 @@ public class AccountServlet extends HttpServlet {
             resp.sendRedirect(req.getContextPath() + "/accounts?msg=otp-expired");
             return;
         }
+        // 2. Kiểm tra tính chính xác của OTP
         if (!storedOtp.equals(inputOtp != null ? inputOtp.trim() : "")) {
             req.setAttribute("deleteTarget", dao.findById(targetId));
             req.setAttribute("deleteError", "❌ Mã OTP không đúng! Vui lòng thử lại.");
@@ -798,21 +881,50 @@ public class AccountServlet extends HttpServlet {
             return;
         }
 
-        // OTP đúng → forceDelete vĩnh viễn (xử lý FK + xóa hẳn)
-        Account del = dao.findById(targetId);
+        // 3. OTP ĐÚNG -> Bắt đầu luồng cưỡng chế xóa vĩnh viễn
         String delName = (String) sess.getAttribute("deleteTargetName");
-        if (del != null && del.getRoleId() == 1 && dao.countActiveAdmins() <= 1) {
+        Account del = dao.findById(targetId);
+
+        if (del == null) {
+            resp.sendRedirect(req.getContextPath() + "/accounts?action=trash&msg=not-found");
+            return;
+        }
+
+        // Chặn bảo vệ nếu là Admin duy nhất
+        if (del.getRoleId() == 1 && dao.countActiveAdmins() <= 1) {
             resp.sendRedirect(req.getContextPath() + "/accounts?msg=last-admin");
-        } else {
-            dao.forceDelete(targetId);
+            return;
+        }
+
+        try {
+            // Thực thi lệnh xóa thẳng xuống Database (Bỏ bọc biến boolean lỗi)
+            boolean deleted = dao.forceDelete(targetId);
+            if (!deleted) {
+                resp.sendRedirect(req.getContextPath()
+                        + "/accounts?action=trash&msg=system-error");
+                return;
+            };
+
+            // Ghi nhật ký hệ thống ngay lập tức
             AuditHelper.log(req, "Xóa vĩnh viễn tài khoản", "Account",
                     "Xóa vĩnh viễn (OTP xác nhận): " + (delName != null ? delName : String.valueOf(targetId)));
+
+            // Xóa sạch dấu vết session tạm liên quan đến OTP
             sess.removeAttribute("deleteOtpCode");
             sess.removeAttribute("deleteOtpExpiry");
             sess.removeAttribute("deleteTargetId");
             sess.removeAttribute("deleteTargetName");
             sess.removeAttribute("deleteFromTrash");
+
+            // Điều hướng thẳng về trang thùng rác với thông báo thành công chuẩn chỉ
             resp.sendRedirect(req.getContextPath() + "/accounts?action=trash&msg=purged");
+
+        } catch (Exception e) {
+            System.out.println("[MediVault CRITICAL ERROR] Không thể xóa vĩnh viễn tài khoản ID: " + targetId);
+            e.printStackTrace();
+
+            // Nếu dính lỗi nghiêm trọng (như khóa ngoại thực sự mới xuất hiện), bắn thẳng lỗi ra URL để xử lý
+            resp.sendRedirect(req.getContextPath() + "/accounts?action=trash&msg=system-error&details=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
         }
     }
 
@@ -824,8 +936,10 @@ public class AccountServlet extends HttpServlet {
 
         Integer targetId = (Integer) sess.getAttribute("deleteTargetId");
         Account admin    = (Account) sess.getAttribute("adminAccount");
-        if (targetId == null || admin == null) { resp.setStatus(400); return; }
-
+        if (targetId == null || admin == null) {
+            String idParam = req.getParameter("id");
+            if (idParam != null) targetId = Integer.parseInt(idParam);
+        }
         Account del = dao.findById(targetId);
         if (del == null) { resp.setStatus(400); return; }
 

@@ -31,4 +31,6 @@ public interface IInvoiceDAO {
     List<Invoice> findByCustomer(int customerId);
     List<Invoice> findByDateRange(LocalDate from, LocalDate to);
     BigDecimal sumRevenueByDateRange(LocalDate from, LocalDate to);
+
+    BigDecimal sumCashRevenueByShift(int shiftId);
 }

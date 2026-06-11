@@ -10,7 +10,7 @@
         _staffUid = (String) session.getAttribute("staffUid");
     }
     if (_staffUid == null) _staffUid = "";
-    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("staffAccount_" + request.getAttribute("staffUid"));
+    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("staffAccount_" + _staffUid);
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/staff-login"); return; }
     if (acc.getRoleId() == 1) { response.sendRedirect(request.getContextPath() + "/dashboard"); return; }
 
@@ -39,7 +39,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title><%= dn %> — Hồ sơ cá nhân — MediVault</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -74,7 +74,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0}
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding: 28px;gap:14px;position:sticky;top:0;z-index:50}
-.topbar-title{font-family:'DM Serif Display',serif;font-size:16px;color:var(--ink)}
+.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;color:var(--ink)}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-shrink:0}
 .back-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--soft);border:1.5px solid var(--border);border-radius:20px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;transition:all .18s}
 .back-btn:hover{border-color:var(--light);color:var(--main)}
@@ -82,7 +82,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .content{padding:26px 28px;flex:1}
 .page-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px}
 .breadcrumb{font-size:11.5px;color:var(--muted);font-weight:500;margin-bottom:4px}
-.page-head h1{font-family:'DM Serif Display',serif;font-size:26px;color:var(--ink)}
+.page-head h1{font-family:'Outfit',sans-serif;font-size:26px;color:var(--ink)}
 
 /* Layout grid */
 .detail-grid{display:grid;grid-template-columns:280px 1fr;gap:20px;align-items:start}
@@ -92,9 +92,9 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .profile-banner{height:80px;background:linear-gradient(135deg,#1C0F3F,#3B1FA0,#6D28D9)}
 .profile-body{padding:0 22px 22px;text-align:center}
 .profile-av-wrap{position:relative;display:inline-block;margin-top:-28px;margin-bottom:10px}
-.profile-av{width:56px;height:56px;border-radius:15px;background:linear-gradient(135deg,var(--light),var(--main));display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:22px;color:#fff;border:3px solid var(--white);box-shadow:0 4px 16px rgba(109,40,217,.3);overflow:hidden}
+.profile-av{width:56px;height:56px;border-radius:15px;background:linear-gradient(135deg,var(--light),var(--main));display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-size:22px;color:#fff;border:3px solid var(--white);box-shadow:0 4px 16px rgba(109,40,217,.3);overflow:hidden}
 .profile-av-badge{position:absolute;bottom:-3px;right:-3px;width:18px;height:18px;border-radius:50%;background:var(--green);border:2px solid var(--white);display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:800}
-.profile-name{font-family:'DM Serif Display',serif;font-size:18px;color:var(--ink);margin-bottom:2px}
+.profile-name{font-family:'Outfit',sans-serif;font-size:18px;color:var(--ink);margin-bottom:2px}
 .profile-username{font-size:12.5px;color:var(--muted);margin-bottom:8px}
 .profile-role{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(109,40,217,.1);color:var(--main);margin-bottom:6px}
 .profile-status{font-size:12px;color:var(--green);font-weight:500}
@@ -113,7 +113,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .ici-purple{background:rgba(109,40,217,.1)}
 .ici-green{background:rgba(5,150,105,.1)}
 .ici-gold{background:rgba(217,119,6,.1)}
-.info-card-title{font-family:'DM Serif Display',serif;font-size:15px;color:var(--ink)}
+.info-card-title{font-family:'Outfit',sans-serif;font-size:15px;color:var(--ink)}
 .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
 .info-field{padding:13px 20px;border-bottom:1px solid #F8F7FF}
 .info-field:nth-last-child(-n+2){border-bottom:none}
@@ -156,25 +156,38 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 <!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-icon">💊</div>
+    <div class="logo-gem">💊</div>
     <div>
-      <div class="logo-text">Medi<span>Vault</span></div>
+      <div class="logo-name">Medi<span>Vault</span></div>
       <div class="logo-sub">Staff Portal</div>
     </div>
   </div>
-  <nav class="nav-section">
+  <nav class="nav-block">
     <div class="nav-label">Tổng quan</div>
-    <a href="<%= request.getContextPath() %>/staff-dashboard" class="nav-item"><span>🏠</span> Trang chủ</a>
+    <a href="<%= request.getContextPath() %>/staff-dashboard?uid=<%= _staffUid %>" class="nav-item">
+      <span class="nav-icon">🏠</span> Trang chủ
+    </a>
   </nav>
-  <nav class="nav-section">
+  <nav class="nav-block">
     <div class="nav-label">Cá nhân</div>
-    <a href="<%= request.getContextPath() %>/staff-profile" class="nav-item active"><span>👤</span> Hồ sơ của tôi</a>
-    <a href="#" class="nav-item"><span>📅</span> Ca làm việc</a>
-    <a href="#" class="nav-item"><span>📈</span> Tiến độ hôm nay</a>
+    <a href="<%= request.getContextPath() %>/staff-profile?uid=<%= _staffUid %>" class="nav-item active">
+      <span class="nav-icon">👤</span> Hồ sơ của tôi
+    </a>
+    <a href="<%= request.getContextPath() %>/staff-checkin?uid=<%= _staffUid %>" class="nav-item">
+      <span class="nav-icon">✅</span> Điểm danh
+    </a>
+    <a href="<%= request.getContextPath() %>/staff-my-shifts?uid=<%= _staffUid %>" class="nav-item">
+      <span class="nav-icon">🕐</span> Ca làm việc
+    </a>
+    <a href="<%= request.getContextPath() %>/leave-requests?action=my&uid=<%= _staffUid %>" class="nav-item">
+      <span class="nav-icon">🏖️</span> Xin nghỉ phép
+    </a>
   </nav>
-  <nav class="nav-section">
+  <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
-    <a href="<%= request.getContextPath() %>/pos" class="nav-item"><span>🛒</span> Bán thuốc (POS)</a>
+    <a href="<%= request.getContextPath() %>/pos?uid=<%= _staffUid %>" class="nav-item">
+      <span class="nav-icon">🛒</span> Bán thuốc (POS)
+    </a>
   </nav>
   <div style="flex:1"></div>
   <div class="sidebar-footer">
@@ -393,13 +406,26 @@ body{display:flex;background:var(--soft);color:var(--ink)}
   if (urlToken) sessionStorage.setItem('staffToken', urlToken);
   sessionStorage.setItem('tabId', Math.random().toString(36).slice(2) + Date.now());
 
-  window.addEventListener('beforeunload', function() {
-      const uid   = sessionStorage.getItem('staffUid');
-      const ctx   = document.querySelector('meta[name="ctx"]')?.content || '';
+  // Chỉ logout khi tab/browser đóng thật sự — KHÔNG logout khi navigate sang trang khác
+  window.addEventListener('pagehide', function(e) {
+      // e.persisted = true → trang được cache (BFCache), không đóng thật
+      if (e.persisted) return;
+      // Kiểm tra xem có đang navigate nội bộ không
+      if (window._navigating) return;
+      const uid = sessionStorage.getItem('staffUid');
+      const ctx = document.querySelector('meta[name="ctx"]')?.content || '';
       if (uid) {
           navigator.sendBeacon(ctx + '/logout?from=staff&uid=' + uid);
       }
   });
+  // Đánh dấu đang navigate nội bộ khi click link
+  document.addEventListener('click', function(e) {
+      const a = e.target.closest('a[href]');
+      if (a && a.href && !a.href.includes('logout') && a.hostname === location.hostname) {
+          window._navigating = true;
+      }
+  });
+  document.addEventListener('submit', function() { window._navigating = true; });
 
   const uid   = sessionStorage.getItem('staffUid');
   const token = sessionStorage.getItem('staffToken');

@@ -2,10 +2,12 @@ package com.medivault.controller.admin;
 
 import com.medivault.dao.AccountDAO;
 import com.medivault.dao.PasswordResetDAO;
+import com.medivault.dao.LeaveRequestDAO;
 import com.medivault.dao.interfaces.IAccountDAO;
 import com.medivault.dao.interfaces.IMedicineDAO;
 import com.medivault.dao.interfaces.IBatchesDAO;
 import com.medivault.dao.interfaces.IPasswordResetDAO;
+import com.medivault.dao.interfaces.ILeaveRequestDAO;
 import com.medivault.dao.MedicineDAO;
 import com.medivault.dao.BatchesDAO;
 import com.medivault.entity.Account;
@@ -23,6 +25,7 @@ public class DashboardServlet extends HttpServlet {
     private final IBatchesDAO       batchesDAO  = new BatchesDAO();
     private final IAccountDAO       accountDAO  = new AccountDAO();
     private final IPasswordResetDAO resetDAO    = new PasswordResetDAO();
+    private final ILeaveRequestDAO  leaveDAO    = new LeaveRequestDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -57,6 +60,10 @@ public class DashboardServlet extends HttpServlet {
         List<PasswordResetRequest> pendingResets = resetDAO.findAllPending();
         req.setAttribute("pendingResets",     pendingResets);
         req.setAttribute("pendingResetCount", pendingResets.size());
+
+        // ── Pending Leave Requests → badge trên nav ──
+        int pendingLeaveCount = leaveDAO.findPending().size();
+        req.setAttribute("pendingLeaveCount", pendingLeaveCount);
 
         // Map accountId → Account để JSP hiện tên nhân viên
         java.util.Map<Integer, Account> resetAccountMap = new java.util.HashMap<>();

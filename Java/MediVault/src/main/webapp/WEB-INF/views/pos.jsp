@@ -19,7 +19,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>MediVault POS — Bán hàng</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -267,7 +267,7 @@ body{display:flex;background:var(--surface);color:var(--navy)}
 }
 .cash-rhead{padding:18px 24px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
 .cash-rhead-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
-.cash-rtitle{font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);display:flex;align-items:center;gap:8px}
+.cash-rtitle{font-family:'Outfit',sans-serif;font-size:20px;color:var(--navy);display:flex;align-items:center;gap:8px}
 .cash-rdatetime{font-size:12px;color:var(--muted)}
 .cash-rbody{flex:1;overflow-y:auto;padding:0}
 /* Items table */
@@ -323,9 +323,9 @@ body{display:flex;background:var(--surface);color:var(--navy)}
 }
 @keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
 .sm-icon{font-size:52px;margin-bottom:16px;display:block}
-.sm-title{font-family:'DM Serif Display',serif;font-size:22px;font-weight:400;color:var(--navy);margin-bottom:6px}
+.sm-title{font-family:'Outfit',sans-serif;font-size:22px;font-weight:400;color:var(--navy);margin-bottom:6px}
 .sm-code{font-size:13px;color:var(--muted);margin-bottom:20px}
-.sm-total{font-family:'DM Serif Display',serif;font-size:32px;font-weight:400;color:var(--blue);margin-bottom:24px}
+.sm-total{font-family:'Outfit',sans-serif;font-size:32px;font-weight:400;color:var(--blue);margin-bottom:24px}
 .sm-btns{display:flex;gap:10px}
 .sm-btn-new{flex:1;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--blue),#0d3d63);color:#fff;border:none;font-size:14px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s}
 .sm-btn-new:hover{box-shadow:0 6px 20px rgba(17,76,125,.4)}

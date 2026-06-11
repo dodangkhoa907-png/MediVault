@@ -156,7 +156,7 @@ function doVerify(){
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Đang xác nhận...';
   errDyn.style.display='none';
   const form=document.createElement('form');form.method='POST';
-  form.action=ctx+'/accounts?action=delete-otp';
+  form.action=ctx+'/accounts?action=delete-otp&id=<%= delTarget.getAccountId() %>';
   const inp=document.createElement('input');inp.type='hidden';inp.name='otp';
   inp.value=inputs.map(i=>i.value).join('');
   form.appendChild(inp);document.body.appendChild(form);form.submit();
@@ -181,7 +181,7 @@ async function doResend(){
   const iv=setInterval(()=>{cool--;rc.textContent='('+cool+'s)';
     if(cool<=0){clearInterval(iv);rb.disabled=false;rc.textContent='';cool=60;}},1000);
   try{
-    await fetch(ctx+'/accounts?action=delete-otp-resend',{method:'POST'});
+    await fetch(ctx+'/accounts?action=delete-otp-resend&id=<%= delTarget.getAccountId() %>',{method:'POST'});
     inputs.forEach(i=>{i.value='';i.classList.remove('filled');i.disabled=false;});
     inputs[0].focus();errDyn.style.display='none';rem=300;
   }catch(e){showErr('Không thể gửi lại OTP.');}
