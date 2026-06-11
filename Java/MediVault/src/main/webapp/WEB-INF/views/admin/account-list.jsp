@@ -395,6 +395,10 @@ function clearFilter() {
 }
 
 // Realtime: gõ là lọc ngay
+document.addEventListener('DOMContentLoaded', function() {
+  const si = document.getElementById('searchInput');
+  if (si) si.addEventListener('input', applyFilter);
+});
 document.getElementById('searchInput').addEventListener('input', applyFilter);
 document.getElementById('roleFilter').addEventListener('change', applyFilter);
 document.getElementById('statusFilter').addEventListener('change', applyFilter);

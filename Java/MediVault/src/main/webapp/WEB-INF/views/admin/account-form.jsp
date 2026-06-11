@@ -480,19 +480,19 @@ select.field-input{
                         </div>
                         <div class="field <%= isNew ? "email-highlight" : "" %>">
                             <label class="field-label" for="email">Email <%= isNew ? "<span class='req'>*</span>" : "" %></label>
-                            <input type="email" id="email" name="email" class="field-input"
+                            <input type="email" id="email" name="email" class="field-input" oninput="validateField('email')"
                                    value="<%= vEmail %>" placeholder="example@gmail.com"
                                    <%= isNew ? "required" : "" %>>
                             <% if (isNew) { %><span class="field-note">📧 Email liên lạc của nhân viên (dùng để nhận thông báo hệ thống).</span><% } %>
                         </div>
                         <div class="field">
                             <label class="field-label" for="phone">Số điện thoại</label>
-                            <input type="tel" id="phone" name="phone" class="field-input"
+                            <input type="tel" id="phone" name="phone" class="field-input" oninput="validateField('phone')"
                                    value="<%= vPhone %>" placeholder="0901234567" pattern="0[0-9]{9}">
                         </div>
                         <div class="field">
                             <label class="field-label" for="citizenId">CMND / CCCD</label>
-                            <input type="text" id="citizenId" name="citizenId" class="field-input"
+                            <input type="text" id="citizenId" name="citizenId" class="field-input" oninput="validateField('citizenId')"
                                    value="<%= vCitizenId %>" placeholder="9 hoặc 12 chữ số"
                                    maxlength="12" pattern="[0-9]{9}|[0-9]{12}">
                         </div>
@@ -561,6 +561,48 @@ Object.entries(fieldMap).forEach(([id, kws]) => {
     }
 });
 <% } %>
+
+// ── Inline field validation ──
+const fieldRules = {
+  email: {
+    test: v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+    msg: '⚠️ Email không đúng định dạng'
+  },
+  phone: {
+    test: v => !v || /^(0[3-9][0-9]{8})$/.test(v),
+    msg: '⚠️ SĐT phải có 10 số, bắt đầu 03x-09x'
+  },
+  citizenId: {
+    test: v => !v || /^[0-9]{9}$|^[0-9]{12}$/.test(v),
+    msg: '⚠️ CMND/CCCD phải có 9 hoặc 12 chữ số'
+  }
+};
+function validateField(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const rule = fieldRules[id];
+  let warn = document.getElementById('warn_' + id);
+  if (!warn) {
+    warn = document.createElement('div');
+    warn.id = 'warn_' + id;
+    warn.style.cssText = 'font-size:12px;color:#DC2626;margin-top:4px;font-weight:600;min-height:18px';
+    el.parentNode.insertBefore(warn, el.nextSibling);
+  }
+  if (!rule.test(el.value.trim())) {
+    warn.textContent = rule.msg;
+    el.style.borderColor = '#ef4444';
+    el.style.boxShadow = '0 0 0 3px rgba(239,68,68,.12)';
+  } else {
+    warn.textContent = '';
+    el.style.borderColor = '';
+    el.style.boxShadow = '';
+  }
+}
+// Trigger validation on blur too
+['email','phone','citizenId'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('blur', () => validateField(id));
+});
 
 // ── Validate email format ──
 const emailInput = document.getElementById('email');

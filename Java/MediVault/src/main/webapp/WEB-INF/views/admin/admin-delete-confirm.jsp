@@ -110,8 +110,24 @@ function checkInput(inp) {
     btn.disabled = true;
   }
 }
+let _submitted = false;
 document.getElementById('confirmForm').addEventListener('submit', function(e) {
-  if (document.getElementById('confirmInput').value.trim().toLowerCase() !== 'delete') e.preventDefault();
+  const val = document.getElementById('confirmInput').value.trim().toLowerCase();
+  if (val !== 'delete') { e.preventDefault(); return; }
+  if (_submitted) { e.preventDefault(); return; }
+  _submitted = true;
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang gửi OTP...';
+  btn.style.opacity = '0.7';
+});
+document.getElementById('confirmInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (this.value.trim().toLowerCase() === 'delete' && !_submitted) {
+      document.getElementById('confirmForm').submit();
+    }
+  }
 });
 </script>
 </body>

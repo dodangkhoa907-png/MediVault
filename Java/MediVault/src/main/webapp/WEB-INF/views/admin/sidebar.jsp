@@ -1,5 +1,5 @@
-<%-- ══════════════════════════════════════════════════════════════
-     _sidebar.jsp  —  Admin sidebar dùng chung cho mọi trang
+a<%-- ══════════════════════════════════════════════════════════════
+     sidebar.jsp  —  Admin sidebar dùng chung cho mọi trang
      Include bằng: <%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
 
      Biến cần có trước khi include (khai báo ở trang cha):
@@ -108,9 +108,7 @@
         <div class="user-info-sm"><%= fullName %></div>
         <div class="user-info-sm">Admin</div>
       </div>
-      <a href="${pageContext.request.contextPath}/logout" class="logout-btn" title="Đăng xuất" >⏻
-
-      </a>
+      <a href="${pageContext.request.contextPath}/logout" class="logout-btn" title="Đăng xuất">⏻ <span style="font-size:12px;font-weight:700;letter-spacing:.3px">Đăng xuất</span></a>
     </div>
   </div>
 </aside>
