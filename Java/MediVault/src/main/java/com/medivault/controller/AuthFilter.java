@@ -14,7 +14,7 @@ public class AuthFilter implements Filter {
     // ── Tên cookie lưu nhận dạng đăng nhập ──
     private static final String COOKIE_ADMIN = "mv_admin_uid";
     private static final String COOKIE_STAFF = "mv_staff_uid";
-    private static final int    COOKIE_MAX_AGE = 60 * 60 * 8; // 8 tiếng (giây)
+    private static final int    COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 ngày (Remember Me)
 
     private final IAccountDAO accountDAO = new AccountDAO();
 
@@ -54,6 +54,15 @@ public class AuthFilter implements Filter {
         resp.addCookie(c);
     }
 
+    /** Remember Me: cookie với thời gian tùy chỉnh (giây) */
+    public static void writeAdminCookieLong(HttpServletResponse resp, int accountId, int maxAgeSeconds) {
+        Cookie c = new Cookie("mv_admin_uid", String.valueOf(accountId));
+        c.setMaxAge(maxAgeSeconds);
+        c.setPath("/");
+        c.setHttpOnly(true);
+        resp.addCookie(c);
+    }
+
     public static void writeStaffCookie(HttpServletResponse resp, int accountId) {
         Cookie c = new Cookie("mv_staff_uid", String.valueOf(accountId));
         c.setMaxAge(60 * 60 * 8);
@@ -87,9 +96,13 @@ public class AuthFilter implements Filter {
                 || uri.startsWith(ctx + "/js")
                 || uri.startsWith(ctx + "/WEB-INF")
                 || uri.equals(ctx + "/otp-verify")
-                || uri.equals(ctx + "/forgot-password")         // staff yêu cầu reset
-                || uri.startsWith(ctx + "/admin/confirm-reset") // admin xác nhận qua link mail
-                || uri.equals(ctx + "/staff-ping"); // ping không cần auth
+                || uri.startsWith(ctx + "/staff-shift")
+                || uri.equals(ctx + "/forgot-password")
+                || uri.startsWith(ctx + "/admin/confirm-reset")
+                || uri.equals(ctx + "/staff-ping")
+                // ── NFC: không cần session — xác thực bằng cardId ──
+                || uri.startsWith(ctx + "/nfc-checkin")
+                || uri.startsWith(ctx + "/api/nfc");
 
         // ── 2. Lấy session hiện tại (không tạo mới) ──
         HttpSession session = req.getSession(false);
@@ -162,9 +175,13 @@ public class AuthFilter implements Filter {
         }
 
         // ── 4. Xử lý login page redirect ──
-        if (uri.equals(ctx + "/login")) {
-            if (adminAcc != null) { resp.sendRedirect(ctx + "/dashboard"); return; }
-            chain.doFilter(request, response); return;
+        if (uri.equals(ctx + "/") || uri.equals(ctx)) {
+            if (adminAcc != null) {
+                resp.sendRedirect(ctx + "/login");
+            } else if (staffAcc != null) {
+                resp.sendRedirect(ctx + "/staff-dashboard?uid=" + staffAcc.getAccountId());
+            }
+            return; // Chặn lại không cho chạy tiếp xuống dưới
         }
         if (uri.equals(ctx + "/staff-login")) {
             // Không redirect nếu đang ở staff-login (cho phép login staff mới)
@@ -198,8 +215,12 @@ public class AuthFilter implements Filter {
                 || uri.startsWith(ctx + "/customers")
                 || uri.startsWith(ctx + "/medicines")
                 || uri.startsWith(ctx + "/account-detail-api")
-                || uri.startsWith(ctx + "/audit-logs")            // nhật ký hệ thống
-                || uri.startsWith(ctx + "/admin/reset-requests"); // polling endpoint
+                || uri.startsWith(ctx + "/audit-logs")
+                || uri.startsWith(ctx + "/admin/reset-requests")
+                || uri.startsWith(ctx + "/shift-schedules")
+                || uri.startsWith(ctx + "/attendance")
+                || uri.startsWith(ctx + "/payroll")
+                || uri.startsWith(ctx + "/shift-types");
 
         if (isAdminOnly) {
             if (adminAcc == null) {
@@ -220,7 +241,11 @@ public class AuthFilter implements Filter {
 
         // ── 8. Trang chỉ dành cho Staff ──
         if (uri.startsWith(ctx + "/staff-dashboard")
-                || uri.equals(ctx + "/staff-profile")) {
+                || uri.equals(ctx + "/staff-profile")
+                || uri.startsWith(ctx + "/staff-my-shifts")
+                || uri.startsWith(ctx + "/staff-checkin")
+                || (uri.startsWith(ctx + "/leave-requests")
+                && req.getParameter("uid") != null)) {
             if (staffAcc == null) {
                 resp.sendRedirect(ctx + "/staff-login");
                 return;

@@ -20,7 +20,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>MediVault — Đăng nhập nhân viên</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -80,7 +80,7 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
 
 .left-headline{margin-bottom:auto;position:relative;z-index:2}
 .left-headline h1{
-  font-family:'DM Serif Display',serif;font-size:50px;font-weight:400;
+  font-family:'Outfit',sans-serif;font-size:50px;font-weight:400;
   color:#fff;line-height:1.12;letter-spacing:-.3px;margin-bottom:16px;
 }
 .left-headline h1 em{color:var(--light);font-style:italic}
@@ -110,7 +110,7 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
 }
 .form-eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--light)}
 
-.form-title{font-family:'DM Serif Display',serif;font-size:30px;color:var(--ink);margin-bottom:6px}
+.form-title{font-family:'Outfit',sans-serif;font-size:30px;color:var(--ink);margin-bottom:6px}
 .form-sub{font-size:14px;color:var(--muted);margin-bottom:32px;line-height:1.5}
 
 .err-box{

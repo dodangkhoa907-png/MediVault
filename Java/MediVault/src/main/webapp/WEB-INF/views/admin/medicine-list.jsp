@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
+<% String activeNav = "medicines"; %>
 <%@ taglib prefix="c"   uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%
@@ -17,7 +18,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Kho thuốc — MediVault</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -48,13 +49,13 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 /* ── MAIN ── */
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh}
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50}
-.topbar-title{font-family:'DM Serif Display',serif;font-size:16px;color:var(--ink)}
+.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;color:var(--ink)}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
 .btn-primary{height:36px;padding:0 16px;background:var(--blue);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-family:inherit;transition:all .15s}
 .btn-primary:hover{background:#0d3d63}
 .content{padding:24px 28px;flex:1}
 .page-header{margin-bottom:20px}
-.page-title{font-family:'DM Serif Display',serif;font-size:26px;color:var(--ink)}
+.page-title{font-family:'Outfit',sans-serif;font-size:26px;color:var(--ink)}
 .page-sub{font-size:13px;color:var(--muted);margin-top:3px}
 /* ── STATS ── */
 .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
@@ -118,37 +119,7 @@ tbody tr:hover td{background:#FAFBFF}
 <% } else if ("error".equals(msg)) { %><div class="toast toast-err">❌ Có lỗi xảy ra, thử lại!</div>
 <% } %>
 
-<aside class="sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-icon">💊</div>
-    <div><div class="logo-text">MediVault</div><div class="logo-sub">Admin Console</div></div>
-  </div>
-  <nav class="nav-section">
-    <div class="nav-label">Tổng quan</div>
-    <a href="${pageContext.request.contextPath}/dashboard" class="nav-item"><span>🏠</span> Trang chủ</a>
-  </nav>
-  <nav class="nav-section">
-    <div class="nav-label">Quản lý</div>
-    <a href="${pageContext.request.contextPath}/accounts" class="nav-item"><span>👤</span> Tài khoản</a>
-    <a href="${pageContext.request.contextPath}/shifts" class="nav-item"><span>🕐</span> Ca làm việc</a>
-    <a href="${pageContext.request.contextPath}/medicines" class="nav-item active"><span>💊</span> Kho thuốc</a>
-    <a href="${pageContext.request.contextPath}/invoices" class="nav-item"><span>🧾</span> Hóa đơn</a>
-    <a href="${pageContext.request.contextPath}/customers" class="nav-item"><span>👥</span> Khách hàng</a>
-    <a href="${pageContext.request.contextPath}/returns" class="nav-item"><span>↩️</span> Trả hàng</a>
-  </nav>
-  <nav class="nav-section">
-    <div class="nav-label">Phân tích</div>
-    <a href="${pageContext.request.contextPath}/audit-logs" class="nav-item"><span>📋</span> Nhật ký</a>
-    <a href="${pageContext.request.contextPath}/reports" class="nav-item"><span>📊</span> Báo cáo</a>
-  </nav>
-  <div class="sidebar-footer">
-    <div class="sidebar-user">
-      <div class="user-av"><%= initials %></div>
-      <div><div class="user-name"><%= fullName %></div><div class="user-role">Admin</div></div>
-      <a href="${pageContext.request.contextPath}/logout" class="logout-btn" title="Đăng xuất">⏻</a>
-    </div>
-  </div>
-</aside>
+<%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
 
 <div class="main">
   <div class="topbar">

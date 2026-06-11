@@ -45,7 +45,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><%= isNew ? "Tạo tài khoản nhân viên" : "Cập nhật tài khoản" %> — MediVault</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -102,7 +102,7 @@ body{display:flex;flex-direction:column}
   border:1.5px solid rgba(58,189,224,.35);border-radius:14px;
   display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px;
 }
-.info-card h2{font-family:'DM Serif Display',serif;font-size:18px;font-weight:400;color:#fff;margin-bottom:8px}
+.info-card h2{font-family:'Outfit',sans-serif;font-size:18px;font-weight:400;color:#fff;margin-bottom:8px}
 .info-card>p{font-size:12.5px;line-height:1.65;color:rgba(255,255,255,.55)}
 
 .info-steps{margin-top:22px;display:flex;flex-direction:column;gap:12px}
@@ -133,7 +133,7 @@ body{display:flex;flex-direction:column}
   border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.8px;
   text-transform:uppercase;color:var(--blue);margin-bottom:10px;
 }
-.form-heading h1{font-family:'DM Serif Display',serif;font-size:26px;color:var(--ink);margin-bottom:4px}
+.form-heading h1{font-family:'Outfit',sans-serif;font-size:26px;color:var(--ink);margin-bottom:4px}
 .form-heading p{font-size:13px;color:var(--muted)}
 
 /* Error block */
@@ -180,7 +180,7 @@ body{display:flex;flex-direction:column}
   display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
   box-shadow:0 3px 10px rgba(58,189,224,.25);
 }
-.form-card-head h2{font-family:'DM Serif Display',serif;font-size:16px;color:var(--ink);margin-bottom:2px}
+.form-card-head h2{font-family:'Outfit',sans-serif;font-size:16px;color:var(--ink);margin-bottom:2px}
 .form-card-head p{font-size:12px;color:var(--muted)}
 
 .form-body{padding:22px 24px}
@@ -231,36 +231,16 @@ select.field-input{
 .email-highlight .field-input{border-color:rgba(58,189,224,.4)}
 .email-highlight .field-input:focus{border-color:var(--cyan)}
 
-/* OTP inline box */
-#otpBox{
-  margin:0 24px 16px;padding:16px 18px;
-  background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:12px;
-}
-#otpBox p:first-child{font-size:13px;font-weight:600;color:#166534;margin-bottom:10px}
-.otp-inline-row{display:flex;gap:10px;align-items:center}
-#otpInput{
-  width:140px;padding:10px 14px;
-  border:1.5px solid #86EFAC;border-radius:9px;
-  font-family:'DM Serif Display',serif;font-size:22px;
-  letter-spacing:6px;text-align:center;outline:none;
-  transition:border-color .18s;
-}
-#otpInput:focus{border-color:#059669;box-shadow:0 0 0 3px rgba(5,150,105,.12)}
-.btn-otp-verify{
-  padding:10px 16px;background:#059669;color:#fff;
-  border:none;border-radius:9px;font-family:'Outfit',sans-serif;
-  font-size:13px;font-weight:600;cursor:pointer;transition:background .18s;
-}
-.btn-otp-verify:hover{background:#047857}
-.btn-otp-verify:disabled{opacity:.5;cursor:not-allowed}
-.btn-otp-resend{
-  padding:10px 13px;background:transparent;color:#059669;
-  border:1.5px solid #86EFAC;border-radius:9px;
-  font-family:'Outfit',sans-serif;font-size:12px;cursor:pointer;transition:all .18s;
-}
-.btn-otp-resend:hover{background:#F0FDF4}
-#otpMsg{font-size:12px;margin-top:8px;display:none}
 
+/* ── Đổi MK toggle button ── */
+.btn-change-pw-toggle{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:9px 16px;border:1.5px solid #BFDBFE;border-radius:9px;
+  background:#EFF6FF;color:#1558A8;font-family:'Outfit',sans-serif;
+  font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;
+}
+.btn-change-pw-toggle:hover{background:#DBEAFE;border-color:#93C5FD}
+.btn-change-pw-toggle.active{background:#1558A8;color:#fff;border-color:#1558A8}
 /* Action row */
 .action-row{
   display:flex;align-items:center;gap:12px;
@@ -328,7 +308,7 @@ select.field-input{
         <div class="info-card">
             <div class="info-icon"><%= isNew ? "➕" : "✏️" %></div>
             <h2><%= isNew ? "Thêm nhân viên mới" : "Chỉnh sửa tài khoản" %></h2>
-            <p><%= isNew ? "Tạo tài khoản cho nhân viên mới. Hệ thống sẽ gửi mã OTP xác nhận qua email." : "Cập nhật thông tin tài khoản nhân viên trong hệ thống." %></p>
+            <p><%= isNew ? "Tạo tài khoản cho nhân viên mới. Admin tự cấp username và mật khẩu." : "Cập nhật thông tin tài khoản nhân viên trong hệ thống." %></p>
 
             <% if (isNew) { %>
             <div class="info-steps">
@@ -342,21 +322,14 @@ select.field-input{
                 <div class="info-step">
                     <div class="step-num">2</div>
                     <div class="step-text">
-                        <strong>Gửi OTP</strong>
-                        <span>Hệ thống tự động gửi mã xác nhận 6 số về email nhân viên</span>
-                    </div>
-                </div>
-                <div class="info-step">
-                    <div class="step-num">3</div>
-                    <div class="step-text">
-                        <strong>Xác nhận & Tạo</strong>
-                        <span>Nhập mã OTP để kích hoạt tài khoản</span>
+                        <strong>Đặt mật khẩu & Tạo</strong>
+                        <span>Admin cấp mật khẩu ban đầu, nhân viên đổi sau khi đăng nhập</span>
                     </div>
                 </div>
             </div>
             <div class="otp-note">
-                <div class="otp-note-title">📧 Lưu ý về OTP</div>
-                <p>Email nhân viên phải hợp lệ. Mã OTP có hiệu lực trong <strong style="color:var(--cyan)">5 phút</strong>.</p>
+                <div class="otp-note-title">🔐 Lưu ý bảo mật</div>
+                <p>Mật khẩu ít nhất 6 ký tự. Khuyến nghị nhân viên <strong style="color:var(--cyan)">đổi mật khẩu</strong> ngay sau lần đăng nhập đầu tiên.</p>
             </div>
             <% } %>
         </div>
@@ -368,7 +341,7 @@ select.field-input{
         <div class="form-heading">
             <div class="form-eyebrow"><%= isNew ? "👤 Tạo mới" : "✏️ Chỉnh sửa" %></div>
             <h1><%= isNew ? "Tạo tài khoản nhân viên" : "Cập nhật tài khoản" %></h1>
-            <p><%= isNew ? "Điền đầy đủ thông tin bên dưới. OTP sẽ được gửi tới email nhân viên." : "Chỉnh sửa thông tin tài khoản, sau đó lưu lại." %></p>
+            <p><%= isNew ? "Điền đầy đủ thông tin bên dưới. Admin tự cấp mật khẩu ban đầu cho nhân viên." : "Chỉnh sửa thông tin tài khoản, sau đó lưu lại." %></p>
         </div>
 
         <% if (hasPendingReset) { %>
@@ -405,7 +378,7 @@ select.field-input{
             <c:if test="${not empty account and account.accountId > 0}">
                 <input type="hidden" name="accountId" value="${account.accountId}">
             </c:if>
-            <input type="hidden" name="action" value="<%= isNew ? "create-otp" : "update" %>">
+            <input type="hidden" name="action" value="<%= isNew ? "create" : "update" %>">
 
             <!-- Card 1: Thông tin đăng nhập -->
             <div class="form-card">
@@ -432,31 +405,59 @@ select.field-input{
                                 <option value="3" <%= vRoleId == 3 ? "selected" : "" %>>📦 Thủ kho</option>
                             </select>
                         </div>
+                        <% if (isNew) { %>
+                        <%-- TẠO MỚI: nhập MK bình thường --%>
                         <div class="field span-2">
-                            <label class="field-label" for="password">
-                                Mật khẩu
-                                <%= isNew ? "<span class='req'>*</span>" : "<span class='hint'>(để trống nếu không muốn đổi)</span>" %>
-                            </label>
-                            <% if (isNew) { %>
-                            <%-- TẠO MỚI: nhập mật khẩu thực --%>
+                            <label class="field-label" for="password">Mật khẩu <span class="req">*</span></label>
                             <div class="pw-wrap">
                                 <input type="password" id="password" name="password" class="field-input"
-                                       placeholder="Ít nhất 6 ký tự, không có khoảng trắng"
-                                       required minlength="6" autocomplete="new-password">
-                                <button type="button" class="pw-toggle" id="togglePw" title="Hiện/ẩn mật khẩu">👁</button>
+                                       placeholder="Ít nhất 6 ký tự" required minlength="6" autocomplete="new-password">
+                                <button type="button" class="pw-toggle" id="togglePw" title="Hiện/ẩn">👁</button>
                             </div>
-                            <% } else { %>
-                            <%-- CHỈNH SỬA: nhập từ khóa "update" để xác nhận đổi mật khẩu --%>
-                            <input type="text" id="passwordTrigger" name="password" class="field-input"
-                                   placeholder='Gõ "update" để đổi mật khẩu qua OTP'
-                                   autocomplete="off" style="letter-spacing:.5px"
-                                   oninput="checkUpdateTrigger(this)">
-                            <div id="updateTriggerHint" style="margin-top:6px;font-size:12px"></div>
-                            <span class="field-note" style="color:#1558A8;margin-top:6px;display:block">
-                              🔐 Nhập <strong>"update"</strong> rồi bấm "Lưu thay đổi" — OTP sẽ gửi về Gmail của bạn để xác nhận.
-                            </span>
-                            <% } %>
                         </div>
+                        <% } else { %>
+                        <%-- CHỈNH SỬA: section đổi MK riêng, ẩn mặc định --%>
+                        <input type="hidden" name="password" id="passwordHidden" value="">
+                        <input type="hidden" name="confirmWord" id="confirmWordHidden" value="">
+                        <div class="field span-2">
+                            <label class="field-label">Đổi mật khẩu
+                                <span class="hint" style="font-weight:400">(để trống = không đổi)</span>
+                            </label>
+                            <button type="button" class="btn-change-pw-toggle" id="toggleChangePwBtn"
+                                    onclick="toggleChangePwSection()">
+                                🔐 Mở rộng để đổi mật khẩu
+                            </button>
+                            <div id="changePwSection" style="display:none;margin-top:12px">
+                                <div style="background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:12px;padding:16px 18px">
+                                    <div style="display:flex;flex-direction:column;gap:10px">
+                                        <div class="fg-inline">
+                                            <label style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;display:block">
+                                                Mật khẩu mới <span style="color:#DC2626">*</span>
+                                            </label>
+                                            <div class="pw-wrap">
+                                                <input type="password" id="newPasswordInput" class="field-input"
+                                                       placeholder="Ít nhất 6 ký tự" minlength="6" autocomplete="new-password"
+                                                       oninput="syncPwFields()">
+                                                <button type="button" class="pw-toggle" id="togglePw" title="Hiện/ẩn">👁</button>
+                                            </div>
+                                        </div>
+                                        <div class="fg-inline">
+                                            <label style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;display:block">
+                                                Xác nhận đổi — gõ chữ <strong style="color:#1558A8;font-family:monospace">update</strong>
+                                            </label>
+                                            <input type="text" id="confirmWordInput" class="field-input"
+                                                   placeholder='Gõ "update" để xác nhận đổi mật khẩu'
+                                                   autocomplete="off" oninput="syncPwFields(); checkConfirmWord(this)">
+                                            <div id="confirmWordHint" style="font-size:12px;margin-top:5px"></div>
+                                        </div>
+                                    </div>
+                                    <p style="font-size:12px;color:#7A90B0;margin-top:12px">
+                                        🔒 Sau khi bấm <strong>Lưu thay đổi</strong>, OTP sẽ gửi về <strong>Gmail admin</strong> để xác nhận.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <% } %>
                     </div>
                 </div>
             </div>
@@ -479,48 +480,45 @@ select.field-input{
                         </div>
                         <div class="field <%= isNew ? "email-highlight" : "" %>">
                             <label class="field-label" for="email">Email <%= isNew ? "<span class='req'>*</span>" : "" %></label>
-                            <input type="email" id="email" name="email" class="field-input"
+                            <input type="email" id="email" name="email" class="field-input" oninput="validateField('email')"
                                    value="<%= vEmail %>" placeholder="example@gmail.com"
                                    <%= isNew ? "required" : "" %>>
-                            <% if (isNew) { %><span class="field-note">📧 OTP 6 số sẽ được gửi tới email này để xác nhận.</span><% } %>
+                            <% if (isNew) { %><span class="field-note">📧 Email liên lạc của nhân viên (dùng để nhận thông báo hệ thống).</span><% } %>
                         </div>
                         <div class="field">
                             <label class="field-label" for="phone">Số điện thoại</label>
-                            <input type="tel" id="phone" name="phone" class="field-input"
+                            <input type="tel" id="phone" name="phone" class="field-input" oninput="validateField('phone')"
                                    value="<%= vPhone %>" placeholder="0901234567" pattern="0[0-9]{9}">
                         </div>
                         <div class="field">
                             <label class="field-label" for="citizenId">CMND / CCCD</label>
-                            <input type="text" id="citizenId" name="citizenId" class="field-input"
+                            <input type="text" id="citizenId" name="citizenId" class="field-input" oninput="validateField('citizenId')"
                                    value="<%= vCitizenId %>" placeholder="9 hoặc 12 chữ số"
                                    maxlength="12" pattern="[0-9]{9}|[0-9]{12}">
                         </div>
-                        <div class="field">
-                            <label class="field-label" for="position">Chức vụ / Bộ phận</label>
-                            <input type="text" id="position" name="position" class="field-input"
-                                   value="<%= vPosition %>" placeholder="Dược sĩ bán hàng, Thủ kho…">
-                        </div>
+                        <%-- Ô Chức vụ/Bộ phận đã bỏ: phân quyền đã xác định qua roleId --%>
+                        <input type="hidden" name="position" value="<%= vPosition %>">
                     </div>
-                </div>
-
-                <input type="hidden" name="otpVerified" id="otpVerified" value="false">
-
-                <div id="otpBox" style="display:none">
-                    <p>📧 Mã OTP đã được gửi về email. Nhập mã để xác nhận thay đổi:</p>
-                    <div class="otp-inline-row">
-                        <input type="text" id="otpInput" maxlength="6" placeholder="000000">
-                        <button type="button" class="btn-otp-verify" id="verifyOtpBtn" onclick="verifyOtp()">✅ Xác nhận</button>
-                        <button type="button" class="btn-otp-resend" onclick="resendOtp()">🔄 Gửi lại</button>
-                    </div>
-                    <p id="otpMsg"></p>
                 </div>
 
                 <div class="action-row">
-                    <button type="submit" class="btn-submit" id="submitBtn">
-                        <%= isNew ? "📧 Tạo & Gửi mã OTP" : "💾 Lưu thay đổi" %>
+                    <% if (isNew) { %>
+                    <%-- Khi tạo mới: 2 nút --%>
+                    <button type="submit" name="redirect" value="schedule" class="btn-submit" id="submitBtn">
+                        📅 Lưu &amp; Xếp lịch ngay
                     </button>
+                    <button type="submit" name="redirect" value="more"
+                            class="btn-submit" id="submitBtnMore"
+                            style="background:var(--surface);color:var(--blue);border:2px solid var(--blue);margin-left:10px">
+                        ➕ Lưu &amp; Thêm tiếp
+                    </button>
+                    <% } else { %>
+                    <%-- Khi chỉnh sửa: 1 nút bình thường --%>
+                    <button type="submit" class="btn-submit" id="submitBtn">
+                        💾 Lưu thay đổi
+                    </button>
+                    <% } %>
                     <a href="${pageContext.request.contextPath}/accounts" class="btn-cancel">Hủy</a>
-                    <% if (isNew) { %><span class="action-note">🔒 OTP sẽ gửi qua Gmail nhân viên</span><% } %>
                 </div>
             </div>
 
@@ -534,18 +532,23 @@ select.field-input{
 <% } %>
 
 <script>
-document.getElementById('togglePw').addEventListener('click', function() {
-    const pw = document.getElementById('password');
-    const show = pw.type === 'password';
-    pw.type = show ? 'text' : 'password';
+// ── Toggle show/hide password (tạo mới) ──
+const togglePwBtn = document.getElementById('togglePw');
+if (togglePwBtn) togglePwBtn.addEventListener('click', function() {
+    const target = document.getElementById('newPasswordInput') || document.getElementById('password');
+    if (!target) return;
+    const show = target.type === 'password';
+    target.type = show ? 'text' : 'password';
     this.textContent = show ? '🙈' : '👁';
 });
 
+// ── Toast auto-hide ──
 const toast = document.getElementById('toast');
 if (toast) setTimeout(() => { toast.style.opacity='0'; setTimeout(()=>toast.remove(),400); }, 3500);
 
+// ── Highlight lỗi ──
 <% if (hasErrors) { %>
-const errorText = `<%= errs != null ? String.join("|", errs).toLowerCase() : "" %>`;
+const errorText = `<%= errs != null ? java.lang.String.join("|", errs).toLowerCase() : "" %>`;
 const fieldMap = {
     username: ['tên đăng nhập','username'], email: ['email'],
     phone: ['điện thoại','phone'], citizenId: ['cmnd','cccd'],
@@ -559,6 +562,49 @@ Object.entries(fieldMap).forEach(([id, kws]) => {
 });
 <% } %>
 
+// ── Inline field validation ──
+const fieldRules = {
+  email: {
+    test: v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+    msg: '⚠️ Email không đúng định dạng'
+  },
+  phone: {
+    test: v => !v || /^(0[3-9][0-9]{8})$/.test(v),
+    msg: '⚠️ SĐT phải có 10 số, bắt đầu 03x-09x'
+  },
+  citizenId: {
+    test: v => !v || /^[0-9]{9}$|^[0-9]{12}$/.test(v),
+    msg: '⚠️ CMND/CCCD phải có 9 hoặc 12 chữ số'
+  }
+};
+function validateField(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const rule = fieldRules[id];
+  let warn = document.getElementById('warn_' + id);
+  if (!warn) {
+    warn = document.createElement('div');
+    warn.id = 'warn_' + id;
+    warn.style.cssText = 'font-size:12px;color:#DC2626;margin-top:4px;font-weight:600;min-height:18px';
+    el.parentNode.insertBefore(warn, el.nextSibling);
+  }
+  if (!rule.test(el.value.trim())) {
+    warn.textContent = rule.msg;
+    el.style.borderColor = '#ef4444';
+    el.style.boxShadow = '0 0 0 3px rgba(239,68,68,.12)';
+  } else {
+    warn.textContent = '';
+    el.style.borderColor = '';
+    el.style.boxShadow = '';
+  }
+}
+// Trigger validation on blur too
+['email','phone','citizenId'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('blur', () => validateField(id));
+});
+
+// ── Validate email format ──
 const emailInput = document.getElementById('email');
 if (emailInput) {
     emailInput.addEventListener('blur', function() {
@@ -569,133 +615,97 @@ if (emailInput) {
     });
 }
 
+// ── Chỉ cho nhập số điện thoại ──
 const phoneInput = document.getElementById('phone');
-if (phoneInput) phoneInput.addEventListener('input', function() { this.value=this.value.replace(/[^0-9]/g,'').slice(0,10); });
-
-<% if (!isNew) { %>
-const origEmail = '<%= vEmail %>'.trim();
-const origPhone = '<%= vPhone %>'.trim();
-let otpSent = false;
-let otpVerifiedOk = false;
-
-function emailOrPhoneChanged() {
-    const curEmail = (document.getElementById('email')?.value||'').trim();
-    const curPhone = (document.getElementById('phone')?.value||'').trim();
-    return curEmail !== origEmail || curPhone !== origPhone;
-}
-
-// ── Kiểm tra trigger "update" cho field mật khẩu khi edit ──
-function checkUpdateTrigger(inp) {
-    const hint = document.getElementById('updateTriggerHint');
-    const val  = inp.value.toLowerCase().trim();
-    if (!val) {
-        hint.textContent = '';
-        inp.style.borderColor = '';
-        return;
-    }
-    if (val === 'update') {
-        hint.innerHTML = '✅ <span style="color:#059669;font-weight:600">Xác nhận — OTP sẽ gửi về Gmail của bạn khi bấm Lưu.</span>';
-        inp.style.borderColor = '#059669';
-        inp.style.boxShadow   = '0 0 0 3px rgba(5,150,105,.1)';
-    } else {
-        hint.innerHTML = '❌ <span style="color:#DC2626;font-weight:600">Phải gõ đúng chữ <strong>"update"</strong> (không phân biệt hoa thường).</span>';
-        inp.style.borderColor = '#DC2626';
-        inp.style.boxShadow   = '0 0 0 3px rgba(220,38,38,.1)';
-    }
-}
-
-document.getElementById('mainForm').addEventListener('submit', async function(e) {
-    // Kiểm tra trigger field "update" khi edit
-    const triggerInp = document.getElementById('passwordTrigger');
-    if (triggerInp) {
-        const val = triggerInp.value.trim();
-        if (val !== '' && val.toLowerCase() !== 'update') {
-            e.preventDefault();
-            const hint = document.getElementById('updateTriggerHint');
-            hint.innerHTML = '❌ <span style="color:#DC2626;font-weight:600">Phải gõ đúng chữ <strong>"update"</strong> để xác nhận đổi mật khẩu!</span>';
-            triggerInp.style.borderColor = '#DC2626';
-            triggerInp.focus();
-            return;
-        }
-        // Nếu để trống → không đổi mk, xóa giá trị trước khi submit
-        if (val === '') {
-            triggerInp.value = '';
-        }
-    }
-
-    if (emailOrPhoneChanged() && !otpVerifiedOk) {
-        e.preventDefault();
-        if (!otpSent) await sendOtp();
-        return;
-    }
-    const btn = document.getElementById('submitBtn');
-    btn.disabled=true; btn.innerHTML='⏳ Đang lưu…';
+if (phoneInput) phoneInput.addEventListener('input', function() {
+    this.value = this.value.replace(/[^0-9]/g,'').slice(0,10);
 });
 
-async function sendOtp() {
+<% if (!isNew) { %>
+// ── Toggle section đổi MK ──
+function toggleChangePwSection() {
+    const sec = document.getElementById('changePwSection');
+    const btn = document.getElementById('toggleChangePwBtn');
+    const isOpen = sec.style.display !== 'none';
+    sec.style.display = isOpen ? 'none' : 'block';
+    btn.classList.toggle('active', !isOpen);
+    btn.textContent = isOpen ? '🔐 Mở rộng để đổi mật khẩu' : '✖ Đóng';
+    if (isOpen) {
+        // Reset khi đóng
+        document.getElementById('newPasswordInput').value = '';
+        document.getElementById('confirmWordInput').value = '';
+        document.getElementById('passwordHidden').value = '';
+        document.getElementById('confirmWordHidden').value = '';
+        document.getElementById('confirmWordHint').textContent = '';
+    }
+}
+
+// ── Sync giá trị vào hidden fields ──
+function syncPwFields() {
+    const pw  = document.getElementById('newPasswordInput').value;
+    const cw  = document.getElementById('confirmWordInput').value.trim().toLowerCase();
+    document.getElementById('passwordHidden').value    = pw;
+    document.getElementById('confirmWordHidden').value = cw;
+}
+
+// ── Check confirmWord feedback ──
+function checkConfirmWord(inp) {
+    const hint = document.getElementById('confirmWordHint');
+    const val  = inp.value.trim().toLowerCase();
+    if (!val) { hint.textContent = ''; inp.style.borderColor = ''; return; }
+    if (val === 'update') {
+        hint.innerHTML = '✅ <span style="color:#059669;font-weight:600">Xác nhận — OTP sẽ gửi về Gmail admin khi bấm Lưu.</span>';
+        inp.style.borderColor = '#059669';
+    } else {
+        hint.innerHTML = '❌ <span style="color:#DC2626;font-weight:600">Phải gõ đúng chữ <code>update</code> (viết thường).</span>';
+        inp.style.borderColor = '#DC2626';
+    }
+}
+
+// ── Submit handler ──
+document.getElementById('mainForm').addEventListener('submit', function(e) {
+    const changePwOpen = document.getElementById('changePwSection').style.display !== 'none';
+
+    if (changePwOpen) {
+        // Đang muốn đổi MK
+        const pw = document.getElementById('newPasswordInput').value;
+        const cw = document.getElementById('confirmWordInput').value.trim().toLowerCase();
+
+        if (!pw || pw.length < 6) {
+            e.preventDefault();
+            alert('Mật khẩu mới phải có ít nhất 6 ký tự!');
+            document.getElementById('newPasswordInput').focus();
+            return;
+        }
+        if (cw !== 'update') {
+            e.preventDefault();
+            document.getElementById('confirmWordHint').innerHTML =
+                '❌ <span style="color:#DC2626;font-weight:600">Phải gõ đúng chữ <code>update</code> để xác nhận!</span>';
+            document.getElementById('confirmWordInput').focus();
+            return;
+        }
+        syncPwFields();
+        // Tiếp tục submit — Servlet sẽ xử lý OTP
+    } else {
+        // Chỉ sửa thông tin thường — confirm popup
+        if (!confirm('Xác nhận lưu thay đổi thông tin tài khoản?')) {
+            e.preventDefault();
+            return;
+        }
+        // Đảm bảo password và confirmWord trống
+        document.getElementById('passwordHidden').value    = '';
+        document.getElementById('confirmWordHidden').value = '';
+    }
+
     const btn = document.getElementById('submitBtn');
-    btn.disabled=true; btn.innerHTML='📧 Đang gửi OTP…';
-    const formData = new FormData(document.getElementById('mainForm'));
-    const params = new URLSearchParams(formData);
-    params.set('action','send-otp');
-    try {
-        const res = await fetch('<%= request.getContextPath() %>/accounts', {
-            method:'POST', body:params, headers:{'Content-Type':'application/x-www-form-urlencoded'}
-        });
-        const data = await res.json();
-        if (data.ok) {
-            otpSent=true;
-            document.getElementById('otpBox').style.display='block';
-            btn.disabled=false; btn.innerHTML='💾 Lưu thay đổi';
-            showOtpMsg('Mã OTP đã gửi — kiểm tra email!','#166534');
-        } else {
-            showOtpMsg('Lỗi: '+data.msg,'#dc2626');
-            btn.disabled=false; btn.innerHTML='💾 Lưu thay đổi';
-        }
-    } catch(err) {
-        showOtpMsg('Không gửi được OTP!','#dc2626');
-        btn.disabled=false; btn.innerHTML='💾 Lưu thay đổi';
-    }
-}
-
-async function verifyOtp() {
-    const code = document.getElementById('otpInput').value.trim();
-    if (code.length!==6) { showOtpMsg('Nhập đủ 6 chữ số!','#dc2626'); return; }
-    const btn = document.getElementById('verifyOtpBtn');
-    btn.disabled=true; btn.innerHTML='⏳';
-    try {
-        const res = await fetch('<%= request.getContextPath() %>/accounts', {
-            method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
-            body:'action=verify-otp&otpCode='+encodeURIComponent(code)+'&accountId=<%= form!=null?form.getAccountId():0 %>'
-        });
-        const data = await res.json();
-        if (data.ok) {
-            otpVerifiedOk=true;
-            document.getElementById('otpVerified').value='true';
-            document.getElementById('otpBox').innerHTML='<p style="color:#166534;font-weight:700">✅ Xác minh thành công!</p>';
-            document.getElementById('mainForm').submit();
-        } else {
-            showOtpMsg('Mã không đúng hoặc đã hết hạn!','#dc2626');
-            btn.disabled=false; btn.innerHTML='✅ Xác nhận';
-        }
-    } catch(err) {
-        showOtpMsg('Lỗi xác minh!','#dc2626');
-        btn.disabled=false; btn.innerHTML='✅ Xác nhận';
-    }
-}
-
-async function resendOtp() {
-    otpSent=false;
-    document.getElementById('otpInput').value='';
-    showOtpMsg('','');
-    await sendOtp();
-}
-
-function showOtpMsg(msg, color) {
-    const el = document.getElementById('otpMsg');
-    el.textContent=msg; el.style.color=color;
-    el.style.display=msg?'block':'none';
-}
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Đang lưu…'; }
+});
+<% } else { %>
+// ── Tạo mới: disable double-submit ──
+document.getElementById('mainForm').addEventListener('submit', function() {
+    const btn = document.getElementById('submitBtn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Đang tạo…'; }
+});
 <% } %>
 </script>
 </body>

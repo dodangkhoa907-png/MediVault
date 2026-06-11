@@ -334,43 +334,57 @@ public class AccountDAO implements IAccountDAO {
             cn = DBContext.getConnection();
             cn.setAutoCommit(false);
 
-            // 1. Xóa PasswordResetRequests — không có giá trị lưu trữ
-            try (java.sql.PreparedStatement ps = cn.prepareStatement(
-                    "DELETE FROM PasswordResetRequests WHERE AccountID = ?")) {
-                ps.setInt(1, accountId); ps.executeUpdate();
-            }
+            // ── Dựa trên 9 FK thực tế trong DB (sys.foreign_keys) ──
+            // Thứ tự: xử lý con trước, cha sau
 
-            // 2. SET NULL cho AuditLog (nullable, giữ lịch sử)
-            try (java.sql.PreparedStatement ps = cn.prepareStatement(
-                    "UPDATE AuditLog SET AccountID = NULL WHERE AccountID = ?")) {
-                ps.setInt(1, accountId); ps.executeUpdate();
-            }
+            // LeaveRequests.ApprovedBy → SET NULL
+            exec(cn, "UPDATE LeaveRequests SET ApprovedBy = NULL WHERE ApprovedBy = ?", accountId);
+            // LeaveRequests.AccountID → DELETE
+            exec(cn, "DELETE FROM LeaveRequests WHERE AccountID = ?", accountId);
 
-            // 2b. SET NULL cho StaffAuditLogs (nullable, giữ lịch sử)
-            try (java.sql.PreparedStatement ps = cn.prepareStatement(
-                    "UPDATE StaffAuditLogs SET AccountID = NULL WHERE AccountID = ?")) {
-                ps.setInt(1, accountId); ps.executeUpdate();
-            } catch (Exception ignored) { /* bảng chưa tồn tại thì bỏ qua */ }
+            // Payroll.ConfirmedBy → SET NULL
+            exec(cn, "UPDATE Payroll SET ConfirmedBy = NULL WHERE ConfirmedBy = ?", accountId);
+            // Payroll.AccountID → DELETE
+            exec(cn, "DELETE FROM Payroll WHERE AccountID = ?", accountId);
 
-            // 3. SET NULL cho các bảng nullable khác nếu có
-            for (String tbl : new String[]{"PointTransactions", "OrderLogs"}) {
-                try (java.sql.PreparedStatement ps = cn.prepareStatement(
-                        "UPDATE " + tbl + " SET AccountID = NULL WHERE AccountID = ?")) {
-                    ps.setInt(1, accountId); ps.executeUpdate();
-                } catch (Exception ignored) { /* bảng có thể chưa có */ }
-            }
+            // Attendance.AccountID → DELETE
+            exec(cn, "DELETE FROM Attendance WHERE AccountID = ?", accountId);
 
-            // 4. Xóa tài khoản
+            // ShiftSchedules.CreatedBy → SET NULL
+            exec(cn, "UPDATE ShiftSchedules SET CreatedBy = NULL WHERE CreatedBy = ?", accountId);
+            // ShiftSchedules.AccountID → DELETE
+            exec(cn, "DELETE FROM ShiftSchedules WHERE AccountID = ?", accountId);
+
+            // Invoices.ShiftID → SET NULL trước khi xóa Shifts
+            exec(cn, "UPDATE Invoices SET ShiftID = NULL WHERE ShiftID IN (SELECT ShiftID FROM Shifts WHERE AccountID = ?)", accountId);
+            // Shifts.AccountID → DELETE
+            exec(cn, "DELETE FROM Shifts WHERE AccountID = ?", accountId);
+
+            // AuditLog.AccountID → SET NULL (giữ lịch sử)
+            exec(cn, "UPDATE AuditLog SET AccountID = NULL WHERE AccountID = ?", accountId);
+
+            // PasswordResetRequests — bảng có thể chưa tồn tại
+            try { exec(cn, "DELETE FROM PasswordResetRequests WHERE AccountID = ?", accountId); }
+            catch (Exception ignored) {}
+
+            // StaffAuditLogs — bảng có thể chưa tồn tại
+            try { exec(cn, "UPDATE StaffAuditLogs SET AccountID = NULL WHERE AccountID = ?", accountId); }
+            catch (Exception ignored) {}
+
+            // Xóa tài khoản (bỏ AND IsDeleted = 1 — forceDelete không cần điều kiện này)
+            int rows;
             try (java.sql.PreparedStatement ps = cn.prepareStatement(
-                    "DELETE FROM Accounts WHERE AccountID = ? AND IsDeleted = 1")) {
+                    "DELETE FROM Accounts WHERE AccountID = ?")) {
                 ps.setInt(1, accountId);
-                int rows = ps.executeUpdate();
-                if (rows == 0) { cn.rollback(); return false; }
+                rows = ps.executeUpdate();
             }
 
+            if (rows == 0) { cn.rollback(); return false; }
             cn.commit();
             return true;
+
         } catch (Exception e) {
+            System.out.println("[forceDelete] FAILED at AccountID=" + accountId + ": " + e.getMessage());
             e.printStackTrace();
             if (cn != null) { try { cn.rollback(); } catch (Exception ignored) {} }
             return false;
@@ -378,6 +392,14 @@ public class AccountDAO implements IAccountDAO {
             if (cn != null) { try { cn.setAutoCommit(true); cn.close(); } catch (Exception ignored) {} }
         }
     }
+
+    private void exec(java.sql.Connection cn, String sql, int param) throws Exception {
+        try (java.sql.PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, param);
+            ps.executeUpdate();
+        }
+    }
+
     public boolean updateAvatar(int accountId, String path) {
         String sql = "UPDATE Accounts SET FaceEnrollmentPath = ? WHERE AccountID = ?";
         try (Connection cn = DBContext.getConnection();

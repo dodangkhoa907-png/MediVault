@@ -73,6 +73,16 @@ public class LoginServlet extends HttpServlet {
         accountDAO.updateLastLogin(account.getAccountId());
         AuditHelper.log(req, "Đăng nhập Admin", "Auth", "Admin @" + account.getUsername() + " đăng nhập thành công");
 
+        // ── Remember Me: ghi cookie dài hạn nếu người dùng tick ──
+        String rememberMe = req.getParameter("rememberMe");
+        if ("true".equals(rememberMe)) {
+            // 7 ngày
+            com.medivault.controller.AuthFilter.writeAdminCookieLong(resp, account.getAccountId(), 7 * 24 * 60 * 60);
+        } else {
+            // Session-only cookie (8 tiếng)
+            com.medivault.controller.AuthFilter.writeAdminCookie(resp, account.getAccountId());
+        }
+
         // Redirect về trang định vào trước khi bị đá về login (nếu có)
         String redirectUrl = (String) session.getAttribute("redirectAfterLogin");
         session.removeAttribute("redirectAfterLogin");

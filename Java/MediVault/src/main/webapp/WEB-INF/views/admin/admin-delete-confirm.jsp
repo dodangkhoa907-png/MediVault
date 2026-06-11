@@ -79,6 +79,7 @@ h2{font-family:'DM Serif Display',serif;font-size:24px;color:var(--ink);margin-b
 
   <form method="get" action="${pageContext.request.contextPath}/accounts" id="confirmForm">
     <input type="hidden" name="action" value="delete-otp-page">
+    <input type="hidden" name="id" value="<%= delTarget.getAccountId() %>">
     <label class="field-label">Nhập <strong>"delete"</strong> để tiếp tục</label>
     <input type="text" id="confirmInput" class="field-input"
            placeholder="delete" autocomplete="off" oninput="checkInput(this)">
@@ -109,8 +110,24 @@ function checkInput(inp) {
     btn.disabled = true;
   }
 }
+let _submitted = false;
 document.getElementById('confirmForm').addEventListener('submit', function(e) {
-  if (document.getElementById('confirmInput').value.trim().toLowerCase() !== 'delete') e.preventDefault();
+  const val = document.getElementById('confirmInput').value.trim().toLowerCase();
+  if (val !== 'delete') { e.preventDefault(); return; }
+  if (_submitted) { e.preventDefault(); return; }
+  _submitted = true;
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang gửi OTP...';
+  btn.style.opacity = '0.7';
+});
+document.getElementById('confirmInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (this.value.trim().toLowerCase() === 'delete' && !_submitted) {
+      document.getElementById('confirmForm').submit();
+    }
+  }
 });
 </script>
 </body>

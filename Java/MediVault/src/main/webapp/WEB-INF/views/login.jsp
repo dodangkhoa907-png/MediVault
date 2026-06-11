@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MediVault — Đăng nhập</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -59,7 +59,7 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
 
 .left-headline{position:relative;z-index:2;margin-bottom:auto}
 .left-headline h1{
-  font-family:'DM Serif Display',serif;font-size:52px;font-weight:400;
+  font-family:'Outfit',sans-serif;font-size:52px;font-weight:400;
   color:#fff;line-height:1.1;letter-spacing:-.5px;margin-bottom:16px;
 }
 .left-headline h1 em{color:var(--cyan);font-style:italic}
@@ -88,7 +88,7 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
   font-size:12px;font-weight:600;color:var(--blue);letter-spacing:.3px;
 }
 .form-eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--cyan)}
-.form-title{font-family:'DM Serif Display',serif;font-size:30px;color:var(--ink);margin-bottom:6px}
+.form-title{font-family:'Outfit',sans-serif;font-size:30px;color:var(--ink);margin-bottom:6px}
 .form-sub{font-size:14px;color:var(--muted);margin-bottom:32px;line-height:1.5}
 
 /* Error */
@@ -217,6 +217,11 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
           <input type="password" id="pw" name="password" class="field-input" placeholder="Nhập mật khẩu" required>
           <button type="button" class="pw-toggle" id="togglePw">👁</button>
         </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+        <input type="checkbox" id="rememberMe" name="rememberMe" value="true"
+               style="width:16px;height:16px;accent-color:#1558A8;cursor:pointer">
+        <label for="rememberMe" style="font-size:13px;color:#7A90B0;cursor:pointer;user-select:none">Ghi nhớ đăng nhập (7 ngày)</label>
       </div>
       <button type="submit" class="btn-submit">Đăng nhập →</button>
     </form>
