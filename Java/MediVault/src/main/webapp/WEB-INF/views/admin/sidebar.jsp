@@ -103,12 +103,14 @@ a<%-- ════════════════════════�
   </nav>
 
   <div class="sidebar-footer">
-    <div class="user-avatar-sm">
-      <div>
-        <div class="user-info-sm"><%= fullName %></div>
-        <div class="user-info-sm">Admin</div>
-      </div>
-      <a href="${pageContext.request.contextPath}/logout" class="logout-btn" title="Đăng xuất">⏻ <span style="font-size:12px;font-weight:700;letter-spacing:.3px">Đăng xuất</span></a>
-    </div>
+    <a href="${pageContext.request.contextPath}/logout" class="logout-btn-full">
+      <span style="font-size:15px;line-height:1">⏻</span>
+      <span>Đăng xuất</span>
+    </a>
   </div>
 </aside>
+<style>
+.sidebar-footer{margin-top:13px;padding:20px 14px 16px;border-top:1px solid rgba(255,255,255,.07);flex-shrink:0}
+.logout-btn-full{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:10px 14px;border-radius:10px;background:rgba(220,38,38,.35);border:1.5px solid rgba(220,38,38,.3);color:#FF6B6B;text-decoration:none;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;letter-spacing:.3px;transition:all .2s}
+.logout-btn-full:hover{background:rgba(220,38,38,.58);color:#fff;border-color:#DC2626}
+</style>
