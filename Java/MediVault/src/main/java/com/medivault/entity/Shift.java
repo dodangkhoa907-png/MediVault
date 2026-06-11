@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 public class Shift {
     private int shiftId;
     private int accountId;
+    private String fullName;   // JOIN từ Accounts.FullName
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private BigDecimal openingCash;
@@ -41,11 +42,29 @@ public class Shift {
         };
     }
 
+    /**
+     * Tính thời lượng ca — hiển thị dạng "2g 30p" hoặc "Đang chạy Xg Yp".
+     * Dùng trực tiếp trong JSP: ${s.durationDisplay}
+     */
+    public String getDurationDisplay() {
+        java.time.LocalDateTime from = startTime;
+        java.time.LocalDateTime to   = isOpen() ? java.time.LocalDateTime.now() : endTime;
+        if (from == null || to == null) return "—";
+        long totalMinutes = java.time.temporal.ChronoUnit.MINUTES.between(from, to);
+        if (totalMinutes < 0) totalMinutes = 0;
+        long hours   = totalMinutes / 60;
+        long minutes = totalMinutes % 60;
+        String display = (hours > 0 ? hours + "g " : "") + minutes + "p";
+        return display.trim().isEmpty() ? "< 1p" : display.trim();
+    }
+
     // ── Getters & Setters ──
     public int getShiftId()                      { return shiftId; }
     public void setShiftId(int v)                { this.shiftId = v; }
     public int getAccountId()                    { return accountId; }
     public void setAccountId(int v)              { this.accountId = v; }
+    public String getFullName()                  { return fullName; }
+    public void setFullName(String v)            { this.fullName = v; }
     public LocalDateTime getStartTime()          { return startTime; }
     public void setStartTime(LocalDateTime v)    { this.startTime = v; }
     public LocalDateTime getEndTime()            { return endTime; }

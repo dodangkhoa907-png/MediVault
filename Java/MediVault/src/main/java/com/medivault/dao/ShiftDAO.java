@@ -11,10 +11,17 @@ import java.util.List;
 
 public class ShiftDAO implements IShiftDAO {
 
+    // ── Câu SQL base JOIN Accounts để lấy FullName ──────────────────────────
+    private static final String BASE_SELECT =
+            "SELECT s.*, a.FullName FROM Shifts s " +
+                    "LEFT JOIN Accounts a ON a.AccountID = s.AccountID ";
+
     private Shift mapRow(ResultSet rs) throws SQLException {
         Shift s = new Shift();
         s.setShiftId(rs.getInt("ShiftID"));
         s.setAccountId(rs.getInt("AccountID"));
+        // FullName từ JOIN — try/catch để tương thích query cũ không JOIN
+        try { s.setFullName(rs.getString("FullName")); } catch (SQLException ignored) {}
         if (rs.getTimestamp("StartTime") != null)
             s.setStartTime(rs.getTimestamp("StartTime").toLocalDateTime());
         if (rs.getTimestamp("EndTime") != null)
@@ -23,7 +30,6 @@ public class ShiftDAO implements IShiftDAO {
         s.setClosingCash(rs.getBigDecimal("ClosingCash"));
         s.setNotes(rs.getNString("Notes"));
         s.setGracePeriodMinutes(rs.getInt("GracePeriodMinutes"));
-        // ── NEW: đọc Status (nếu cột chưa tồn tại thì fallback từ EndTime) ──
         try {
             String st = rs.getString("Status");
             s.setStatus(st != null ? st : (s.getEndTime() == null ? "OPEN" : "CLOSED"));
@@ -36,7 +42,6 @@ public class ShiftDAO implements IShiftDAO {
     @Override
     public boolean openShift(int accountId, BigDecimal openingCash) {
         if (findCurrent(accountId) != null) return false;
-        // Status='OPEN' là DEFAULT nên không cần set
         String sql = "INSERT INTO Shifts (AccountID, OpeningCash) VALUES (?, ?)";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
@@ -48,7 +53,6 @@ public class ShiftDAO implements IShiftDAO {
 
     @Override
     public boolean closeShift(int shiftId, BigDecimal closingCash, String notes) {
-        // Trigger TRG_Shift_UpdateStatus tự set Status='CLOSED'
         String sql = "UPDATE Shifts SET EndTime=GETDATE(), ClosingCash=?, Notes=? " +
                 "WHERE ShiftID=? AND EndTime IS NULL";
         try (Connection cn = DBContext.getConnection();
@@ -62,7 +66,6 @@ public class ShiftDAO implements IShiftDAO {
 
     @Override
     public boolean forceClose(int shiftId, String notes) {
-        // Notes chứa "[Admin" → trigger set Status='FORCE_CLOSED'
         String sql = "UPDATE Shifts SET EndTime=GETDATE(), Notes=?, Status='FORCE_CLOSED' " +
                 "WHERE ShiftID=? AND EndTime IS NULL";
         try (Connection cn = DBContext.getConnection();
@@ -73,12 +76,11 @@ public class ShiftDAO implements IShiftDAO {
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
 
-    /** Tìm ca đang mở của nhân viên (Status='OPEN') */
     @Override
     public Shift findCurrent(int accountId) {
-        String sql = "SELECT TOP 1 * FROM Shifts " +
-                "WHERE AccountID=? AND EndTime IS NULL " +
-                "ORDER BY StartTime DESC";
+        String sql = BASE_SELECT +
+                "WHERE s.AccountID=? AND s.EndTime IS NULL " +
+                "ORDER BY s.StartTime DESC";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, accountId);
@@ -89,10 +91,9 @@ public class ShiftDAO implements IShiftDAO {
         return null;
     }
 
-    /** Tìm theo status */
     public List<Shift> findByStatus(String status) {
         List<Shift> list = new ArrayList<>();
-        String sql = "SELECT * FROM Shifts WHERE Status=? ORDER BY StartTime DESC";
+        String sql = BASE_SELECT + "WHERE s.Status=? ORDER BY s.StartTime DESC";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, status);
@@ -111,8 +112,9 @@ public class ShiftDAO implements IShiftDAO {
     @Override
     public List<Shift> findAll() {
         List<Shift> list = new ArrayList<>();
+        String sql = BASE_SELECT + "ORDER BY s.StartTime DESC";
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement("SELECT * FROM Shifts ORDER BY StartTime DESC");
+             PreparedStatement ps = cn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
         } catch (Exception e) { e.printStackTrace(); }
@@ -122,7 +124,7 @@ public class ShiftDAO implements IShiftDAO {
     @Override
     public List<Shift> findByAccount(int accountId) {
         List<Shift> list = new ArrayList<>();
-        String sql = "SELECT * FROM Shifts WHERE AccountID=? ORDER BY StartTime DESC";
+        String sql = BASE_SELECT + "WHERE s.AccountID=? ORDER BY s.StartTime DESC";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, accountId);
@@ -136,8 +138,9 @@ public class ShiftDAO implements IShiftDAO {
     @Override
     public List<Shift> findByDateRange(LocalDate from, LocalDate to) {
         List<Shift> list = new ArrayList<>();
-        String sql = "SELECT * FROM Shifts WHERE CAST(StartTime AS DATE) BETWEEN ? AND ? " +
-                "ORDER BY StartTime DESC";
+        String sql = BASE_SELECT +
+                "WHERE CAST(s.StartTime AS DATE) BETWEEN ? AND ? " +
+                "ORDER BY s.StartTime DESC";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setDate(1, Date.valueOf(from));
@@ -151,7 +154,7 @@ public class ShiftDAO implements IShiftDAO {
 
     @Override
     public Shift findById(int id) {
-        String sql = "SELECT * FROM Shifts WHERE ShiftID=?";
+        String sql = BASE_SELECT + "WHERE s.ShiftID=?";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, id);

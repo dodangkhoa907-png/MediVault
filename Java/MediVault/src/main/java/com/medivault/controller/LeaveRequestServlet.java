@@ -183,6 +183,11 @@ public class LeaveRequestServlet extends HttpServlet {
 
         req.setAttribute("staffUid", uid);
 
+        // ── Kiểm tra đang có đơn PENDING không → truyền cho JSP ──────────────
+        boolean hasPendingLeave = leaveDAO.findByAccount(staff.getAccountId()).stream()
+                .anyMatch(l -> "PENDING".equals(l.getStatus()));
+        req.setAttribute("hasPendingLeave", hasPendingLeave);
+
         if ("new".equals(action)) {
             // Form xin nghỉ — truyền thêm lịch ca để staff chọn nghỉ ca nào
             int month = LocalDate.now().getMonthValue();
@@ -239,6 +244,14 @@ public class LeaveRequestServlet extends HttpServlet {
         if (leaveDAO.existsByAccountAndDate(staff.getAccountId(), date)) {
             resp.sendRedirect(req.getContextPath()
                     + "/leave-requests?action=new&uid=" + uid + "&msg=exists"); return;
+        }
+
+        // ── BLOCK: chỉ được 1 đơn PENDING tại một thời điểm ──────────────────
+        boolean hasPending = leaveDAO.findByAccount(staff.getAccountId()).stream()
+                .anyMatch(l -> "PENDING".equals(l.getStatus()));
+        if (hasPending) {
+            resp.sendRedirect(req.getContextPath()
+                    + "/leave-requests?action=my&uid=" + uid + "&msg=has-pending"); return;
         }
 
         LeaveRequest lr = new LeaveRequest();
@@ -325,17 +338,78 @@ public class LeaveRequestServlet extends HttpServlet {
                                        boolean approved, BigDecimal deduct, String adminNote) {
         try {
             if (staff.getEmail() == null) return;
+
+            String firstName = staff.getFullName() != null
+                    ? staff.getFullName().trim().replaceAll(".*\\s", "") // lấy tên cuối (firstName)
+                    : staff.getUsername();
+
             String subject = approved
                     ? "[MediVault] ✅ Đơn nghỉ ngày " + lr.getLeaveDate() + " đã được duyệt"
                     : "[MediVault] ❌ Đơn nghỉ ngày " + lr.getLeaveDate() + " bị từ chối";
-            String body = "<h2>" + (approved ? "✅ Đơn nghỉ đã được duyệt" : "❌ Đơn nghỉ bị từ chối") + "</h2>"
-                    + "<p><b>Ngày nghỉ:</b> " + lr.getLeaveDate() + "</p>"
-                    + "<p><b>Loại:</b> " + lr.getLeaveTypeLabel() + "</p>"
-                    + (approved && deduct.compareTo(BigDecimal.ZERO) > 0
-                    ? "<p><b>Khấu trừ lương:</b> " + String.format("%,.0f", deduct) + "đ</p>" : "")
-                    + (adminNote != null && !adminNote.trim().isEmpty()
-                    ? "<p><b>Ghi chú Admin:</b> " + adminNote + "</p>" : "")
-                    + (approved ? "<p>Ca làm việc ngày này đã được cập nhật trạng thái <b>Nghỉ phép</b>.</p>" : "");
+
+            // ── Câu nhắn riêng theo loại nghỉ (khi được duyệt) ──────────────
+            String personalMsg = "";
+            if (approved) {
+                switch (lr.getLeaveType() != null ? lr.getLeaveType() : "") {
+                    case "SICK" ->
+                            personalMsg = "<p style='margin:14px 0;padding:14px 18px;background:#FFF7ED;"
+                                    + "border-left:4px solid #F59E0B;border-radius:8px;font-size:14px;color:#92400E'>"
+                                    + "🤒 <b>" + firstName + "</b> ơi, nhớ nghỉ ngơi thật nhiều và uống thuốc đúng giờ nhé! "
+                                    + "Sức khỏe là quan trọng nhất — chúc bạn mau bình phục và có một ngày tốt lành! 💪</p>";
+                    case "ANNUAL" ->
+                            personalMsg = "<p style='margin:14px 0;padding:14px 18px;background:#ECFDF5;"
+                                    + "border-left:4px solid #059669;border-radius:8px;font-size:14px;color:#065F46'>"
+                                    + "🌴 <b>" + firstName + "</b> ơi, chúc bạn có một ngày nghỉ phép thật vui vẻ và thư giãn! "
+                                    + "Nạp đầy năng lượng rồi quay lại chiến tiếp nha! 😄✨</p>";
+                    case "SUDDEN" ->
+                            personalMsg = "<p style='margin:14px 0;padding:14px 18px;background:#EFF6FF;"
+                                    + "border-left:4px solid #3B82F6;border-radius:8px;font-size:14px;color:#1E40AF'>"
+                                    + "⚡ <b>" + firstName + "</b> ơi, đơn nghỉ đột xuất của bạn đã được duyệt. "
+                                    + "Hy vọng mọi việc sẽ ổn thỏa, chúc bạn xử lý được mọi chuyện và sớm trở lại nhé! 🙏</p>";
+                    case "UNPAID" ->
+                            personalMsg = "<p style='margin:14px 0;padding:14px 18px;background:#F5F3FF;"
+                                    + "border-left:4px solid #7C3AED;border-radius:8px;font-size:14px;color:#5B21B6'>"
+                                    + "💼 <b>" + firstName + "</b> ơi, đơn nghỉ không lương đã được ghi nhận. "
+                                    + "Dù không có lương hôm đó nhưng hi vọng thời gian nghỉ sẽ giúp bạn sắp xếp được mọi việc. "
+                                    + "Quay lại làm việc thật khoẻ nhé! 💜</p>";
+                    default ->
+                            personalMsg = "<p style='margin:14px 0;font-size:14px;color:#374151'>"
+                                    + "Chúc bạn có một ngày nghỉ thật tốt lành, " + firstName + "! 😊</p>";
+                }
+            }
+
+            String body =
+                    "<div style='font-family:\"Outfit\",sans-serif;max-width:520px;margin:0 auto;"
+                            + "background:#fff;border-radius:14px;overflow:hidden;border:1px solid #E5E7EB'>"
+                            + "<div style='padding:24px 28px;background:linear-gradient(135deg,#1558A8,#3ABDE0)'>"
+                            + "<div style='font-size:22px;font-weight:800;color:#fff;letter-spacing:-.3px'>💊 MediVault</div>"
+                            + "<div style='font-size:12px;color:rgba(255,255,255,.65);margin-top:3px;letter-spacing:1px;text-transform:uppercase'>"
+                            + (approved ? "Thông báo duyệt đơn nghỉ" : "Thông báo từ chối đơn nghỉ")
+                            + "</div></div>"
+                            + "<div style='padding:24px 28px'>"
+                            + "<h2 style='font-size:18px;font-weight:800;color:#0B1628;margin-bottom:4px'>"
+                            + (approved ? "✅ Đơn nghỉ của bạn đã được duyệt!" : "❌ Đơn nghỉ của bạn bị từ chối")
+                            + "</h2>"
+                            + "<p style='font-size:13px;color:#7A90B0;margin-bottom:18px'>Ngày " + lr.getLeaveDate() + "</p>"
+                            + "<table style='width:100%;border-collapse:collapse;margin-bottom:16px'>"
+                            + "<tr><td style='padding:8px 12px;background:#F8FAFC;font-size:12px;font-weight:700;color:#7A90B0;width:120px;border-radius:6px 0 0 6px'>Loại nghỉ</td>"
+                            + "<td style='padding:8px 12px;font-size:13px;font-weight:600;color:#0B1628'>" + lr.getLeaveTypeLabel() + "</td></tr>"
+                            + "<tr><td style='padding:8px 12px;background:#F8FAFC;font-size:12px;font-weight:700;color:#7A90B0'>Ngày nghỉ</td>"
+                            + "<td style='padding:8px 12px;font-size:13px;font-weight:600;color:#0B1628'>" + lr.getLeaveDate() + "</td></tr>"
+                            + (approved && deduct != null && deduct.compareTo(BigDecimal.ZERO) > 0
+                            ? "<tr><td style='padding:8px 12px;background:#FEF2F2;font-size:12px;font-weight:700;color:#991B1B'>Khấu trừ</td>"
+                              + "<td style='padding:8px 12px;font-size:13px;font-weight:700;color:#DC2626'>"
+                              + String.format("%,.0f", deduct) + "đ</td></tr>" : "")
+                            + (adminNote != null && !adminNote.trim().isEmpty()
+                            ? "<tr><td style='padding:8px 12px;background:#F8FAFC;font-size:12px;font-weight:700;color:#7A90B0'>Ghi chú</td>"
+                              + "<td style='padding:8px 12px;font-size:13px;color:#374151'>" + adminNote + "</td></tr>" : "")
+                            + "</table>"
+                            + personalMsg
+                            + "</div>"
+                            + "<div style='padding:14px 28px;background:#F8FAFC;font-size:11px;color:#B0BEC5;text-align:center;border-top:1px solid #E5E7EB'>"
+                            + "MediVault · Hệ thống quản lý nhà thuốc</div>"
+                            + "</div>";
+
             EmailUtil.sendEmail(staff.getEmail(), subject, body);
         } catch (Exception ignored) {}
     }

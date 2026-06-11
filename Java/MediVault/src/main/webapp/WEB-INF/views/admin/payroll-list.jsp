@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<% String activeNav = "payroll"; %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
@@ -60,25 +61,7 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
 .toast{position:fixed;top:20px;right:24px;padding:12px 20px;border-radius:11px;font-size:13px;font-weight:700;color:#fff;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.15);animation:slideIn .3s ease}
 .toast-ok{background:#059669}.toast-err{background:#DC2626}.toast-info{background:#1558A8}
 @keyframes slideIn{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
-</style></head><body><aside class="sidebar">
-  <div class="sidebar-logo"><div class="logo-icon">💊</div><div><div class="logo-text">Medi<span>Vault</span></div><div class="logo-sub">Admin Console</div></div></div>
-  <nav class="nav-section"><div class="nav-label">Nhân sự</div>
-    <a href="${pageContext.request.contextPath}/shift-schedules" class="nav-item">📅 Lịch ca</a>
-    <a href="${pageContext.request.contextPath}/attendance"      class="nav-item ">✅ Điểm danh</a>
-    <a href="${pageContext.request.contextPath}/leave-requests"  class="nav-item ">🏖️ Nghỉ phép</a>
-    <a href="${pageContext.request.contextPath}/payroll"         class="nav-item active">💰 Bảng lương</a>
-  </nav>
-  <nav class="nav-section"><div class="nav-label">Quản lý</div>
-    <a href="${pageContext.request.contextPath}/accounts"  class="nav-item">👤 Tài khoản</a>
-    <a href="${pageContext.request.contextPath}/medicines" class="nav-item">💊 Kho thuốc</a>
-    <a href="${pageContext.request.contextPath}/invoices"  class="nav-item">🧾 Hóa đơn</a>
-  </nav>
-  <div class="sidebar-footer"><div class="sidebar-user">
-    <div class="user-av"><%= initials %></div>
-    <div><div class="user-name"><%= fullName %></div><div class="user-role">Admin</div></div>
-    <a href="${pageContext.request.contextPath}/logout" class="logout-btn">⏻</a>
-  </div></div>
-</aside><div class="main">  <c:if test="${not empty param.msg}">
+</style></head><body><%@ include file="/WEB-INF/views/admin/sidebar.jsp" %><div class="main">  <c:if test="${not empty param.msg}">
     <c:choose>
       <c:when test="${param.msg=='approved'}"><div class="toast toast-ok" id="toast">✅ Đã duyệt đơn nghỉ!</div></c:when>
       <c:when test="${param.msg=='rejected'}"><div class="toast toast-info" id="toast">❌ Đã từ chối đơn.</div></c:when>

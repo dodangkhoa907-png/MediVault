@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<% String activeNav = "shifts"; %>
 <%@ taglib prefix="c"  uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
@@ -100,56 +101,7 @@ tbody tr:hover td{background:#F8F5FF}
 </head>
 <body>
 
-<aside class="sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-gem">💊</div>
-    <div>
-      <div class="logo-name">Medi<span>Vault</span></div>
-      <div class="logo-sub">Staff Portal</div>
-    </div>
-  </div>
-
-  <nav class="nav-block">
-    <div class="nav-label">Tổng quan</div>
-    <a href="${pageContext.request.contextPath}/staff-dashboard?uid=<%= uid %>" class="nav-item">
-      <span class="nav-icon">🏠</span> Trang chủ
-    </a>
-  </nav>
-
-  <nav class="nav-block">
-    <div class="nav-label">Cá nhân</div>
-    <a href="${pageContext.request.contextPath}/staff-profile?uid=<%= uid %>"   class="nav-item">
-      <span class="nav-icon">👤</span> Hồ sơ của tôi
-    </a>
-    <a href="${pageContext.request.contextPath}/staff-checkin?uid=<%= uid %>"   class="nav-item">
-      <span class="nav-icon">✅</span> Điểm danh
-    </a>
-    <a href="${pageContext.request.contextPath}/staff-my-shifts?uid=<%= uid %>" class="nav-item">
-      <span class="nav-icon">🕐</span> Ca làm việc
-    </a>
-    <a href="${pageContext.request.contextPath}/leave-requests?action=my&uid=<%= uid %>" class="nav-item active">
-      <span class="nav-icon">🏖️</span> Xin nghỉ phép
-    </a>
-  </nav>
-
-  <nav class="nav-block">
-    <div class="nav-label">Bán hàng</div>
-    <a href="${pageContext.request.contextPath}/pos?uid=<%= uid %>" class="nav-item">
-      <span class="nav-icon">🛒</span> Bán thuốc (POS)
-    </a>
-  </nav>
-
-  <div class="sidebar-footer">
-    <div class="user-card">
-      <div class="user-av"><%= sInit %></div>
-      <div style="min-width:0">
-        <div class="user-name"><%= sName %></div>
-        <div class="user-role"><%= sRoleName %></div>
-      </div>
-      <a href="${pageContext.request.contextPath}/logout?from=staff&uid=<%= uid %>" class="logout-btn" title="Đăng xuất">⏻</a>
-    </div>
-  </div>
-</aside>
+<%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
 
 <div class="main">
   <%-- Toast --%>

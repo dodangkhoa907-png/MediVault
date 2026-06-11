@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
+<% String activeNav = "medicines"; %>
 <%@ taglib prefix="c"   uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%
@@ -102,37 +103,7 @@ tbody tr:hover td{background:#FAFBFF}
 <% } else if ("batch-has-stock".equals(msg)) { %><div class="toast toast-err">⚠️ Không thể xóa — lô này còn hàng!</div>
 <% } %>
 
-<aside class="sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-icon">💊</div>
-    <div><div class="logo-text">MediVault</div><div class="logo-sub">Admin Console</div></div>
-  </div>
-  <nav class="nav-section">
-    <div class="nav-label">Tổng quan</div>
-    <a href="${pageContext.request.contextPath}/dashboard" class="nav-item"><span>🏠</span> Trang chủ</a>
-  </nav>
-  <nav class="nav-section">
-    <div class="nav-label">Quản lý</div>
-    <a href="${pageContext.request.contextPath}/accounts" class="nav-item"><span>👤</span> Tài khoản</a>
-    <a href="${pageContext.request.contextPath}/shifts" class="nav-item"><span>🕐</span> Ca làm việc</a>
-    <a href="${pageContext.request.contextPath}/medicines" class="nav-item active"><span>💊</span> Kho thuốc</a>
-    <a href="${pageContext.request.contextPath}/invoices" class="nav-item"><span>🧾</span> Hóa đơn</a>
-    <a href="${pageContext.request.contextPath}/customers" class="nav-item"><span>👥</span> Khách hàng</a>
-    <a href="${pageContext.request.contextPath}/returns" class="nav-item"><span>↩️</span> Trả hàng</a>
-  </nav>
-  <nav class="nav-section">
-    <div class="nav-label">Phân tích</div>
-    <a href="${pageContext.request.contextPath}/audit-logs" class="nav-item"><span>📋</span> Nhật ký</a>
-    <a href="${pageContext.request.contextPath}/reports" class="nav-item"><span>📊</span> Báo cáo</a>
-  </nav>
-  <div class="sidebar-footer">
-    <div class="sidebar-user">
-      <div class="user-av"><%= initials %></div>
-      <div><div class="user-name"><%= fullName %></div><div class="user-role">Admin</div></div>
-      <a href="${pageContext.request.contextPath}/logout" class="logout-btn">⏻</a>
-    </div>
-  </div>
-</aside>
+<%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
 
 <div class="main">
   <div class="topbar">

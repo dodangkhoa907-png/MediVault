@@ -2,11 +2,13 @@ package com.medivault.controller.admin;
 
 import com.medivault.dao.AccountDAO;
 import com.medivault.dao.InvoiceDAO;
+import com.medivault.dao.LeaveRequestDAO;
 import com.medivault.dao.ShiftDAO;
 import com.medivault.dao.ShiftScheduleDAO;
 import com.medivault.dao.ShiftTypeDAO;
 import com.medivault.dao.interfaces.IAccountDAO;
 import com.medivault.dao.interfaces.IInvoiceDAO;
+import com.medivault.dao.interfaces.ILeaveRequestDAO;
 import com.medivault.dao.interfaces.IShiftDAO;
 import com.medivault.dao.interfaces.IShiftScheduleDAO;
 import com.medivault.dao.interfaces.IShiftTypeDAO;
@@ -31,6 +33,7 @@ public class ShiftServlet extends HttpServlet {
     private final IInvoiceDAO       invoiceDAO  = new InvoiceDAO();
     private final IShiftScheduleDAO scheduleDAO = new ShiftScheduleDAO();
     private final IShiftTypeDAO     shiftTypeDAO = new ShiftTypeDAO();
+    private final ILeaveRequestDAO  leaveDAO    = new LeaveRequestDAO();
 
     // ── GET ───────────────────────────────────────────────────────────────────
     @Override
@@ -183,6 +186,11 @@ public class ShiftServlet extends HttpServlet {
         req.setAttribute("schedules",    weekSchedules);
         // ── Dữ liệu cho Tab Loại ca ──────────────────────────────────────────
         req.setAttribute("shiftTypes",   shiftTypeDAO.findAll());
+
+        // ── Dữ liệu cho Tab Nghỉ phép ────────────────────────────────────────
+        java.util.List<com.medivault.entity.LeaveRequest> pendingLeaves = leaveDAO.findPending();
+        req.setAttribute("pendingLeaves",     pendingLeaves);
+        req.setAttribute("pendingLeaveCount", pendingLeaves.size());
 
         // Navbar badges (giống các servlet khác)
         loadNavbarData(req);

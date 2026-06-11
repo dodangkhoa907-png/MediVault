@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<% String activeNav = "shifts"; %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%
     com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("adminAccount");
@@ -76,27 +77,7 @@ body{display:flex}
 .btn-cancel:hover{border-color:#DC2626;color:#DC2626}
 </style></head>
 <body>
-<aside class="sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-icon">💊</div>
-    <div><div class="logo-text">Medi<span>Vault</span></div><div class="logo-sub">Admin Console</div></div>
-  </div>
-  <nav class="nav-section">
-    <div class="nav-label">Quản lý</div>
-    <a href="${pageContext.request.contextPath}/shifts"          class="nav-item">🕐 Ca làm việc</a>
-    <a href="${pageContext.request.contextPath}/shift-schedules" class="nav-item active">📅 Lịch ca</a>
-    <a href="${pageContext.request.contextPath}/attendance"      class="nav-item">✅ Điểm danh</a>
-    <a href="${pageContext.request.contextPath}/leave-requests"  class="nav-item">🏖️ Nghỉ phép</a>
-    <a href="${pageContext.request.contextPath}/payroll"         class="nav-item">💰 Bảng lương</a>
-  </nav>
-  <div class="sidebar-footer">
-    <div class="sidebar-user">
-      <div class="user-av"><%= initials %></div>
-      <div><div class="user-name"><%= fullName %></div><div class="user-role">Admin</div></div>
-      <a href="${pageContext.request.contextPath}/logout" class="logout-btn">⏻</a>
-    </div>
-  </div>
-</aside>
+<%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
 
 <div class="main">
   <header class="topbar">

@@ -175,9 +175,13 @@ public class AuthFilter implements Filter {
         }
 
         // ── 4. Xử lý login page redirect ──
-        if (uri.equals(ctx + "/login")) {
-            if (adminAcc != null) { resp.sendRedirect(ctx + "/dashboard"); return; }
-            chain.doFilter(request, response); return;
+        if (uri.equals(ctx + "/") || uri.equals(ctx)) {
+            if (adminAcc != null) {
+                resp.sendRedirect(ctx + "/login");
+            } else if (staffAcc != null) {
+                resp.sendRedirect(ctx + "/staff-dashboard?uid=" + staffAcc.getAccountId());
+            }
+            return; // Chặn lại không cho chạy tiếp xuống dưới
         }
         if (uri.equals(ctx + "/staff-login")) {
             // Không redirect nếu đang ở staff-login (cho phép login staff mới)

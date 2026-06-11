@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
+<% String activeNav = "dashboard"; %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
@@ -357,70 +358,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 <body>
 
 <!-- ───────── SIDEBAR ───────── -->
-<aside class="sidebar">
-    <div class="sidebar-logo">
-        <div class="logo-icon">💊</div>
-        <div>
-            <div class="logo-text">Medi<span>Vault</span></div>
-            <div class="logo-sub">Admin Console</div>
-        </div>
-    </div>
-
-    <nav class="nav-section">
-        <div class="nav-label">Tổng quan</div>
-        <a href="${pageContext.request.contextPath}/dashboard" class="nav-item active">
-            <span class="nav-icon">🏠</span> Trang chủ
-        </a>
-    </nav>
-
-    <nav class="nav-section">
-        <div class="nav-label">Quản lý</div>
-        <a href="${pageContext.request.contextPath}/accounts" class="nav-item">
-            <span class="nav-icon">👤</span> Tài khoản
-        </a>
-        <a href="${pageContext.request.contextPath}/shifts" class="nav-item">
-            <span class="nav-icon">🕐</span> Ca làm việc
-        </a>
-        <a href="${pageContext.request.contextPath}/medicines" class="nav-item">
-            <span class="nav-icon">💊</span> Kho thuốc
-            <% if (expiryCount > 0) { %>
-            <span class="nav-badge"><%= expiryCount %></span>
-            <% } %>
-        </a>
-        <a href="${pageContext.request.contextPath}/invoices" class="nav-item">
-            <span class="nav-icon">🧾</span> Hóa đơn
-        </a>
-        <a href="${pageContext.request.contextPath}/customers" class="nav-item">
-            <span class="nav-icon">👥</span> Khách hàng
-        </a>
-        <a href="${pageContext.request.contextPath}/returns" class="nav-item">
-            <span class="nav-icon">↩️</span> Trả hàng
-        </a>
-    </nav>
-
-    <nav class="nav-section">
-        <div class="nav-label">Phân tích</div>
-        <a href="${pageContext.request.contextPath}/audit-logs" class="nav-item">
-            <span class="nav-icon">📋</span> Nhật ký
-        </a>
-        <a href="${pageContext.request.contextPath}/reports" class="nav-item">
-            <span class="nav-icon">📊</span> Báo cáo
-        </a>
-    </nav>
-
-    <div class="sidebar-footer">
-        <div class="sidebar-user">
-            <div class="user-avatar-sm"><%= initials %></div>
-            <div class="user-info-sm">
-                <div class="name"><%= fullName %></div>
-                <div class="role">
-                    <% if (roleId == 1) { %>Admin<% } else if (roleId == 2) { %>Dược sĩ<% } else { %>Thủ kho<% } %>
-                </div>
-            </div>
-            <a href="${pageContext.request.contextPath}/logout" class="logout-btn" title="Đăng xuất">⏻</a>
-        </div>
-    </div>
-</aside>
+<%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
 
 <!-- ───────── MAIN ───────── -->
 <div class="main">

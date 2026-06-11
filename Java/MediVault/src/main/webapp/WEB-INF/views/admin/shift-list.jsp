@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<% String activeNav = "shifts"; %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%@ taglib prefix="fn"  uri="jakarta.tags.functions" %>
@@ -333,43 +334,7 @@ tbody tr:hover td{background:#F7FBFF}
 <body>
 
 <%-- ── SIDEBAR ── --%>
-<aside class="sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-icon">💊</div>
-    <div>
-      <div class="logo-text">Medi<span>Vault</span></div>
-      <div class="logo-sub">Admin Console</div>
-    </div>
-  </div>
-  <nav>
-    <div class="nav-section">
-      <div class="nav-label">Tổng quan</div>
-      <a href="${pageContext.request.contextPath}/dashboard" class="nav-item">🏠 Trang chủ</a>
-    </div>
-    <div class="nav-section">
-      <div class="nav-label">Quản lý</div>
-      <a href="${pageContext.request.contextPath}/accounts" class="nav-item">👥 Tài khoản</a>
-      <a href="${pageContext.request.contextPath}/shifts" class="nav-item active">🕐 Ca làm việc</a>
-      <a href="${pageContext.request.contextPath}/medicines" class="nav-item">💊 Kho thuốc</a>
-      <a href="${pageContext.request.contextPath}/invoices" class="nav-item">🧾 Hóa đơn</a>
-      <a href="${pageContext.request.contextPath}/customers" class="nav-item">🛒 Khách hàng</a>
-    </div>
-    <div class="nav-section">
-      <div class="nav-label">Phân tích</div>
-      <a href="${pageContext.request.contextPath}/audit-logs" class="nav-item">📋 Nhật ký</a>
-    </div>
-  </nav>
-  <div class="sidebar-footer">
-    <div class="sidebar-user">
-      <div class="user-av"><%= initials %></div>
-      <div>
-        <div class="user-name"><%= fullName %></div>
-        <div class="user-role">Admin</div>
-      </div>
-      <a href="${pageContext.request.contextPath}/logout" class="logout-btn" title="Đăng xuất">⏻</a>
-    </div>
-  </div>
-</aside>
+<%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
 
 <%-- ── MAIN ── --%>
 <div class="main">

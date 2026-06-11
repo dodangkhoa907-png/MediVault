@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<% String activeNav = "shifts"; %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
@@ -104,41 +105,7 @@ body{display:flex}
 </style>
 </head>
 <body>
-<aside class="sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-icon">💊</div>
-    <div><div class="logo-text">Medi<span>Vault</span></div><div class="logo-sub">Admin Console</div></div>
-  </div>
-  <nav class="nav-section">
-    <div class="nav-label">Tổng quan</div>
-    <a href="${pageContext.request.contextPath}/dashboard" class="nav-item">🏠 Trang chủ</a>
-  </nav>
-  <nav class="nav-section">
-    <div class="nav-label">Quản lý</div>
-    <a href="${pageContext.request.contextPath}/accounts"         class="nav-item">👤 Tài khoản</a>
-    <a href="${pageContext.request.contextPath}/shifts"           class="nav-item">🕐 Ca làm việc</a>
-    <a href="${pageContext.request.contextPath}/shift-schedules"  class="nav-item active">📅 Lịch ca</a>
-    <a href="${pageContext.request.contextPath}/attendance"       class="nav-item">✅ Điểm danh</a>
-    <a href="${pageContext.request.contextPath}/leave-requests"   class="nav-item">🏖️ Nghỉ phép
-      <c:if test="${pendingLeaveCount > 0}"><span style="margin-left:auto;background:#DC2626;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px">${pendingLeaveCount}</span></c:if>
-    </a>
-    <a href="${pageContext.request.contextPath}/payroll"          class="nav-item">💰 Bảng lương</a>
-    <a href="${pageContext.request.contextPath}/medicines"        class="nav-item">💊 Kho thuốc</a>
-    <a href="${pageContext.request.contextPath}/invoices"         class="nav-item">🧾 Hóa đơn</a>
-  </nav>
-  <nav class="nav-section">
-    <div class="nav-label">Phân tích</div>
-    <a href="${pageContext.request.contextPath}/audit-logs" class="nav-item">📋 Nhật ký</a>
-    <a href="${pageContext.request.contextPath}/reports"    class="nav-item">📊 Báo cáo</a>
-  </nav>
-  <div class="sidebar-footer">
-    <div class="sidebar-user">
-      <div class="user-av"><%= initials %></div>
-      <div><div class="user-name"><%= fullName %></div><div class="user-role">Admin</div></div>
-      <a href="${pageContext.request.contextPath}/logout" class="logout-btn">⏻</a>
-    </div>
-  </div>
-</aside>
+<%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
 
 <div class="main">
   <c:if test="${not empty param.msg}">

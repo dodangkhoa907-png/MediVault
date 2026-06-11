@@ -79,6 +79,7 @@ h2{font-family:'DM Serif Display',serif;font-size:24px;color:var(--ink);margin-b
 
   <form method="get" action="${pageContext.request.contextPath}/accounts" id="confirmForm">
     <input type="hidden" name="action" value="delete-otp-page">
+    <input type="hidden" name="id" value="<%= delTarget.getAccountId() %>">
     <label class="field-label">Nhập <strong>"delete"</strong> để tiếp tục</label>
     <input type="text" id="confirmInput" class="field-input"
            placeholder="delete" autocomplete="off" oninput="checkInput(this)">
