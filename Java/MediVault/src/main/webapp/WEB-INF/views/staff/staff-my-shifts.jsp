@@ -2,14 +2,14 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%
-    com.medivault.entity.Account acc =
-        (com.medivault.entity.Account) session.getAttribute("adminAccount");
+    com.medicare.entity.Account acc =
+        (com.medicare.entity.Account) session.getAttribute("adminAccount");
     String uid = request.getParameter("uid");
 
     // Auth: staff phải đăng nhập qua staffAccount_uid
-    com.medivault.entity.Account staffAcc = null;
+    com.medicare.entity.Account staffAcc = null;
     if (uid != null && !uid.isEmpty() && session != null)
-        staffAcc = (com.medivault.entity.Account) session.getAttribute("staffAccount_" + uid);
+        staffAcc = (com.medicare.entity.Account) session.getAttribute("staffAccount_" + uid);
     if (staffAcc == null) { response.sendRedirect(request.getContextPath() + "/staff-login"); return; }
     if (staffAcc.getRoleId() == 1) { response.sendRedirect(request.getContextPath() + "/dashboard"); return; }
 
@@ -19,10 +19,10 @@
         : dn.toUpperCase();
     java.lang.String roleName = staffAcc.getRoleId() == 2 ? "Dược sĩ bán hàng" : "Thủ kho";
 
-    com.medivault.entity.Shift currentShift  = (com.medivault.entity.Shift)  request.getAttribute("currentShift");
+    com.medicare.entity.Shift currentShift  = (com.medicare.entity.Shift)  request.getAttribute("currentShift");
     @SuppressWarnings("unchecked")
-    java.util.List<com.medivault.entity.Shift> allShifts =
-        (java.util.List<com.medivault.entity.Shift>) request.getAttribute("allShifts");
+    java.util.List<com.medicare.entity.Shift> allShifts =
+        (java.util.List<com.medicare.entity.Shift>) request.getAttribute("allShifts");
     if (allShifts == null) allShifts = new java.util.ArrayList<>();
 
     java.lang.String msg = request.getParameter("msg");
@@ -32,7 +32,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ca làm việc của tôi — MediVault</title>
+<title>Ca làm việc của tôi — medicare</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -260,7 +260,7 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
 
   <div class="content">
     <div class="page-head">
-      <div class="breadcrumb">MediVault › Ca làm việc</div>
+      <div class="breadcrumb">medicare › Ca làm việc</div>
       <h1>Ca làm việc của tôi</h1>
     </div>
 
@@ -373,7 +373,7 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
             </td></tr>
             <% } else {
                java.time.format.DateTimeFormatter dtfFull = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-               for (com.medivault.entity.Shift s : allShifts) {
+               for (com.medicare.entity.Shift s : allShifts) {
                    boolean isOpen = (s.getEndTime() == null);
                    java.lang.String dur = "—";
                    if (s.getStartTime() != null && s.getEndTime() != null) {

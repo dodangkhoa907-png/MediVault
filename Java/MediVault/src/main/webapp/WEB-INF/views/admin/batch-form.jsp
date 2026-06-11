@@ -1,13 +1,13 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%
-    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("adminAccount");
+    com.medicare.entity.Account acc = (com.medicare.entity.Account) session.getAttribute("adminAccount");
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/login"); return; }
     String fullName = acc.getFullName() != null ? acc.getFullName() : acc.getUsername();
     String initials = fullName.length() >= 2
         ? fullName.substring(0,1).toUpperCase() + fullName.substring(1,2).toUpperCase()
         : fullName.toUpperCase();
-    com.medivault.entity.Batches b = (com.medivault.entity.Batches) request.getAttribute("batch");
+    com.medicare.entity.Batches b = (com.medicare.entity.Batches) request.getAttribute("batch");
     boolean isNew = (b == null || b.getBatchId() == 0);
 %>
 <!DOCTYPE html>
@@ -15,7 +15,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title><%= isNew ? "Nhập lô mới" : "Sửa lô hàng" %> — MediVault</title>
+<title><%= isNew ? "Nhập lô mới" : "Sửa lô hàng" %> — medicare</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <style>

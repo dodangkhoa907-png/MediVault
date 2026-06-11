@@ -5,7 +5,7 @@
 <%
     String uid = request.getParameter("uid");
     if (uid == null || uid.isEmpty()) { response.sendRedirect(request.getContextPath()+"/staff-login"); return; }
-    com.medivault.entity.Account staffAcc = (com.medivault.entity.Account) session.getAttribute("staffAccount_"+uid);
+    com.medicare.entity.Account staffAcc = (com.medicare.entity.Account) session.getAttribute("staffAccount_"+uid);
     if (staffAcc == null) { response.sendRedirect(request.getContextPath()+"/staff-login"); return; }
     String sName     = staffAcc.getFullName() != null ? staffAcc.getFullName() : staffAcc.getUsername();
     String sInit     = sName.length()>=2 ? sName.substring(0,1).toUpperCase()+sName.substring(1,2).toUpperCase() : sName.toUpperCase();
@@ -17,7 +17,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="ctx" content="${pageContext.request.contextPath}">
-<title>Đơn nghỉ của tôi — MediVault</title>
+<title>Đơn nghỉ của tôi — medicare</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}

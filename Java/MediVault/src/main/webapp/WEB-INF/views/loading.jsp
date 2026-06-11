@@ -101,7 +101,7 @@
     <div class="mv-load-logo">
       <div class="mv-load-icon">💊</div>
       <div>
-        <div class="mv-load-name">MediVault</div>
+        <div class="mv-load-name">medicare</div>
         <div class="mv-load-sub">Đang tải...</div>
       </div>
     </div>

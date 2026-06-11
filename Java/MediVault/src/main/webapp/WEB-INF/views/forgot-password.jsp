@@ -10,7 +10,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>MediVault — Quên mật khẩu</title>
+<title>medicare — Quên mật khẩu</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -215,7 +215,7 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
     <div class="brand-badge">
       <div class="brand-badge-icon">💊</div>
       <div>
-        <div class="brand-name">MediVault</div>
+        <div class="brand-name">medicare</div>
         <div class="brand-tag">Nhân viên</div>
       </div>
     </div>

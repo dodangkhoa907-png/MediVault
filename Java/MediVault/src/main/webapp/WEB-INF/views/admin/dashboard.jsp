@@ -4,7 +4,7 @@
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
-    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("adminAccount");
+    com.medicare.entity.Account acc = (com.medicare.entity.Account) session.getAttribute("adminAccount");
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/login"); return; }
     int roleId = acc.getRoleId();
     java.lang.String fullName = acc.getFullName() != null ? acc.getFullName() : acc.getUsername();
@@ -28,19 +28,19 @@
 
     // Pending reset requests — từ DashboardServlet
     @SuppressWarnings("unchecked")
-    java.util.List<com.medivault.entity.PasswordResetRequest> pendingResets =
-        (java.util.List<com.medivault.entity.PasswordResetRequest>) request.getAttribute("pendingResets");
+    java.util.List<com.medicare.entity.PasswordResetRequest> pendingResets =
+        (java.util.List<com.medicare.entity.PasswordResetRequest>) request.getAttribute("pendingResets");
     @SuppressWarnings("unchecked")
-    java.util.Map<Integer, com.medivault.entity.Account> resetAccountMap =
-        (java.util.Map<Integer, com.medivault.entity.Account>) request.getAttribute("resetAccountMap");
+    java.util.Map<Integer, com.medicare.entity.Account> resetAccountMap =
+        (java.util.Map<Integer, com.medicare.entity.Account>) request.getAttribute("resetAccountMap");
     Integer pendingResetCount = (Integer) request.getAttribute("pendingResetCount");
     if (pendingResets     == null) pendingResets     = new java.util.ArrayList<>();
     if (resetAccountMap   == null) resetAccountMap   = new java.util.HashMap<>();
     if (pendingResetCount == null) pendingResetCount = 0;
 
     @SuppressWarnings("unchecked")
-    java.util.Map<Integer, com.medivault.entity.Account> blockedMap =
-        (java.util.Map<Integer, com.medivault.entity.Account>) request.getAttribute("blockedAccountMap");
+    java.util.Map<Integer, com.medicare.entity.Account> blockedMap =
+        (java.util.Map<Integer, com.medicare.entity.Account>) request.getAttribute("blockedAccountMap");
     if (blockedMap == null) blockedMap = new java.util.HashMap<>();
 %>
 
@@ -49,7 +49,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediVault — Dashboard</title>
+    <title>medicare — Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -391,8 +391,8 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                     </div>
                     <div class="notif-list" id="notifList">
                         <%-- ── Blocked accounts (quá 3 lần forgot-password hôm nay) ── --%>
-                        <% for (java.util.Map.Entry<Integer, com.medivault.entity.Account> bEntry : blockedMap.entrySet()) {
-                               com.medivault.entity.Account bAcc = bEntry.getValue(); %>
+                        <% for (java.util.Map.Entry<Integer, com.medicare.entity.Account> bEntry : blockedMap.entrySet()) {
+                               com.medicare.entity.Account bAcc = bEntry.getValue(); %>
                         <div class="notif-item" style="background:rgba(220,38,38,.04);border-left:3px solid #DC2626">
                           <div class="notif-dot" style="background:#DC2626;animation:pulseDot 1.8s ease-in-out infinite"></div>
                           <div style="flex:1">
@@ -407,8 +407,8 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                         <% } %>
 
                         <%-- ── Reset requests — hiện đầu tiên, ưu tiên cao nhất ── --%>
-                        <% for (com.medivault.entity.PasswordResetRequest pr : pendingResets) {
-                               com.medivault.entity.Account staffPr = resetAccountMap.get(pr.getAccountId());
+                        <% for (com.medicare.entity.PasswordResetRequest pr : pendingResets) {
+                               com.medicare.entity.Account staffPr = resetAccountMap.get(pr.getAccountId());
                                String staffPrName = staffPr != null ? staffPr.getFullName() : ("ID " + pr.getAccountId());
                                String staffPrUser = staffPr != null ? staffPr.getUsername() : "";
                                String editUrl = request.getContextPath() + "/accounts?action=edit&id=" + pr.getAccountId();
@@ -453,7 +453,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
         <!-- Page heading -->
         <div class="page-head">
             <div class="page-head-left">
-                <div class="breadcrumb">MediVault › Trang chủ</div>
+                <div class="breadcrumb">medicare › Trang chủ</div>
                 <h1>Dashboard</h1>
             </div>
             <div style="display:flex;gap:10px;align-items:center">

@@ -3,15 +3,15 @@
 <%@ taglib prefix="c"   uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%
-    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("adminAccount");
+    com.medicare.entity.Account acc = (com.medicare.entity.Account) session.getAttribute("adminAccount");
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/login"); return; }
     if (acc.getRoleId() != 1) { response.sendRedirect(request.getContextPath() + "/dashboard"); return; }
 
-    com.medivault.entity.Account a = (com.medivault.entity.Account) request.getAttribute("account");
+    com.medicare.entity.Account a = (com.medicare.entity.Account) request.getAttribute("account");
     if (a == null) { response.sendRedirect(request.getContextPath() + "/accounts"); return; }
 
-    com.medivault.entity.PasswordResetRequest pendingReset =
-        (com.medivault.entity.PasswordResetRequest) request.getAttribute("pendingReset");
+    com.medicare.entity.PasswordResetRequest pendingReset =
+        (com.medicare.entity.PasswordResetRequest) request.getAttribute("pendingReset");
     boolean hasPendingReset = pendingReset != null;
 
     java.lang.String fullName = acc.getFullName() != null ? acc.getFullName() : acc.getUsername();
@@ -30,7 +30,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title><%= dn %> — Chi tiết — MediVault</title>
+<title><%= dn %> — Chi tiết — medicare</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -308,7 +308,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
   <div class="content">
     <div class="page-head">
       <div class="page-head-left">
-        <div class="breadcrumb">MediVault › Tài khoản › Chi tiết</div>
+        <div class="breadcrumb">medicare › Tài khoản › Chi tiết</div>
         <h1><%= dn %></h1>
       </div>
       <div class="head-actions">

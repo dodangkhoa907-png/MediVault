@@ -1,6 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%
-    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("staffAccount");
+    com.medicare.entity.Account acc = (com.medicare.entity.Account) session.getAttribute("staffAccount");
     if (acc != null) { response.sendRedirect(request.getContextPath() + "/staff-dashboard"); return; }
     String error           = (String)  request.getAttribute("error");
     // lockedForReset CHỈ được set từ StaffLoginServlet khi đúng tài khoản đó cố đăng nhập
@@ -18,7 +18,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>MediVault — Đăng nhập nhân viên</title>
+<title>medicare — Đăng nhập nhân viên</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -202,7 +202,7 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
     <div class="brand-badge">
       <div class="brand-badge-icon">💊</div>
       <div>
-        <div class="brand-name">MediVault</div>
+        <div class="brand-name">medicare</div>
         <div class="brand-tag">Nhân viên</div>
       </div>
     </div>

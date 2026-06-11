@@ -2,14 +2,14 @@
 <% String activeNav = "shifts"; %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%
-    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("adminAccount");
+    com.medicare.entity.Account acc = (com.medicare.entity.Account) session.getAttribute("adminAccount");
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/login"); return; }
     String fullName = acc.getFullName() != null ? acc.getFullName() : acc.getUsername();
     String initials = fullName.length()>=2 ? fullName.substring(0,1).toUpperCase()+fullName.substring(1,2).toUpperCase() : fullName.toUpperCase();
 %>
 <!DOCTYPE html><html lang="vi"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Xếp ca — MediVault</title>
+<title>Xếp ca — medicare</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}

@@ -10,13 +10,13 @@
         _staffUid = (String) session.getAttribute("staffUid");
     }
     if (_staffUid == null) _staffUid = "";
-    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("staffAccount_" + _staffUid);
+    com.medicare.entity.Account acc = (com.medicare.entity.Account) session.getAttribute("staffAccount_" + _staffUid);
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/staff-login"); return; }
     if (acc.getRoleId() == 1) { response.sendRedirect(request.getContextPath() + "/dashboard"); return; }
 
     // Trang này chỉ hiển thị thông tin của chính staff đang login
     // "a" = chính acc (không cần truyền qua request.getAttribute)
-    com.medivault.entity.Account a = acc;
+    com.medicare.entity.Account a = acc;
 
     java.lang.String fullName = acc.getFullName() != null ? acc.getFullName() : acc.getUsername();
     java.lang.String initials = fullName.length() >= 2
@@ -37,7 +37,7 @@
 <meta name="ctx" content="${pageContext.request.contextPath}">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title><%= dn %> — Hồ sơ cá nhân — MediVault</title>
+<title><%= dn %> — Hồ sơ cá nhân — medicare</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -213,7 +213,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
   <div class="content">
     <div class="page-head">
       <div>
-        <div class="breadcrumb">MediVault › Hồ sơ cá nhân</div>
+        <div class="breadcrumb">medicare › Hồ sơ cá nhân</div>
         <h1>Thông tin của tôi</h1>
       </div>
     </div>

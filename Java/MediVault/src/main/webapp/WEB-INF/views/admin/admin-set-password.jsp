@@ -1,6 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%
-    com.medivault.entity.Account admin = (com.medivault.entity.Account) session.getAttribute("adminAccount");
+    com.medicare.entity.Account admin = (com.medicare.entity.Account) session.getAttribute("adminAccount");
     if (admin == null) { response.sendRedirect(request.getContextPath() + "/login"); return; }
 
     Boolean otpVerified = (Boolean) session.getAttribute("adminResetOtpVerified");
@@ -9,7 +9,7 @@
         return;
     }
 
-    com.medivault.entity.Account staffInfo = (com.medivault.entity.Account) request.getAttribute("staffInfo");
+    com.medicare.entity.Account staffInfo = (com.medicare.entity.Account) request.getAttribute("staffInfo");
     if (staffInfo == null) { response.sendRedirect(request.getContextPath() + "/accounts"); return; }
 
     String staffName  = staffInfo.getFullName() != null ? staffInfo.getFullName() : staffInfo.getUsername();
@@ -32,7 +32,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Đặt mật khẩu mới — MediVault</title>
+<title>Đặt mật khẩu mới — medicare</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <style>

@@ -13,7 +13,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard Nhân viên — MediVault</title>
+    <title>Dashboard Nhân viên — medicare</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/style.css">
     <style>
         /* ── Shift widget ── */
