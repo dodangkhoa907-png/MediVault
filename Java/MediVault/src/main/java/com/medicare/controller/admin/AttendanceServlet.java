@@ -1,5 +1,6 @@
 package com.medicare.controller.admin;
 
+import com.medicare.config.AppCache;
 import com.medicare.dao.*;
 import com.medicare.dao.interfaces.*;
 import com.medicare.entity.*;
@@ -66,6 +67,22 @@ public class AttendanceServlet extends HttpServlet {
     // ── Đang làm việc realtime ────────────────────────────────────────────────
     private void showLive(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
+        // Load lịch sử điểm danh (gộp chung tab)
+        java.time.LocalDate histFrom = req.getParameter("histFrom") != null && !req.getParameter("histFrom").isEmpty()
+                ? java.time.LocalDate.parse(req.getParameter("histFrom"))
+                : java.time.LocalDate.now().minusDays(30);
+        java.time.LocalDate histTo = req.getParameter("histTo") != null && !req.getParameter("histTo").isEmpty()
+                ? java.time.LocalDate.parse(req.getParameter("histTo"))
+                : java.time.LocalDate.now();
+        String histAcc = req.getParameter("histAcc");
+        int histAccId = (histAcc != null && !histAcc.isEmpty()) ? Integer.parseInt(histAcc) : 0;
+
+        java.util.List<com.medicare.entity.Attendance> histList =
+                attendanceDAO.findByAccountAndDateRange(
+                        histAccId > 0 ? histAccId : 0, histFrom, histTo);
+        req.setAttribute("attendanceList", histList);
+        req.setAttribute("allStaff",       AppCache.getStaff());
+
         List<Attendance> working = attendanceDAO.findCurrentlyWorking();
         req.setAttribute("working",    working);
         req.setAttribute("workCount",  working.size());

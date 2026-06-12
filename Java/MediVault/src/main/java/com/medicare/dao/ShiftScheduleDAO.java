@@ -144,12 +144,13 @@ public class ShiftScheduleDAO implements IShiftScheduleDAO {
     @Override
     public ShiftSchedule findTodaySchedule(int accountId) {
         String sql = SELECT_FULL
-                + "WHERE ss.AccountID = ? AND ss.WorkDate = CAST(GETDATE() AS DATE) "
+                + "WHERE ss.AccountID = ? AND ss.WorkDate = ? "
                 + "AND ss.Status NOT IN ('CANCELLED','ABSENT') "
                 + "ORDER BY ss.PlannedStart ASC";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, accountId);
+            ps.setDate(2, java.sql.Date.valueOf(java.time.LocalDate.now()));
             try (ResultSet rs = ps.executeQuery()) { if (rs.next()) return mapRow(rs); }
         } catch (Exception e) { e.printStackTrace(); }
         return null;
@@ -160,13 +161,16 @@ public class ShiftScheduleDAO implements IShiftScheduleDAO {
         List<ShiftSchedule> list = new ArrayList<>();
         String sql = SELECT_FULL
                 + "WHERE ss.AccountID = ? "
-                + "AND ss.WorkDate BETWEEN CAST(GETDATE() AS DATE) "
-                + "AND CAST(DATEADD(DAY,?,GETDATE()) AS DATE) "
+                + "AND ss.WorkDate BETWEEN ? AND DATEADD(DAY,?,?) "
                 + "AND ss.Status NOT IN ('CANCELLED') "
                 + "ORDER BY ss.WorkDate ASC, ss.PlannedStart ASC";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
-            ps.setInt(1, accountId); ps.setInt(2, days - 1);
+            java.sql.Date _today = java.sql.Date.valueOf(java.time.LocalDate.now());
+            ps.setInt(1, accountId);
+            ps.setDate(2, _today);
+            ps.setInt(3, days - 1);
+            ps.setDate(4, _today);
             try (ResultSet rs = ps.executeQuery()) { while (rs.next()) list.add(mapRow(rs)); }
         } catch (Exception e) { e.printStackTrace(); }
         return list;

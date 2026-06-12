@@ -1,5 +1,6 @@
 package com.medicare.controller.admin;
 
+import com.medicare.config.AppCache;
 import com.medicare.dao.ShiftTypeDAO;
 import com.medicare.dao.interfaces.IShiftTypeDAO;
 import com.medicare.entity.Account;
@@ -87,6 +88,7 @@ public class ShiftTypeServlet extends HttpServlet {
             AuditHelper.log(req, "Toggle loại ca", "ShiftType",
                     (existing.isActive() ? "Tạm dừng" : "Kích hoạt") + " loại ca ID " + id);
         }
+        AppCache.invalidateShiftTypes();
         resp.sendRedirect(req.getContextPath() + "/shifts?tab=types&msg=type-saved");
     }
 

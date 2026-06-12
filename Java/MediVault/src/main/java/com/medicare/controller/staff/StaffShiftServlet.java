@@ -1,7 +1,9 @@
 package com.medicare.controller.staff;
 
 import com.medicare.dao.ShiftDAO;
+import com.medicare.dao.ShiftScheduleDAO;
 import com.medicare.dao.interfaces.IShiftDAO;
+import com.medicare.dao.interfaces.IShiftScheduleDAO;
 import com.medicare.entity.Account;
 import com.medicare.entity.Shift;
 import com.medicare.util.AuditHelper;
@@ -20,7 +22,8 @@ import java.util.List;
 @WebServlet(urlPatterns = {"/staff-my-shifts", "/staff-shift"})
 public class StaffShiftServlet extends HttpServlet {
 
-    private final IShiftDAO shiftDAO = new ShiftDAO();
+    private final IShiftDAO         shiftDAO    = new ShiftDAO();
+    private final IShiftScheduleDAO scheduleDAO = new ShiftScheduleDAO();
 
     // ── GET: hiện trang xem ca ────────────────────────────────────────────────
     @Override
@@ -52,6 +55,9 @@ public class StaffShiftServlet extends HttpServlet {
         // Toàn bộ lịch sử ca (mới nhất trước)
         List<Shift> allShifts = shiftDAO.findByAccount(staffAcc.getAccountId());
         req.setAttribute("allShifts", allShifts);
+
+        // Lịch ca hôm nay — để form mở ca hiển thị đúng
+        req.setAttribute("todaySchedule", scheduleDAO.findTodaySchedule(staffAcc.getAccountId()));
 
         req.getRequestDispatcher("/WEB-INF/views/staff/staff-my-shifts.jsp")
                 .forward(req, resp);

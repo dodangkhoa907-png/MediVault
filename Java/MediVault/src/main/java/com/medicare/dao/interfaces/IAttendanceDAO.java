@@ -29,6 +29,7 @@ public interface IAttendanceDAO {
     Attendance findByScheduleId(int scheduleId);
 
     Attendance findById(int attendanceId);
+    int countByStatus(String status);
 
     // ── NEW: query theo status ────────────────────────────────────
     /**

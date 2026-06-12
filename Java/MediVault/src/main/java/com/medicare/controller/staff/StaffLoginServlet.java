@@ -89,7 +89,9 @@ public class StaffLoginServlet extends HttpServlet {
         HttpSession session = req.getSession(true);
         int staffId = account.getAccountId();
         session.setAttribute("staffAccount_" + staffId, account);
+        session.setAttribute("staffUid", String.valueOf(staffId)); // lưu uid để doGet kiểm tra
 
+        // Tạo token mới (nếu đã có session cũ → token mới sẽ kick tab cũ — đây là đúng)
         String token = com.medicare.util.SessionTracker.login(staffId);
         accountDAO.updateLastLogin(staffId);
         AuditHelper.log(req, "Đăng nhập", "Auth",

@@ -106,6 +106,16 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
             Phụ cấp: <strong><fmt:formatNumber value="${payroll.allowance}" type="number" maxFractionDigits="0"/>đ</strong><br>
             Thưởng: <strong style="color:var(--green)"><fmt:formatNumber value="${payroll.bonus}" type="number" maxFractionDigits="0"/>đ</strong><br>
             Khấu trừ: <strong style="color:var(--red)">-<fmt:formatNumber value="${payroll.deduction}" type="number" maxFractionDigits="0"/>đ</strong>
+            <c:if test="${payroll.deduction > 0}">
+              <div style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.6;padding-left:8px;border-left:2px solid #FECACA">
+                <c:if test="${not empty leaveDeduction and leaveDeduction > 0}">
+                  • Nghỉ phép: -<fmt:formatNumber value="${leaveDeduction}" type="number" maxFractionDigits="0"/>đ<br>
+                </c:if>
+                <c:if test="${not empty penaltyDeduction and penaltyDeduction > 0}">
+                  • Vi phạm (đã duyệt): -<fmt:formatNumber value="${penaltyDeduction}" type="number" maxFractionDigits="0"/>đ
+                </c:if>
+              </div>
+            </c:if>
           </div>
         </div>
         <div style="padding:14px 20px;display:flex;flex-direction:column;justify-content:center;align-items:center">

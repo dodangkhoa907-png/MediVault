@@ -4,4 +4,89 @@
          xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
          https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
          version="6.0">
+
+    <!--
+      ═══════════════════════════════════════════════════════════════
+      JSP Servlet — Precompile + Cache optimization
+      ═══════════════════════════════════════════════════════════════
+      Tomcat mặc định compile JSP lazy (lần đầu request).
+      loadOnStartup=3 → compile tất cả JSP khi khởi động.
+      Kết quả: trang đầu không còn delay 500ms-2s cold start.
+    -->
+    <servlet>
+        <servlet-name>jsp</servlet-name>
+        <servlet-class>org.apache.jasper.servlet.JspServlet</servlet-class>
+
+        <!-- Precompile JSP khi app khởi động -->
+        <init-param>
+            <param-name>development</param-name>
+            <param-value>false</param-value>  <!-- false = production mode, không check file thay đổi -->
+        </init-param>
+        <init-param>
+            <param-name>checkInterval</param-name>
+            <param-value>0</param-value>  <!-- 0 = không check thay đổi JSP (production) -->
+        </init-param>
+        <init-param>
+            <param-name>modificationTestInterval</param-name>
+            <param-value>0</param-value>
+        </init-param>
+        <!-- Tối ưu compiler output -->
+        <init-param>
+            <param-name>trimSpaces</param-name>
+            <param-value>true</param-value>  <!-- Bỏ whitespace thừa trong HTML output -->
+        </init-param>
+        <init-param>
+            <param-name>enablePooling</param-name>
+            <param-value>true</param-value>  <!-- Pool tag handler objects -->
+        </init-param>
+        <load-on-startup>3</load-on-startup>  <!-- Load sau filter/listener -->
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>jsp</servlet-name>
+        <url-pattern>*.jsp</url-pattern>
+    </servlet-mapping>
+
+    <!--
+      ═══════════════════════════════════════════════════════════════
+      Session config — Timeout + Cookie bảo mật
+      ═══════════════════════════════════════════════════════════════
+    -->
+    <session-config>
+        <session-timeout>120</session-timeout>  <!-- 2 tiếng timeout -->
+        <cookie-config>
+            <http-only>true</http-only>  <!-- JS không đọc được session cookie -->
+            <same-site>Strict</same-site>
+        </cookie-config>
+        <tracking-mode>COOKIE</tracking-mode>  <!-- Không gắn ;jsessionid vào URL -->
+    </session-config>
+
+    <!--
+      ═══════════════════════════════════════════════════════════════
+      MIME types bổ sung
+      ═══════════════════════════════════════════════════════════════
+    -->
+    <mime-mapping>
+        <extension>woff2</extension>
+        <mime-type>font/woff2</mime-type>
+    </mime-mapping>
+    <mime-mapping>
+        <extension>woff</extension>
+        <mime-type>font/woff</mime-type>
+    </mime-mapping>
+
+    <!--
+      ═══════════════════════════════════════════════════════════════
+      Error pages — Trang lỗi thân thiện
+      ═══════════════════════════════════════════════════════════════
+    -->
+    <error-page>
+        <error-code>404</error-code>
+        <location>/WEB-INF/views/error/404.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>500</error-code>
+        <location>/WEB-INF/views/error/500.jsp</location>
+    </error-page>
+
 </web-app>

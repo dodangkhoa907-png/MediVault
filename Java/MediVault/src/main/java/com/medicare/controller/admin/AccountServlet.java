@@ -9,6 +9,7 @@ import com.medicare.entity.Account;
 import com.medicare.util.PasswordUtil;
 import com.medicare.util.ValidationUtil;
 import com.medicare.util.AuditHelper;
+import com.medicare.util.SidebarHelper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -66,6 +67,8 @@ public class AccountServlet extends HttpServlet {
                 int id = Integer.parseInt(req.getParameter("id"));
                 Account a = dao.findById(id);
                 req.setAttribute("account", a);
+                SidebarHelper.load(req);
+
                 req.getRequestDispatcher("/WEB-INF/views/admin/account-detail.jsp").forward(req, resp);
             }
             case "delete" -> {
@@ -101,10 +104,14 @@ public class AccountServlet extends HttpServlet {
                         del.getFullName() != null ? del.getFullName() : del.getUsername());
                 // Forward sang trang nhập "delete" (Bước 1/2)
                 req.setAttribute("deleteTarget", del);
+                SidebarHelper.load(req);
+
                 req.getRequestDispatcher("/WEB-INF/views/admin/admin-delete-confirm.jsp").forward(req, resp);
             }
             case "trash" -> {
                 req.setAttribute("deletedAccounts", dao.findDeleted());
+                SidebarHelper.load(req);
+
                 req.getRequestDispatcher("/WEB-INF/views/admin/account-trash.jsp").forward(req, resp);
             }
             case "admin-reset-otp-page" -> {
@@ -113,6 +120,8 @@ public class AccountServlet extends HttpServlet {
                 if (targetId == null) { resp.sendRedirect(req.getContextPath() + "/accounts"); return; }
                 Account staffInfo = dao.findById(targetId);
                 req.setAttribute("staffInfo", staffInfo);
+                SidebarHelper.load(req);
+
                 req.getRequestDispatcher("/WEB-INF/views/admin/admin-otp-confirm.jsp").forward(req, resp);
             }
             case "admin-set-password-page" -> {
@@ -124,6 +133,8 @@ public class AccountServlet extends HttpServlet {
                 }
                 Account staffInfo = dao.findById(tid);
                 req.setAttribute("staffInfo", staffInfo);
+                SidebarHelper.load(req);
+
                 req.getRequestDispatcher("/WEB-INF/views/admin/admin-set-password.jsp").forward(req, resp);
             }
             case "online-status" -> {
@@ -186,6 +197,8 @@ public class AccountServlet extends HttpServlet {
                 }
 
                 req.setAttribute("deleteTarget", delTarget);
+                SidebarHelper.load(req);
+
                 req.getRequestDispatcher("/WEB-INF/views/admin/admin-delete-otp.jsp").forward(req, resp);
             }
             default -> showList(req, resp);
@@ -227,6 +240,8 @@ public class AccountServlet extends HttpServlet {
             req.setAttribute("account", draft);
             req.setAttribute("errors", errors);
             req.setAttribute("errorMsg", ValidationUtil.joinErrors(errors));
+            SidebarHelper.load(req);
+
             req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
             return;
         }
@@ -293,6 +308,8 @@ public class AccountServlet extends HttpServlet {
             // Thất bại (Giữ nguyên chức năng cũ)
             req.setAttribute("error", "Tạo tài khoản thất bại — kiểm tra log Tomcat!");
             req.setAttribute("account", a);
+            SidebarHelper.load(req);
+
             req.getRequestDispatcher("/WEB-INF/views/admin/dashboard.jsp").forward(req, resp);
         }
 
@@ -413,6 +430,8 @@ public class AccountServlet extends HttpServlet {
             if (ValidationUtil.notBlank(roleStr)) draft.setRoleId(Integer.parseInt(roleStr));
 
             req.setAttribute("account", draft);     // JSP dùng để pre-fill form
+            SidebarHelper.load(req);
+
             req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
             return;
         }
@@ -445,6 +464,8 @@ public class AccountServlet extends HttpServlet {
             } else {
                 req.setAttribute("errors", java.util.List.of("Tạo tài khoản thất bại — kiểm tra log!"));
                 req.setAttribute("account", a);
+                SidebarHelper.load(req);
+
                 req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
             }
 
@@ -474,6 +495,8 @@ public class AccountServlet extends HttpServlet {
                     req.setAttribute("errors", java.util.List.of(
                             "Mật khẩu mới phải có ít nhất 6 ký tự."));
                     req.setAttribute("account", a);
+                    SidebarHelper.load(req);
+
                     req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
                     return;
                 }
@@ -541,6 +564,8 @@ public class AccountServlet extends HttpServlet {
                 req.setAttribute("errors", java.util.List.of(
                         "Không thể đổi role — đây là Admin duy nhất đang hoạt động!"));
                 req.setAttribute("account", a);
+                SidebarHelper.load(req);
+
                 req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
                 return;
             }
@@ -549,6 +574,8 @@ public class AccountServlet extends HttpServlet {
             if (!saved) {
                 req.setAttribute("errors", java.util.List.of("Lưu thất bại — kiểm tra log Tomcat!"));
                 req.setAttribute("account", a);
+                SidebarHelper.load(req);
+
                 req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
                 return;
             }
@@ -652,12 +679,16 @@ public class AccountServlet extends HttpServlet {
             throws ServletException, IOException {
         req.setAttribute("accounts", dao.findAllStaff());
         req.setAttribute("onlineStaff", com.medicare.util.SessionTracker.getOnlineSet());
+        SidebarHelper.load(req);
+
         req.getRequestDispatcher("/WEB-INF/views/admin/account-list.jsp").forward(req, resp);
     }
 
     private void showForm(HttpServletRequest req, HttpServletResponse resp, Account account)
             throws ServletException, IOException {
         req.setAttribute("account", account);
+        SidebarHelper.load(req);
+
         req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
     }
 
@@ -730,12 +761,16 @@ public class AccountServlet extends HttpServlet {
         if (!ValidationUtil.notBlank(newPassword) || !ValidationUtil.isValidPassword(newPassword)) {
             req.setAttribute("staffInfo", staff);
             req.setAttribute("error", "Mật khẩu phải có ít nhất 6 ký tự!");
+            SidebarHelper.load(req);
+
             req.getRequestDispatcher("/WEB-INF/views/admin/admin-set-password.jsp").forward(req, resp);
             return;
         }
         if (!newPassword.equals(confirmPw)) {
             req.setAttribute("staffInfo", staff);
             req.setAttribute("error", "Mật khẩu xác nhận không khớp!");
+            SidebarHelper.load(req);
+
             req.getRequestDispatcher("/WEB-INF/views/admin/admin-set-password.jsp").forward(req, resp);
             return;
         }
@@ -861,6 +896,8 @@ public class AccountServlet extends HttpServlet {
         if (storedOtp == null || expiry == null || targetId == null) {
             req.setAttribute("deleteError", "Phiên xác nhận đã hết hạn!");
             req.setAttribute("deleteTarget", dao.findById(targetId != null ? targetId : -1));
+            SidebarHelper.load(req);
+
             req.getRequestDispatcher("/WEB-INF/views/admin/admin-delete-otp.jsp").forward(req, resp);
             return;
         }
@@ -876,6 +913,8 @@ public class AccountServlet extends HttpServlet {
         if (!storedOtp.equals(inputOtp != null ? inputOtp.trim() : "")) {
             req.setAttribute("deleteTarget", dao.findById(targetId));
             req.setAttribute("deleteError", "❌ Mã OTP không đúng! Vui lòng thử lại.");
+            SidebarHelper.load(req);
+
             req.getRequestDispatcher("/WEB-INF/views/admin/admin-delete-otp.jsp").forward(req, resp);
             return;
         }

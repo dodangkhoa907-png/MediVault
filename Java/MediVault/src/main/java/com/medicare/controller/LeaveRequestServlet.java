@@ -1,6 +1,7 @@
 package com.medicare.controller;
 
 import com.medicare.dao.*;
+import com.medicare.dao.interfaces.IAttendanceDAO;
 import com.medicare.dao.interfaces.*;
 import com.medicare.entity.*;
 import com.medicare.util.*;
@@ -23,7 +24,8 @@ import java.util.List;
 public class LeaveRequestServlet extends HttpServlet {
 
     private final ILeaveRequestDAO  leaveDAO    = new LeaveRequestDAO();
-    private final IShiftScheduleDAO scheduleDAO = new ShiftScheduleDAO();
+    private final IShiftScheduleDAO scheduleDAO    = new ShiftScheduleDAO();
+    private final IAttendanceDAO    attendanceDAO = new AttendanceDAO();
     private final IShiftDAO         shiftDAO    = new ShiftDAO();
     private final IPayrollDAO       payrollDAO  = new PayrollDAO();
     private final IAccountDAO       accountDAO  = new AccountDAO();
@@ -95,7 +97,9 @@ public class LeaveRequestServlet extends HttpServlet {
     private void showPending(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         List<LeaveRequest> pending = leaveDAO.findPending();
-        req.setAttribute("pending", pending);
+        req.setAttribute("pending",      pending);
+        req.setAttribute("pendingCount", pending.size());
+        com.medicare.util.SidebarHelper.load(req);
         NotificationUtil.loadAdminNotifications(req);
         req.getRequestDispatcher("/WEB-INF/views/admin/leave-request-pending.jsp").forward(req, resp);
     }
@@ -122,6 +126,24 @@ public class LeaveRequestServlet extends HttpServlet {
                             lr.getAccountId(), lr.getLeaveDate());
                     if (ss != null) {
                         scheduleDAO.updateStatus(ss.getScheduleId(), "ON_LEAVE");
+
+                        // 4a. INSERT Attendance record giả cho ca nghỉ
+                        // → Payroll sẽ nhận ra PAID_LEAVE/UNPAID_LEAVE và tính lương đúng
+                        if (ss != null) {
+                            String attStatus = switch (lr.getLeaveType()) {
+                                case "ANNUAL"  -> "PAID_LEAVE";
+                                case "SICK"    -> "SICK_LEAVE";
+                                default        -> "UNPAID_LEAVE";
+                            };
+                            // Chỉ insert nếu chưa có attendance record cho ca này
+                            com.medicare.entity.Attendance existing =
+                                    attendanceDAO.findByScheduleId(ss.getScheduleId());
+                            if (existing == null) {
+                                attendanceDAO.checkIn(lr.getAccountId(),
+                                        "LEAVE_AUTO", java.math.BigDecimal.ZERO,
+                                        "[Nghỉ phép " + lr.getLeaveType() + " được duyệt]");
+                            }
+                        }
 
                         // 4. Tự đóng Shift thực tế nếu đang mở
                         Shift openShift = shiftDAO.findCurrent(lr.getAccountId());

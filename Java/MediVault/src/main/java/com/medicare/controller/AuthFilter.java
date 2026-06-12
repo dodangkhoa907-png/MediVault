@@ -177,7 +177,7 @@ public class AuthFilter implements Filter {
                         if (session == null) session = req.getSession(true);
                         session.setAttribute("staffAccount_" + uid, a);
                         staffAcc = a;
-                        com.medicare.util.SessionTracker.login(uid);
+                        com.medicare.util.SessionTracker.loginOrKeep(uid); // giữ token cũ nếu còn
                     }
                 } catch (NumberFormatException ignored) {}
             }

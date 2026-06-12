@@ -298,7 +298,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 <script>
 function calcDuration(startStr) {
     if (!startStr) return '—';
-    const start = new Date(startStr.replace('T', ' '));
+    const start = new Date(startStr.replace(' ','T')+'Z');
     const diff = Math.floor((new Date() - start) / 60000);
     if (isNaN(diff) || diff < 0) return '—';
     const h = Math.floor(diff / 60), m = diff % 60;

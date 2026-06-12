@@ -92,6 +92,39 @@ body{display:flex}
 .type-desc{font-size:11.5px;color:var(--muted);margin-top:3px}
 .type-card:has(input:checked) .type-name{color:var(--main)}
 
+/* ── Date picker đẹp hơn ── */
+.date-pick-wrap{position:relative;display:flex;flex-direction:column;gap:8px}
+.date-pick-input{border:2px solid var(--border);border-radius:12px;padding:12px 16px;
+  font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;color:var(--ink);
+  background:#FAFAFA;outline:none;transition:all .2s;width:100%;
+  cursor:pointer}
+.date-pick-input:focus{border-color:var(--main);background:#fff;
+  box-shadow:0 0 0 4px rgba(109,40,217,.08)}
+.date-selected-preview{display:flex;align-items:center;gap:10px;
+  padding:10px 14px;background:linear-gradient(135deg,rgba(109,40,217,.06),rgba(167,139,250,.06));
+  border:1.5px solid rgba(109,40,217,.2);border-radius:10px;
+  font-size:13px;font-weight:600;color:#6D28D9;margin-top:4px}
+.date-selected-preview.hidden{display:none}
+.date-day-badge{background:#6D28D9;color:#fff;border-radius:8px;
+  padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+/* ── Ca nghỉ picker ── */
+.shift-picker{margin-top:14px}
+.shift-picker-label{font-size:11px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:block}
+.shift-options{display:flex;flex-direction:column;gap:6px}
+.shift-opt{display:flex;align-items:center;gap:10px;padding:10px 14px;
+  border:1.5px solid var(--border);border-radius:10px;cursor:pointer;
+  transition:all .18s;background:var(--white)}
+.shift-opt:has(input:checked){border-color:var(--main);
+  background:linear-gradient(135deg,rgba(109,40,217,.04),rgba(167,139,250,.04))}
+.shift-opt input{accent-color:var(--main);width:16px;height:16px;flex-shrink:0}
+.shift-opt-info{flex:1}
+.shift-opt-name{font-size:13px;font-weight:700;color:var(--ink)}
+.shift-opt-time{font-size:11.5px;color:var(--muted);margin-top:1px}
+.shift-opt-badge{font-size:10.5px;font-weight:600;padding:2px 8px;
+  border-radius:12px;background:#F3F4F6;color:#6B7280}
+
+
 /* Warning box */
 .warn-box{background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:12px 16px;font-size:13px;color:#92400E;margin-bottom:16px;display:flex;align-items:flex-start;gap:8px}
 
@@ -150,28 +183,53 @@ body{display:flex}
           <h2>Ngày xin nghỉ</h2>
         </div>
         <div class="card-body">
-          <div class="fg">
-            <label>Chọn ngày</label>
-            <input type="date" name="leaveDate"
+          <div class="date-pick-wrap">
+            <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Chọn ngày</label>
+            <input type="date" name="leaveDate" id="leaveDateInput"
+                   class="date-pick-input"
                    value="<%= todayStr %>"
                    min="<%= todayStr %>"
+                   onchange="updateDatePreview(this.value)"
                    required>
+            <%-- Preview ngày đã chọn --%>
+            <div class="date-selected-preview" id="datePreview">
+              <span class="date-day-badge" id="dateDayBadge">T6</span>
+              <span id="datePreviewText">12 tháng 6, 2026</span>
+            </div>
           </div>
-              <%-- Chọn ca cụ thể (nếu có lịch) --%>
-              <c:if test="${not empty mySchedules}">
-              <div class="fg-section">
-                <label class="fg-label">📅 Ca nghỉ</label>
-                <select name="scheduleId" class="fg-input">
-                  <option value="">-- Nghỉ cả ngày --</option>
-                  <c:forEach var="sch" items="${mySchedules}">
-                    <option value="${sch.scheduleId}">
-                      ${sch.workDate} — ${sch.shiftTypeName}
-                      (<c:if test="${not empty sch.plannedStart}">${fn:substring(sch.plannedStart.toString(),11,16)}</c:if>–<c:if test="${not empty sch.plannedEnd}">${fn:substring(sch.plannedEnd.toString(),11,16)}</c:if>)
-                    </option>
-                  </c:forEach>
-                </select>
-              </div>
-              </c:if>
+
+          <%-- Chọn ca nghỉ (radio thay vì select) --%>
+          <c:if test="${not empty mySchedules}">
+          <div class="shift-picker">
+            <span class="shift-picker-label">📅 Ca nghỉ</span>
+            <div class="shift-options">
+              <label class="shift-opt">
+                <input type="radio" name="scheduleId" value="" checked>
+                <div class="shift-opt-info">
+                  <div class="shift-opt-name">Nghỉ cả ngày</div>
+                  <div class="shift-opt-time">Áp dụng cho tất cả ca trong ngày</div>
+                </div>
+                <span class="shift-opt-badge">Mặc định</span>
+              </label>
+              <c:forEach var="sch" items="${mySchedules}">
+              <label class="shift-opt">
+                <input type="radio" name="scheduleId" value="${sch.scheduleId}">
+                <div class="shift-opt-info">
+                  <div class="shift-opt-name">${sch.shiftTypeName}</div>
+                  <div class="shift-opt-time">
+                    📅 ${sch.workDate}
+                    &nbsp;·&nbsp; 🕐
+                    <c:if test="${not empty sch.plannedStart}">${fn:substring(sch.plannedStart.toString(),11,16)}</c:if>
+                    –
+                    <c:if test="${not empty sch.plannedEnd}">${fn:substring(sch.plannedEnd.toString(),11,16)}</c:if>
+                  </div>
+                </div>
+                <span class="shift-opt-badge" style="background:#EEF2FF;color:#4338CA">${sch.status}</span>
+              </label>
+              </c:forEach>
+            </div>
+          </div>
+          </c:if>
         </div>
       </div>
 
@@ -239,5 +297,34 @@ body{display:flex}
 const t = document.getElementById('toast');
 if (t) setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3500);
 </script>
+
+<script>
+const DAYS_VI = ['CN','T2','T3','T4','T5','T6','T7'];
+const MONTHS_VI = ['','tháng 1','tháng 2','tháng 3','tháng 4','tháng 5','tháng 6',
+                   'tháng 7','tháng 8','tháng 9','tháng 10','tháng 11','tháng 12'];
+
+function updateDatePreview(val) {
+  const preview = document.getElementById('datePreview');
+  const dayBadge = document.getElementById('dateDayBadge');
+  const previewText = document.getElementById('datePreviewText');
+  if (!val || !preview) return;
+
+  // Parse yyyy-MM-dd
+  const parts = val.split('-');
+  if (parts.length !== 3) return;
+  const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+
+  dayBadge.textContent   = DAYS_VI[d.getDay()];
+  previewText.textContent = d.getDate() + ' ' + MONTHS_VI[d.getMonth()+1] + ', ' + d.getFullYear();
+  preview.classList.remove('hidden');
+}
+
+// Chạy ngay khi load để hiện preview cho ngày mặc định
+(function(){
+  const input = document.getElementById('leaveDateInput');
+  if (input && input.value) updateDatePreview(input.value);
+})();
+</script>
+
 </body>
 </html>

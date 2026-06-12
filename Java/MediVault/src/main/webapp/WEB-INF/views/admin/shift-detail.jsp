@@ -401,8 +401,8 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 <script>
 function calcDuration(startStr, endStr) {
     if (!startStr) return '—';
-    const start = new Date(startStr.replace('T', ' '));
-    const end   = endStr ? new Date(endStr.replace('T', ' ')) : new Date();
+    const start = new Date(startStr.replace(' ','T')+'Z');
+    const end   = endStr ? new Date(endStr.replace(' ','T')+'Z') : new Date();
     const diff  = Math.floor((end - start) / 60000);
     if (isNaN(diff) || diff < 0) return '—';
     const h = Math.floor(diff / 60);

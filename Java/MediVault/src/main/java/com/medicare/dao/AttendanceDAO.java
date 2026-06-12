@@ -179,15 +179,17 @@ public class AttendanceDAO implements IAttendanceDAO {
 
     @Override
     public List<Attendance> findByAccountAndDateRange(int accountId, LocalDate from, LocalDate to) {
+        // accountId=0 → lấy tất cả nhân viên
         List<Attendance> list = new ArrayList<>();
-        String sql = SELECT_FULL +
-                "WHERE att.AccountID=? AND CAST(att.CheckInTime AS DATE) BETWEEN ? AND ? " +
-                "ORDER BY att.CheckInTime DESC";
+        String sql = accountId > 0
+                ? SELECT_FULL + "WHERE att.AccountID=? AND CAST(att.CheckInTime AS DATE) BETWEEN ? AND ? ORDER BY att.CheckInTime DESC"
+                : SELECT_FULL + "WHERE CAST(att.CheckInTime AS DATE) BETWEEN ? AND ? ORDER BY att.CheckInTime DESC";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
-            ps.setInt(1, accountId);
-            ps.setDate(2, Date.valueOf(from));
-            ps.setDate(3, Date.valueOf(to));
+            int p = 1;
+            if (accountId > 0) ps.setInt(p++, accountId);
+            ps.setDate(p++, Date.valueOf(from));
+            ps.setDate(p,   Date.valueOf(to));
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) list.add(mapRow(rs));
             }
@@ -220,22 +222,32 @@ public class AttendanceDAO implements IAttendanceDAO {
         } catch (Exception e) { e.printStackTrace(); }
         return null;
     }
+
     @Override
     public int checkInWithPenalty(int accountId, int scheduleId, String method,
                                   BigDecimal openingCash, BigDecimal penaltyAmount,
                                   int lateMinutes, String status) {
-        String sql =
-                "INSERT INTO Attendance (AccountID, ScheduleID, CheckInMethod, "
-                        + "LateMinutes, PenaltyAmount, AttendanceStatus) "
-                        + "VALUES (?,?,?,?,?,?); SELECT SCOPE_IDENTITY();";
+        // Tìm ShiftID đang mở của nhân viên để gán vào Attendance
+        // → SP_AutoCloseOverdueShifts cần ShiftID để đóng bảng Shifts
+        Integer shiftId = findCurrentShiftId(accountId);
+
+        String sql = shiftId != null
+                ? "INSERT INTO Attendance (AccountID, ScheduleID, ShiftID, CheckInMethod, "
+                  + "LateMinutes, PenaltyAmount, AttendanceStatus) "
+                  + "VALUES (?,?,?,?,?,?,?); SELECT SCOPE_IDENTITY();"
+                : "INSERT INTO Attendance (AccountID, ScheduleID, CheckInMethod, "
+                  + "LateMinutes, PenaltyAmount, AttendanceStatus) "
+                  + "VALUES (?,?,?,?,?,?); SELECT SCOPE_IDENTITY();";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, accountId);
             ps.setInt(2, scheduleId);
-            ps.setString(3, method != null ? method : "WEB_BUTTON");
-            ps.setInt(4, lateMinutes);
-            ps.setBigDecimal(5, penaltyAmount != null ? penaltyAmount : BigDecimal.ZERO);
-            ps.setString(6, status != null ? status : "CONFIRMED");
+            int p = 3;
+            if (shiftId != null) ps.setInt(p++, shiftId);
+            ps.setString(p++, method != null ? method : "WEB_BUTTON");
+            ps.setInt(p++, lateMinutes);
+            ps.setBigDecimal(p++, penaltyAmount != null ? penaltyAmount : BigDecimal.ZERO);
+            ps.setString(p, status != null ? status : "CONFIRMED");
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);
             }
@@ -265,5 +277,31 @@ public class AttendanceDAO implements IAttendanceDAO {
             ps.setInt(4, accountId);
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    /** Tìm ShiftID đang mở (EndTime IS NULL) của nhân viên */
+    private Integer findCurrentShiftId(int accountId) {
+        String sql = "SELECT TOP 1 ShiftID FROM Shifts WHERE AccountID=? AND EndTime IS NULL ORDER BY StartTime DESC";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, accountId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return null;
+    }
+
+    @Override
+    public int countByStatus(String status) {
+        String sql = "SELECT COUNT(*) FROM Attendance WHERE AttendanceStatus=?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, status);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return 0;
     }
 }

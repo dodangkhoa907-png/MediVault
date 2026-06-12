@@ -13,13 +13,14 @@ public class Shift {
     private BigDecimal closingCash;
     private String notes;
     private int gracePeriodMinutes;
-    private String status; // OPEN | CLOSED | FORCE_CLOSED | ABANDONED
+    private String status; // OPEN | CLOSED | FORCE_CLOSED | SYSTEM_CLOSED | ABANDONED
 
     // ── Tiện ích — tính từ status (không cần check endTime nữa) ──
     public boolean isOpen()        { return "OPEN".equals(status) || (status == null && endTime == null); }
     public boolean isClosed()      { return "CLOSED".equals(status); }
     public boolean isForceClose()  { return "FORCE_CLOSED".equals(status); }
-    public boolean isAbandoned()   { return "ABANDONED".equals(status); }
+    public boolean isAbandoned()     { return "ABANDONED".equals(status); }
+    public boolean isSystemClosed()  { return "SYSTEM_CLOSED".equals(status); }
 
     public String getStatusLabel() {
         if (status == null) return endTime == null ? "Đang mở" : "Đã đóng";
@@ -27,8 +28,9 @@ public class Shift {
             case "OPEN"         -> "Đang mở";
             case "CLOSED"       -> "Đã đóng";
             case "FORCE_CLOSED" -> "Đóng cưỡng chế";
-            case "ABANDONED"    -> "Bỏ ca";
-            default             -> status;
+            case "ABANDONED"      -> "Bỏ ca";
+            case "SYSTEM_CLOSED"  -> "Hệ thống tự đóng";
+            default               -> status;
         };
     }
 
@@ -37,8 +39,9 @@ public class Shift {
         return switch (status) {
             case "OPEN"         -> "badge-open";
             case "FORCE_CLOSED" -> "badge-force-close";
-            case "ABANDONED"    -> "badge-abandoned";
-            default             -> "badge-closed";
+            case "ABANDONED"      -> "badge-abandoned";
+            case "SYSTEM_CLOSED"  -> "badge-system-closed";
+            default               -> "badge-closed";
         };
     }
 

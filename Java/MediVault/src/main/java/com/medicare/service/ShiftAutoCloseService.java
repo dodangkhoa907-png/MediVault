@@ -53,15 +53,10 @@ public class ShiftAutoCloseService implements ServletContextListener {
 
     private void runAutoClose() {
         try (Connection cn = DBContext.getConnection();
-             CallableStatement cs = cn.prepareCall("{call SP_AutoCloseOverdueShifts}");
-             ResultSet rs = cs.executeQuery()) {
-
-            if (rs.next()) {
-                int closed = rs.getInt("ClosedCount");
-                if (closed > 0) {
-                    log.info("[ShiftAutoClose] Auto-closed " + closed + " overdue shift(s)");
-                }
-            }
+             CallableStatement cs = cn.prepareCall("{call SP_AutoCloseOverdueShifts}")) {
+            // SP v2: SYSTEM_CLOSED thay vì FORCE_CLOSED, không trừ tiền tự động
+            cs.execute();
+            log.fine("[ShiftAutoClose] SP_AutoCloseOverdueShifts v2 executed — SYSTEM_CLOSED mode");
         } catch (Exception e) {
             // Không throw — service chạy liên tục không được crash
             log.warning("[ShiftAutoClose] Error: " + e.getMessage());

@@ -1,6 +1,7 @@
 package com.medicare.controller.staff;
 
 import com.medicare.dao.*;
+import com.medicare.dao.interfaces.IShiftDAO;
 import com.medicare.dao.interfaces.*;
 import com.medicare.entity.*;
 import com.medicare.util.AuditHelper;
@@ -33,6 +34,7 @@ public class StaffAttendanceServlet extends HttpServlet {
 
     private final IAttendanceDAO    attendanceDAO = new AttendanceDAO();
     private final IShiftScheduleDAO scheduleDAO   = new ShiftScheduleDAO();
+    private final IShiftDAO         shiftDAO      = new ShiftDAO();
 
     // ── Grace periods (phút) ─────────────────────────────────────────────────
     private static final int CHECKIN_GRACE_MINUTES  = 5;   // 5p sau PlannedStart vẫn OK
@@ -60,6 +62,7 @@ public class StaffAttendanceServlet extends HttpServlet {
         req.setAttribute("staffUid",      uid);
         req.setAttribute("todaySchedule", todaySchedule);
         req.setAttribute("activeAtt",     activeAtt);
+        req.setAttribute("currentShift",  shiftDAO.findCurrent(staff.getAccountId()));
         req.setAttribute("upcoming",      upcoming);
         req.setAttribute("today",         LocalDate.now());
         req.getRequestDispatcher("/WEB-INF/views/staff/staff-checkin.jsp").forward(req, resp);
@@ -151,6 +154,10 @@ public class StaffAttendanceServlet extends HttpServlet {
         if (attId > 0) {
             // Cập nhật trạng thái lịch ca
             scheduleDAO.updateStatus(schedule.getScheduleId(), attendanceStatus);
+            // Tự động mở Shift để dashboard hiển thị "Đang làm việc"
+            if (shiftDAO.findCurrent(staff.getAccountId()) == null) {
+                shiftDAO.openShift(staff.getAccountId(), openingCash);
+            }
 
             String msg = "CONFIRMED".equals(attendanceStatus) ? "checked-in"
                     : "LATE".equals(attendanceStatus)      ? "checked-in-late"
@@ -194,10 +201,27 @@ public class StaffAttendanceServlet extends HttpServlet {
         }
 
         String notes = req.getParameter("notes");
+        // Đọc tiền cuối ca từ form bàn giao
+        String handoverStr = req.getParameter("handoverCash");
+        java.math.BigDecimal handoverCash = java.math.BigDecimal.ZERO;
+        if (handoverStr != null && !handoverStr.trim().isEmpty()) {
+            try { handoverCash = new java.math.BigDecimal(handoverStr.trim()); }
+            catch (NumberFormatException ignored) {}
+        }
+        // Gắn handoverCash vào notes để lưu lại
+        String fullNote = (handoverStr != null && !handoverStr.isEmpty()
+                ? "[Bàn giao két: " + handoverCash.toPlainString() + "đ] " : "")
+                + (notes != null && !notes.trim().isEmpty() ? notes.trim() : "");
+
         boolean ok = attendanceDAO.checkOutWithPenalty(
-                staff.getAccountId(), penaltyAmount, notes, false);
+                staff.getAccountId(), penaltyAmount, fullNote, false);
 
         if (ok) {
+            // Đóng Shift tương ứng
+            com.medicare.entity.Shift openShift = shiftDAO.findCurrent(staff.getAccountId());
+            if (openShift != null) {
+                shiftDAO.closeShift(openShift.getShiftId(), handoverCash, fullNote);
+            }
             AuditHelper.log(req, "Check-out", "Attendance",
                     "@" + staff.getUsername() + " check-out"
                             + (penaltyAmount.compareTo(BigDecimal.ZERO) > 0

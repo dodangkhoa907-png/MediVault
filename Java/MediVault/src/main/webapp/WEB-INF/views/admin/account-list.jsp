@@ -212,7 +212,6 @@ body{display:flex;background:var(--surface);color:var(--ink)}
             <option value="active">✅ Hoạt động</option>
             <option value="0">🔒 Đã khóa</option>
           </select>
-          <button type="button" class="fchip" onclick="applyFilter()">🔍 Lọc</button>
           <button type="button" class="fchip clear" onclick="clearFilter()">✕ Xóa lọc</button>
         </div>
 

@@ -18,6 +18,7 @@ public class StaffDashboardServlet extends HttpServlet {
     private final IStaffAuditLogDAO staffAuditDAO = new StaffAuditLogDAO();
     private final IShiftDAO         shiftDAO      = new ShiftDAO();
     private final IShiftScheduleDAO scheduleDAO   = new ShiftScheduleDAO();
+    private final IAttendanceDAO    attendanceDAO = new AttendanceDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -50,6 +51,11 @@ public class StaffDashboardServlet extends HttpServlet {
         // Ca làm việc hiện tại
         Shift currentShift = shiftDAO.findCurrent(staffAcc.getAccountId());
         req.setAttribute("currentShift", currentShift);
+
+        // Attendance đang active (check-in chưa check-out)
+        // Dùng để hiển thị trạng thái "Đang làm việc" kể cả khi Shift chưa mở
+        Attendance activeAtt = attendanceDAO.findActiveByAccount(staffAcc.getAccountId());
+        req.setAttribute("activeAtt", activeAtt);
 
         // Lịch sử ca gần nhất (3 ca đã đóng)
         List<Shift> recentShifts = shiftDAO.findByAccount(staffAcc.getAccountId());

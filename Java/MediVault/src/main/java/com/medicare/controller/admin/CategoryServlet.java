@@ -1,6 +1,7 @@
 package com.medicare.controller.admin;
 
 import com.medicare.entity.Category;
+import com.medicare.util.SidebarHelper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -81,12 +82,16 @@ public class CategoryServlet extends HttpServlet {
             throws ServletException, IOException {
         List<Category> list = dao.findAll();
         req.setAttribute("categories", list);
+        SidebarHelper.load(req);
+
         req.getRequestDispatcher("/WEB-INF/views/admin/category-list.jsp").forward(req, resp);
     }
 
     private void showForm(HttpServletRequest req, HttpServletResponse resp, Category category)
             throws ServletException, IOException {
         req.setAttribute("category", category); // null = new, có giá trị = edit
+        SidebarHelper.load(req);
+
         req.getRequestDispatcher("/WEB-INF/views/admin/category-form.jsp").forward(req, resp);
     }
 }

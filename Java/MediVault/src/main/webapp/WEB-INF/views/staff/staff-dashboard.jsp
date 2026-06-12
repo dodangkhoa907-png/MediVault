@@ -757,11 +757,11 @@ function updateClock(){
 updateClock(); setInterval(updateClock,1000);
 
 // ── Shift timer — đếm giờ ca đang mở ──────────────────────────────
-<c:if test="${not empty currentShift}">
+<c:if test="${not empty currentShift or not empty activeAtt}">
 (function(){
-  const startRaw = '${currentShift.startTime}';
-  // LocalDateTime format: "2026-06-09T19:00:00" hoặc "2026-06-09 19:00:00"
-  const shiftStart = new Date(startRaw.replace('T', ' '));
+  // DB trả LocalDateTime (giờ VN local) → parse as local (không thêm Z)
+  const startRaw = '${not empty currentShift ? currentShift.startTime : activeAtt.checkInTime}';
+  const shiftStart = new Date(startRaw.replace(' ','T')+'Z');
   const timerEl    = document.getElementById('shiftTimer');
   function tick() {
     if (!timerEl) return;

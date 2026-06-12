@@ -4,6 +4,7 @@ import com.medicare.dao.AuditLogDAO;
 import com.medicare.dao.interfaces.IAuditLogDAO;
 import com.medicare.entity.Account;
 import com.medicare.entity.AuditLog;
+import com.medicare.util.SidebarHelper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -72,6 +73,8 @@ public class AuditLogServlet extends HttpServlet {
             if (a != null) resetAccountMap.put(pr.getAccountId(), a);
         }
         req.setAttribute("resetAccountMap", resetAccountMap);
+        SidebarHelper.load(req);
+
         req.getRequestDispatcher("/WEB-INF/views/admin/audit-log-list.jsp").forward(req, resp);
     }
 }

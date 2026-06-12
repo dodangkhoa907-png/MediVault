@@ -249,11 +249,27 @@ tbody tr:last-child td{border-bottom:none}
                 <input type="hidden" name="action" value="checkout">
                 <input type="hidden" name="uid"    value="${staffUid}">
 
-                <div class="fg"><label>Ghi chú bàn giao</label>
-                  <textarea name="notes" rows="3" placeholder="Ghi chú tình trạng ca, bàn giao..."></textarea></div>
+                <div class="fg">
+                  <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">
+                    💰 Tiền mặt bàn giao két <span style="color:#DC2626">*</span>
+                  </label>
+                  <input type="number" name="handoverCash" id="coHandoverCash"
+                         min="0" step="1000" required
+                         placeholder="Nhập số tiền mặt trong két (VNĐ)"
+                         oninput="updateCoPreview(this.value)"
+                         style="border:1.5px solid var(--border);border-radius:8px;
+                                padding:9px 12px;font-size:13px;width:100%;
+                                font-family:'Outfit',sans-serif;outline:none">
+                  <div id="coPreview" style="display:none;margin-top:6px;padding:7px 12px;
+                       border-radius:8px;font-size:12.5px;font-weight:700;text-align:center"></div>
+                </div>
+                <div class="fg"><label>📝 Ghi chú bàn giao</label>
+                  <textarea name="notes" rows="2"
+                    placeholder="Ghi chú tình trạng ca, thuốc tủ khóa, vấn đề phát sinh..."></textarea>
+                </div>
                 <button type="submit" class="btn-checkout"
-                        onclick="return confirm('Kết thúc ca làm việc?')">
-                  ✅ Check-out — Kết thúc ca
+                        onclick="return confirmCheckout(this.form)">
+                  ✅ Check-out — Bàn giao ca
                 </button>
               </form>
             </div>
@@ -384,6 +400,29 @@ if (timerEl) {
       .map(v=>String(v).padStart(2,'0')).join(':');
   }
   tick(); setInterval(tick,1000);
+}
+</script>
+
+<script>
+function confirmCheckout(form) {
+  const cash = form.handoverCash?.value;
+  if (!cash || parseInt(cash) < 0) {
+    alert('⚠️ Vui lòng nhập số tiền bàn giao két trước khi kết thúc ca!');
+    form.handoverCash?.focus();
+    return false;
+  }
+  const amt = parseInt(cash).toLocaleString('vi-VN');
+  return confirm('Xác nhận kết thúc ca?\n💰 Tiền bàn giao: ' + amt + 'đ');
+}
+function updateCoPreview(val) {
+  const el = document.getElementById('coPreview');
+  if (!el) return;
+  const n = parseInt(val);
+  if (isNaN(n) || n < 0) { el.style.display='none'; return; }
+  el.style.display = 'block';
+  el.style.background = '#ECFDF5';
+  el.style.color = '#065F46';
+  el.textContent = '💰 ' + n.toLocaleString('vi-VN') + 'đ';
 }
 </script>
 </body></html>

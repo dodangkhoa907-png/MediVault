@@ -418,7 +418,7 @@
 <script>
 // ── Đếm giờ ca đang mở ──
 <c:if test="${not empty currentShift}">
-const shiftStart = new Date("${currentShift.startTime}".replace('T', ' '));
+const shiftStart = new Date("${currentShift.startTime}".replace(' ','T')+'Z');
 const timerEl    = document.getElementById('shiftTimer');
 
 function updateTimer() {

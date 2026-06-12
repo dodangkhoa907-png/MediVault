@@ -32,7 +32,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ca làm việc của tôi — medicare</title>
+<title>Ca làm việc của tôi — MediVault</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -195,6 +195,29 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
 .empty-state{padding:48px 20px;text-align:center;color:var(--muted)}
 .empty-state .empty-icon{font-size:36px;margin-bottom:12px}
 .empty-state p{font-size:13.5px}
+
+/* ── Form mở ca đẹp hơn ── */
+.open-shift-card{background:linear-gradient(135deg,#ECFDF5,#D1FAE5);border:1.5px solid #6EE7B7;border-radius:14px;padding:18px 20px;margin-top:8px}
+.open-shift-title{font-size:14px;font-weight:800;color:#065F46;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.open-cash-input{border:1.5px solid #6EE7B7;border-radius:9px;padding:9px 13px;font-family:'Outfit',sans-serif;font-size:14px;color:var(--ink);background:#fff;outline:none;width:100%;transition:border .18s;margin-bottom:4px}
+.open-cash-input:focus{border-color:#059669}
+.open-cash-hint{font-size:11.5px;color:#065F46;margin-bottom:12px}
+.btn-open-shift{width:100%;padding:11px;background:linear-gradient(135deg,#059669,#10B981);color:#fff;border:none;border-radius:9px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 3px 12px rgba(5,150,105,.25);transition:all .18s}
+.btn-open-shift:hover{opacity:.9;transform:translateY(-1px)}
+/* ── Tiền đầu ca hiển thị đẹp hơn ── */
+.cash-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:13px;font-weight:700}
+.cash-badge-open{background:#ECFDF5;color:#065F46}
+.cash-badge-close{background:#EFF6FF;color:#1558A8}
+/* ── Revenue mini trong staff page ── */
+.revenue-mini{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-top:14px}
+.rev-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.rev-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.rev-item{text-align:center;padding:10px;background:var(--surface);border-radius:9px}
+.rev-lbl{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.rev-val{font-size:16px;font-weight:800;color:var(--ink)}
+.rev-val.positive{color:#059669}
+.rev-val.negative{color:#DC2626}
+
 </style>
 </head>
 <body>
@@ -260,7 +283,7 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
 
   <div class="content">
     <div class="page-head">
-      <div class="breadcrumb">medicare › Ca làm việc</div>
+      <div class="breadcrumb">MediVault › Ca làm việc</div>
       <h1>Ca làm việc của tôi</h1>
     </div>
 
@@ -313,30 +336,91 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
         </div>
 
         <%-- Thông báo: Chỉ Admin đóng ca hoặc quẹt thẻ NFC ─-%>
-        <div style="background:linear-gradient(135deg,#FEF3C7,#FFFBEB);
-                    border:1.5px solid #FDE68A;border-radius:12px;
-                    padding:14px 18px;margin-top:8px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-            <span style="font-size:20px">🔒</span>
-            <span style="font-size:13.5px;font-weight:700;color:#92400E">
-              Đóng ca qua thẻ NFC hoặc liên hệ Admin
-            </span>
-          </div>
-          <div style="font-size:12.5px;color:#B45309;line-height:1.6">
-            • Quẹt thẻ NFC tại thiết bị để check-out tự động<br>
-            • Ca sẽ tự động đóng sau <strong>20 phút</strong> kể từ khi kết thúc giờ ca<br>
-            • Trễ hơn 5 phút sau giờ ca → bị trừ <strong>15 phút tiền lương</strong>
-          </div>
+        <%-- Form nhập tiền cuối ca + đóng ca --%>
+        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:16px 18px;margin-top:10px">
+          <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:12px">🔴 Kết thúc ca</div>
+          <form action="${pageContext.request.contextPath}/staff-shift" method="post"
+                onsubmit="return validateClose(this)">
+            <input type="hidden" name="action"  value="close">
+            <input type="hidden" name="uid"     value="<%= uid %>">
+            <input type="hidden" name="shiftId" value="<%= currentShift != null ? currentShift.getShiftId() : 0 %>">
+            <input type="hidden" name="openingRef" id="openingRef"
+                   value="<%= currentShift != null && currentShift.getOpeningCash() != null
+                              ? currentShift.getOpeningCash().longValue() : 0 %>">
+            <%-- Preview so sánh với tiền đầu ca --%>
+            <div style="display:flex;justify-content:space-between;align-items:center;
+                        padding:8px 12px;background:#F8FAFC;border-radius:8px;margin-bottom:12px;font-size:12.5px">
+              <span style="color:var(--muted)">📥 Tiền đầu ca:</span>
+              <span class="cash-badge cash-badge-open">
+                <%= currentShift != null && currentShift.getOpeningCash() != null
+                    ? String.format("%,.0f₫", currentShift.getOpeningCash()) : "0₫" %>
+              </span>
+            </div>
+            <div class="fg" style="margin-bottom:10px">
+              <label>💰 Tiền cuối ca (tiền trong két)</label>
+              <input type="number" name="closingCash" min="0" step="1000"
+                     placeholder="Nhập số tiền trong két lúc đóng ca"
+                     id="closingCashInput" oninput="updateRevenuePreview(this.value)"
+                     style="border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-family:'Outfit',sans-serif;font-size:13px;width:100%;outline:none"
+                     required>
+              <div id="revenuePreview" style="display:none;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:700;text-align:center"></div>
+            </div>
+            <div class="fg" style="margin-bottom:12px">
+              <label>📝 Ghi chú bàn giao</label>
+              <textarea name="notes" rows="2"
+                        placeholder="Tình trạng cuối ca, bàn giao..."
+                        style="border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-family:'Outfit',sans-serif;font-size:13px;width:100%;outline:none;resize:vertical"></textarea>
+            </div>
+            <button type="submit" class="btn-close"
+                    onclick="return confirm('Xác nhận đóng ca và nhập tiền cuối ca?')"
+                    style="width:100%">
+              🔴 Đóng ca
+            </button>
+          </form>
+        </div>
+        <div style="background:#FEF3C7;border:1.5px solid #FDE68A;border-radius:10px;padding:10px 14px;margin-top:8px;font-size:12px;color:#92400E;line-height:1.6">
+          💡 Ca cũng tự động đóng sau <strong>20 phút</strong> kết thúc giờ ca. Trễ &gt; 5 phút → trừ tiền lương.
         </div>
 
         <% } else { %>
 
-        <%-- Mở ca --%>
+        <%-- Mở ca + nhập tiền đầu ca --%>
+        <%
+          com.medicare.entity.ShiftSchedule todaySched =
+              (com.medicare.entity.ShiftSchedule) request.getAttribute("todaySchedule");
+        %>
+        <% if (todaySched != null) { %>
+        <%-- Có lịch ca hôm nay → cho mở ca + nhập tiền đầu --%>
+        <div class="open-shift-card">
+          <div class="open-shift-title">🟢 Bắt đầu ca làm việc</div>
+          <div style="font-size:12.5px;color:#065F46;margin-bottom:12px;padding:8px 12px;background:rgba(255,255,255,.6);border-radius:8px">
+            📋 <strong><%= todaySched.getShiftTypeName() != null ? todaySched.getShiftTypeName() : "Ca hôm nay" %></strong>
+            <% if (todaySched.getPlannedStart() != null) { %>
+            &nbsp;|&nbsp; 🕐 <%= todaySched.getPlannedStart().toLocalTime().toString().substring(0,5) %>
+            → <%= todaySched.getPlannedEnd().toLocalTime().toString().substring(0,5) %>
+            <% } %>
+          </div>
+          <form action="${pageContext.request.contextPath}/staff-shift" method="post"
+                onsubmit="return validateOpen(this)">
+            <input type="hidden" name="action" value="open">
+            <input type="hidden" name="uid"    value="<%= uid %>">
+            <label style="font-size:11px;font-weight:700;color:#065F46;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">
+              💰 Tiền đầu ca (tiền mặt trong két khi bắt đầu) <span style="color:#DC2626">*</span>
+            </label>
+            <input type="number" name="openingCash" class="open-cash-input"
+                   min="0" step="1000" placeholder="Nhập số tiền trong két lúc bắt đầu ca (VNĐ)"
+                   id="openingCashInput" required>
+            <div class="open-cash-hint">💡 Tiền này sẽ dùng để tính doanh thu ca = Tiền cuối − Tiền đầu</div>
+            <button type="submit" class="btn-open-shift">🟢 Bắt đầu ca & Nhập tiền đầu ca</button>
+          </form>
+        </div>
+        <% } else { %>
         <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:12px;padding:14px 18px;text-align:center;margin:12px 0">
           <div style="font-size:22px;margin-bottom:8px">🔒</div>
-          <div style="font-size:13px;font-weight:700;color:#991B1B;margin-bottom:4px">Chưa có ca đang mở</div>
-          <div style="font-size:12px;color:#B91C1C">Vào trang <a href="${pageContext.request.contextPath}/staff-checkin?uid=<%= uid %>" style="color:#1558A8;font-weight:700">Điểm danh</a> để check-in khi có lịch ca.</div>
+          <div style="font-size:13px;font-weight:700;color:#991B1B;margin-bottom:4px">Chưa có lịch ca hôm nay</div>
+          <div style="font-size:12px;color:#B91C1C">Liên hệ Admin để được xếp ca. Sau đó vào <a href="${pageContext.request.contextPath}/staff-checkin?uid=<%= uid %>" style="color:#1558A8;font-weight:700">Điểm danh</a> để check-in.</div>
         </div>
+        <% } %>
 
         <% } %>
       </div>
@@ -447,6 +531,42 @@ updateDuration();
 // Toast auto-hide
 const toast = document.getElementById('toast');
 if (toast) setTimeout(() => { toast.style.opacity='0'; setTimeout(()=>toast.remove(),400); }, 3500);
+
+function validateOpen(form) {
+  var cash = parseInt(form.openingCash.value);
+  if (isNaN(cash) || cash < 0) {
+    alert('Vui lòng nhập số tiền đầu ca hợp lệ (tối thiểu 0đ)!');
+    return false;
+  }
+  return confirm('Xác nhận bắt đầu ca với tiền đầu ca: ' + cash.toLocaleString('vi-VN') + 'đ?');
+}
+
+function validateClose(form) {
+  var closing = parseInt(form.closingCash.value);
+  if (isNaN(closing) || closing < 0) {
+    alert('Vui lòng nhập số tiền cuối ca hợp lệ!');
+    return false;
+  }
+  var opening = parseInt(document.getElementById('openingRef')?.value || '0');
+  var rev = closing - opening;
+  var sign = rev >= 0 ? '+' : '';
+  return confirm('Xác nhận đóng ca?\nTiền đầu ca: ' + opening.toLocaleString('vi-VN') + 'đ\nTiền cuối ca: ' + closing.toLocaleString('vi-VN') + 'đ\nDoanh thu ca: ' + sign + rev.toLocaleString('vi-VN') + 'đ');
+}
+
+function updateRevenuePreview(val) {
+  var prev = document.getElementById('revenuePreview');
+  if (!prev) return;
+  var closing = parseInt(val);
+  var opening = parseInt(document.getElementById('openingRef')?.value || '0');
+  if (isNaN(closing)) { prev.style.display='none'; return; }
+  var rev = closing - opening;
+  var sign = rev >= 0 ? '+' : '';
+  prev.style.display = 'block';
+  prev.style.background = rev >= 0 ? '#ECFDF5' : '#FEF2F2';
+  prev.style.color = rev >= 0 ? '#065F46' : '#991B1B';
+  prev.innerHTML = '💰 Doanh thu ca: <strong>' + sign + rev.toLocaleString('vi-VN') + 'đ</strong>'
+    + ' &nbsp;(Cuối: ' + closing.toLocaleString('vi-VN') + 'đ − Đầu: ' + opening.toLocaleString('vi-VN') + 'đ)';
+}
 </script>
 </body>
 </html>

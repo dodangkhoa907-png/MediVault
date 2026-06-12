@@ -3,6 +3,7 @@ package com.medicare.controller.admin;
 import com.medicare.dao.*;
 import com.medicare.entity.*;
 import com.medicare.util.AuditHelper;
+import com.medicare.util.SidebarHelper;
 import com.medicare.util.ValidationUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -83,6 +84,8 @@ public class MedicineServlet extends HttpServlet {
         req.setAttribute("keyword",     keyword);
         req.setAttribute("totalActive", medicineDAO.countAll());
         req.setAttribute("lowStock",    medicineDAO.countLowStock());
+        SidebarHelper.load(req);
+
         req.getRequestDispatcher("/WEB-INF/views/admin/medicine-list.jsp").forward(req, resp);
     }
 
@@ -96,6 +99,8 @@ public class MedicineServlet extends HttpServlet {
         req.setAttribute("medicine",   m);
         req.setAttribute("batches",    batchesDAO.findAllByMedicine(id));
         req.setAttribute("totalStock", batchesDAO.getTotalQuantity(id));
+        SidebarHelper.load(req);
+
         req.getRequestDispatcher("/WEB-INF/views/admin/medicine-detail.jsp").forward(req, resp);
     }
 
@@ -106,6 +111,8 @@ public class MedicineServlet extends HttpServlet {
         req.setAttribute("categories",    categoryDAO.findAll());
         req.setAttribute("manufacturers", manufacturerDAO.findAll());
         req.setAttribute("shelves",       shelfDAO.findAll());
+        SidebarHelper.load(req);
+
         req.getRequestDispatcher("/WEB-INF/views/admin/medicine-form.jsp").forward(req, resp);
     }
 
@@ -119,6 +126,8 @@ public class MedicineServlet extends HttpServlet {
         req.setAttribute("batch",     b);
         req.setAttribute("medicine",  medicineDAO.findById(medicineId));
         req.setAttribute("suppliers", supplierDAO.findAll());
+        SidebarHelper.load(req);
+
         req.getRequestDispatcher("/WEB-INF/views/admin/batch-form.jsp").forward(req, resp);
     }
 

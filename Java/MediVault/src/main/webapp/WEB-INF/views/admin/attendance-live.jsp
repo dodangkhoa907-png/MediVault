@@ -86,6 +86,10 @@ tbody tr:last-child td{border-bottom:none}
 .toast{position:fixed;top:20px;right:24px;padding:12px 20px;border-radius:11px;font-size:13px;font-weight:700;color:#fff;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.15);animation:slideIn .3s ease}
 .toast-ok{background:#059669}.toast-err{background:#DC2626}
 @keyframes slideIn{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+.badge-late{background:#FEF3C7;color:#92400E;border:1px solid #FDE68A}
+.badge-leave{background:#EDE9FE;color:#5B21B6;border:1px solid #DDD6FE}
+
 </style></head>
 <body>
 <%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
@@ -107,8 +111,7 @@ tbody tr:last-child td{border-bottom:none}
   </header>
 
   <div class="tab-bar">
-    <a href="${pageContext.request.contextPath}/attendance?action=live"    class="tab active">🟢 Đang làm việc</a>
-    <a href="${pageContext.request.contextPath}/attendance?action=list"    class="tab">📋 Lịch sử</a>
+    <a href="${pageContext.request.contextPath}/attendance?action=live"    class="tab active">📋 Ca làm việc</a>
     <a href="${pageContext.request.contextPath}/attendance?action=monthly" class="tab">📊 Tổng hợp tháng</a>
   </div>
 
@@ -159,7 +162,7 @@ tbody tr:last-child td{border-bottom:none}
                     🔒 Đóng ca
                   </button>
                 </form>
-                <a href="${pageContext.request.contextPath}/attendance?action=list&accountId=${att.accountId}" class="btn-detail">📋 Lịch sử</a>
+
               </div>
             </div>
           </c:forEach>
@@ -174,7 +177,7 @@ tbody tr:last-child td{border-bottom:none}
     <div class="table-card">
       <div class="table-card-head">
         <h2>📋 Lịch ca hôm nay</h2>
-        <a href="${pageContext.request.contextPath}/shift-schedules" style="font-size:12px;color:var(--blue);text-decoration:none;font-weight:700">Quản lý lịch →</a>
+        <a href="${pageContext.request.contextPath}/shifts?tab=list" style="font-size:12px;color:var(--blue);text-decoration:none;font-weight:700">Quản lý lịch →</a>
       </div>
       <c:choose>
         <c:when test="${empty todaySchedules}">
@@ -214,6 +217,214 @@ tbody tr:last-child td{border-bottom:none}
         </c:otherwise>
       </c:choose>
     </div>
+
+    <%-- ═══════════════════════════════════════════════════════════
+         LỊCH SỬ ĐIỂM DANH — gộp vào cùng tab Ca làm việc
+         ═══════════════════════════════════════════════════════════ --%>
+    <div style="display:flex;align-items:center;gap:12px;margin:28px 0 16px">
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+      <span style="font-size:11.5px;font-weight:700;color:var(--muted);
+                   text-transform:uppercase;letter-spacing:.6px">
+        📋 Lịch sử điểm danh
+      </span>
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+
+    <%-- Filter --%>
+    <div class="table-card">
+      <div style="padding:14px 20px;border-bottom:1px solid var(--border);
+                  display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <form method="get" action="${pageContext.request.contextPath}/attendance"
+              style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1">
+          <input type="hidden" name="action" value="live">
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <label style="font-size:10px;font-weight:700;color:var(--muted);
+                          text-transform:uppercase;letter-spacing:.5px">Từ ngày</label>
+            <input type="date" name="histFrom" value="${param.histFrom}"
+                   style="border:1.5px solid var(--border);border-radius:8px;
+                          padding:6px 10px;font-family:'Outfit',sans-serif;
+                          font-size:12.5px;height:34px;outline:none">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <label style="font-size:10px;font-weight:700;color:var(--muted);
+                          text-transform:uppercase;letter-spacing:.5px">Đến ngày</label>
+            <input type="date" name="histTo" value="${param.histTo}"
+                   style="border:1.5px solid var(--border);border-radius:8px;
+                          padding:6px 10px;font-family:'Outfit',sans-serif;
+                          font-size:12.5px;height:34px;outline:none">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <label style="font-size:10px;font-weight:700;color:var(--muted);
+                          text-transform:uppercase;letter-spacing:.5px">Nhân viên</label>
+            <select name="histAcc"
+                    style="border:1.5px solid var(--border);border-radius:8px;
+                           padding:6px 10px;font-family:'Outfit',sans-serif;
+                           font-size:12.5px;height:34px;background:var(--white);outline:none">
+              <option value="">— Tất cả —</option>
+              <c:forEach var="s" items="${allStaff}">
+                <option value="${s.accountId}"
+                  ${param.histAcc == s.accountId.toString() ? 'selected' : ''}>
+                  ${s.fullName}
+                </option>
+              </c:forEach>
+            </select>
+          </div>
+          <div style="align-self:flex-end">
+            <button type="submit"
+                    style="padding:7px 18px;background:var(--blue);color:#fff;
+                           border:none;border-radius:8px;font-family:'Outfit',sans-serif;
+                           font-size:13px;font-weight:600;cursor:pointer;height:34px;
+                           transition:background .18s"
+                    onmouseover="this.style.background='#0D3F85'"
+                    onmouseout="this.style.background='var(--blue)'">
+              🔍 Lọc
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <%-- Table --%>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nhân viên</th>
+              <th>Check-in</th>
+              <th>Check-out</th>
+              <th>Giờ thực</th>
+              <th>Trễ</th>
+              <th>Bàn giao két</th>
+              <th>Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            <c:choose>
+              <c:when test="${empty attendanceList}">
+                <tr><td colspan="8"
+                      style="text-align:center;padding:36px;color:var(--muted);font-size:13px">
+                  📭 Không có dữ liệu điểm danh trong khoảng thời gian này.
+                </td></tr>
+              </c:when>
+              <c:otherwise>
+                <c:forEach var="att" items="${attendanceList}">
+                  <tr>
+                    <td style="font-weight:700;color:var(--blue);font-size:12px">#${att.attendanceId}</td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <div style="width:30px;height:30px;border-radius:8px;flex-shrink:0;
+                                    background:linear-gradient(135deg,#1558A8,#4F81D9);
+                                    color:#fff;display:flex;align-items:center;
+                                    justify-content:center;font-size:10px;font-weight:800">
+                          ${fn:toUpperCase(fn:substring(att.staffName,0,2))}
+                        </div>
+                        <span style="font-weight:600;font-size:13px">${att.staffName}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div style="font-weight:600;font-size:13px">
+                        ${fn:substring(att.checkInTime.toString(),11,16)}
+                      </div>
+                      <div style="font-size:11px;color:var(--muted)">
+                        ${fn:substring(att.checkInTime.toString(),0,10)}
+                      </div>
+                    </td>
+                    <td>
+                      <c:choose>
+                        <c:when test="${not empty att.checkOutTime}">
+                          <div style="font-weight:600;font-size:13px">
+                            ${fn:substring(att.checkOutTime.toString(),11,16)}
+                          </div>
+                          <div style="font-size:11px;color:var(--muted)">
+                            ${fn:substring(att.checkOutTime.toString(),0,10)}
+                          </div>
+                        </c:when>
+                        <c:otherwise>
+                          <span style="color:#F59E0B;font-weight:700;font-size:12.5px">
+                            🟡 Đang làm
+                          </span>
+                        </c:otherwise>
+                      </c:choose>
+                    </td>
+                    <td style="font-weight:600;font-size:13px">
+                      <c:choose>
+                        <c:when test="${att.actualHours > 0}">
+                          <fmt:formatNumber value="${att.actualHours}" maxFractionDigits="1"/>h
+                        </c:when>
+                        <c:otherwise><span style="color:var(--muted)">—</span></c:otherwise>
+                      </c:choose>
+                    </td>
+                    <td>
+                      <c:choose>
+                        <c:when test="${att.lateMinutes > 0}">
+                          <span style="color:#F59E0B;font-weight:700;font-size:12.5px">
+                            ${att.lateMinutes}p
+                          </span>
+                        </c:when>
+                        <c:otherwise>
+                          <span style="color:var(--green);font-size:12px;font-weight:600">Đúng</span>
+                        </c:otherwise>
+                      </c:choose>
+                    </td>
+                    <td>
+                      <c:choose>
+                        <c:when test="${not empty att.checkInNote and fn:contains(att.checkInNote,'Bàn giao két:')}">
+                          <c:set var="rawKet" value="${fn:trim(fn:substringBefore(fn:substringAfter(att.checkInNote,'Bàn giao két:'),']'))}"/>
+                          <span style="font-weight:700;color:var(--green);font-size:12.5px">
+                            ${fn:replace(rawKet,'đ','')}đ
+                          </span>
+                        </c:when>
+                        <c:otherwise>
+                          <span style="color:var(--muted)">—</span>
+                        </c:otherwise>
+                      </c:choose>
+                    </td>
+                    <td>
+                      <c:choose>
+                        <c:when test="${att.attendanceStatus=='CONFIRMED' or att.attendanceStatus=='ON_TIME'}">
+                          <span class="badge badge-working">✅ Đúng giờ</span>
+                        </c:when>
+                        <c:when test="${att.attendanceStatus=='LATE'}">
+                          <span class="badge badge-late">⏰ Trễ ${att.lateMinutes}p</span>
+                        </c:when>
+                        <c:when test="${att.attendanceStatus=='LATE_UNEXCUSED'}">
+                          <span class="badge badge-late">⏰ Trễ (đã ghi nhận)</span>
+                        </c:when>
+                        <c:when test="${att.attendanceStatus=='SYSTEM_CLOSED'}">
+                          <span class="badge badge-absent">🔒 Hệ thống đóng</span>
+                        </c:when>
+                        <c:when test="${att.attendanceStatus=='PAID_LEAVE'}">
+                          <span class="badge badge-leave">🏖️ Nghỉ phép (hưởng lương)</span>
+                        </c:when>
+                        <c:when test="${att.attendanceStatus=='UNPAID_LEAVE'}">
+                          <span class="badge badge-leave">🏖️ Nghỉ không lương</span>
+                        </c:when>
+                        <c:when test="${att.attendanceStatus=='SICK_LEAVE'}">
+                          <span class="badge badge-leave">🤒 Nghỉ ốm</span>
+                        </c:when>
+                        <c:otherwise>
+                          <span class="badge">${att.attendanceStatus}</span>
+                        </c:otherwise>
+                      </c:choose>
+                      <c:if test="${not empty att.checkInNote
+                                    and !fn:startsWith(att.checkInNote,'[Bàn giao két')}">
+                        <div style="font-size:10.5px;color:var(--muted);margin-top:3px;
+                                    max-width:160px;overflow:hidden;text-overflow:ellipsis;
+                                    white-space:nowrap"
+                             title="${att.checkInNote}">
+                          💬 ${fn:substring(att.checkInNote,0,30)}…
+                        </div>
+                      </c:if>
+                    </td>
+                  </tr>
+                </c:forEach>
+              </c:otherwise>
+            </c:choose>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -222,7 +433,7 @@ const toast = document.getElementById('toast');
 if (toast) setTimeout(()=>{toast.style.opacity='0';setTimeout(()=>toast.remove(),400)},3500);
 
 function calcDur(startStr) {
-  const s = new Date(startStr.replace('T',' '));
+  const s = new Date(startStr.replace(' ','T')+'Z');
   const diff = Math.floor((new Date()-s)/1000);
   if(isNaN(diff)||diff<0) return '--:--:--';
   return [Math.floor(diff/3600),Math.floor((diff%3600)/60),diff%60]

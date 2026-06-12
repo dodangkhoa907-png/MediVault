@@ -93,7 +93,7 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
         <c:when test="${empty summary}"><div class="empty-box"><p>Không có dữ liệu.</p></div></c:when>
         <c:otherwise>
           <table>
-            <thead><tr><th>Nhân viên</th><th>Ngày đi làm</th><th>Tổng giờ</th><th>Tổng trễ (phút)</th><th>Chi tiết</th></tr></thead>
+            <thead><tr><th>Nhân viên</th><th>Ngày đi làm</th><th>Tổng giờ</th><th>Tổng trễ</th><th>Phạt (đã duyệt)</th><th>Bàn giao két</th><th>Chờ xử lý</th><th>Thao tác</th></tr></thead>
             <tbody>
               <c:forEach var="row" items="${summary}">
                 <tr>
@@ -101,8 +101,33 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
                   <td style="font-weight:700;font-size:16px">${row.workedDays} <span style="font-size:11px;font-weight:400;color:var(--muted)">ngày</span></td>
                   <td style="font-weight:700">${row.totalHours}h</td>
                   <td><c:choose><c:when test="${row.totalLate>0}"><span style="color:var(--amber);font-weight:700">${row.totalLate}p</span></c:when><c:otherwise><span style="color:var(--green);font-weight:700">Đúng giờ</span></c:otherwise></c:choose></td>
-                  <td><a href="${pageContext.request.contextPath}/attendance?action=list&accountId=${row.staff.accountId}" class="btn-sm btn-primary">📋 Xem</a>
-                    <a href="${pageContext.request.contextPath}/payroll?action=generate&month=${month}&year=${year}" style="margin-left:6px" class="btn-sm" style="background:#EFF6FF;color:var(--blue)">💰 Tính lương</a></td>
+                  <td style="font-weight:700;color:var(--red)">
+                    <c:choose>
+                      <c:when test="${row.totalPenalty > 0}"><fmt:formatNumber value="${row.totalPenalty}" type="number" maxFractionDigits="0"/>đ</c:when>
+                      <c:otherwise><span style="color:var(--green)">0đ</span></c:otherwise>
+                    </c:choose>
+                  </td>
+                  <td style="font-weight:700;color:var(--ink)">
+                    <c:choose>
+                      <c:when test="${row.totalHandover > 0}"><fmt:formatNumber value="${row.totalHandover}" type="number" maxFractionDigits="0"/>đ</c:when>
+                      <c:otherwise><span style="color:var(--muted)">—</span></c:otherwise>
+                    </c:choose>
+                  </td>
+                  <td>
+                    <c:choose>
+                      <c:when test="${row.pendingCount > 0}">
+                        <a href="${pageContext.request.contextPath}/attendance?action=list&accountId=${row.staff.accountId}&status=SYSTEM_CLOSED"
+                           style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:10px;background:#FEF3C7;color:#92400E;font-size:11.5px;font-weight:700;text-decoration:none">
+                          ⚠️ ${row.pendingCount} chờ
+                        </a>
+                      </c:when>
+                      <c:otherwise><span style="color:var(--green);font-size:12px">✅</span></c:otherwise>
+                    </c:choose>
+                  </td>
+                  <td>
+                    <a href="${pageContext.request.contextPath}/attendance?action=list&accountId=${row.staff.accountId}" class="btn-sm btn-primary">📋 Xem</a>
+                    <a href="${pageContext.request.contextPath}/payroll?action=generate&month=${month}&year=${year}&accountId=${row.staff.accountId}" style="margin-left:6px" class="btn-sm" style="background:#EFF6FF;color:var(--blue)">💰 Tính lương</a>
+                  </td>
                 </tr>
               </c:forEach>
             </tbody>

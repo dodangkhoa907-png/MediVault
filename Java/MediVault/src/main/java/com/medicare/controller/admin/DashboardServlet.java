@@ -12,6 +12,7 @@ import com.medicare.dao.MedicineDAO;
 import com.medicare.dao.BatchesDAO;
 import com.medicare.entity.Account;
 import com.medicare.entity.PasswordResetRequest;
+import com.medicare.util.SidebarHelper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -79,6 +80,9 @@ public class DashboardServlet extends HttpServlet {
             if (a != null) resetAccountMap.put(pr.getAccountId(), a);
         }
         req.setAttribute("resetAccountMap", resetAccountMap);
+
+        SidebarHelper.load(req);
+
 
         req.getRequestDispatcher("/WEB-INF/views/admin/dashboard.jsp").forward(req, resp);
     }
