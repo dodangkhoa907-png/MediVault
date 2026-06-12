@@ -147,7 +147,53 @@ body{display:flex}
 </head>
 <body>
 
-<%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
+<%-- Staff sidebar inline — không dùng admin/sidebar.jsp --%>
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-gem">💊</div>
+    <div>
+      <div class="logo-name">Medi<span>Vault</span></div>
+      <div class="logo-sub">Staff Portal</div>
+    </div>
+  </div>
+  <nav class="nav-block">
+    <div class="nav-label">Tổng quan</div>
+    <a href="${pageContext.request.contextPath}/staff-dashboard?uid=<%= uid %>" class="nav-item">
+      <span class="nav-icon">🏠</span> Trang chủ
+    </a>
+  </nav>
+  <nav class="nav-block">
+    <div class="nav-label">Cá nhân</div>
+    <a href="${pageContext.request.contextPath}/staff-profile?uid=<%= uid %>" class="nav-item">
+      <span class="nav-icon">👤</span> Hồ sơ của tôi
+    </a>
+    <a href="${pageContext.request.contextPath}/staff-checkin?uid=<%= uid %>" class="nav-item">
+      <span class="nav-icon">✅</span> Điểm danh
+    </a>
+    <a href="${pageContext.request.contextPath}/staff-my-shifts?uid=<%= uid %>" class="nav-item">
+      <span class="nav-icon">🕐</span> Ca làm việc
+    </a>
+    <a href="${pageContext.request.contextPath}/leave-requests?action=my&amp;uid=<%= uid %>" class="nav-item active">
+      <span class="nav-icon">🏖️</span> Xin nghỉ phép
+    </a>
+  </nav>
+  <nav class="nav-block">
+    <div class="nav-label">Bán hàng</div>
+    <a href="${pageContext.request.contextPath}/pos?uid=<%= uid %>" class="nav-item">
+      <span class="nav-icon">🛒</span> Bán thuốc (POS)
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-av"><%= sInit %></div>
+      <div style="min-width:0">
+        <div class="user-name"><%= sName %></div>
+        <div class="user-role"><%= sRoleName %></div>
+      </div>
+      <a href="${pageContext.request.contextPath}/logout?from=staff&amp;uid=<%= uid %>" class="logout-btn">⏻</a>
+    </div>
+  </div>
+</aside>
 
 <div class="main">
   <c:if test="${not empty param.msg}">

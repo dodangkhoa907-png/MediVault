@@ -757,11 +757,11 @@ function updateClock(){
 updateClock(); setInterval(updateClock,1000);
 
 // ── Shift timer — đếm giờ ca đang mở ──────────────────────────────
-<c:if test="${not empty currentShift or not empty activeAtt}">
+<c:if test="${not empty currentShift}">
 (function(){
-  // DB trả LocalDateTime (giờ VN local) → parse as local (không thêm Z)
-  const startRaw = '${not empty currentShift ? currentShift.startTime : activeAtt.checkInTime}';
-  const shiftStart = new Date(startRaw.replace(' ','T')+'Z');
+  const startRaw = '${currentShift.startTime}';
+  // LocalDateTime format: "2026-06-09T19:00:00" hoặc "2026-06-09 19:00:00"
+  const shiftStart = new Date(startRaw.replace('T', ' '));
   const timerEl    = document.getElementById('shiftTimer');
   function tick() {
     if (!timerEl) return;
@@ -807,8 +807,11 @@ updateClock(); setInterval(updateClock,1000);
   const urlUid   = params.get('uid');
   const urlToken = params.get('token');
 
-  if (urlUid)   sessionStorage.setItem('staffUid',   urlUid);
-  if (urlToken) sessionStorage.setItem('staffToken', urlToken);
+  if (urlUid) sessionStorage.setItem('staffUid', urlUid);
+  // Ưu tiên token từ server meta tag (luôn đúng sau F5/navigate)
+  const metaToken = document.querySelector('meta[name="staffToken"]')?.content;
+  const effectiveToken = (metaToken && metaToken.length > 4) ? metaToken : urlToken;
+  if (effectiveToken) sessionStorage.setItem('staffToken', effectiveToken);
 
   sessionStorage.setItem('tabId', Math.random().toString(36).slice(2) + Date.now());
 
@@ -851,6 +854,8 @@ updateClock(); setInterval(updateClock,1000);
   });
 
   // Bắt đầu ping mỗi 10 giây
+  let _kickCount = 0;
+  const KICK_THRESHOLD = 2;
   setInterval(async function() {
     try {
       const ctx = document.querySelector('meta[name="ctx"]')?.content || '';

@@ -619,6 +619,9 @@ tbody tr{cursor:pointer}
       <c:when test="${param.msg == 'closed'}">       <div class="toast toast-ok"   id="toast">✅ Đóng ca thành công!</div></c:when>
       <c:when test="${param.msg == 'force-closed'}"> <div class="toast toast-info" id="toast">🔒 Admin đã đóng ca.</div></c:when>
       <c:when test="${param.msg == 'deleted'}">      <div class="toast toast-ok"   id="toast">🗑️ Xóa ca thành công!</div></c:when>
+      <c:when test="${param.msg == 'created'}">      <div class="toast toast-ok"   id="toast">✅ Xếp ca thành công!</div></c:when>
+      <c:when test="${param.msg == 'updated'}">      <div class="toast toast-ok"   id="toast">✅ Cập nhật ca thành công!</div></c:when>
+      <c:when test="${param.msg == 'cancelled'}">    <div class="toast toast-info" id="toast">🚫 Đã hủy lịch ca!</div></c:when>
       <c:when test="${param.msg == 'delete-failed'}"><div class="toast toast-err"  id="toast">❌ Không thể xóa — ca đã có hóa đơn!</div></c:when>
       <c:when test="${param.msg == 'already-open'}"> <div class="toast toast-warn" id="toast">⚠️ Nhân viên đang có ca chưa đóng!</div></c:when>
       <c:when test="${param.msg == 'sched-created'}"><div class="toast toast-ok" id="toast">✅ Đã xếp ${param.count} lịch ca! <c:if test="${param.skip > 0}">(bỏ qua ${param.skip} đã tồn tại)</c:if></div></c:when>
@@ -685,6 +688,13 @@ tbody tr{cursor:pointer}
       <button class="tab-btn <%= ("week".equals(activeTab)||"list".equals(activeTab)) ? "active" : "" %>" onclick="switchTab('list',this)">📅 Ca làm việc</button>
       <button class="tab-btn <%= "revenue".equals(activeTab) ? "active" : "" %>"  onclick="switchTab('revenue',this)">💰 Doanh thu</button>
       <button class="tab-btn <%= "types".equals(activeTab) ? "active" : "" %>"    onclick="switchTab('types',this)">⚙️ Loại ca</button>
+      <button class="tab-btn <%= "leave".equals(activeTab) ? "active" : "" %>"    onclick="switchTab('leave',this)">
+        🏖️ Nghỉ phép
+        <c:if test="${pendingLeaveCount > 0}">
+          <span style="background:#DC2626;color:#fff;font-size:10px;font-weight:800;
+                       padding:1px 6px;border-radius:10px;margin-left:4px">${pendingLeaveCount}</span>
+        </c:if>
+      </button>
     </div>
 
     <%-- ══════════════════════════════════════════════
@@ -1194,6 +1204,113 @@ tbody tr{cursor:pointer}
       </div>
     </div><%-- end tab-types --%>
 
+    <%-- ════════════════════════════════
+         TAB 4: NGHỈ PHÉP
+         ════════════════════════════════ --%>
+    <div id="tab-leave" class="tab-pane <%= "leave".equals(activeTab) ? "active" : "" %>">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div>
+          <h2 style="font-size:16px;font-weight:800;color:var(--ink)">🏖️ Đơn xin nghỉ phép</h2>
+          <p style="font-size:12.5px;color:var(--muted);margin-top:3px">Duyệt hoặc từ chối đơn xin nghỉ của nhân viên</p>
+        </div>
+        <a href="${pageContext.request.contextPath}/leave-requests?action=list"
+           style="font-size:13px;font-weight:600;color:var(--blue);text-decoration:none;
+                  padding:7px 14px;border:1.5px solid var(--blue);border-radius:9px;
+                  transition:all .18s"
+           onmouseover="this.style.background='#EFF6FF'" onmouseout="this.style.background=''">
+          📋 Xem tất cả đơn →
+        </a>
+      </div>
+
+      <div class="table-card">
+        <div class="table-card-head">
+          <h2>⏳ Đơn chờ duyệt</h2>
+          <span class="table-card-sub">${pendingLeaveCount} đơn đang chờ</span>
+        </div>
+        <c:choose>
+          <c:when test="${empty pendingLeaves}">
+            <div style="text-align:center;padding:48px 24px;color:var(--muted)">
+              <div style="font-size:44px;margin-bottom:12px">✅</div>
+              <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:4px">Không có đơn nào chờ duyệt</div>
+              <div style="font-size:13px">Tất cả đơn đã được xử lý!</div>
+            </div>
+          </c:when>
+          <c:otherwise>
+            <table>
+              <thead>
+                <tr>
+                  <th>Nhân viên</th>
+                  <th>Ngày nghỉ</th>
+                  <th>Loại</th>
+                  <th>Lý do</th>
+                  <th>Gửi lúc</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                <c:forEach var="lr" items="${pendingLeaves}">
+                  <tr>
+                    <td><strong>${lr.staffName}</strong></td>
+                    <td style="font-weight:700;color:var(--ink)">${lr.leaveDate}</td>
+                    <td>
+                      <span style="padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;
+                        background:<c:choose>
+                          <c:when test="${lr.leaveType=='ANNUAL'}">#ECFDF5;color:#065F46</c:when>
+                          <c:when test="${lr.leaveType=='SICK'}">#FFF7ED;color:#92400E</c:when>
+                          <c:when test="${lr.leaveType=='UNPAID'}">#F5F3FF;color:#5B21B6</c:when>
+                          <c:otherwise>#EFF6FF;color:#1E40AF</c:otherwise>
+                        </c:choose>">
+                        <c:choose>
+                          <c:when test="${lr.leaveType=='ANNUAL'}">🌴 Phép năm</c:when>
+                          <c:when test="${lr.leaveType=='SICK'}">🤒 Nghỉ ốm</c:when>
+                          <c:when test="${lr.leaveType=='UNPAID'}">💸 Không lương</c:when>
+                          <c:otherwise>⚡ Đột xuất</c:otherwise>
+                        </c:choose>
+                      </span>
+                    </td>
+                    <td style="max-width:180px;font-size:12.5px;color:var(--muted)">${lr.reason}</td>
+                    <td style="font-size:12px;color:var(--muted);white-space:nowrap">
+                      ${fn:substring(lr.requestedAt.toString(),0,16)}
+                    </td>
+                    <td>
+                      <div style="display:flex;gap:6px;align-items:center">
+                        <form method="post" action="${pageContext.request.contextPath}/leave-requests">
+                          <input type="hidden" name="action"       value="approve">
+                          <input type="hidden" name="id"           value="${lr.leaveId}">
+                          <input type="hidden" name="deductAmount" value="0">
+                          <button type="submit"
+                                  style="padding:5px 12px;background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0;
+                                         border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;
+                                         transition:all .18s"
+                                  onmouseover="this.style.background='#A7F3D0'"
+                                  onmouseout="this.style.background='#ECFDF5'">
+                            ✅ Duyệt
+                          </button>
+                        </form>
+                        <form method="post" action="${pageContext.request.contextPath}/leave-requests">
+                          <input type="hidden" name="action" value="reject">
+                          <input type="hidden" name="id"     value="${lr.leaveId}">
+                          <button type="submit"
+                                  onclick="return confirm('Từ chối đơn nghỉ của ${lr.staffName}?')"
+                                  style="padding:5px 12px;background:#FEF2F2;color:#991B1B;border:1px solid #FECACA;
+                                         border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;
+                                         transition:all .18s"
+                                  onmouseover="this.style.background='#FECACA'"
+                                  onmouseout="this.style.background='#FEF2F2'">
+                            ✕ Từ chối
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                </c:forEach>
+              </tbody>
+            </table>
+          </c:otherwise>
+        </c:choose>
+      </div>
+    </div><%-- end tab-leave --%>
+
   </div><%-- end content --%>
 </div><%-- end main --%>
 
@@ -1207,8 +1324,8 @@ tbody tr{cursor:pointer}
       <button class="modal-close" onclick="closeSchedModal()">✕</button>
     </div>
     <div class="modal-body">
-      <form id="schedForm" method="post" action="${pageContext.request.contextPath}/shift-schedules">
-        <input type="hidden" name="action" value="create">
+      <form id="schedForm" method="post" action="${pageContext.request.contextPath}/shifts">
+        <input type="hidden" name="action" value="schedule-bulk">
 
         <%-- Nhân viên --%>
         <div class="mfg">
@@ -2440,10 +2557,7 @@ function applyEditSel() {
     alert('Vui lòng chọn ít nhất 1 thông tin cần thay đổi (loại ca, dung sai, hoặc ghi chú)!');
     return;
   }
-  if (!stId) {
-    alert('Vui lòng chọn loại ca muốn đổi sang!');
-    return;
-  }
+  // Không bắt buộc chọn loại ca — để trống = giữ nguyên loại ca hiện tại
   if (!confirm('Lưu thay đổi cho ' + _editSelIds.size + ' ca đã chọn?')) return;
 
   const f = document.createElement('form');
@@ -2558,6 +2672,19 @@ function applyDeleteSel() {
 document.getElementById('deleteSelectModal').addEventListener('click', function(e) {
   if (e.target === this) closeDeleteSelectModal();
 });
+
+function openChipEditModal(scheduleId, staffName, workDate, currentTypeId) {
+  // Mở modal sửa ca inline (editSchedModal hoặc editSchedForm)
+  const modal = document.getElementById('editSchedModal');
+  if (!modal) return;
+  document.getElementById('editSchedStaffName')  && (document.getElementById('editSchedStaffName').textContent = staffName);
+  document.getElementById('editSchedDate')        && (document.getElementById('editSchedDate').textContent = workDate);
+  document.getElementById('editSchedId')          && (document.getElementById('editSchedId').value = scheduleId);
+  // Pre-select loại ca
+  const sel = document.getElementById('editSchedTypeId');
+  if (sel) sel.value = currentTypeId;
+  modal.classList.add('open');
+}
 </script>
 </body>
 </html>

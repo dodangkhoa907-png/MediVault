@@ -180,7 +180,8 @@ tbody tr:hover td{background:#F8F5FF}
     <c:choose>
       <c:when test="${param.msg=='submitted'}"><div class="toast toast-ok"  id="toast">✅ Đã gửi đơn xin nghỉ!</div></c:when>
       <c:when test="${param.msg=='error'}">    <div class="toast toast-err" id="toast">❌ Có lỗi xảy ra!</div></c:when>
-      <c:when test="${param.msg=='exists'}">   <div class="toast toast-warn"id="toast">⚠️ Đã có đơn nghỉ ngày này!</div></c:when>
+      <c:when test="${param.msg=='exists'}">          <div class="toast toast-warn" id="toast">⚠️ Đã có đơn nghỉ ngày này!</div></c:when>
+      <c:when test="${param.msg=='no-leave-quota'}"> <div class="toast toast-err"  id="toast">❌ Hết phép năm! Vui lòng chọn Nghỉ không lương hoặc Đột xuất.</div></c:when>
     </c:choose>
   </c:if>
 

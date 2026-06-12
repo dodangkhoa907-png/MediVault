@@ -245,7 +245,15 @@ public class AuthFilter implements Filter {
 
         if (isAdminOnly) {
             if (adminAcc == null) {
-                // Lưu trang định vào để sau login redirect đúng chỗ
+                // Nếu là AJAX request (polling online-status) → trả 401 thay vì redirect HTML
+                String xrw = req.getHeader("X-Requested-With");
+                if ("XMLHttpRequest".equals(xrw)) {
+                    resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    resp.setContentType("application/json;charset=UTF-8");
+                    resp.getWriter().print("{\"error\":\"session_expired\"}");
+                    return;
+                }
+                // Browser navigate → redirect về login
                 String qs = req.getQueryString();
                 String fullUri = uri + (qs != null ? "?" + qs : "");
                 req.getSession(true).setAttribute("redirectAfterLogin", fullUri);

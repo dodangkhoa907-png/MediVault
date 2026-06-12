@@ -95,7 +95,7 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
       <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px">
         <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Tổng chi lương</div>
-        <div style="font-size:20px;font-weight:900;color:var(--ink);margin-top:4px"><fmt:formatNumber value="${totalNet}" type="number" maxFractionDigits="0"/>đ</div>
+        <div style="font-size:20px;font-weight:900;color:var(--ink);margin-top:4px"><c:if test="${not empty totalNet}"><fmt:formatNumber value="${totalNet}" type="number" maxFractionDigits="0"/>đ</c:if><c:if test="${empty totalNet}">0đ</c:if></div>
       </div>
       <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px">
         <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Draft</div>
@@ -123,12 +123,33 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
                   <td><strong>${p.staffName}</strong></td>
                   <td style="text-align:center">${p.totalWorkedDays}/<span style="color:var(--muted)">${p.totalScheduledDays}</span></td>
                   <td>${p.totalHours}h</td>
-                  <td><fmt:formatNumber value="${p.baseSalary}" type="number" maxFractionDigits="0"/>đ</td>
-                  <td>${p.overtimeHours.compareTo(java.math.BigDecimal.ZERO)>0 ? p.overtimePay.toPlainString().concat('đ') : '—'}</td>
-                  <td><fmt:formatNumber value="${p.allowance}" type="number" maxFractionDigits="0"/>đ</td>
-                  <td>${p.bonus.compareTo(java.math.BigDecimal.ZERO)>0 ? p.bonus.toPlainString().concat('đ') : '—'}</td>
-                  <td style="color:var(--red)">${p.deduction.compareTo(java.math.BigDecimal.ZERO)>0 ? '-'.concat(p.deduction.toPlainString()).concat('đ') : '—'}</td>
-                  <td style="font-weight:900;font-size:14px;color:var(--green)"><fmt:formatNumber value="${p.netSalary}" type="number" maxFractionDigits="0"/>đ</td>
+                  <td><c:choose><c:when test="${not empty p.baseSalary}"><fmt:formatNumber value="${p.baseSalary}" type="number" maxFractionDigits="0"/>đ</c:when><c:otherwise>0đ</c:otherwise></c:choose></td>
+                  <td>
+                    <c:choose>
+                      <c:when test="${not empty p.overtimePay and p.overtimeHours > 0}">
+                        <fmt:formatNumber value="${p.overtimePay}" type="number" maxFractionDigits="0"/>đ
+                      </c:when>
+                      <c:otherwise><span style="color:var(--muted)">—</span></c:otherwise>
+                    </c:choose>
+                  </td>
+                  <td><c:choose><c:when test="${not empty p.allowance}"><fmt:formatNumber value="${p.allowance}" type="number" maxFractionDigits="0"/>đ</c:when><c:otherwise>0đ</c:otherwise></c:choose></td>
+                  <td>
+                    <c:choose>
+                      <c:when test="${not empty p.bonus and p.bonus > 0}">
+                        +<fmt:formatNumber value="${p.bonus}" type="number" maxFractionDigits="0"/>đ
+                      </c:when>
+                      <c:otherwise><span style="color:var(--muted)">—</span></c:otherwise>
+                    </c:choose>
+                  </td>
+                  <td style="color:var(--red)">
+                    <c:choose>
+                      <c:when test="${not empty p.deduction and p.deduction > 0}">
+                        −<fmt:formatNumber value="${p.deduction}" type="number" maxFractionDigits="0"/>đ
+                      </c:when>
+                      <c:otherwise><span style="color:var(--muted)">—</span></c:otherwise>
+                    </c:choose>
+                  </td>
+                  <td style="font-weight:900;font-size:14px;color:var(--green)"><c:choose><c:when test="${not empty p.netSalary}"><fmt:formatNumber value="${p.netSalary}" type="number" maxFractionDigits="0"/>đ</c:when><c:otherwise>0đ</c:otherwise></c:choose></td>
                   <td>
                     <span class="badge ${p.status=='DRAFT'?'badge-pending':p.status=='CONFIRMED'?'badge-annual':'badge-approved'}">
                       ${p.status=='DRAFT'?'Draft':p.status=='CONFIRMED'?'Đã duyệt':'Đã trả'}

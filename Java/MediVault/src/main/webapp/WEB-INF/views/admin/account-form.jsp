@@ -491,10 +491,12 @@ select.field-input{
                                    value="<%= vPhone %>" placeholder="0901234567" pattern="0[0-9]{9}">
                         </div>
                         <div class="field">
-                            <label class="field-label" for="citizenId">CMND / CCCD</label>
+                            <label class="field-label" for="citizenId">CMND / CCCD<% if (isNew) { %> <span class="req">*</span><% } %></label>
                             <input type="text" id="citizenId" name="citizenId" class="field-input" oninput="validateField('citizenId')"
                                    value="<%= vCitizenId %>" placeholder="9 hoặc 12 chữ số"
-                                   maxlength="12" pattern="[0-9]{9}|[0-9]{12}">
+                                   maxlength="12" pattern="[0-9]{9}|[0-9]{12}"
+                                   <%= isNew ? "required" : "" %>>
+                            <% if (isNew) { %><span class="field-note">🪪 Số CMND 9 chữ số hoặc CCCD 12 chữ số.</span><% } %>
                         </div>
                         <%-- Ô Chức vụ/Bộ phận đã bỏ: phân quyền đã xác định qua roleId --%>
                         <input type="hidden" name="position" value="<%= vPosition %>">

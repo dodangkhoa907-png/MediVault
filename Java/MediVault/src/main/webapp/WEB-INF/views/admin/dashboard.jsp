@@ -703,6 +703,11 @@ body{display:flex;background:var(--surface);color:var(--ink)}
             const res = await fetch('${pageContext.request.contextPath}/accounts?action=online-status', {
                 headers: {'X-Requested-With': 'XMLHttpRequest'}
             });
+            // 401 = session hết hạn sau restart → redirect về login
+            if (res.status === 401) {
+                window.location.href = '${pageContext.request.contextPath}/login';
+                return;
+            }
             if (!res.ok) return;
             const data = await res.json();
 

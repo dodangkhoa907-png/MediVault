@@ -23,21 +23,11 @@ public class SessionTracker {
             new ConcurrentHashMap<>();
 
     // ── Login: thêm vào online set + tạo token mới ──────────
-    // Dùng khi: staff bấm nút Đăng nhập (StaffLoginServlet)
     public static String login(int accountId) {
         onlineStaff.add(accountId);
         String token = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
         loginTokens.put(accountId, token);
         return token;
-    }
-
-    // ── LoginOrKeep: giữ token cũ nếu còn, tạo mới nếu chưa có ──
-    // Dùng khi: AuthFilter tự restore session (F5, Tomcat restart)
-    // Quan trọng: KHÔNG tạo token mới → tránh kick browser đang dùng
-    public static String loginOrKeep(int accountId) {
-        onlineStaff.add(accountId);
-        return loginTokens.computeIfAbsent(accountId,
-                k -> UUID.randomUUID().toString().replace("-", "").substring(0, 16));
     }
 
     // ── Logout: xóa khỏi online set + xóa token ────────────
@@ -46,19 +36,28 @@ public class SessionTracker {
         loginTokens.remove(accountId);
     }
 
-    // ── Kiểm tra session hợp lệ ─────────────────────────────
+    // ── LoginOrKeep: giữ token cũ nếu còn, tạo mới nếu chưa có ──
+    // Dùng khi AuthFilter restore session (F5, Tomcat restart)
+    // KHÔNG tạo token mới → không kick tab đang dùng
+    public static String loginOrKeep(int accountId) {
+        onlineStaff.add(accountId);
+        return loginTokens.computeIfAbsent(accountId,
+                k -> UUID.randomUUID().toString().replace("-", "").substring(0, 16));
+    }
+
+    // ── Lấy token hiện tại (để inject vào meta tag trong JSP) ──
+    public static String getToken(int accountId) {
+        return loginTokens.get(accountId);
+    }
+
+    // ── Kiểm tra session hợp lệ ────────────────────────────────
     public static boolean isValidSession(int accountId, String token, String tabId) {
         if (token == null || token.isEmpty()) return false;
         String current = loginTokens.get(accountId);
-        // Nếu loginTokens bị xóa (Tomcat restart) → không kick ngay
-        // Browser sẽ tự navigate lại và AuthFilter sẽ restore + loginOrKeep
-        if (current == null) return true; // grace: coi như OK, đừng kick
+        // Grace: nếu map trống (Tomcat restart) → không kick ngay
+        // Browser navigate lại → AuthFilter sẽ loginOrKeep()
+        if (current == null) return true;
         return token.equals(current);
-    }
-
-    // ── Lấy token hiện tại (để StaffAttendanceServlet inject vào page) ──
-    public static String getToken(int accountId) {
-        return loginTokens.get(accountId);
     }
 
     // ── Getters ──────────────────────────────────────────────

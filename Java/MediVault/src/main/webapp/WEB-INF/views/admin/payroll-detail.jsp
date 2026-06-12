@@ -97,16 +97,16 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
         <div style="padding:14px 20px;border-bottom:1px solid var(--border)">
           <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Làm thêm giờ</div>
           <div style="font-size:20px;font-weight:900">${payroll.overtimeHours}h</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">Tiền OT: <fmt:formatNumber value="${payroll.overtimePay}" type="number" maxFractionDigits="0"/>đ</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Tiền OT: <c:choose><c:when test="${not empty payroll.overtimePay}"><fmt:formatNumber value="${payroll.overtimePay}" type="number" maxFractionDigits="0"/>đ</c:when><c:otherwise>0đ</c:otherwise></c:choose></div>
         </div>
         <div style="padding:14px 20px;border-right:1px solid var(--border)">
           <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Cơ cấu thu nhập</div>
           <div style="font-size:13px;line-height:1.8">
             Lương cơ bản: <strong><fmt:formatNumber value="${payroll.baseSalary}" type="number" maxFractionDigits="0"/>đ</strong><br>
             Phụ cấp: <strong><fmt:formatNumber value="${payroll.allowance}" type="number" maxFractionDigits="0"/>đ</strong><br>
-            Thưởng: <strong style="color:var(--green)"><fmt:formatNumber value="${payroll.bonus}" type="number" maxFractionDigits="0"/>đ</strong><br>
-            Khấu trừ: <strong style="color:var(--red)">-<fmt:formatNumber value="${payroll.deduction}" type="number" maxFractionDigits="0"/>đ</strong>
-            <c:if test="${payroll.deduction > 0}">
+            Thưởng: <strong style="color:var(--green)"><c:choose><c:when test="${not empty payroll.bonus}"><fmt:formatNumber value="${payroll.bonus}" type="number" maxFractionDigits="0"/>đ</c:when><c:otherwise>0đ</c:otherwise></c:choose></strong><br>
+            Khấu trừ: <strong style="color:var(--red)"><c:choose><c:when test="${not empty payroll.deduction and payroll.deduction > 0}">−<fmt:formatNumber value="${payroll.deduction}" type="number" maxFractionDigits="0"/>đ</c:when><c:otherwise>0đ</c:otherwise></c:choose></strong>
+            <c:if test="${not empty payroll.deduction and payroll.deduction > 0}">
               <div style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.6;padding-left:8px;border-left:2px solid #FECACA">
                 <c:if test="${not empty leaveDeduction and leaveDeduction > 0}">
                   • Nghỉ phép: -<fmt:formatNumber value="${leaveDeduction}" type="number" maxFractionDigits="0"/>đ<br>

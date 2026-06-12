@@ -56,8 +56,8 @@ public class DBContext {
             // responseBuffering=adaptive: chỉ buffer khi cần, tiết kiệm memory
             config.addDataSourceProperty("responseBuffering", "adaptive");
 
-            // selectMethod=cursor: tốt cho result set nhỏ (fetch từng batch thay vì toàn bộ)
-            config.addDataSourceProperty("selectMethod", "cursor");
+            // KHÔNG dùng selectMethod=cursor — gây lỗi nested cursor conflict
+            // khi dùng INSERT...SELECT...WHERE (subquery) trên cùng 1 connection
 
             // ── Connection test ───────────────────────────────────────────
             config.setConnectionTestQuery("SELECT 1");  // test connection còn sống không

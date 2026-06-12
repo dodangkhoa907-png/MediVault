@@ -80,7 +80,7 @@ public class StaffLoginServlet extends HttpServlet {
 
         // ── 4. Tài khoản Admin không đăng nhập ở đây ──
         if (account.getRoleId() == 1) {
-            req.setAttribute("error", "Tài khoản Admin vui lòng đăng nhập tại trang quản trị!");
+            req.setAttribute("error", "Tên đăng nhập hoặc mật khẩu không đúng!");
             req.getRequestDispatcher("/WEB-INF/views/staff/staff-login.jsp").forward(req, resp);
             return;
         }

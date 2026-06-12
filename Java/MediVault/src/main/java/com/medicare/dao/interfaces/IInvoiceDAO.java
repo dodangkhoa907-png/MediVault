@@ -18,9 +18,10 @@ public interface IInvoiceDAO {
      * Thực hiện toàn bộ flow bán hàng trong 1 transaction:
      * createPending → addItemByFIFO (từng SP) → complete
      * Nếu bất kỳ bước nào lỗi → rollback toàn bộ
+     * @param shiftId  ID ca làm việc hiện tại (null nếu không có ca)
      * @return invoiceId nếu thành công, -1 nếu lỗi
      */
-    int completeSaleTransaction(int accountId, Integer customerId,
+    int completeSaleTransaction(int accountId, Integer shiftId, Integer customerId,
                                 String paymentMethod, BigDecimal discount,
                                 int[] medicineIds, int[] quantities);
 

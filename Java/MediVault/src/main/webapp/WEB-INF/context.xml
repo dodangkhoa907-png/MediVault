@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Tomcat Context config — đặt tại src/main/webapp/META-INF/context.xml
+  Cấu hình SameSite=Strict cho session cookie đúng cách với Tomcat 10.1+
+  (web.xml không hỗ trợ <same-site> element trong Jakarta EE 6.0 spec)
+-->
+<Context>
+    <CookieProcessor sameSiteCookies="strict" />
+</Context>

@@ -223,6 +223,9 @@ public class AccountServlet extends HttpServlet {
                 username, fullName, email, phone, citizenId, position));
         if (!ValidationUtil.isValidPassword(password))
             errors.add("Mật khẩu phải có ít nhất 6 ký tự.");
+        // CitizenId là NOT NULL trong DB — bắt buộc nhập khi tạo mới
+        if (!ValidationUtil.notBlank(citizenId))
+            errors.add("Số CMND/CCCD không được để trống.");
         if (ValidationUtil.notBlank(username) && dao.isUsernameTaken(username))
             errors.add("Tên đăng nhập '" + username + "' đã tồn tại.");
         if (ValidationUtil.notBlank(email) && dao.isEmailTaken(email, -1))
@@ -251,7 +254,8 @@ public class AccountServlet extends HttpServlet {
         a.setFullName(fullName.trim());
         a.setEmail(email != null ? email.trim() : null);
         a.setPhone(phone != null ? phone.trim() : null);
-        a.setCitizenId(citizenId != null ? citizenId.trim() : null);
+        // CitizenId là NOT NULL trong DB — dùng empty string nếu null (phòng thủ thêm)
+        a.setCitizenId(citizenId != null && !citizenId.trim().isEmpty() ? citizenId.trim() : "");
         a.setPosition(position != null ? position.trim() : null);
         a.setRoleId(Integer.parseInt(roleStr));
         a.setPasswordHash(PasswordUtil.hashPassword(password));
@@ -447,7 +451,8 @@ public class AccountServlet extends HttpServlet {
         a.setFullName(fullName.trim());
         a.setEmail(email != null ? email.trim() : null);
         a.setPhone(phone != null ? phone.trim() : null);
-        a.setCitizenId(citizenId != null ? citizenId.trim() : null);
+        // CitizenId là NOT NULL trong DB — dùng empty string nếu null
+        a.setCitizenId(citizenId != null && !citizenId.trim().isEmpty() ? citizenId.trim() : "");
         a.setPosition(position != null ? position.trim() : null);
         a.setRoleId(Integer.parseInt(roleStr));
 

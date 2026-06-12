@@ -35,7 +35,7 @@ public class ForgotPasswordServlet extends HttpServlet {
         String username = req.getParameter("username");
         String email    = req.getParameter("email");
 
-        // ── Validate input ──
+        // ── 1. Validate input ──
         if (username == null || username.trim().isEmpty()
                 || email == null || email.trim().isEmpty()) {
             req.setAttribute("error", "Vui lòng nhập đầy đủ thông tin!");
@@ -43,8 +43,7 @@ public class ForgotPasswordServlet extends HttpServlet {
             return;
         }
 
-        // ── Tìm account ──
-        // findByUsernameAny: tìm kể cả TK bị khóa (IsActive=0) — cần thiết vì TK đã bị khóa khi gửi lần 2
+        // ── 2. Tìm account (kể cả TK bị khóa) ──
         Account staff = accountDAO.findByUsernameAny(username.trim());
         if (staff == null || staff.getRoleId() == 1) {
             req.setAttribute("error", "Không tìm thấy tài khoản nhân viên!");
@@ -52,51 +51,64 @@ public class ForgotPasswordServlet extends HttpServlet {
             return;
         }
 
-        // ── Kiểm tra email khớp ──
-        if (!email.trim().equalsIgnoreCase(staff.getEmail())) {
+        // ── 3. Kiểm tra email khớp ──
+        if (staff.getEmail() == null || !email.trim().equalsIgnoreCase(staff.getEmail().trim())) {
             req.setAttribute("error", "Email không khớp với tài khoản!");
             req.getRequestDispatcher("/WEB-INF/views/forgot-password.jsp").forward(req, resp);
             return;
         }
 
-        // ── Expire các request quá hạn trước khi check ──
+        // ── 4. Expire records quá hạn trước ──
         resetDAO.expireOld();
 
+        // ── 5. Giới hạn 3 lần/ngày ──
         int todayCount = resetDAO.countTodayByAccountId(staff.getAccountId());
         if (todayCount >= 3) {
             req.setAttribute("error", "Tài khoản @" + staff.getUsername()
-                    + " đã gửi quá 3 yêu cầu hôm nay. Vui lòng thử lại vào ngày mai hoặc liên hệ Admin trực tiếp!");
+                    + " đã gửi quá 3 yêu cầu hôm nay. Vui lòng thử lại vào ngày mai hoặc liên hệ Admin!");
             req.getRequestDispatcher("/WEB-INF/views/forgot-password.jsp").forward(req, resp);
             return;
         }
 
-        // ── Kiểm tra đã có request PENDING/CONFIRMED chưa ──
+        // ── 6. Nếu đang có PENDING/CONFIRMED → báo đã gửi, không tạo thêm ──
+        // (Dùng findPendingByAccountId đã bỏ ExpiresAt filter — không bị miss do timezone)
         PasswordResetRequest existing = resetDAO.findPendingByAccountId(staff.getAccountId());
         if (existing == null) existing = resetDAO.findConfirmedByAccountId(staff.getAccountId());
         if (existing != null) {
-            req.setAttribute("error", "Yêu cầu đặt lại mật khẩu đã được gửi! Vui lòng chờ admin xử lý.");
-            req.getRequestDispatcher("/WEB-INF/views/forgot-password.jsp").forward(req, resp);
+            // Đã có yêu cầu chờ xử lý → coi như success, không tạo thêm
+            // (redirect về staff-login với success banner để user không bị stuck)
+            resp.sendRedirect(req.getContextPath()
+                    + "/staff-login?success=reset-sent&name="
+                    + java.net.URLEncoder.encode(staff.getFullName(), "UTF-8"));
             return;
         }
 
-        // ── Tạo token + request ──
+        // ── 7. Tạo token mới + insert ──
         String token = UUID.randomUUID().toString().replace("-", "");
         LocalDateTime expiresAt = LocalDateTime.now().plusHours(24);
         PasswordResetRequest resetReq = new PasswordResetRequest(
                 staff.getAccountId(), token, expiresAt);
 
-        if (!resetDAO.insert(resetReq)) {
-            req.setAttribute("error", "Lỗi hệ thống! Vui lòng thử lại.");
+        boolean inserted = resetDAO.insert(resetReq);
+        if (!inserted) {
+            // Retry với token mới (phòng trường hợp UUID trùng — cực hiếm)
+            token = UUID.randomUUID().toString().replace("-", "")
+                    + Long.toHexString(System.currentTimeMillis());
+            resetReq = new PasswordResetRequest(staff.getAccountId(), token, expiresAt);
+            inserted = resetDAO.insert(resetReq);
+        }
+        if (!inserted) {
+            req.setAttribute("error", "Lỗi hệ thống khi tạo yêu cầu. Vui lòng thử lại sau vài giây!");
             req.getRequestDispatcher("/WEB-INF/views/forgot-password.jsp").forward(req, resp);
             return;
         }
 
-        // ── KHÓA TÀI KHOẢN NGAY LẬP TỨC ──
+        // ── 8. Khóa tài khoản ngay lập tức ──
         if (staff.isActive()) {
             accountDAO.toggleActive(staff.getAccountId());
         }
 
-        // ── Gửi email thông báo cho Admin ──
+        // ── 9. Gửi email thông báo cho Admin ──
         String adminEmail = accountDAO.findAll().stream()
                 .filter(a -> a.getRoleId() == 1)
                 .map(Account::getEmail)
@@ -108,7 +120,7 @@ public class ForgotPasswordServlet extends HttpServlet {
             EmailUtil.sendEmail(adminEmail, subject, buildAdminEmail(staff, expiresAt));
         }
 
-        // ── Gửi email xác nhận cho chính Staff ──
+        // ── 10. Gửi email xác nhận cho Staff ──
         EmailUtil.sendEmail(staff.getEmail(),
                 "[MediVault] Yêu cầu đặt lại mật khẩu đã được ghi nhận",
                 buildStaffConfirmEmail(staff));
@@ -116,7 +128,8 @@ public class ForgotPasswordServlet extends HttpServlet {
         AuditHelper.log(req, "Yêu cầu đặt lại mật khẩu", "Auth",
                 "Staff @" + staff.getUsername() + " gửi yêu cầu reset mật khẩu — tài khoản bị khóa tự động",
                 staff.getAccountId());
-        // ── Redirect về forgot-password với success message ──
+
+        // ── 11. Redirect về staff-login với success banner ──
         resp.sendRedirect(req.getContextPath()
                 + "/staff-login?success=reset-sent&name="
                 + java.net.URLEncoder.encode(staff.getFullName(), "UTF-8"));

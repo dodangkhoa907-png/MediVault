@@ -1,9 +1,17 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%
     String error   = (String) request.getAttribute("error");
-    String success = request.getParameter("success");
-    String name    = request.getParameter("name");
-    if (name != null) name = java.net.URLDecoder.decode(name, "UTF-8");
+    // Servlet redirect về /staff-login?success=reset-sent khi thành công
+    // Trang này chỉ hiển thị form + lỗi
+    // Nếu có param success=reset-sent trên trang này (edge case) → redirect về staff-login
+    String successParam = request.getParameter("success");
+    if ("reset-sent".equals(successParam)) {
+        String nameParam = request.getParameter("name");
+        String redirectUrl = request.getContextPath() + "/staff-login?success=reset-sent"
+                + (nameParam != null ? "&name=" + nameParam : "");
+        response.sendRedirect(redirectUrl);
+        return;
+    }
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -241,26 +249,6 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
 <div class="right">
   <div class="form-box">
 
-<% if ("sent".equals(success)) { %>
-    <!-- ── TRẠNG THÁI: Gửi thành công ── -->
-    <div class="success-card">
-      <span class="success-icon">📬</span>
-      <div class="success-title">Yêu cầu đã được gửi!</div>
-      <% if (name != null && !name.isEmpty()) { %>
-      <div class="success-name">👤 <%= name %></div>
-      <% } %>
-      <div class="success-msg">
-        Admin đã nhận được email thông báo và sẽ xác nhận yêu cầu của bạn.<br><br>
-        Sau khi admin xác nhận, tài khoản sẽ được <strong>khóa tạm thời</strong>.
-        Admin sẽ liên hệ và cấp mật khẩu mới cho bạn.
-      </div>
-      <a href="${pageContext.request.contextPath}/staff-login" class="btn-submit"
-         style="display:block;text-align:center;text-decoration:none;padding:12px">
-        ← Quay lại đăng nhập
-      </a>
-    </div>
-
-<% } else { %>
     <!-- ── FORM NHẬP THÔNG TIN ── -->
     <div class="form-eyebrow">Quên mật khẩu</div>
     <div class="form-title">Đặt lại mật khẩu</div>
@@ -307,7 +295,6 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
     <a href="${pageContext.request.contextPath}/staff-login" class="back-link">
       ← Quay lại đăng nhập
     </a>
-<% } %>
 
   </div>
 </div>

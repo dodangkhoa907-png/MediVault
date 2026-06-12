@@ -213,9 +213,10 @@ public class InvoiceDAO implements IInvoiceDAO {
      * createPending → addItemByFIFO × N → complete
      * Nếu lỗi ở bất kỳ bước nào → rollback toàn bộ → không có dữ liệu lửng.
      *
+     * @param shiftId  Ca làm việc hiện tại (null nếu không có ca đang mở)
      * @return invoiceId nếu thành công, -1 nếu lỗi
      */
-    public int completeSaleTransaction(int accountId, Integer customerId,
+    public int completeSaleTransaction(int accountId, Integer shiftId, Integer customerId,
                                        String paymentMethod, java.math.BigDecimal discount,
                                        int[] medicineIds, int[] quantities) {
         Connection cn = null;
@@ -223,15 +224,15 @@ public class InvoiceDAO implements IInvoiceDAO {
             cn = DBContext.getConnection();
             cn.setAutoCommit(false);  // ── Bắt đầu transaction ──
 
-            // Bước 1: Tạo Invoice PENDING
-            String sqlInsert = "INSERT INTO Invoices (AccountID, CustomerID, PaymentMethod) " +
-                    "VALUES (?,?,?); SELECT SCOPE_IDENTITY();";
+            // Bước 1: Tạo Invoice PENDING — bao gồm ShiftID
+            String sqlInsert = "INSERT INTO Invoices (AccountID, ShiftID, CustomerID, PaymentMethod) " +
+                    "VALUES (?,?,?,?); SELECT SCOPE_IDENTITY();";
             int invoiceId = -1;
             try (PreparedStatement ps = cn.prepareStatement(sqlInsert)) {
                 ps.setInt(1, accountId);
-                if (customerId != null) ps.setInt(2, customerId);
-                else ps.setNull(2, Types.INTEGER);
-                ps.setString(3, paymentMethod != null ? paymentMethod : "CASH");
+                if (shiftId != null) ps.setInt(2, shiftId); else ps.setNull(2, Types.INTEGER);
+                if (customerId != null) ps.setInt(3, customerId); else ps.setNull(3, Types.INTEGER);
+                ps.setString(4, paymentMethod != null ? paymentMethod : "CASH");
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) invoiceId = rs.getInt(1);
                 }
@@ -247,7 +248,6 @@ public class InvoiceDAO implements IInvoiceDAO {
                     cs.setInt(3, quantities[i]);
                     cs.execute();
                 } catch (SQLException spEx) {
-                    // SP ném lỗi (VD: không đủ tồn kho) → rollback
                     throw new Exception("Thuốc ID " + medicineIds[i] + ": " + spEx.getMessage(), spEx);
                 }
             }
@@ -266,11 +266,10 @@ public class InvoiceDAO implements IInvoiceDAO {
                 if (ps.executeUpdate() == 0) throw new Exception("Không complete được hóa đơn");
             }
 
-            cn.commit();  // ── Commit thành công ──
+            cn.commit();
             return invoiceId;
 
         } catch (Exception e) {
-            // ── Rollback toàn bộ nếu có lỗi ──
             System.err.println("[InvoiceDAO] completeSaleTransaction rollback: " + e.getMessage());
             if (cn != null) {
                 try { cn.rollback(); } catch (SQLException rb) { rb.printStackTrace(); }

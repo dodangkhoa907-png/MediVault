@@ -29,27 +29,43 @@ public class SidebarHelper {
     private static final IPasswordResetDAO resetDAO  = new PasswordResetDAO();
 
     public static void load(HttpServletRequest req) {
-        try {
-            // Chỉ load nếu chưa có (tránh double query khi Servlet đã set)
-            if (req.getAttribute("pendingLeaveCount") == null) {
-                req.setAttribute("pendingLeaveCount",
-                        leaveDAO.findPending().size());
+        // Mỗi badge được wrap riêng — 1 bảng chưa tạo không crash cả sidebar
+
+        if (req.getAttribute("pendingLeaveCount") == null) {
+            try {
+                req.setAttribute("pendingLeaveCount", leaveDAO.findPending().size());
+            } catch (Exception e) {
+                req.setAttribute("pendingLeaveCount", 0);
+                System.err.println("[SidebarHelper] pendingLeave: " + e.getMessage());
             }
-            if (req.getAttribute("pendingLateCount") == null) {
-                req.setAttribute("pendingLateCount",
-                        attDAO.countByStatus("LATE_UNEXCUSED"));
+        }
+
+        if (req.getAttribute("pendingLateCount") == null) {
+            try {
+                req.setAttribute("pendingLateCount", attDAO.countByStatus("LATE_UNEXCUSED"));
+            } catch (Exception e) {
+                req.setAttribute("pendingLateCount", 0);
+                System.err.println("[SidebarHelper] pendingLate: " + e.getMessage());
             }
-            if (req.getAttribute("expiryCount") == null) {
-                req.setAttribute("expiryCount",
-                        batchDAO.findExpiringSoon().size());
+        }
+
+        if (req.getAttribute("expiryCount") == null) {
+            try {
+                req.setAttribute("expiryCount", batchDAO.findExpiringSoon().size());
+            } catch (Exception e) {
+                req.setAttribute("expiryCount", 0);
+                System.err.println("[SidebarHelper] expiryCount: " + e.getMessage());
             }
-            if (req.getAttribute("pendingResetCount") == null) {
-                req.setAttribute("pendingResetCount",
-                        resetDAO.findAllPending().size());
+        }
+
+        if (req.getAttribute("pendingResetCount") == null) {
+            try {
+                req.setAttribute("pendingResetCount", resetDAO.findAllPending().size());
+            } catch (Exception e) {
+                // Bảng PasswordResetRequests chưa tạo → set 0, không crash
+                req.setAttribute("pendingResetCount", 0);
+                System.err.println("[SidebarHelper] pendingReset (table missing?): " + e.getMessage());
             }
-        } catch (Exception e) {
-            // Không để sidebar fail crash trang
-            e.printStackTrace();
         }
     }
 }

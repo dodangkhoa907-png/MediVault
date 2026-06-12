@@ -14,6 +14,7 @@ import com.medicare.dao.interfaces.IShiftScheduleDAO;
 import com.medicare.dao.interfaces.IShiftTypeDAO;
 import com.medicare.entity.Account;
 import com.medicare.entity.Shift;
+import com.medicare.entity.ShiftSchedule;
 import com.medicare.util.AuditHelper;
 import com.medicare.util.SidebarHelper;
 import jakarta.servlet.ServletException;
@@ -77,9 +78,16 @@ public class ShiftServlet extends HttpServlet {
         if (action == null) action = "";
 
         switch (action) {
-            case "open"        -> handleOpenShift(req, resp);
-            case "close"       -> handleCloseShift(req, resp);
-            case "force-close" -> handleForceClosePost(req, resp);
+            case "open"                  -> handleOpenShift(req, resp);
+            case "close"                 -> handleCloseShift(req, resp);
+            case "force-close"           -> handleForceClosePost(req, resp);
+            // ── Schedule actions (từ shift-list.jsp) ──
+            case "schedule-bulk"         -> handleScheduleBulk(req, resp);
+            case "schedule-bulk-update"  -> handleScheduleBulkUpdate(req, resp);
+            case "schedule-bulk-delete"  -> handleScheduleBulkDelete(req, resp);
+            case "schedule-update"       -> handleScheduleUpdate(req, resp);
+            case "schedule-delete-staff" -> handleScheduleDeleteStaff(req, resp);
+            case "cancel-schedule"       -> handleCancelSchedule(req, resp);
             default            -> resp.sendRedirect(req.getContextPath() + "/shifts");
         }
     }
@@ -209,9 +217,6 @@ public class ShiftServlet extends HttpServlet {
         req.setAttribute("chartMonth",   chartMonth);
         req.setAttribute("chartYear",    chartYear);
 
-        // Navbar badges (giống các servlet khác)
-        loadNavbarData(req);
-
         SidebarHelper.load(req);
 
 
@@ -230,7 +235,6 @@ public class ShiftServlet extends HttpServlet {
         Account staff = accountDAO.findById(shift.getAccountId());
         req.setAttribute("shift", shift);
         req.setAttribute("staff", staff);
-        loadNavbarData(req);
         SidebarHelper.load(req);
 
         req.getRequestDispatcher("/WEB-INF/views/admin/shift-detail.jsp").forward(req, resp);
@@ -248,7 +252,6 @@ public class ShiftServlet extends HttpServlet {
         Account staff = accountDAO.findById(shift.getAccountId());
         req.setAttribute("shift", shift);
         req.setAttribute("staff", staff);
-        loadNavbarData(req);
         SidebarHelper.load(req);
 
         req.getRequestDispatcher("/WEB-INF/views/admin/shift-force-close.jsp").forward(req, resp);
@@ -384,27 +387,156 @@ public class ShiftServlet extends HttpServlet {
         resp.getWriter().print(json);
     }
 
-    // ── Helper: load navbar badges giống DashboardServlet ────────────────────
-    private void loadNavbarData(HttpServletRequest req) {
-        try {
-            com.medicare.dao.interfaces.IPasswordResetDAO resetDAO = new com.medicare.dao.PasswordResetDAO();
-            java.util.List<com.medicare.entity.PasswordResetRequest> pendingResets = resetDAO.findAllPending();
-            req.setAttribute("pendingResets",     pendingResets);
-            req.setAttribute("pendingResetCount", pendingResets.size());
-            Map<Integer, Account> resetAccountMap = new HashMap<>();
-            for (com.medicare.entity.PasswordResetRequest pr : pendingResets) {
-                Account a = accountDAO.findById(pr.getAccountId());
-                if (a != null) resetAccountMap.put(pr.getAccountId(), a);
-            }
-            req.setAttribute("resetAccountMap", resetAccountMap);
-        } catch (Exception e) {
-            req.setAttribute("pendingResetCount", 0);
-        }
-    }
-
     // ── Helper ────────────────────────────────────────────────────────────────
     private int parseIntOr(String s, int def) {
         if (s == null || s.isEmpty()) return def;
         try { return Integer.parseInt(s); } catch (NumberFormatException e) { return def; }
     }
+
+    // ════════════════════════════════════════════════════════
+    //  SCHEDULE HANDLERS — gọi từ shift-list.jsp modals
+    // ════════════════════════════════════════════════════════
+
+    /** Xếp ca mới (bulk: nhiều NV × nhiều ca × khoảng ngày) */
+    private void handleScheduleBulk(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        Account admin = (Account) req.getSession(false).getAttribute("adminAccount");
+        String[] accIds    = req.getParameterValues("accountId");
+        String[] typeIds   = req.getParameterValues("shiftTypeId");
+        String   dateFrom  = req.getParameter("dateFrom");
+        String   dateTo    = req.getParameter("dateTo");
+
+        if (accIds == null || typeIds == null || dateFrom == null || dateFrom.isEmpty()) {
+            resp.sendRedirect(req.getContextPath() + "/shifts?msg=invalid"); return;
+        }
+
+        int created = 0, skipped = 0;
+        try {
+            java.time.LocalDate from = java.time.LocalDate.parse(dateFrom);
+            java.time.LocalDate to   = (dateTo != null && !dateTo.isEmpty())
+                    ? java.time.LocalDate.parse(dateTo) : from;
+            for (String aId : accIds)
+                for (String tId : typeIds)
+                    for (java.time.LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
+                        int r = scheduleDAO.schedule(
+                                Integer.parseInt(aId), Integer.parseInt(tId),
+                                d, admin.getAccountId());
+                        if (r > 0) created++; else skipped++;
+                    }
+            AuditHelper.log(req, "Xếp lịch ca", "ShiftSchedule",
+                    "Tạo " + created + " ca, bỏ qua " + skipped + " đã tồn tại");
+        } catch (Exception e) {
+            e.printStackTrace();
+            resp.sendRedirect(req.getContextPath() + "/shifts?msg=error"); return;
+        }
+        resp.sendRedirect(req.getContextPath()
+                + "/shifts?msg=created&count=" + created + "&skip=" + skipped);
+    }
+
+    /** Sửa 1 ca (từ modal chip click) */
+    private void handleScheduleUpdate(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        Account admin   = (Account) req.getSession(false).getAttribute("adminAccount");
+        int scheduleId  = parseIntOr(req.getParameter("scheduleId"), 0);
+        int shiftTypeId = parseIntOr(req.getParameter("shiftTypeId"), 0);
+        int lateTol     = parseIntOr(req.getParameter("lateToleranceMinutes"), 10);
+        String notes    = req.getParameter("notes");
+
+        if (scheduleId == 0) {
+            resp.sendRedirect(req.getContextPath() + "/shifts?msg=invalid"); return;
+        }
+        boolean ok = scheduleDAO.update(scheduleId, shiftTypeId, lateTol, notes,
+                admin.getAccountId());
+        if (ok) AuditHelper.log(req, "Sửa lịch ca", "ShiftSchedule",
+                "Sửa ca ID " + scheduleId);
+        resp.sendRedirect(req.getContextPath() + "/shifts?msg=" + (ok ? "updated" : "error"));
+    }
+
+    /** Sửa nhiều ca đã chọn (bulk update) */
+    private void handleScheduleBulkUpdate(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        Account admin    = (Account) req.getSession(false).getAttribute("adminAccount");
+        String[] ids     = req.getParameterValues("scheduleIds");
+        int shiftTypeId  = parseIntOr(req.getParameter("shiftTypeId"), 0);
+        int lateTol      = parseIntOr(req.getParameter("lateToleranceMinutes"), -1); // -1 = giữ nguyên
+        String notes     = req.getParameter("notes");
+
+        if (ids == null || ids.length == 0) {
+            resp.sendRedirect(req.getContextPath() + "/shifts?msg=invalid"); return;
+        }
+        int updated = 0;
+        for (String id : ids) {
+            int sid = parseIntOr(id, 0);
+            if (sid == 0) continue;
+            // Nếu không chọn loại ca mới → chỉ update lateTol và notes
+            // scheduleDAO.update() với shiftTypeId=0 → giữ nguyên shiftType hiện tại
+            int effectiveLateTol = lateTol >= 0 ? lateTol : 10; // fallback 10 phút
+            boolean ok = scheduleDAO.update(
+                    sid,
+                    shiftTypeId > 0 ? shiftTypeId : getExistingShiftTypeId(sid),
+                    effectiveLateTol,
+                    (notes != null && !notes.trim().isEmpty()) ? notes.trim() : null,
+                    admin.getAccountId());
+            if (ok) updated++;
+        }
+        AuditHelper.log(req, "Sửa hàng loạt lịch ca", "ShiftSchedule",
+                "Đã sửa " + updated + " ca");
+        resp.sendRedirect(req.getContextPath() + "/shifts?msg=updated&count=" + updated);
+    }
+
+    /** Lấy shiftTypeId hiện tại của 1 schedule — dùng khi bulk update không đổi loại ca */
+    private int getExistingShiftTypeId(int scheduleId) {
+        try {
+            ShiftSchedule sc = scheduleDAO.findById(scheduleId);
+            return sc != null ? sc.getShiftTypeId() : 0;
+        } catch (Exception e) { return 0; }
+    }
+
+    /** Xóa 1 nhân viên khỏi ca trong ngày */
+    private void handleScheduleDeleteStaff(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        int scheduleId = parseIntOr(req.getParameter("scheduleId"), 0);
+        ShiftSchedule sc = scheduleDAO.findById(scheduleId);
+        boolean ok = scheduleDAO.cancel(scheduleId);
+        if (ok && sc != null)
+            AuditHelper.log(req, "Hủy ca nhân viên", "ShiftSchedule",
+                    "Hủy ca " + sc.getShiftTypeName() + " ngày " + sc.getWorkDate()
+                            + " của " + sc.getStaffName());
+        resp.sendRedirect(req.getContextPath() + "/shifts?msg=" + (ok ? "cancelled" : "error"));
+    }
+
+    /** Xóa nhiều ca đã chọn (bulk delete — hard delete, không chỉ set CANCELLED) */
+    private void handleScheduleBulkDelete(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        String[] ids = req.getParameterValues("scheduleIds");
+        if (ids == null || ids.length == 0) {
+            resp.sendRedirect(req.getContextPath() + "/shifts?msg=invalid"); return;
+        }
+        int deleted = 0;
+        int failed  = 0;
+        for (String id : ids) {
+            int sid = parseIntOr(id, 0);
+            if (sid == 0) continue;
+            // Dùng delete() — hard delete, chỉ xóa ca chưa check-in
+            boolean ok = scheduleDAO.delete(sid);
+            if (ok) deleted++; else failed++;
+        }
+        AuditHelper.log(req, "Xóa hàng loạt lịch ca", "ShiftSchedule",
+                "Đã xóa " + deleted + " ca" + (failed > 0 ? ", " + failed + " không thể xóa" : ""));
+        String msg = deleted > 0 ? "deleted&count=" + deleted : "error";
+        resp.sendRedirect(req.getContextPath() + "/shifts?msg=" + msg);
+    }
+
+    /** Cancel 1 ca (từ chip × button) */
+    private void handleCancelSchedule(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        int scheduleId = parseIntOr(req.getParameter("scheduleId"), 0);
+        ShiftSchedule sc = scheduleDAO.findById(scheduleId);
+        boolean ok = scheduleDAO.cancel(scheduleId);
+        if (ok && sc != null)
+            AuditHelper.log(req, "Hủy lịch ca", "ShiftSchedule",
+                    "Hủy ca " + sc.getShiftTypeName() + " ngày " + sc.getWorkDate());
+        resp.sendRedirect(req.getContextPath() + "/shifts?msg=" + (ok ? "cancelled" : "error"));
+    }
+
 }
