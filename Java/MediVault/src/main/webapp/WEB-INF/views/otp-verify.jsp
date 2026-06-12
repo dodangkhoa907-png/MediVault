@@ -8,10 +8,10 @@
     java.lang.String targetEmail = "";
     if (isNewAccount) {
         Object pna = session.getAttribute("pendingNewAccount");
-        if (pna instanceof com.medivault.entity.Account) targetEmail = ((com.medivault.entity.Account) pna).getEmail();
+        if (pna instanceof com.medicare.entity.Account) targetEmail = ((com.medicare.entity.Account) pna).getEmail();
     } else {
         Object pa = session.getAttribute("pendingAccount");
-        if (pa instanceof com.medivault.entity.Account) targetEmail = ((com.medivault.entity.Account) pa).getEmail();
+        if (pa instanceof com.medicare.entity.Account) targetEmail = ((com.medicare.entity.Account) pa).getEmail();
     }
     java.lang.String maskedEmail = targetEmail;
     if (targetEmail != null && targetEmail.contains("@")) {
@@ -29,7 +29,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MediVault — Xác nhận OTP</title>
+<title>medicare — Xác nhận OTP</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>

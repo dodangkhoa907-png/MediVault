@@ -4,7 +4,7 @@
 <%
     // POS PUBLIC — không cần login để bán hàng
     // Nếu staff đã login → hiển thị thông tin, nút điểm danh
-    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("staffAccount");
+    com.medicare.entity.Account acc = (com.medicare.entity.Account) session.getAttribute("staffAccount");
     boolean isLoggedIn = (acc != null && acc.getRoleId() != 1);
     String fullName  = isLoggedIn ? (acc.getFullName() != null ? acc.getFullName() : acc.getUsername()) : "Khách";
     String initials  = fullName.length() >= 2
@@ -17,7 +17,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>MediVault POS — Bán hàng</title>
+<title>medicare POS — Bán hàng</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>

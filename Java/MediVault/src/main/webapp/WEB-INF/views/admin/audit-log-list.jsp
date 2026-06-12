@@ -3,7 +3,7 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%
-    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("adminAccount");
+    com.medicare.entity.Account acc = (com.medicare.entity.Account) session.getAttribute("adminAccount");
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/login"); return; }
     int roleId = acc.getRoleId();
     java.lang.String fullName = acc.getFullName() != null ? acc.getFullName() : acc.getUsername();
@@ -17,17 +17,17 @@
     if (pendingResetCount == null) pendingResetCount = 0;
 
     @SuppressWarnings("unchecked")
-    java.util.List<com.medivault.entity.PasswordResetRequest> pendingResets =
-        (java.util.List<com.medivault.entity.PasswordResetRequest>) request.getAttribute("pendingResets");
+    java.util.List<com.medicare.entity.PasswordResetRequest> pendingResets =
+        (java.util.List<com.medicare.entity.PasswordResetRequest>) request.getAttribute("pendingResets");
     @SuppressWarnings("unchecked")
-    java.util.Map<Integer, com.medivault.entity.Account> resetAccountMap =
-        (java.util.Map<Integer, com.medivault.entity.Account>) request.getAttribute("resetAccountMap");
+    java.util.Map<Integer, com.medicare.entity.Account> resetAccountMap =
+        (java.util.Map<Integer, com.medicare.entity.Account>) request.getAttribute("resetAccountMap");
     if (pendingResets   == null) pendingResets   = new java.util.ArrayList<>();
     if (resetAccountMap == null) resetAccountMap = new java.util.HashMap<>();
 
     @SuppressWarnings("unchecked")
-    java.util.List<com.medivault.entity.AuditLog> auditLogs =
-        (java.util.List<com.medivault.entity.AuditLog>) request.getAttribute("auditLogs");
+    java.util.List<com.medicare.entity.AuditLog> auditLogs =
+        (java.util.List<com.medicare.entity.AuditLog>) request.getAttribute("auditLogs");
     if (auditLogs == null) auditLogs = new java.util.ArrayList<>();
 
     Integer currentPage = (Integer) request.getAttribute("currentPage");
@@ -42,7 +42,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediVault — Nhật ký hệ thống</title>
+    <title>medicare — Nhật ký hệ thống</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -201,8 +201,8 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                         <button class="notif-clear" onclick="closeNotif()">Đóng ✕</button>
                     </div>
                     <div class="notif-list">
-                        <% for (com.medivault.entity.PasswordResetRequest pr : pendingResets) {
-                               com.medivault.entity.Account staffPr = resetAccountMap.get(pr.getAccountId());
+                        <% for (com.medicare.entity.PasswordResetRequest pr : pendingResets) {
+                               com.medicare.entity.Account staffPr = resetAccountMap.get(pr.getAccountId());
                                java.lang.String staffPrName = staffPr != null ? staffPr.getFullName() : ("ID " + pr.getAccountId());
                                java.lang.String staffPrUser = staffPr != null ? staffPr.getUsername() : "";
                         %>
@@ -234,7 +234,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
     <div class="content">
         <div class="page-head">
             <div class="page-head-left">
-                <div class="breadcrumb">MediVault › Phân tích › Nhật ký</div>
+                <div class="breadcrumb">medicare › Phân tích › Nhật ký</div>
                 <h1>Nhật ký hệ thống</h1>
             </div>
         </div>
@@ -286,7 +286,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                         </tr>
                     <% } else {
                            java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-                           for (com.medivault.entity.AuditLog log : auditLogs) {
+                           for (com.medicare.entity.AuditLog log : auditLogs) {
                                java.lang.String actionBadge = "badge-gray";
                                java.lang.String act = log.getAction() != null ? log.getAction() : "";
                                if (act.contains("Tạo") || act.contains("Khôi phục"))         actionBadge = "badge-green";

@@ -1,8 +1,8 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%
-    com.medivault.entity.Account admin = (com.medivault.entity.Account) session.getAttribute("adminAccount");
+    com.medicare.entity.Account admin = (com.medicare.entity.Account) session.getAttribute("adminAccount");
     if (admin == null) { response.sendRedirect(request.getContextPath() + "/login"); return; }
-    com.medivault.entity.Account delTarget = (com.medivault.entity.Account) request.getAttribute("deleteTarget");
+    com.medicare.entity.Account delTarget = (com.medicare.entity.Account) request.getAttribute("deleteTarget");
     if (delTarget == null) { response.sendRedirect(request.getContextPath() + "/accounts?action=trash"); return; }
 
     String targetName = delTarget.getFullName() != null ? delTarget.getFullName() : delTarget.getUsername();
@@ -23,7 +23,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>OTP Xóa tài khoản — MediVault</title>
+<title>OTP Xóa tài khoản — medicare</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=DM+Serif+Display@400;400i&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -86,7 +86,7 @@ h2{font-family:'DM Serif Display',serif;font-size:24px;color:var(--ink);margin-b
 <div class="card">
   <div class="logo-row">
     <div class="logo-icon">🗑️</div>
-    <div class="logo-text">MediVault — Xóa vĩnh viễn</div>
+    <div class="logo-text">medicare — Xóa vĩnh viễn</div>
   </div>
   <div class="step-badge">⚠️ Bước 2 / 2 — Xác nhận OTP cuối cùng</div>
   <h2>Nhập mã OTP</h2>

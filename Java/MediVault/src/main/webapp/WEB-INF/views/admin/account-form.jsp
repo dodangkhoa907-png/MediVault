@@ -3,12 +3,12 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ page import="java.lang.String" %>
 <%
-    com.medivault.entity.Account acc =
-        (com.medivault.entity.Account) session.getAttribute("adminAccount");
+    com.medicare.entity.Account acc =
+        (com.medicare.entity.Account) session.getAttribute("adminAccount");
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/login"); return; }
 
-    com.medivault.entity.Account form =
-        (com.medivault.entity.Account) request.getAttribute("account");
+    com.medicare.entity.Account form =
+        (com.medicare.entity.Account) request.getAttribute("account");
     boolean isNew = (form == null || form.getAccountId() == 0);
 
     java.lang.String vUsername  = form != null && form.getUsername()  != null ? form.getUsername()  : "";
@@ -30,9 +30,9 @@
     java.lang.String successMsg = (java.lang.String) request.getAttribute("success");
 
     // Kiểm tra pending reset request
-    com.medivault.entity.PasswordResetRequest pendingReset = null;
+    com.medicare.entity.PasswordResetRequest pendingReset = null;
     if (!isNew && form != null && form.getAccountId() > 0) {
-        com.medivault.dao.PasswordResetDAO prdao = new com.medivault.dao.PasswordResetDAO();
+        com.medicare.dao.PasswordResetDAO prdao = new com.medicare.dao.PasswordResetDAO();
         pendingReset = prdao.findPendingByAccountId(form.getAccountId());
         if (pendingReset == null) pendingReset = prdao.findConfirmedByAccountId(form.getAccountId());
     }
@@ -43,7 +43,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><%= isNew ? "Tạo tài khoản nhân viên" : "Cập nhật tài khoản" %> — MediVault</title>
+<title><%= isNew ? "Tạo tài khoản nhân viên" : "Cập nhật tài khoản" %> — medicare</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>

@@ -4,7 +4,7 @@
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
-    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("adminAccount");
+    com.medicare.entity.Account acc = (com.medicare.entity.Account) session.getAttribute("adminAccount");
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/login"); return; }
     if (acc.getRoleId() != 1) { response.sendRedirect(request.getContextPath() + "/dashboard"); return; }
     java.lang.String fullName = acc.getFullName() != null ? acc.getFullName() : acc.getUsername();
@@ -18,7 +18,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Quản lý tài khoản — MediVault</title>
+<title>Quản lý tài khoản — medicare</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -151,7 +151,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
   <div class="content">
     <div class="page-head">
       <div>
-        <div class="breadcrumb">MediVault › Quản lý › Tài khoản</div>
+        <div class="breadcrumb">medicare › Quản lý › Tài khoản</div>
         <h1>Tài khoản nhân viên</h1>
       </div>
       <div style="display:flex;gap:10px;align-items:center">
@@ -162,11 +162,11 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 
     <%-- STATS --%>
     <%
-      java.util.List<com.medivault.entity.Account> allList =
-          (java.util.List<com.medivault.entity.Account>) request.getAttribute("accounts");
+      java.util.List<com.medicare.entity.Account> allList =
+          (java.util.List<com.medicare.entity.Account>) request.getAttribute("accounts");
       if (allList == null) allList = new java.util.ArrayList<>();
       long cntAll    = allList.size();
-      long cntActive = allList.stream().filter(com.medivault.entity.Account::isActive).count();
+      long cntActive = allList.stream().filter(com.medicare.entity.Account::isActive).count();
       long cntLocked = cntAll - cntActive;
       long cntAdmin  = allList.stream().filter(a -> a.getRoleId() == 1).count();
     %>

@@ -1,9 +1,9 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%
-    com.medivault.entity.Account admin = (com.medivault.entity.Account) session.getAttribute("adminAccount");
+    com.medicare.entity.Account admin = (com.medicare.entity.Account) session.getAttribute("adminAccount");
     if (admin == null) { response.sendRedirect(request.getContextPath() + "/login"); return; }
 
-    com.medivault.entity.Account staffInfo = (com.medivault.entity.Account) request.getAttribute("staffInfo");
+    com.medicare.entity.Account staffInfo = (com.medicare.entity.Account) request.getAttribute("staffInfo");
     if (staffInfo == null) { response.sendRedirect(request.getContextPath() + "/accounts"); return; }
 
     String adminName  = admin.getFullName()  != null ? admin.getFullName()  : admin.getUsername();

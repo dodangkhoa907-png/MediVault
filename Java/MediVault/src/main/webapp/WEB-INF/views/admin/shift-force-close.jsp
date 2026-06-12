@@ -4,7 +4,7 @@
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%@ taglib prefix="fn"  uri="jakarta.tags.functions" %>
 <%
-    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("adminAccount");
+    com.medicare.entity.Account acc = (com.medicare.entity.Account) session.getAttribute("adminAccount");
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/login"); return; }
     String fullName = acc.getFullName() != null ? acc.getFullName() : acc.getUsername();
     String initials = fullName.length() >= 2
@@ -16,7 +16,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Xác nhận đóng ca — MediVault</title>
+    <title>Xác nhận đóng ca — medicare</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>

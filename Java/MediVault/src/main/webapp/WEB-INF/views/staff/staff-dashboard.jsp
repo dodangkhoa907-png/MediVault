@@ -11,7 +11,7 @@
     }
     if (_uid == null || _uid.isEmpty()) { response.sendRedirect(request.getContextPath() + "/staff-login"); return; }
 
-    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("staffAccount_" + _uid);
+    com.medicare.entity.Account acc = (com.medicare.entity.Account) session.getAttribute("staffAccount_" + _uid);
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/staff-login"); return; }
     if (acc.getRoleId() == 1) { response.sendRedirect(request.getContextPath() + "/dashboard"); return; }
 
@@ -36,7 +36,7 @@
 <meta name="ctx" content="${pageContext.request.contextPath}">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>MediVault — <%= roleName %></title>
+<title>medicare — <%= roleName %></title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <style>

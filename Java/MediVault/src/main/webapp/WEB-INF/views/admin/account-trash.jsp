@@ -2,7 +2,7 @@
 <% String activeNav = "accounts"; %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%
-    com.medivault.entity.Account acc = (com.medivault.entity.Account) session.getAttribute("adminAccount");
+    com.medicare.entity.Account acc = (com.medicare.entity.Account) session.getAttribute("adminAccount");
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/login"); return; }
     if (acc.getRoleId() != 1) { response.sendRedirect(request.getContextPath() + "/dashboard"); return; }
     String fullName = acc.getFullName() != null ? acc.getFullName() : acc.getUsername();
@@ -10,8 +10,8 @@
         ? fullName.substring(0,1).toUpperCase() + fullName.substring(1,2).toUpperCase()
         : fullName.toUpperCase();
     String msg = request.getParameter("msg");
-    java.util.List<com.medivault.entity.Account> deletedList =
-        (java.util.List<com.medivault.entity.Account>) request.getAttribute("deletedAccounts");
+    java.util.List<com.medicare.entity.Account> deletedList =
+        (java.util.List<com.medicare.entity.Account>) request.getAttribute("deletedAccounts");
     if (deletedList == null) deletedList = new java.util.ArrayList<>();
 %>
 <!DOCTYPE html>
@@ -19,7 +19,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Thùng rác tài khoản — MediVault</title>
+<title>Thùng rác tài khoản — medicare</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <style>
@@ -181,7 +181,7 @@ select.field-input{cursor:pointer}
   <div class="content">
     <div class="page-head">
       <div>
-        <div class="breadcrumb">MediVault › Quản lý › Tài khoản › Thùng rác</div>
+        <div class="breadcrumb">medicare › Quản lý › Tài khoản › Thùng rác</div>
         <h1>🗑️ Thùng rác</h1>
       </div>
       <a href="${pageContext.request.contextPath}/accounts" class="btn-back">← Quay lại danh sách</a>
@@ -222,7 +222,7 @@ select.field-input{cursor:pointer}
               </div>
             </td></tr>
             <% } else { %>
-            <% int idx = 0; for (com.medivault.entity.Account a : deletedList) { idx++;
+            <% int idx = 0; for (com.medicare.entity.Account a : deletedList) { idx++;
                 String av2 = a.getFullName() != null && a.getFullName().length() >= 2
                     ? a.getFullName().substring(0,1).toUpperCase()+a.getFullName().substring(1,2).toUpperCase()
                     : (a.getUsername() != null ? a.getUsername().substring(0,1).toUpperCase() : "?");
