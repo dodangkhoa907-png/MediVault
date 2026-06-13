@@ -1,7 +1,6 @@
 package com.medicare.controller;
 
 import com.medicare.dao.*;
-import com.medicare.dao.interfaces.IAttendanceDAO;
 import com.medicare.dao.interfaces.*;
 import com.medicare.entity.*;
 import com.medicare.util.*;
@@ -25,7 +24,6 @@ public class LeaveRequestServlet extends HttpServlet {
 
     private final ILeaveRequestDAO  leaveDAO    = new LeaveRequestDAO();
     private final IShiftScheduleDAO scheduleDAO    = new ShiftScheduleDAO();
-    private final IAttendanceDAO    attendanceDAO = new AttendanceDAO();
     private final IShiftDAO         shiftDAO    = new ShiftDAO();
     private final IPayrollDAO       payrollDAO  = new PayrollDAO();
     private final IAccountDAO       accountDAO  = new AccountDAO();
@@ -34,7 +32,6 @@ public class LeaveRequestServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        req.setCharacterEncoding("UTF-8");
         String action = req.getParameter("action");
         if (action == null) action = "pending";
 
@@ -128,33 +125,13 @@ public class LeaveRequestServlet extends HttpServlet {
                     if (ss != null) {
                         scheduleDAO.updateStatus(ss.getScheduleId(), "ON_LEAVE");
 
-                        // 4a. INSERT Attendance record giả cho ca nghỉ
-                        // → Payroll sẽ nhận ra PAID_LEAVE/UNPAID_LEAVE và tính lương đúng
-                        if (ss != null) {
-                            String attStatus = switch (lr.getLeaveType()) {
-                                case "ANNUAL"  -> "PAID_LEAVE";
-                                case "SICK"    -> "SICK_LEAVE";
-                                default        -> "UNPAID_LEAVE";
-                            };
-                            // Chỉ insert nếu chưa có attendance record cho ca này
-                            com.medicare.entity.Attendance existing =
-                                    attendanceDAO.findByScheduleId(ss.getScheduleId());
-                            if (existing == null) {
-                                attendanceDAO.checkIn(lr.getAccountId(),
-                                        "LEAVE_AUTO", java.math.BigDecimal.ZERO,
-                                        "[Nghỉ phép " + lr.getLeaveType() + " được duyệt]");
-                            }
-                        }
-
-                        // 4. Tự đóng Shift thực tế nếu đang mở
+                        // 4. Tự đóng Shift nếu đang mở VÀ thuộc ngày nghỉ
+                        // (không tạo Attendance giả — SP_GeneratePayroll đọc LeaveRequests trực tiếp)
                         Shift openShift = shiftDAO.findCurrent(lr.getAccountId());
-                        if (openShift != null) {
-                            // Kiểm tra shift này thuộc ngày nghỉ
-                            if (openShift.getStartTime().toLocalDate()
-                                    .equals(lr.getLeaveDate())) {
-                                shiftDAO.forceClose(openShift.getShiftId(),
-                                        "[Auto-đóng do nghỉ phép được duyệt]");
-                            }
+                        if (openShift != null
+                                && openShift.getStartTime().toLocalDate().equals(lr.getLeaveDate())) {
+                            shiftDAO.forceClose(openShift.getShiftId(),
+                                    "[Auto-đóng do nghỉ phép được duyệt]");
                         }
                     }
 

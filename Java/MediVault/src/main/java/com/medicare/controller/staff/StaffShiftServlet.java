@@ -102,9 +102,12 @@ public class StaffShiftServlet extends HttpServlet {
                             Account staffAcc, String uid) throws IOException {
         BigDecimal openingCash = parseCash(req.getParameter("openingCash"));
 
-        // FIX 5: không cho mở ca khi Attendance chưa check-out
-        if (attDAO.findActiveByAccount(staffAcc.getAccountId()) == null
-                && shiftDAO.findCurrent(staffAcc.getAccountId()) != null) {
+        // Block nếu đã có Attendance đang active (chưa check-out)
+        // HOẶC đã có ca đang mở — không cho phép mở 2 ca / 2 attendance cùng lúc
+        boolean hasActiveAttendance = attDAO.findActiveByAccount(staffAcc.getAccountId()) != null;
+        boolean hasOpenShift        = shiftDAO.findCurrent(staffAcc.getAccountId()) != null;
+
+        if (hasActiveAttendance || hasOpenShift) {
             resp.sendRedirect(req.getContextPath() + "/staff-my-shifts?uid=" + uid + "&msg=already-open");
             return;
         }

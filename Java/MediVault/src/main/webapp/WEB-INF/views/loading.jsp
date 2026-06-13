@@ -1,3 +1,4 @@
+<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%-- ── loading.jsp — include vào đầu <body> của mọi trang ──
      Tự động hiện khi trang bắt đầu load, tự ẩn khi DOM ready.
      Không cần truyền tham số gì thêm.
@@ -101,7 +102,7 @@
     <div class="mv-load-logo">
       <div class="mv-load-icon">💊</div>
       <div>
-        <div class="mv-load-name">medicare</div>
+        <div class="mv-load-name">MediCare</div>
         <div class="mv-load-sub">Đang tải...</div>
       </div>
     </div>

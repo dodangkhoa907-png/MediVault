@@ -15,14 +15,15 @@ public class AccountDAO implements IAccountDAO {
         a.setAccountId(rs.getInt("AccountID"));
         a.setUsername(rs.getString("Username"));
         a.setPasswordHash(rs.getString("PasswordHash"));
-        a.setFullName(rs.getString("FullName"));
+        // NVARCHAR columns — dùng getNString() để đọc đúng Unicode (tiếng Việt)
+        a.setFullName(rs.getNString("FullName"));
         a.setEmail(rs.getString("Email"));
         a.setPhone(rs.getString("Phone"));
         a.setRoleId(rs.getInt("RoleID"));
         a.setActive(rs.getBoolean("IsActive"));
         a.setCitizenId(rs.getString("CitizenId"));
-        a.setPosition(rs.getString("Position"));
-        a.setProfessionalCertNo(rs.getString("ProfessionalCertNo"));
+        a.setPosition(rs.getNString("Position"));
+        a.setProfessionalCertNo(rs.getNString("ProfessionalCertNo"));
         a.setDeleted(rs.getBoolean("IsDeleted"));
         if (rs.getTimestamp("DeletedAt") != null)
             a.setDeletedAt(rs.getTimestamp("DeletedAt").toLocalDateTime());
