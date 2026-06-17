@@ -78,9 +78,10 @@ body{display:flex}
   display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
 .user-name{font-size:12px;font-weight:700;color:#fff;line-height:1.2}
 .user-role{font-size:10px;color:rgba(255,255,255,.35)}
-.logout-btn{margin-left:auto;font-size:16px;color:rgba(255,255,255,.4);text-decoration:none;
-  transition:color .18s;flex-shrink:0;padding:4px}
-.logout-btn:hover{color:#FC8181}
+.logout-btn-full{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:9px 14px;margin-top:10px;border-radius:10px;
+  background:rgba(220,38,38,.15);border:1.5px solid rgba(220,38,38,.25);color:#FCA5A5;text-decoration:none;
+  font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:700;letter-spacing:.3px;transition:all .2s}
+.logout-btn-full:hover{background:rgba(220,38,38,.32);color:#fff;border-color:#DC2626}
 
 /* ── MAIN ── */
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh}
@@ -242,14 +243,10 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
   </nav>
   <% } %>
   <div class="sidebar-footer">
-    <div class="user-card">
-      <div class="user-av"><%= initials %></div>
-      <div style="min-width:0">
-        <div class="user-name"><%= dn %></div>
-        <div class="user-role"><%= roleName %></div>
-      </div>
-      <a href="<%= request.getContextPath() %>/logout?from=staff&uid=<%= uid %>" class="logout-btn" title="Đăng xuất">⏻</a>
-    </div>
+    <a href="<%= request.getContextPath() %>/logout?from=staff&uid=<%= uid %>" class="logout-btn-full" title="Đăng xuất">
+      <span style="font-size:15px;line-height:1">⏻</span>
+      <span>Đăng xuất</span>
+    </a>
   </div>
 </aside>
 

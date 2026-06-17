@@ -44,37 +44,39 @@ public class ShiftTypeServlet extends HttpServlet {
             case "create" -> handleCreate(req, resp, admin);
             case "update" -> handleUpdate(req, resp, admin);
             case "toggle" -> handleToggle(req, resp, admin);
+            case "bulk-delete" -> handleBulkDelete(req, resp, admin);
             default -> resp.sendRedirect(req.getContextPath() + "/shifts?tab=types");
         }
     }
 
     private void handleCreate(HttpServletRequest req, HttpServletResponse resp, Account admin)
             throws IOException {
-        ShiftType st = parseForm(req);
-        if (st == null) { resp.sendRedirect(req.getContextPath() + "/shifts?tab=types&msg=type-err"); return; }
         try {
+            ShiftType st = parseForm(req);
             boolean ok = dao.insert(st);
             if (ok) AuditHelper.log(req, "Tạo loại ca", "ShiftType",
                     "Admin tạo loại ca: " + st.getName() + ", " + st.getHourlyRate() + "đ/h");
             resp.sendRedirect(req.getContextPath() + "/shifts?tab=types&msg=" + (ok ? "type-saved" : "type-err"));
         } catch (IllegalArgumentException e) {
-            resp.sendRedirect(req.getContextPath() + "/shifts?tab=types&msg=type-err");
+            String reason = e.getMessage() != null ? e.getMessage() : "type-err";
+            resp.sendRedirect(req.getContextPath() + "/shifts?tab=types&msg=" + reason);
         }
     }
 
     private void handleUpdate(HttpServletRequest req, HttpServletResponse resp, Account admin)
             throws IOException {
         int id = parseInt(req.getParameter("shiftTypeId"), 0);
-        ShiftType st = parseForm(req);
-        if (st == null || id == 0) { resp.sendRedirect(req.getContextPath() + "/shifts?tab=types&msg=type-err"); return; }
-        st.setShiftTypeId(id);
+        if (id == 0) { resp.sendRedirect(req.getContextPath() + "/shifts?tab=types&msg=type-err"); return; }
         try {
+            ShiftType st = parseForm(req);
+            st.setShiftTypeId(id);
             boolean ok = dao.update(st);
             if (ok) AuditHelper.log(req, "Sửa loại ca", "ShiftType",
                     "Sửa loại ca ID " + id + ": " + st.getName());
             resp.sendRedirect(req.getContextPath() + "/shifts?tab=types&msg=" + (ok ? "type-saved" : "type-err"));
         } catch (IllegalArgumentException e) {
-            resp.sendRedirect(req.getContextPath() + "/shifts?tab=types&msg=type-err");
+            String reason = e.getMessage() != null ? e.getMessage() : "type-err";
+            resp.sendRedirect(req.getContextPath() + "/shifts?tab=types&msg=" + reason);
         }
     }
 
@@ -117,19 +119,92 @@ public class ShiftTypeServlet extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/shifts?tab=types&msg=" + (ok ? "type-deleted" : "type-err"));
     }
 
+    /**
+     * Xóa nhiều loại ca cùng lúc. Cho phép tích chọn cả loại ca đang "Đang dùng",
+     * nhưng mỗi ID vẫn phải qua đúng 2 điều kiện như xóa đơn lẻ:
+     *   1) Phải đang inactive (Tạm dừng) — nếu đang active thì báo lỗi, không xóa.
+     *   2) Không còn ShiftSchedule nào tham chiếu — nếu còn thì báo lỗi, không xóa.
+     * Trả về kết quả tổng hợp qua query string để JSP hiển thị chi tiết.
+     */
+    private void handleBulkDelete(HttpServletRequest req, HttpServletResponse resp, Account admin)
+            throws IOException {
+        String idsParam = req.getParameter("ids");
+        if (idsParam == null || idsParam.trim().isEmpty()) {
+            resp.sendRedirect(req.getContextPath() + "/shifts?tab=types"); return;
+        }
+
+        com.medicare.dao.ShiftScheduleDAO scheduleDAO = new com.medicare.dao.ShiftScheduleDAO();
+
+        int deletedCount = 0;
+        java.util.List<String> skippedActive = new java.util.ArrayList<>();
+        java.util.List<String> skippedHasSchedule = new java.util.ArrayList<>();
+
+        for (String idStr : idsParam.split(",")) {
+            int id = parseInt(idStr.trim(), 0);
+            if (id == 0) continue;
+
+            ShiftType st = dao.findById(id);
+            if (st == null) continue;
+
+            if (st.isActive()) {
+                skippedActive.add(st.getName());
+                continue;
+            }
+            if (scheduleDAO.existsByShiftTypeId(id)) {
+                skippedHasSchedule.add(st.getName());
+                continue;
+            }
+
+            boolean ok = dao.delete(id);
+            if (ok) {
+                deletedCount++;
+                AuditHelper.log(req, "Xóa loại ca", "ShiftType", "Xóa loại ca: " + st.getName());
+            }
+        }
+
+        if (deletedCount > 0) AppCache.invalidateShiftTypes();
+
+        StringBuilder msg = new StringBuilder(req.getContextPath() + "/shifts?tab=types&msg=type-bulk-deleted");
+        msg.append("&deleted=").append(deletedCount);
+        if (!skippedActive.isEmpty()) {
+            msg.append("&skippedActive=").append(java.net.URLEncoder.encode(
+                    String.join(", ", skippedActive), java.nio.charset.StandardCharsets.UTF_8));
+        }
+        if (!skippedHasSchedule.isEmpty()) {
+            msg.append("&skippedSchedule=").append(java.net.URLEncoder.encode(
+                    String.join(", ", skippedHasSchedule), java.nio.charset.StandardCharsets.UTF_8));
+        }
+        resp.sendRedirect(msg.toString());
+    }
+
     private ShiftType parseForm(HttpServletRequest req) {
+        String name = req.getParameter("name");
+        String startTime = req.getParameter("startTime"); // HH:mm
+        String endTime   = req.getParameter("endTime");
+        String rateStr   = req.getParameter("hourlyRate");
+        String allowStr  = req.getParameter("allowanceAmount");
+
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("type-err-name");
+        }
+        if (startTime == null || startTime.isEmpty() || endTime == null || endTime.isEmpty()) {
+            throw new IllegalArgumentException("type-err-time");
+        }
+        BigDecimal rate;
         try {
-            String name = req.getParameter("name");
-            String startTime = req.getParameter("startTime"); // HH:mm
-            String endTime   = req.getParameter("endTime");
-            String rateStr   = req.getParameter("hourlyRate");
-            String allowStr  = req.getParameter("allowanceAmount");
-            if (name == null || name.trim().isEmpty()) return null;
+            rate = new BigDecimal(rateStr);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("type-err-rate");
+        }
+        if (rate.compareTo(new BigDecimal("50000")) < 0) {
+            throw new IllegalArgumentException("type-err-rate");
+        }
+
+        try {
             int sh = Integer.parseInt(startTime.split(":")[0]);
             int sm = Integer.parseInt(startTime.split(":")[1]);
             int eh = Integer.parseInt(endTime.split(":")[0]);
             int em = Integer.parseInt(endTime.split(":")[1]);
-            BigDecimal rate = new BigDecimal(rateStr);
             BigDecimal allow = allowStr != null && !allowStr.isEmpty()
                     ? new BigDecimal(allowStr) : BigDecimal.ZERO;
             ShiftType st = new ShiftType();
@@ -141,7 +216,9 @@ public class ShiftTypeServlet extends HttpServlet {
             st.setOvertimeMultiplier(new BigDecimal("1.5"));
             st.setActive(true);
             return st;
-        } catch (Exception e) { return null; }
+        } catch (Exception e) {
+            throw new IllegalArgumentException("type-err-time");
+        }
     }
 
     private Account getAdmin(HttpServletRequest req, HttpServletResponse resp)

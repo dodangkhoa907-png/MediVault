@@ -161,14 +161,14 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 }
 .user-name{font-size:12.5px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:108px}
 .user-role{font-size:10px;color:rgba(255,255,255,.35);margin-top:1px}
-.logout-btn{
-  margin-left:auto;width:28px;height:28px;flex-shrink:0;
-  border-radius:8px;background:rgba(220,38,38,.12);border:none;
-  display:flex;align-items:center;justify-content:center;
-  color:rgba(220,38,38,.7);font-size:13px;cursor:pointer;
-  text-decoration:none;transition:all .18s;
+.logout-btn-full{
+  display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  padding:9px 14px;margin-top:10px;border-radius:10px;
+  background:rgba(220,38,38,.15);border:1.5px solid rgba(220,38,38,.25);
+  color:#FCA5A5;font-size:12.5px;font-weight:700;letter-spacing:.3px;
+  text-decoration:none;font-family:'Outfit',sans-serif;transition:all .2s;
 }
-.logout-btn:hover{background:rgba(220,38,38,.2);color:#DC2626}
+.logout-btn-full:hover{background:rgba(220,38,38,.32);color:#fff;border-color:#DC2626}
 
 /* ── MAIN ── */
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0}
@@ -540,14 +540,10 @@ body{display:flex;background:var(--soft);color:var(--ink)}
   <% } %>
 
   <div class="sidebar-footer">
-    <div class="user-card">
-      <div class="user-av"><%= initials %></div>
-      <div style="min-width:0">
-        <div class="user-name"><%= fullName %></div>
-        <div class="user-role"><%= roleName %></div>
-      </div>
-      <a href="${pageContext.request.contextPath}/logout?from=staff&uid=<%= _uid %>" class="logout-btn" title="Đăng xuất">⏻</a>
-    </div>
+    <a href="${pageContext.request.contextPath}/logout?from=staff&uid=<%= _uid %>" class="logout-btn-full" title="Đăng xuất">
+      <span style="font-size:15px;line-height:1">⏻</span>
+      <span>Đăng xuất</span>
+    </a>
   </div>
 </aside>
 
@@ -1206,6 +1202,13 @@ async function captureFrame() {
     const statusEl = document.getElementById('faceModalStatus');
     const captureBtn = document.getElementById('faceCaptureBtn');
 
+    // Chặn cứng: không bao giờ cho chụp vượt quá REQUIRED_CAPTURES (3 lần)
+    if (capturedDescriptors.length >= REQUIRED_CAPTURES) {
+        capturedDescriptors = [];
+        document.getElementById('captureCount').textContent = '0';
+        updateProgressDots();
+    }
+
     captureBtn.disabled = true;
     statusEl.textContent = 'Đang phân tích khuôn mặt...';
 
@@ -1252,6 +1255,7 @@ function averageDescriptors(list) {
 
 async function submitFaceVector() {
     const statusEl = document.getElementById('faceModalStatus');
+    const captureBtn = document.getElementById('faceCaptureBtn');
     const avgDescriptor = averageDescriptors(capturedDescriptors);
     const body = new URLSearchParams({
         action: 'enroll',
@@ -1265,18 +1269,27 @@ async function submitFaceVector() {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: body
         });
+        if (!resp.ok) {
+            // Lỗi HTTP (404, 500...) — không có JSON hợp lệ để parse
+            throw new Error('Server trả về lỗi HTTP ' + resp.status + ' (kiểm tra servlet đã deploy đúng chưa)');
+        }
         const data = await resp.json();
         if (data.ok) {
             statusEl.textContent = '✅ Đăng ký khuôn mặt thành công!';
             setTimeout(() => { window.location.reload(); }, 900);
+            return;
         } else {
-            statusEl.textContent = '❌ Lỗi: ' + (data.reason || 'unknown');
-            document.getElementById('faceCaptureBtn').disabled = false;
+            statusEl.textContent = '❌ Lỗi: ' + (data.reason || 'unknown') + ' — chụp lại từ đầu';
         }
     } catch (err) {
-        statusEl.textContent = '❌ Lỗi kết nối: ' + err.message;
-        document.getElementById('faceCaptureBtn').disabled = false;
+        statusEl.textContent = '❌ Lỗi kết nối: ' + err.message + ' — chụp lại từ đầu';
     }
+
+    // Mọi trường hợp lỗi: reset về 0, bắt chụp lại đúng REQUIRED_CAPTURES lần từ đầu
+    capturedDescriptors = [];
+    document.getElementById('captureCount').textContent = '0';
+    updateProgressDots();
+    captureBtn.disabled = false;
 }
 
 function closeFaceModal() {

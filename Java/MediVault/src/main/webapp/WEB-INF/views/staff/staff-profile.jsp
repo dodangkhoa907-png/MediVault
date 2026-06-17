@@ -71,8 +71,8 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .user-av{width:34px;height:34px;flex-shrink:0;border-radius:9px;background:linear-gradient(135deg,var(--light),var(--main));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff}
 .user-name{font-size:12.5px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:108px}
 .user-role{font-size:10px;color:rgba(255,255,255,.35);margin-top:1px}
-.logout-btn{margin-left:auto;width:28px;height:28px;flex-shrink:0;border-radius:8px;background:rgba(220,38,38,.12);border:none;display:flex;align-items:center;justify-content:center;color:rgba(220,38,38,.7);font-size:13px;cursor:pointer;text-decoration:none;transition:all .18s}
-.logout-btn:hover{background:rgba(220,38,38,.2);color:#DC2626}
+.logout-btn-full{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:9px 14px;margin-top:10px;border-radius:10px;background:rgba(220,38,38,.15);border:1.5px solid rgba(220,38,38,.25);color:#FCA5A5;text-decoration:none;font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:700;letter-spacing:.3px;transition:all .2s}
+.logout-btn-full:hover{background:rgba(220,38,38,.32);color:#fff;border-color:#DC2626}
 
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0}
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding: 28px;gap:14px;position:sticky;top:0;z-index:50}
@@ -195,14 +195,10 @@ body{display:flex;background:var(--soft);color:var(--ink)}
   </nav>
   <div style="flex:1"></div>
   <div class="sidebar-footer">
-    <div class="user-card">
-      <div class="user-av"><%= initials %></div>
-      <div>
-        <div class="user-name"><%= dn %></div>
-        <div class="user-role"><%= roleName %></div>
-      </div>
-      <a href="<%= request.getContextPath() %>/logout?from=staff" class="logout-btn" title="Đăng xuất">⏻</a>
-    </div>
+    <a href="<%= request.getContextPath() %>/logout?from=staff" class="logout-btn-full" title="Đăng xuất">
+      <span style="font-size:15px;line-height:1">⏻</span>
+      <span>Đăng xuất</span>
+    </a>
   </div>
 </aside>
 

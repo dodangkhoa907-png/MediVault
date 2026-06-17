@@ -6,6 +6,7 @@ import com.medicare.entity.Attendance;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -231,19 +232,31 @@ public class AttendanceDAO implements IAttendanceDAO {
         // → SP_AutoCloseOverdueShifts cần ShiftID để đóng bảng Shifts
         Integer shiftId = findCurrentShiftId(accountId);
 
+        // ══ FIX MÚI GIỜ (v2) ══
+        // KHÔNG dùng ps.setTimestamp(Timestamp.valueOf(...)) — driver mssql-jdbc convert
+        // java.sql.Timestamp <-> DATETIME dựa trên timezone của session/JVM theo cách
+        // không đáng tin cậy khi JVM và SQL Server ở 2 máy khác nhau với OS timezone
+        // khác nhau (đã xác minh: SQL Server OS chạy UTC, gây lệch 7 giờ khi convert).
+        // Giải pháp triệt để: gửi chuỗi text thuần qua setString() + CAST(? AS DATETIME)
+        // trong câu SQL — SQL Server parse y nguyên chuỗi, không qua bất kỳ lớp
+        // convert/Calendar/timezone nào của JDBC driver.
+        String nowStr = LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
         String sql = shiftId != null
-                ? "INSERT INTO Attendance (AccountID, ScheduleID, ShiftID, CheckInMethod, "
+                ? "INSERT INTO Attendance (AccountID, ScheduleID, ShiftID, CheckInTime, CheckInMethod, "
                   + "LateMinutes, PenaltyAmount, AttendanceStatus) "
-                  + "VALUES (?,?,?,?,?,?,?); SELECT SCOPE_IDENTITY();"
-                : "INSERT INTO Attendance (AccountID, ScheduleID, CheckInMethod, "
+                  + "VALUES (?,?,?,CAST(? AS DATETIME),?,?,?,?); SELECT SCOPE_IDENTITY();"
+                : "INSERT INTO Attendance (AccountID, ScheduleID, CheckInTime, CheckInMethod, "
                   + "LateMinutes, PenaltyAmount, AttendanceStatus) "
-                  + "VALUES (?,?,?,?,?,?); SELECT SCOPE_IDENTITY();";
+                  + "VALUES (?,?,CAST(? AS DATETIME),?,?,?,?); SELECT SCOPE_IDENTITY();";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, accountId);
             ps.setInt(2, scheduleId);
             int p = 3;
             if (shiftId != null) ps.setInt(p++, shiftId);
+            ps.setString(p++, nowStr);
             ps.setString(p++, method != null ? method : "WEB_BUTTON");
             ps.setInt(p++, lateMinutes);
             ps.setBigDecimal(p++, penaltyAmount != null ? penaltyAmount : BigDecimal.ZERO);
@@ -258,9 +271,13 @@ public class AttendanceDAO implements IAttendanceDAO {
     @Override
     public boolean checkOutWithPenalty(int accountId, BigDecimal penaltyAmount,
                                        String notes, boolean isAutoClose) {
+        // ══ FIX MÚI GIỜ (v2) ══ Gửi chuỗi text + CAST AS DATETIME — xem giải thích
+        // chi tiết ở checkInWithPenalty.
+        String nowStr = LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         String sql =
                 "UPDATE Attendance SET "
-                        + "  CheckOutTime     = GETDATE(), "
+                        + "  CheckOutTime     = CAST(? AS DATETIME), "
                         + "  AttendanceStatus = CASE "
                         + "      WHEN AttendanceStatus = 'CONFIRMED' THEN 'ON_TIME' "
                         + "      WHEN AttendanceStatus = 'LATE' THEN 'LATE' "
@@ -271,10 +288,11 @@ public class AttendanceDAO implements IAttendanceDAO {
                         + "WHERE AccountID = ? AND CheckOutTime IS NULL";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
-            ps.setBigDecimal(1, penaltyAmount != null ? penaltyAmount : BigDecimal.ZERO);
-            ps.setBoolean(2, isAutoClose);
-            ps.setNString(3, notes);
-            ps.setInt(4, accountId);
+            ps.setString(1, nowStr);
+            ps.setBigDecimal(2, penaltyAmount != null ? penaltyAmount : BigDecimal.ZERO);
+            ps.setBoolean(3, isAutoClose);
+            ps.setNString(4, notes);
+            ps.setInt(5, accountId);
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }

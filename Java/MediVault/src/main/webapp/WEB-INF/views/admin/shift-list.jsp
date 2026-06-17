@@ -316,6 +316,8 @@ tbody tr{cursor:pointer}
 .stype-time{font-size:11px;color:var(--muted);margin-top:2px}
 .stype-rate{font-size:11px;color:var(--green);font-weight:700;margin-top:3px}
 .dur-preview{font-size:12px;color:var(--muted);padding:8px 12px;background:var(--surface);border-radius:8px;margin-top:-6px;margin-bottom:14px}
+.dur-warn{font-size:12px;font-weight:700;color:#991B1B;background:#FEF2F2;border:1.5px solid #FECACA;
+  border-radius:8px;padding:10px 12px;margin-top:-6px;margin-bottom:14px;line-height:1.5}
 
 /* ── MODAL XẾP CA ĐẦY ĐỦ ── */
 .sched-overlay{position:fixed;inset:0;background:rgba(11,22,40,.55);z-index:600;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s}
@@ -783,6 +785,29 @@ tbody tr{cursor:pointer}
 .sm-efg select:focus,.sm-efg input:focus{border-color:var(--blue)}
 .sm-efg.span2{grid-column:span 2}
 .sm-efg.span3{grid-column:span 3}
+
+/* ── Multi-select xóa loại ca ── */
+.btn-select-mode{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;
+  background:var(--surface);color:var(--ink);border:1.5px solid var(--border);border-radius:9px;
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-right:8px}
+.btn-select-mode.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.type-card{position:relative}
+.type-card-checkbox{display:none;position:absolute;top:14px;left:14px;width:20px;height:20px;
+  accent-color:var(--blue);cursor:pointer;z-index:5}
+.types-grid.select-mode .type-card-checkbox{display:block}
+.types-grid.select-mode .type-card{padding-left:38px;transition:border-color .15s}
+.types-grid.select-mode .type-card.checked{border:2px solid var(--blue);background:rgba(21,88,168,.03)}
+.types-grid.select-mode .type-card-foot{pointer-events:none;opacity:.45}
+.bulk-delete-bar{display:none;align-items:center;justify-content:space-between;gap:14px;
+  background:#FEF2F2;border:1.5px solid #FECACA;border-radius:12px;padding:12px 18px;margin-bottom:14px}
+.bulk-delete-bar.show{display:flex}
+.bulk-delete-count{font-size:13px;font-weight:700;color:#991B1B}
+.bulk-delete-actions{display:flex;gap:10px}
+.btn-bulk-delete{background:#DC2626;color:#fff;border:none;padding:8px 18px;border-radius:9px;
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.btn-bulk-delete:disabled{opacity:.5;cursor:not-allowed}
+.btn-bulk-cancel{background:#fff;color:var(--muted);border:1.5px solid var(--border);padding:8px 18px;
+  border-radius:9px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body>
@@ -828,11 +853,21 @@ tbody tr{cursor:pointer}
       <c:when test="${param.msg == 'bulk-deleted'}"><div class="toast toast-ok" id="toast">🗑️ Đã xóa ${param.count} ca!</div></c:when>
       <c:when test="${param.msg == 'sched-update-err'}"><div class="toast toast-err" id="toast">❌ Không thể sửa — ca đang hoạt động!</div></c:when>
       <c:when test="${param.msg == 'sched-deleted'}"><div class="toast toast-ok" id="toast">🗑️ Đã xóa ${param.count} lịch ca!<c:if test="${not empty param.skip}"> (bỏ qua ${param.skip} ca đang hoạt động)</c:if></div></c:when>
+      <c:when test="${param.msg == 'type-bulk-deleted'}">
+        <div class="toast <c:choose><c:when test='${param.deleted > 0 and empty param.skippedActive and empty param.skippedSchedule}'>toast-ok</c:when><c:when test='${param.deleted == 0}'>toast-err</c:when><c:otherwise>toast-warn</c:otherwise></c:choose>" id="toast">
+          <c:if test="${param.deleted > 0}">🗑️ Đã xóa ${param.deleted} loại ca. </c:if>
+          <c:if test="${not empty param.skippedActive}">⚠️ Bỏ qua (đang dùng): ${param.skippedActive}. </c:if>
+          <c:if test="${not empty param.skippedSchedule}">⚠️ Bỏ qua (còn lịch ca): ${param.skippedSchedule}.</c:if>
+        </div>
+      </c:when>
       <c:when test="${param.msg == 'quick-sched'}"><div class="toast toast-ok" id="toast">✅ Xếp ca nhanh thành công!</div></c:when>
       <c:when test="${param.msg == 'cancelled'}"><div class="toast toast-info" id="toast">🗑️ Đã hủy lịch ca.</div></c:when>
       <c:when test="${param.msg == 'type-saved'}">   <div class="toast toast-ok"   id="toast">✅ Lưu loại ca thành công!</div></c:when>
       <c:when test="${param.msg == 'type-deleted'}"> <div class="toast toast-ok"   id="toast">🗑️ Xóa loại ca thành công!</div></c:when>
       <c:when test="${param.msg == 'type-err'}">     <div class="toast toast-err"  id="toast">❌ Lỗi khi lưu loại ca!</div></c:when>
+      <c:when test="${param.msg == 'type-err-name'}"> <div class="toast toast-err"  id="toast">⚠️ Bạn chưa nhập tên loại ca!</div></c:when>
+      <c:when test="${param.msg == 'type-err-time'}"> <div class="toast toast-err"  id="toast">⚠️ Vui lòng chọn đầy đủ giờ bắt đầu và kết thúc!</div></c:when>
+      <c:when test="${param.msg == 'type-err-rate'}"> <div class="toast toast-err"  id="toast">⚠️ Lương theo giờ phải từ 50,000đ trở lên!</div></c:when>
       <c:when test="${param.msg == 'past-date'}"><div class="toast toast-err" id="toast">⛔ Không thể xếp ca cho ngày đã qua! Chỉ được xếp từ hôm nay trở đi.</div></c:when>
       <c:when test="${param.msg == 'type-has-schedules'}"><div class="toast toast-err" id="toast">⚠️ Không thể xóa — loại ca này còn lịch ca đang dùng!</div></c:when>
       <c:when test="${param.msg == 'type-has-schedules'}"><div class="toast toast-err" id="toast">⚠️ Không thể xóa — loại ca này còn lịch ca đang dùng!</div></c:when>
@@ -1459,9 +1494,21 @@ tbody tr{cursor:pointer}
           <h2>⚙️ Loại ca làm việc</h2>
           <p style="font-size:12.5px;color:var(--muted);margin-top:4px">Quản lý ca mẫu — Ca sáng, Ca chiều, Ca part-time...</p>
         </div>
-        <button class="btn-add-type" onclick="openTypeModal()">+ Thêm loại ca</button>
+        <div>
+          <button class="btn-select-mode" id="typeSelectModeBtn" onclick="toggleTypeSelectMode()">☑️ Chọn</button>
+          <button class="btn-add-type" onclick="openTypeModal()">+ Thêm loại ca</button>
+        </div>
       </div>
-      <div class="types-grid">
+
+      <div class="bulk-delete-bar" id="typeBulkDeleteBar">
+        <span class="bulk-delete-count" id="typeBulkDeleteCount">Đã chọn 0 loại ca</span>
+        <div class="bulk-delete-actions">
+          <button class="btn-bulk-cancel" onclick="cancelTypeSelectMode()">Hủy</button>
+          <button class="btn-bulk-delete" id="typeBulkDeleteBtn" disabled onclick="submitBulkDeleteTypes()">🗑 Xóa các loại ca đã chọn</button>
+        </div>
+      </div>
+
+      <div class="types-grid" id="typesGrid">
         <c:if test="${empty shiftTypes}">
           <div class="empty-state" style="grid-column:1/-1">
             <span class="es-icon">⚙️</span>
@@ -1470,7 +1517,10 @@ tbody tr{cursor:pointer}
           </div>
         </c:if>
         <c:forEach var="st" items="${shiftTypes}">
-          <div class="type-card">
+          <div class="type-card" data-type-id="${st.shiftTypeId}" onclick="onTypeCardClick(event, ${st.shiftTypeId})">
+            <input type="checkbox" class="type-card-checkbox" data-type-id="${st.shiftTypeId}"
+                   data-type-name="${st.name}"
+                   onclick="event.stopPropagation(); onTypeCheckboxChange(${st.shiftTypeId})">
             <div class="type-card-head">
               <div class="type-dot" style="background:var(--ca-std)"></div>
               <div>
@@ -1728,6 +1778,7 @@ tbody tr{cursor:pointer}
           </div>
         </div>
         <div id="durPreview" class="dur-preview"></div>
+        <div id="durWarn" class="dur-warn" style="display:none"></div>
         <div class="mfg">
           <label>Lương theo giờ (VNĐ) *</label>
           <input type="number" name="hourlyRate" id="typeRate" min="50000" step="1000"
@@ -2420,15 +2471,35 @@ function updateDurPreview() {
   const s = document.getElementById('typeStartTime').value;
   const e = document.getElementById('typeEndTime').value;
   const p = document.getElementById('durPreview');
-  if (!s || !e) { p.textContent = ''; return; }
+  const warnEl = document.getElementById('durWarn');
+  if (!s || !e) { p.textContent = ''; if (warnEl) warnEl.style.display = 'none'; return; }
   const sh = parseInt(s.split(':')[0]), sm = parseInt(s.split(':')[1]);
   const eh = parseInt(e.split(':')[0]), em = parseInt(e.split(':')[1]);
   let dur = (eh * 60 + em - sh * 60 - sm) / 60;
-  if (dur <= 0) dur += 24;
+  if (dur <= 0) dur += 24; // ca qua đêm (VD: 22:00 → 06:00)
   const rate = parseInt(document.getElementById('typeRate').value) || 60000;
   const total = Math.round(dur * rate);
-  const caType = dur >= 10 ? '🟣 Ca dài/gãy' : dur >= 7 ? '🔵 Ca tiêu chuẩn' : '🟢 Part-time';
-  p.innerHTML = caType + ' &nbsp;|&nbsp; ⏱ ' + dur.toFixed(1) + ' tiếng &nbsp;|&nbsp; 💰 Tổng lương: <strong>' + total.toLocaleString('vi') + 'đ</strong>';
+
+  const MAX_SAFE_HOURS = 10; // chuẩn an toàn theo luật lao động VN thông thường
+  const isTooLong = dur > MAX_SAFE_HOURS;
+
+  const caType = isTooLong ? '🔴 Vượt ngưỡng an toàn' : dur >= 8 ? '🔵 Ca tiêu chuẩn' : '🟢 Part-time';
+  const startLabel = String(sh).padStart(2,'0') + ':' + String(sm).padStart(2,'0');
+  const endLabel   = String(eh).padStart(2,'0') + ':' + String(em).padStart(2,'0');
+  const crossDay   = (eh * 60 + em) <= (sh * 60 + sm) ? ' (qua ngày sau)' : '';
+  p.innerHTML = caType + ' &nbsp;|&nbsp; 🕐 ' + startLabel + ' → ' + endLabel + crossDay
+              + ' &nbsp;|&nbsp; ⏱ ' + dur.toFixed(1) + ' tiếng &nbsp;|&nbsp; 💰 Tổng lương: <strong>' + total.toLocaleString('vi') + 'đ</strong>';
+  p.style.color = isTooLong ? '#DC2626' : '';
+  p.style.fontWeight = isTooLong ? '700' : '';
+
+  if (warnEl) {
+    if (isTooLong) {
+      warnEl.style.display = 'block';
+      warnEl.textContent = '🔴 Cảnh báo: ca dài ' + dur.toFixed(1) + ' tiếng — vượt quá ' + MAX_SAFE_HOURS + ' tiếng/ca theo chuẩn an toàn lao động. Vui lòng kiểm tra lại giờ bắt đầu/kết thúc, hoặc tự chịu trách nhiệm nếu chủ ý tạo ca đặc biệt dài.';
+    } else {
+      warnEl.style.display = 'none';
+    }
+  }
 }
 ['typeStartTime','typeEndTime','typeRate'].forEach(id => {
   const el = document.getElementById(id);
@@ -2441,8 +2512,20 @@ function validateRate(el) {
   updateDurPreview();
 }
 function submitTypeForm() {
+  const nameEl = document.getElementById('typeName');
+  if (!nameEl.value || !nameEl.value.trim()) {
+    alert('⚠️ Vui lòng nhập tên loại ca!');
+    nameEl.focus();
+    return;
+  }
+  const startEl = document.getElementById('typeStartTime');
+  const endEl   = document.getElementById('typeEndTime');
+  if (!startEl.value || !endEl.value) {
+    alert('⚠️ Vui lòng chọn đầy đủ giờ bắt đầu và giờ kết thúc!');
+    return;
+  }
   const rate = parseInt(document.getElementById('typeRate').value);
-  if (rate < 50000) { validateRate(document.getElementById('typeRate')); return; }
+  if (isNaN(rate) || rate < 50000) { validateRate(document.getElementById('typeRate')); return; }
   document.getElementById('typeForm').submit();
 }
 function toggleType(id, active) {
@@ -2458,6 +2541,80 @@ function deleteType(id, name) {
   if (confirm('Xóa loại ca "'+name+'"?\nChỉ xóa được khi không còn lịch ca nào dùng loại này.')) {
     location.href = ctx_path + '/shift-types?action=delete&id=' + id;
   }
+}
+
+// ══════════════════════════════════════════════════
+//  MULTI-SELECT XÓA LOẠI CA
+// ══════════════════════════════════════════════════
+let _typeSelectMode = false;
+let _selectedTypeIds = new Set();
+
+function toggleTypeSelectMode() {
+  _typeSelectMode = !_typeSelectMode;
+  const grid = document.getElementById('typesGrid');
+  const btn  = document.getElementById('typeSelectModeBtn');
+  const bar  = document.getElementById('typeBulkDeleteBar');
+
+  if (_typeSelectMode) {
+    grid.classList.add('select-mode');
+    btn.classList.add('active');
+    btn.textContent = '✕ Thoát chọn';
+    bar.classList.add('show');
+  } else {
+    cancelTypeSelectMode();
+  }
+}
+
+function cancelTypeSelectMode() {
+  _typeSelectMode = false;
+  _selectedTypeIds.clear();
+  const grid = document.getElementById('typesGrid');
+  grid.classList.remove('select-mode');
+  document.getElementById('typeSelectModeBtn').classList.remove('active');
+  document.getElementById('typeSelectModeBtn').textContent = '☑️ Chọn';
+  document.getElementById('typeBulkDeleteBar').classList.remove('show');
+  grid.querySelectorAll('.type-card-checkbox').forEach(cb => cb.checked = false);
+  grid.querySelectorAll('.type-card.checked').forEach(c => c.classList.remove('checked'));
+  updateTypeBulkDeleteBar();
+}
+
+function onTypeCardClick(evt, id) {
+  if (!_typeSelectMode) return; // không ở chế độ chọn → click card vẫn để Sửa/Tạm dừng hoạt động bình thường
+  const checkbox = document.querySelector('.type-card-checkbox[data-type-id="'+id+'"]');
+  if (checkbox) { checkbox.checked = !checkbox.checked; onTypeCheckboxChange(id); }
+}
+
+function onTypeCheckboxChange(id) {
+  const checkbox = document.querySelector('.type-card-checkbox[data-type-id="'+id+'"]');
+  const card = document.querySelector('.type-card[data-type-id="'+id+'"]');
+  if (!checkbox) return;
+  if (checkbox.checked) { _selectedTypeIds.add(id); card?.classList.add('checked'); }
+  else { _selectedTypeIds.delete(id); card?.classList.remove('checked'); }
+  updateTypeBulkDeleteBar();
+}
+
+function updateTypeBulkDeleteBar() {
+  const count = _selectedTypeIds.size;
+  document.getElementById('typeBulkDeleteCount').textContent = 'Đã chọn ' + count + ' loại ca';
+  document.getElementById('typeBulkDeleteBtn').disabled = count === 0;
+}
+
+function submitBulkDeleteTypes() {
+  if (_selectedTypeIds.size === 0) return;
+  const names = [..._selectedTypeIds].map(id => {
+    const cb = document.querySelector('.type-card-checkbox[data-type-id="'+id+'"]');
+    return cb ? cb.dataset.typeName : id;
+  }).join(', ');
+
+  if (!confirm('Xóa ' + _selectedTypeIds.size + ' loại ca đã chọn?\n(' + names + ')\n\nChỉ xóa được các loại ca đang Tạm dừng và không còn lịch ca nào dùng. Loại ca đang Dùng hoặc còn lịch sẽ tự động bỏ qua.')) return;
+
+  const f = document.createElement('form');
+  f.method = 'post';
+  f.action = ctx_path + '/shift-types';
+  f.innerHTML = '<input name="action" value="bulk-delete">'
+              + '<input name="ids" value="' + [..._selectedTypeIds].join(',') + '">';
+  document.body.appendChild(f);
+  f.submit();
 }
 
 // ══════════════════════════════════════════════════
