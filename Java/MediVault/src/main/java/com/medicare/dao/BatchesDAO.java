@@ -13,6 +13,8 @@ public class BatchesDAO implements IBatchesDAO {
         Batches b = new Batches();
         b.setBatchId(rs.getInt("BatchID"));
         b.setMedicineId(rs.getInt("MedicineID"));
+        b.setPoId(rs.getInt("POID"));
+        b.setSupplierId(rs.getInt("SupplierID"));
         b.setBatchNumber(rs.getString("BatchNumber"));
         if (rs.getDate("ManufactureDate") != null)
             b.setManufactureDate(rs.getDate("ManufactureDate").toLocalDate());
@@ -22,6 +24,8 @@ public class BatchesDAO implements IBatchesDAO {
         b.setImportPrice(rs.getBigDecimal("ImportPrice"));
         b.setInitialQuantity(rs.getInt("InitialQuantity"));
         b.setCurrentQuantity(rs.getInt("CurrentQuantity"));
+        if (rs.getTimestamp("CreatedAt") != null)
+            b.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
         return b;
     }
 
@@ -60,6 +64,22 @@ public class BatchesDAO implements IBatchesDAO {
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, medicineId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) list.add(mapRow(rs));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    // Các lô thuộc 1 đơn đặt hàng — dùng cho trang chi tiết Đơn đặt hàng
+    public List<Batches> findByPO(int poId) {
+        List<Batches> list = new ArrayList<>();
+        String sql = "SELECT * FROM Batches WHERE POID = ? ORDER BY CreatedAt DESC";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, poId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) list.add(mapRow(rs));
             }
@@ -222,5 +242,5 @@ public class BatchesDAO implements IBatchesDAO {
         }
         return 0;
     }
-    
+
 }

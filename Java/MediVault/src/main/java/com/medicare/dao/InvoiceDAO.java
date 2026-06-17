@@ -299,4 +299,297 @@ public class InvoiceDAO implements IInvoiceDAO {
         return BigDecimal.ZERO;
     }
 
+    // ════════════════════════════════════════════════════════════
+    //  BÁO CÁO DOANH THU — dùng cho ReportServlet (/reports)
+    //  Lưu ý: CreatedAt được lưu theo GETDATE() của SQL Server (UTC trên server host),
+    //  nên việc lọc theo ngày (CAST(...AS DATE)) giữ NGUYÊN quy ước hiện có của toàn hệ
+    //  thống (giống InvoiceDAO.findByDateRange, ShiftDAO...) để không gây lệch dữ liệu
+    //  so với các báo cáo khác. Riêng phần "doanh thu theo giờ" (revenueByHour) CẦN quy
+    //  đổi +7h vì mục đích của nó là xác định khung giờ thực tế trong ngày VN.
+    // ════════════════════════════════════════════════════════════
+
+    @Override
+    public BigDecimal sumGrossRevenueByDateRange(LocalDate from, LocalDate to) {
+        String sql = "SELECT ISNULL(SUM(id.SubTotal), 0) " +
+                "FROM InvoiceDetails id JOIN Invoices inv ON inv.InvoiceID = id.InvoiceID " +
+                "WHERE inv.Status = 'COMPLETED' AND CAST(inv.CreatedAt AS DATE) BETWEEN ? AND ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setDate(1, Date.valueOf(from));
+            ps.setDate(2, Date.valueOf(to));
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getBigDecimal(1);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public BigDecimal sumCOGSByDateRange(LocalDate from, LocalDate to) {
+        String sql = "SELECT ISNULL(SUM(id.Quantity * b.ImportPrice), 0) " +
+                "FROM InvoiceDetails id " +
+                "JOIN Invoices inv ON inv.InvoiceID = id.InvoiceID " +
+                "JOIN Batches b    ON b.BatchID = id.BatchID " +
+                "WHERE inv.Status = 'COMPLETED' AND CAST(inv.CreatedAt AS DATE) BETWEEN ? AND ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setDate(1, Date.valueOf(from));
+            ps.setDate(2, Date.valueOf(to));
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getBigDecimal(1);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public BigDecimal sumDiscountByDateRange(LocalDate from, LocalDate to) {
+        String sql = "SELECT ISNULL(SUM(DiscountAmount), 0) FROM Invoices " +
+                "WHERE Status = 'COMPLETED' AND CAST(CreatedAt AS DATE) BETWEEN ? AND ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setDate(1, Date.valueOf(from));
+            ps.setDate(2, Date.valueOf(to));
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getBigDecimal(1);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public BigDecimal sumRefundByDateRange(LocalDate from, LocalDate to) {
+        // Returns hiện chưa có luồng nghiệp vụ nào ghi dữ liệu (chưa có ReturnsServlet/DAO) →
+        // query này sẵn sàng cho tương lai, hiện tại sẽ luôn trả về 0.
+        String sql = "SELECT ISNULL(SUM(r.Quantity * id.UnitPrice), 0) " +
+                "FROM Returns r " +
+                "JOIN InvoiceDetails id ON id.InvoiceID = r.InvoiceID AND id.BatchID = r.BatchID " +
+                "WHERE r.ReturnType = 'CUSTOMER_RETURN' AND CAST(r.CreatedAt AS DATE) BETWEEN ? AND ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setDate(1, Date.valueOf(from));
+            ps.setDate(2, Date.valueOf(to));
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getBigDecimal(1);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public int countInvoicesByDateRange(LocalDate from, LocalDate to) {
+        String sql = "SELECT COUNT(*) FROM Invoices " +
+                "WHERE Status = 'COMPLETED' AND CAST(CreatedAt AS DATE) BETWEEN ? AND ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setDate(1, Date.valueOf(from));
+            ps.setDate(2, Date.valueOf(to));
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return 0;
+    }
+
+    @Override
+    public java.util.LinkedHashMap<String, BigDecimal> revenueByManufacturer(LocalDate from, LocalDate to) {
+        java.util.LinkedHashMap<String, BigDecimal> result = new java.util.LinkedHashMap<>();
+        String sql = "SELECT m.Name AS Label, SUM(id.SubTotal) AS Rev " +
+                "FROM InvoiceDetails id " +
+                "JOIN Invoices inv      ON inv.InvoiceID = id.InvoiceID " +
+                "JOIN Batches b         ON b.BatchID = id.BatchID " +
+                "JOIN Medicines me      ON me.MedicineID = b.MedicineID " +
+                "JOIN Manufacturers m   ON m.ManufacturerID = me.ManufacturerID " +
+                "WHERE inv.Status = 'COMPLETED' AND CAST(inv.CreatedAt AS DATE) BETWEEN ? AND ? " +
+                "GROUP BY m.Name ORDER BY Rev DESC";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setDate(1, Date.valueOf(from));
+            ps.setDate(2, Date.valueOf(to));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) result.put(rs.getNString("Label"), rs.getBigDecimal("Rev"));
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return result;
+    }
+
+    @Override
+    public java.util.LinkedHashMap<String, BigDecimal> revenueByCategory(LocalDate from, LocalDate to) {
+        java.util.LinkedHashMap<String, BigDecimal> result = new java.util.LinkedHashMap<>();
+        String sql = "SELECT c.CategoryName AS Label, SUM(id.SubTotal) AS Rev " +
+                "FROM InvoiceDetails id " +
+                "JOIN Invoices inv   ON inv.InvoiceID = id.InvoiceID " +
+                "JOIN Batches b      ON b.BatchID = id.BatchID " +
+                "JOIN Medicines me   ON me.MedicineID = b.MedicineID " +
+                "JOIN Categories c   ON c.CategoryID = me.CategoryID " +
+                "WHERE inv.Status = 'COMPLETED' AND CAST(inv.CreatedAt AS DATE) BETWEEN ? AND ? " +
+                "GROUP BY c.CategoryName ORDER BY Rev DESC";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setDate(1, Date.valueOf(from));
+            ps.setDate(2, Date.valueOf(to));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) result.put(rs.getNString("Label"), rs.getBigDecimal("Rev"));
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return result;
+    }
+
+    @Override
+    public java.util.TreeMap<Integer, BigDecimal> revenueByHour(LocalDate from, LocalDate to) {
+        java.util.TreeMap<Integer, BigDecimal> result = new java.util.TreeMap<>();
+        for (int h = 0; h < 24; h++) result.put(h, BigDecimal.ZERO); // luôn đủ 24 mốc giờ
+        // +7h để quy đổi CreatedAt (UTC trên server) → giờ VN trước khi lấy khung giờ
+        String sql = "SELECT DATEPART(HOUR, DATEADD(HOUR, 7, inv.CreatedAt)) AS Hr, " +
+                "       SUM(inv.FinalAmount) AS Rev " +
+                "FROM Invoices inv " +
+                "WHERE inv.Status = 'COMPLETED' AND CAST(inv.CreatedAt AS DATE) BETWEEN ? AND ? " +
+                "GROUP BY DATEPART(HOUR, DATEADD(HOUR, 7, inv.CreatedAt))";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setDate(1, Date.valueOf(from));
+            ps.setDate(2, Date.valueOf(to));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) result.put(rs.getInt("Hr"), rs.getBigDecimal("Rev"));
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return result;
+    }
+
+    @Override
+    public java.util.TreeMap<String, BigDecimal> dailyRevenueByDateRange(LocalDate from, LocalDate to) {
+        java.util.TreeMap<String, BigDecimal> result = new java.util.TreeMap<>();
+        String sql = "SELECT CAST(inv.CreatedAt AS DATE) AS Day, SUM(inv.FinalAmount) AS Rev " +
+                "FROM Invoices inv " +
+                "WHERE inv.Status = 'COMPLETED' AND CAST(inv.CreatedAt AS DATE) BETWEEN ? AND ? " +
+                "GROUP BY CAST(inv.CreatedAt AS DATE) ORDER BY Day";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setDate(1, Date.valueOf(from));
+            ps.setDate(2, Date.valueOf(to));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) result.put(rs.getDate("Day").toString(), rs.getBigDecimal("Rev"));
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return result;
+    }
+
+    @Override
+    public java.util.TreeMap<String, BigDecimal[]> dailyFinanceByDateRange(LocalDate from, LocalDate to) {
+        java.util.TreeMap<String, BigDecimal[]> result = new java.util.TreeMap<>();
+        String sqlRev = "SELECT CAST(CreatedAt AS DATE) AS Day, SUM(FinalAmount) AS Rev FROM Invoices " +
+                "WHERE Status = 'COMPLETED' AND CAST(CreatedAt AS DATE) BETWEEN ? AND ? " +
+                "GROUP BY CAST(CreatedAt AS DATE)";
+        String sqlCogs = "SELECT CAST(inv.CreatedAt AS DATE) AS Day, SUM(id.Quantity * b.ImportPrice) AS Cogs " +
+                "FROM InvoiceDetails id " +
+                "JOIN Invoices inv ON inv.InvoiceID = id.InvoiceID " +
+                "JOIN Batches b    ON b.BatchID = id.BatchID " +
+                "WHERE inv.Status = 'COMPLETED' AND CAST(inv.CreatedAt AS DATE) BETWEEN ? AND ? " +
+                "GROUP BY CAST(inv.CreatedAt AS DATE)";
+        try (Connection cn = DBContext.getConnection()) {
+            try (PreparedStatement ps = cn.prepareStatement(sqlRev)) {
+                ps.setDate(1, Date.valueOf(from));
+                ps.setDate(2, Date.valueOf(to));
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String day = rs.getDate("Day").toString();
+                        result.computeIfAbsent(day, k -> new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO})[0] = rs.getBigDecimal("Rev");
+                    }
+                }
+            }
+            try (PreparedStatement ps = cn.prepareStatement(sqlCogs)) {
+                ps.setDate(1, Date.valueOf(from));
+                ps.setDate(2, Date.valueOf(to));
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String day = rs.getDate("Day").toString();
+                        result.computeIfAbsent(day, k -> new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO})[1] = rs.getBigDecimal("Cogs");
+                    }
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return result;
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  DANH SÁCH HÓA ĐƠN (lọc + phân trang) — dùng cho InvoiceServlet (/invoices)
+    // ════════════════════════════════════════════════════════════
+
+    @Override
+    public List<Invoice> findFiltered(LocalDate from, LocalDate to, String status, String paymentMethod,
+                                      Integer accountId, String keyword, int page, int pageSize) {
+        List<Invoice> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder(
+                "SELECT inv.* FROM Invoices inv " +
+                        "LEFT JOIN Customers c ON c.CustomerID = inv.CustomerID WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+        appendInvoiceFilters(sql, params, from, to, status, paymentMethod, accountId, keyword);
+        sql.append(" ORDER BY inv.CreatedAt DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
+
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql.toString())) {
+            int idx = bindInvoiceParams(ps, params);
+            int safePage = Math.max(page, 1);
+            ps.setInt(idx++, (safePage - 1) * pageSize);
+            ps.setInt(idx, pageSize);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) list.add(mapRow(rs));
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
+    }
+
+    @Override
+    public int countFiltered(LocalDate from, LocalDate to, String status, String paymentMethod,
+                             Integer accountId, String keyword) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT COUNT(*) FROM Invoices inv " +
+                        "LEFT JOIN Customers c ON c.CustomerID = inv.CustomerID WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+        appendInvoiceFilters(sql, params, from, to, status, paymentMethod, accountId, keyword);
+
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql.toString())) {
+            bindInvoiceParams(ps, params);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return 0;
+    }
+
+    /** Gắn các điều kiện lọc (tùy chọn) vào câu SQL + danh sách param theo đúng thứ tự "?". */
+    private void appendInvoiceFilters(StringBuilder sql, List<Object> params,
+                                      LocalDate from, LocalDate to, String status, String paymentMethod,
+                                      Integer accountId, String keyword) {
+        if (from != null && to != null) {
+            sql.append(" AND CAST(inv.CreatedAt AS DATE) BETWEEN ? AND ?");
+            params.add(Date.valueOf(from));
+            params.add(Date.valueOf(to));
+        }
+        if (status != null && !status.isEmpty()) {
+            sql.append(" AND inv.Status = ?");
+            params.add(status);
+        }
+        if (paymentMethod != null && !paymentMethod.isEmpty()) {
+            sql.append(" AND inv.PaymentMethod = ?");
+            params.add(paymentMethod);
+        }
+        if (accountId != null) {
+            sql.append(" AND inv.AccountID = ?");
+            params.add(accountId);
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            sql.append(" AND (inv.InvoiceCode LIKE ? OR c.CustomerName LIKE ? OR c.Phone LIKE ?)");
+            String kw = "%" + keyword.trim() + "%";
+            params.add(kw); params.add(kw); params.add(kw);
+        }
+    }
+
+    private int bindInvoiceParams(PreparedStatement ps, List<Object> params) throws SQLException {
+        int idx = 1;
+        for (Object p : params) ps.setObject(idx++, p);
+        return idx;
+    }
+
 }

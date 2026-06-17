@@ -3,11 +3,13 @@ package com.medicare.controller.admin;
 import com.medicare.dao.AccountDAO;
 import com.medicare.dao.PasswordResetDAO;
 import com.medicare.dao.LeaveRequestDAO;
+import com.medicare.dao.InvoiceDAO;
 import com.medicare.dao.interfaces.IAccountDAO;
 import com.medicare.dao.interfaces.IMedicineDAO;
 import com.medicare.dao.interfaces.IBatchesDAO;
 import com.medicare.dao.interfaces.IPasswordResetDAO;
 import com.medicare.dao.interfaces.ILeaveRequestDAO;
+import com.medicare.dao.interfaces.IInvoiceDAO;
 import com.medicare.dao.MedicineDAO;
 import com.medicare.dao.BatchesDAO;
 import com.medicare.entity.Account;
@@ -27,6 +29,7 @@ public class DashboardServlet extends HttpServlet {
     private final IAccountDAO       accountDAO  = new AccountDAO();
     private final IPasswordResetDAO resetDAO    = new PasswordResetDAO();
     private final ILeaveRequestDAO  leaveDAO    = new LeaveRequestDAO();
+    private final IInvoiceDAO       invoiceDAO  = new InvoiceDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -45,6 +48,16 @@ public class DashboardServlet extends HttpServlet {
         req.setAttribute("lowStockCount",  medicineDAO.countLowStock());
         req.setAttribute("expiryCount",    batchesDAO.findExpiringSoon().size());
         req.setAttribute("expiredCount",   batchesDAO.findExpired().size());
+
+        // ── Doanh thu hôm nay (BUG CŨ: chưa từng được set → luôn hiện 0đ) ──
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.util.List<com.medicare.entity.Invoice> todayInvoiceList = invoiceDAO.findByDateRange(today, today);
+        java.math.BigDecimal todayRevenueSum = java.math.BigDecimal.ZERO;
+        for (com.medicare.entity.Invoice inv : todayInvoiceList) {
+            if (inv.getFinalAmount() != null) todayRevenueSum = todayRevenueSum.add(inv.getFinalAmount());
+        }
+        req.setAttribute("todayRevenue",  todayRevenueSum.longValue());
+        req.setAttribute("todayInvoices", todayInvoiceList.size());
 
         List<Account> allAccounts = accountDAO.findAllStaff();
         req.setAttribute("accounts",       allAccounts);

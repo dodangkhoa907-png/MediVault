@@ -57,6 +57,11 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .page-header{margin-bottom:20px}
 .page-title{font-family:'Outfit',sans-serif;font-size:26px;color:var(--ink)}
 .page-sub{font-size:13px;color:var(--muted);margin-top:3px}
+/* ── SECTION TABS (Kho hàng: Thuốc & Lô hàng / Đơn đặt hàng) ── */
+.section-tabs{display:flex;gap:6px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content;margin-bottom:18px}
+.section-tab{padding:8px 18px;border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;transition:all .15s}
+.section-tab:hover{background:var(--surface);color:var(--ink)}
+.section-tab.active{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;box-shadow:0 3px 10px rgba(21,88,168,.25)}
 /* ── STATS ── */
 .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
 .stat-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px 18px}
@@ -133,6 +138,11 @@ tbody tr:hover td{background:#FAFBFF}
     <div class="page-header">
       <div class="page-title">Quản lý kho thuốc</div>
       <div class="page-sub">Danh sách toàn bộ thuốc, tồn kho và lô hàng</div>
+    </div>
+
+    <div class="section-tabs">
+      <a href="${pageContext.request.contextPath}/medicines" class="section-tab active">💊 Thuốc &amp; Lô hàng</a>
+      <a href="${pageContext.request.contextPath}/purchase-orders" class="section-tab">📑 Đơn đặt hàng</a>
     </div>
 
     <%-- Stats --%>

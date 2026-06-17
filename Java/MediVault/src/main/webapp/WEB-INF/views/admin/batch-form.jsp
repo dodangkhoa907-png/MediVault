@@ -1,5 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
     com.medicare.entity.Account acc = (com.medicare.entity.Account) session.getAttribute("adminAccount");
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/login"); return; }
@@ -57,6 +58,12 @@ html,body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--surfa
 .btn-save:hover{background:#0d3d63}
 .btn-cancel{height:44px;padding:0 22px;border:1.5px solid var(--border);border-radius:11px;background:var(--white);color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-flex;align-items:center}
 .btn-cancel:hover{border-color:var(--red);color:var(--red)}
+.po-toggle{display:flex;gap:10px;margin-bottom:16px}
+.po-toggle-opt{flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;transition:.15s}
+.po-toggle-opt:has(input:checked){border-color:var(--blue);background:#EFF6FF;color:var(--blue)}
+.po-toggle-opt input{accent-color:var(--blue)}
+.po-toggle-opt input:disabled{cursor:not-allowed}
+.po-toggle-opt:has(input:disabled){opacity:.45;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -124,17 +131,52 @@ html,body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--surfa
                  placeholder="0" min="0" step="100"
                  value="${batch != null ? batch.importPrice : ''}" required/>
         </div>
+      </div>
+    </div>
+
+    <c:if test="${isNew}">
+    <div class="card">
+      <div class="card-title">📑 Thuộc đơn đặt hàng nào?</div>
+      <div class="po-toggle">
+        <label class="po-toggle-opt">
+          <input type="radio" name="poMode" value="existing" onchange="togglePoMode()" ${empty recentPOs ? 'disabled' : ''}>
+          <span>Chọn đơn có sẵn</span>
+        </label>
+        <label class="po-toggle-opt">
+          <input type="radio" name="poMode" value="new" checked onchange="togglePoMode()">
+          <span>Tạo đơn mới</span>
+        </label>
+      </div>
+
+      <div id="poExistingBlock" class="form-group" style="display:none">
+        <label class="form-label">Đơn đặt hàng <span>*</span></label>
+        <select name="poId" class="form-select">
+          <option value="">-- Chọn đơn --</option>
+          <c:forEach var="p" items="${recentPOs}">
+            <option value="${p.poId}">${p.poCode} · ${poSupplierMap[p.supplierId] != null ? poSupplierMap[p.supplierId].supplierName : ''} · ${fn:substring(p.orderDate.toString(),0,10)}</option>
+          </c:forEach>
+        </select>
+        <span class="form-hint">Chỉ hiện 15 đơn gần nhất. Vào "Đơn đặt hàng" ở sidebar để xem tất cả.</span>
+      </div>
+
+      <div id="poNewBlock">
         <div class="form-group">
-          <label class="form-label">Nhà cung cấp</label>
-          <select name="supplierId" class="form-select">
-            <option value="">-- Không rõ --</option>
+          <label class="form-label">Nhà cung cấp <span>*</span></label>
+          <select name="newPoSupplierId" class="form-select">
+            <option value="">-- Chọn nhà cung cấp --</option>
             <c:forEach var="s" items="${suppliers}">
               <option value="${s.supplierId}">${s.supplierName}</option>
             </c:forEach>
           </select>
         </div>
+        <div class="form-group">
+          <label class="form-label">Ghi chú đơn (không bắt buộc)</label>
+          <input type="text" name="newPoNotes" class="form-input" placeholder="VD: Đặt hàng định kỳ tháng 6">
+        </div>
+        <span class="form-hint">Hệ thống sẽ tự tạo 1 đơn đặt hàng mới và gắn lô này vào đó.</span>
       </div>
     </div>
+    </c:if>
 
     <c:if test="${isNew}">
       <div class="card">
@@ -157,5 +199,18 @@ html,body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--surfa
     </div>
   </form>
 </div>
+<script>
+function togglePoMode() {
+  const existingBlock = document.getElementById('poExistingBlock');
+  if (!existingBlock) return; // chế độ sửa lô — không có thẻ chọn đơn đặt hàng
+  const mode = document.querySelector('input[name="poMode"]:checked');
+  const isExisting = mode && mode.value === 'existing';
+  existingBlock.style.display = isExisting ? 'flex' : 'none';
+  document.getElementById('poNewBlock').style.display = isExisting ? 'none' : 'block';
+  document.querySelector('select[name="poId"]').required = isExisting;
+  document.querySelector('select[name="newPoSupplierId"]').required = !isExisting;
+}
+togglePoMode();
+</script>
 </body>
 </html>

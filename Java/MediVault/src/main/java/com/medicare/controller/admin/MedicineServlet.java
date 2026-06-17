@@ -22,6 +22,7 @@ public class MedicineServlet extends HttpServlet {
     private final ManufacturerDAO manufacturerDAO = new ManufacturerDAO();
     private final SupplierDAO     supplierDAO     = new SupplierDAO();
     private final ShelfDAO        shelfDAO        = new ShelfDAO();
+    private final PurchaseOrderDAO poDAO          = new PurchaseOrderDAO();
 
     // ── GET ───────────────────────────────────────────────────────────────────
     @Override
@@ -123,9 +124,18 @@ public class MedicineServlet extends HttpServlet {
         int medicineId = (b != null) ? b.getMedicineId()
                 : (midStr != null ? Integer.parseInt(midStr) : 0);
 
-        req.setAttribute("batch",     b);
-        req.setAttribute("medicine",  medicineDAO.findById(medicineId));
-        req.setAttribute("suppliers", supplierDAO.findAll());
+        // Đơn đặt hàng gần đây — để chọn "đơn có sẵn" khi nhập lô mới
+        List<PurchaseOrders> recentPOs = poDAO.findRecent(15);
+        Map<Integer, Supplier> poSupplierMap = new HashMap<>();
+        for (PurchaseOrders po : recentPOs) {
+            poSupplierMap.computeIfAbsent(po.getSupplierId(), supplierDAO::findById);
+        }
+
+        req.setAttribute("batch",        b);
+        req.setAttribute("medicine",     medicineDAO.findById(medicineId));
+        req.setAttribute("suppliers",    supplierDAO.findAllActive());
+        req.setAttribute("recentPOs",    recentPOs);
+        req.setAttribute("poSupplierMap", poSupplierMap);
         SidebarHelper.load(req);
 
         req.getRequestDispatcher("/WEB-INF/views/admin/batch-form.jsp").forward(req, resp);
@@ -239,17 +249,63 @@ public class MedicineServlet extends HttpServlet {
         b.setImportPrice(new BigDecimal(price));
 
         String mfDate = req.getParameter("manufactureDate");
-        String supId  = req.getParameter("supplierId");
         if (!ValidationUtil.isBlank(mfDate)) b.setManufactureDate(LocalDate.parse(mfDate));
         b.setImportDate(LocalDate.now());
-        if (!ValidationUtil.isBlank(supId)) b.setSupplierId(Integer.parseInt(supId));
 
         boolean ok;
         if (isNew) {
+            // ── Bắt buộc gắn lô hàng vào 1 Đơn đặt hàng (FK_Batch_PO NOT NULL) ──
+            // Trước đây PoId/SupplierId không được set → lưu lô mới luôn lỗi FK.
+            String poMode   = req.getParameter("poMode"); // "existing" | "new"
+            String poIdStr  = req.getParameter("poId");
+            String newSupId = req.getParameter("newPoSupplierId");
+            String newNotes = req.getParameter("newPoNotes");
+
+            int poId = -1;
+            int supplierId = -1;
+
+            if ("existing".equals(poMode)) {
+                if (ValidationUtil.isBlank(poIdStr)) {
+                    errors.add("Vui lòng chọn đơn đặt hàng đã có!");
+                } else {
+                    PurchaseOrders po = poDAO.findById(Integer.parseInt(poIdStr));
+                    if (po == null) {
+                        errors.add("Đơn đặt hàng không tồn tại, vui lòng chọn lại!");
+                    } else {
+                        poId = po.getPoId();
+                        supplierId = po.getSupplierId();
+                    }
+                }
+            } else { // "new" — tạo đơn đặt hàng mới ngay trong lúc nhập lô
+                if (ValidationUtil.isBlank(newSupId)) {
+                    errors.add("Vui lòng chọn nhà cung cấp cho đơn đặt hàng mới!");
+                } else {
+                    Account adminAcc = (Account) req.getSession(false).getAttribute("adminAccount");
+                    PurchaseOrders po = new PurchaseOrders();
+                    po.setSupplierId(Integer.parseInt(newSupId));
+                    po.setAccountId(adminAcc != null ? adminAcc.getAccountId() : 1);
+                    po.setNotes(!ValidationUtil.isBlank(newNotes) ? newNotes.trim() : null);
+                    poId = poDAO.insert(po);
+                    supplierId = po.getSupplierId();
+                    if (poId <= 0) errors.add("Không tạo được đơn đặt hàng mới, vui lòng thử lại!");
+                }
+            }
+
+            if (!errors.isEmpty()) {
+                req.setAttribute("errors", errors);
+                showBatchForm(req, resp, null);
+                return;
+            }
+
+            b.setPoId(poId);
+            b.setSupplierId(supplierId);
             b.setInitialQuantity(Integer.parseInt(qty));
             ok = batchesDAO.insert(b);
-            if (ok) AuditHelper.log(req, "Nhập lô thuốc", "Batch",
-                    "Nhập lô " + batchNo + " — SL: " + qty);
+            if (ok) {
+                poDAO.recalcTotalValue(poId);
+                AuditHelper.log(req, "Nhập lô thuốc", "Batch",
+                        "Nhập lô " + batchNo + " — SL: " + qty);
+            }
         } else {
             b.setBatchId(Integer.parseInt(bidStr));
             ok = batchesDAO.update(b);

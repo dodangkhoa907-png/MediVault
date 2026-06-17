@@ -9,6 +9,7 @@ public interface IBatchesDAO {
     List<Batches> findAllByMedicine(int medicineId);   // kể cả hết hàng
     List<Batches> findExpiringSoon();
     List<Batches> findExpired();
+    List<Batches> findByPO(int poId);   // các lô thuộc 1 đơn đặt hàng
     boolean insert(Batches b);
     boolean update(Batches b);
     boolean delete(int batchId);

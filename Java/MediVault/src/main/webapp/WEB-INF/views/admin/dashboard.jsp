@@ -477,7 +477,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 
         <!-- STAT CARDS -->
         <div class="stats-grid">
-            <div class="stat-card">
+            <a href="${pageContext.request.contextPath}/reports" class="stat-card" style="text-decoration:none;color:inherit;display:block;cursor:pointer;transition:box-shadow .2s,transform .18s" title="Xem báo cáo doanh thu chi tiết">
                 <div class="stat-card-top">
                     <span class="stat-label">Doanh thu hôm nay</span>
                     <div class="stat-icon gold">💰</div>
@@ -486,8 +486,8 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                     <% java.text.NumberFormat nf = java.text.NumberFormat.getInstance(new java.util.Locale("vi","VN"));
                        out.print(nf.format(todayRevenue)); %>đ
                 </div>
-                <div class="stat-diff"><span>Từ hóa đơn đã thanh toán</span></div>
-            </div>
+                <div class="stat-diff"><span>Từ hóa đơn đã thanh toán · Xem báo cáo →</span></div>
+            </a>
             <div class="stat-card">
                 <div class="stat-card-top">
                     <span class="stat-label">Hóa đơn hôm nay</span>

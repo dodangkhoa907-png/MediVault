@@ -54,7 +54,6 @@ public class ShiftServlet extends HttpServlet {
 
         switch (action) {
             case "list"        -> showList(req, resp);
-            case "chart-data"  -> handleChartData(req, resp);
             case "detail"      -> showDetail(req, resp);
             case "force-close" -> handleForceClose(req, resp);
             case "delete"      -> handleDelete(req, resp);
@@ -202,22 +201,6 @@ public class ShiftServlet extends HttpServlet {
         req.setAttribute("pendingLeaves",     pendingLeaves);
         req.setAttribute("pendingLeaveCount", pendingLeaves.size());
 
-        // ── Dữ liệu biểu đồ: tổng tiền đầu/cuối ca theo tháng hiện tại ──
-        int chartMonth = java.time.LocalDate.now().getMonthValue();
-        int chartYear  = java.time.LocalDate.now().getYear();
-        try {
-            String cm = req.getParameter("chartMonth");
-            String cy = req.getParameter("chartYear");
-            if (cm != null && !cm.isEmpty()) chartMonth = Integer.parseInt(cm);
-            if (cy != null && !cy.isEmpty()) chartYear  = Integer.parseInt(cy);
-        } catch (Exception ignored) {}
-        java.time.LocalDate chartFrom = java.time.LocalDate.of(chartYear, chartMonth, 1);
-        java.time.LocalDate chartTo   = chartFrom.withDayOfMonth(chartFrom.lengthOfMonth());
-        java.util.List<Shift> monthShifts = shiftDAO.findByDateRange(chartFrom, chartTo);
-        req.setAttribute("monthShifts",  monthShifts);
-        req.setAttribute("chartMonth",   chartMonth);
-        req.setAttribute("chartYear",    chartYear);
-
         SidebarHelper.load(req);
 
 
@@ -341,51 +324,6 @@ public class ShiftServlet extends HttpServlet {
             }
         }
         resp.sendRedirect(req.getContextPath() + "/shifts?msg=" + (ok ? "closed" : "error"));
-    }
-
-    // ── Chart Data API: trả JSON tiền đầu/cuối ca theo ngày trong tháng ──────
-    private void handleChartData(HttpServletRequest req, HttpServletResponse resp)
-            throws IOException {
-        int month = parseIntOr(req.getParameter("month"), java.time.LocalDate.now().getMonthValue());
-        int year  = parseIntOr(req.getParameter("year"),  java.time.LocalDate.now().getYear());
-        java.time.LocalDate from = java.time.LocalDate.of(year, month, 1);
-        java.time.LocalDate to   = from.withDayOfMonth(from.lengthOfMonth());
-
-        java.util.List<Shift> shifts = shiftDAO.findByDateRange(from, to);
-
-        // Group theo ngày: tổng openingCash và closingCash
-        java.util.TreeMap<String, long[]> daily = new java.util.TreeMap<>();
-        for (Shift s : shifts) {
-            if (s.getStartTime() == null) continue;
-            String dayKey = s.getStartTime().toLocalDate().toString();
-            daily.putIfAbsent(dayKey, new long[]{0, 0});
-            if (s.getOpeningCash() != null)
-                daily.get(dayKey)[0] += s.getOpeningCash().longValue();
-            if (s.getClosingCash() != null)
-                daily.get(dayKey)[1] += s.getClosingCash().longValue();
-        }
-
-        // Build JSON thủ công — tránh dependency ngoài
-        StringBuilder labels  = new StringBuilder();
-        StringBuilder opening = new StringBuilder();
-        StringBuilder closing = new StringBuilder();
-        boolean first = true;
-        for (java.util.Map.Entry<String, long[]> e : daily.entrySet()) {
-            if (!first) { labels.append(","); opening.append(","); closing.append(","); }
-            String dd = e.getKey().substring(8); // lấy ngày dd từ yyyy-MM-dd
-            labels.append("\"").append(dd).append("/").append(month).append("\"");
-            opening.append(e.getValue()[0]);
-            closing.append(e.getValue()[1]);
-            first = false;
-        }
-
-        String json = "{" +
-                "\"labels\":[" + labels + "]," +
-                "\"opening\":[" + opening + "]," +
-                "\"closing\":[" + closing + "]}";
-
-        resp.setContentType("application/json;charset=UTF-8");
-        resp.getWriter().print(json);
     }
 
     // ── Helper ────────────────────────────────────────────────────────────────

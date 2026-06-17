@@ -919,7 +919,7 @@ tbody tr{cursor:pointer}
     <%-- Tab bar --%>
     <div class="tab-bar">
       <button class="tab-btn <%= ("week".equals(activeTab)||"list".equals(activeTab)) ? "active" : "" %>" onclick="switchTab('list',this)">📅 Ca làm việc</button>
-      <button class="tab-btn <%= "revenue".equals(activeTab) ? "active" : "" %>"  onclick="switchTab('revenue',this)">💰 Doanh thu</button>
+      <%-- Tab "💰 Doanh thu" đã được chuyển hẳn sang trang Báo cáo (/reports) — xem report-list.jsp --%>
       <button class="tab-btn <%= "types".equals(activeTab) ? "active" : "" %>"    onclick="switchTab('types',this)">⚙️ Loại ca</button>
       <button class="tab-btn <%= "leave".equals(activeTab) ? "active" : "" %>"    onclick="switchTab('leave',this)">
         🏖️ Nghỉ phép
@@ -1320,170 +1320,6 @@ tbody tr{cursor:pointer}
       </div>
     </div><%-- end tab-list --%>
 
-
-    <%-- ════════════════════════════════════════════════
-         TAB: DOANH THU CA LÀM VIỆC
-         Thuật toán: Tiền cuối ca - Tiền đầu ca = Doanh thu
-         ca đó. Tổng hợp theo ngày/tháng/nhân viên.
-         ════════════════════════════════════════════════ --%>
-    <div id="tab-revenue" class="tab-pane <%= "revenue".equals(activeTab) ? "active" : "" %>">
-
-      <%-- KPI strip --%>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
-        <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:12px">
-          <div style="width:40px;height:40px;border-radius:11px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📥</div>
-          <div>
-            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Tổng tiền đầu ca</div>
-            <div id="kpiOpening" style="font-size:22px;font-weight:900;color:var(--ink)">—</div>
-          </div>
-        </div>
-        <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:12px">
-          <div style="width:40px;height:40px;border-radius:11px;background:#ECFDF5;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📤</div>
-          <div>
-            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Tổng tiền cuối ca</div>
-            <div id="kpiClosing" style="font-size:22px;font-weight:900;color:var(--ink)">—</div>
-          </div>
-        </div>
-        <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:12px">
-          <div style="width:40px;height:40px;border-radius:11px;background:#FFFBEB;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">💰</div>
-          <div>
-            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Doanh thu (chênh lệch)</div>
-            <div id="kpiDiff" style="font-size:22px;font-weight:900;color:var(--ink)">—</div>
-          </div>
-        </div>
-        <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:12px">
-          <div style="width:40px;height:40px;border-radius:11px;background:#F5F3FF;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📅</div>
-          <div>
-            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Ngày có ca</div>
-            <div id="kpiDays" style="font-size:22px;font-weight:900;color:var(--ink)">—</div>
-          </div>
-        </div>
-      </div>
-
-      <%-- Ghi chú thuật toán --%>
-      <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#1558A8;display:flex;gap:10px;align-items:flex-start">
-        <span style="font-size:16px;flex-shrink:0">💡</span>
-        <div>
-          <strong>Thuật toán tính doanh thu:</strong>
-          Mỗi ca làm việc có 2 mốc tiền mặt: <strong>Tiền đầu ca</strong> (nhân viên mở ca nhập) và
-          <strong>Tiền cuối ca</strong> (nhân viên đóng ca nhập). Doanh thu ca = Cuối − Đầu.
-          Tổng doanh thu tháng = Tổng tất cả (Cuối − Đầu) của các ca đã đóng trong tháng đó.
-          Biểu đồ dưới hiển thị theo từng ngày để Admin theo dõi xu hướng.
-        </div>
-      </div>
-
-      <%-- Chart card --%>
-      <div class="chart-card">
-        <div class="chart-card-head">
-          <div>
-            <h3>📈 Doanh thu theo ca làm việc</h3>
-            <span id="chartTrend" style="font-size:12px;color:var(--muted);margin-top:4px;display:inline-block;padding:2px 8px;border-radius:8px"></span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <select id="chartMonthSel" onchange="loadChart()" style="border:1.5px solid var(--border);border-radius:8px;padding:5px 10px;font-family:'Outfit',sans-serif;font-size:12.5px;color:var(--ink);background:var(--surface);outline:none">
-              <c:forEach begin="1" end="12" var="m">
-                <option value="${m}">Tháng ${m}</option>
-              </c:forEach>
-            </select>
-            <select id="chartYearSel" onchange="loadChart()" style="border:1.5px solid var(--border);border-radius:8px;padding:5px 10px;font-family:'Outfit',sans-serif;font-size:12.5px;color:var(--ink);background:var(--surface);outline:none">
-              <option value="2025">2025</option>
-              <option value="2026">2026</option>
-              <option value="2027">2027</option>
-            </select>
-            <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden">
-              <button id="btnLine" onclick="setChartType('line')" style="padding:5px 12px;border:none;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:#1558A8;color:#fff;transition:all .18s">Đường</button>
-              <button id="btnBar"  onclick="setChartType('bar')"  style="padding:5px 12px;border:none;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:#7A90B0;transition:all .18s">Cột</button>
-            </div>
-          </div>
-        </div>
-        <div style="padding:16px 20px;height:260px"><canvas id="cashChart"></canvas></div>
-        <div style="padding:10px 20px;border-top:1px solid var(--border);display:flex;gap:16px">
-          <span style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px">
-            <span style="width:10px;height:10px;border-radius:3px;background:#1558A8;display:inline-block"></span> Tiền đầu ca
-          </span>
-          <span style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px">
-            <span style="width:10px;height:10px;border-radius:3px;background:#059669;display:inline-block"></span> Tiền cuối ca
-          </span>
-          <span style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px">
-            <span style="width:10px;height:10px;border-radius:3px;background:#F59E0B;display:inline-block"></span> Doanh thu (chênh lệch)
-          </span>
-        </div>
-      </div>
-
-      <%-- Bảng chi tiết doanh thu theo ca --%>
-      <div class="table-card">
-        <div class="table-card-head">
-          <div>
-            <h2>📊 Chi tiết doanh thu từng ca</h2>
-            <span class="table-card-sub">Chỉ hiển thị ca đã đóng — doanh thu = tiền cuối − tiền đầu</span>
-          </div>
-        </div>
-        <div class="tbl-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Nhân viên</th>
-                <th>Ngày</th>
-                <th>Bắt đầu</th>
-                <th>Kết thúc</th>
-                <th>Tiền đầu ca</th>
-                <th>Tiền cuối ca</th>
-                <th>Doanh thu</th>
-              </tr>
-            </thead>
-            <tbody>
-              <c:if test="${empty monthShifts}">
-                <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">
-                  Chưa có ca nào trong tháng này. Chọn tháng khác hoặc kiểm tra lại dữ liệu.
-                </td></tr>
-              </c:if>
-              <c:forEach var="s" items="${monthShifts}">
-                <c:if test="${not empty s.endTime}">
-                  <c:set var="rev" value="${(s.closingCash != null ? s.closingCash : 0) - (s.openingCash != null ? s.openingCash : 0)}"/>
-                  <tr>
-                    <td style="color:var(--muted);font-size:12px">#${s.shiftId}</td>
-                    <td>
-                      <div style="font-weight:700">${accountMap[s.accountId] != null ? accountMap[s.accountId].fullName : 'ID '.concat(s.accountId)}</div>
-                    </td>
-                    <td style="font-size:12.5px;color:var(--muted)">${fn:substring(s.startTime.toString(),0,10)}</td>
-                    <td style="font-weight:600">${fn:substring(s.startTime.toString(),11,16)}</td>
-                    <td style="font-weight:600">${fn:substring(s.endTime.toString(),11,16)}</td>
-                    <td>
-                      <span style="font-weight:600">
-                        <c:choose>
-                          <c:when test="${s.openingCash != null}"><fmt:formatNumber value="${s.openingCash}" type="number" maxFractionDigits="0"/>đ</c:when>
-                          <c:otherwise><span style="color:var(--muted)">0đ</span></c:otherwise>
-                        </c:choose>
-                      </span>
-                    </td>
-                    <td>
-                      <span style="font-weight:600">
-                        <c:choose>
-                          <c:when test="${s.closingCash != null}"><fmt:formatNumber value="${s.closingCash}" type="number" maxFractionDigits="0"/>đ</c:when>
-                          <c:otherwise><span style="color:var(--muted)">—</span></c:otherwise>
-                        </c:choose>
-                      </span>
-                    </td>
-                    <td>
-                      <c:choose>
-                        <c:when test="${s.closingCash != null and s.openingCash != null}">
-                          <span style="font-weight:800;color:${s.closingCash >= s.openingCash ? '#059669' : '#DC2626'}">
-                            ${s.closingCash >= s.openingCash ? '+' : ''}
-                            <fmt:formatNumber value="${s.closingCash - s.openingCash}" type="number" maxFractionDigits="0"/>đ
-                          </span>
-                        </c:when>
-                        <c:otherwise><span style="color:var(--muted)">—</span></c:otherwise>
-                      </c:choose>
-                    </td>
-                  </tr>
-                </c:if>
-              </c:forEach>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div><%-- end tab-revenue --%>
 
     <%-- ════════════════════════════════
          TAB 3: LOẠI CA
@@ -2343,8 +2179,6 @@ function switchTab(tab, btn) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   if (btn) btn.classList.add('active');
-  // Load chart khi vào tab doanh thu
-  if (tab === 'revenue') setTimeout(loadChart, 50);
 }
 
 // ── Period label ──────────────────────────────────
@@ -2616,85 +2450,6 @@ function submitBulkDeleteTypes() {
   document.body.appendChild(f);
   f.submit();
 }
-
-// ══════════════════════════════════════════════════
-//  BIỂU ĐỒ DOANH THU CA
-// ══════════════════════════════════════════════════
-let cashChartInstance = null;
-let _chartType = 'line';
-
-function setChartType(t) {
-  _chartType = t;
-  const btnLine = document.getElementById('btnLine');
-  const btnBar  = document.getElementById('btnBar');
-  if (btnLine) { btnLine.style.background = t==='line' ? '#1558A8' : 'transparent'; btnLine.style.color = t==='line' ? '#fff' : '#7A90B0'; }
-  if (btnBar)  { btnBar.style.background  = t==='bar'  ? '#1558A8' : 'transparent'; btnBar.style.color  = t==='bar'  ? '#fff' : '#7A90B0'; }
-  loadChart();
-}
-
-async function loadChart() {
-  const mSel = document.getElementById('chartMonthSel');
-  const ySel = document.getElementById('chartYearSel');
-  const canvas = document.getElementById('cashChart');
-  if (!mSel || !ySel || !canvas) return;
-  try {
-    const res  = await fetch(ctx_path + '/shifts?action=chart-data&month=' + mSel.value + '&year=' + ySel.value);
-    const data = await res.json();
-    if (cashChartInstance) cashChartInstance.destroy();
-    const fmt  = v => new Intl.NumberFormat('vi-VN').format(v) + 'đ';
-    const sumO = (data.opening||[]).reduce((a,b)=>a+b,0);
-    const sumC = (data.closing||[]).reduce((a,b)=>a+b,0);
-    const diff = sumC - sumO;
-    const days = (data.labels||[]).length;
-    const el = id => document.getElementById(id);
-    if (el('kpiOpening')) el('kpiOpening').textContent = fmt(sumO);
-    if (el('kpiClosing')) el('kpiClosing').textContent = fmt(sumC);
-    if (el('kpiDiff'))  { el('kpiDiff').textContent = (diff>=0?'+':'')+fmt(diff); el('kpiDiff').style.color = diff>=0?'#059669':'#DC2626'; }
-    if (el('kpiDays'))    el('kpiDays').textContent = days + ' ngày';
-    const trend = el('chartTrend');
-    if (trend && days >= 2) {
-      const last = (data.closing||[])[days-1]||0;
-      const prev = (data.closing||[])[days-2]||0;
-      const pct  = prev > 0 ? ((last-prev)/prev*100).toFixed(1) : 0;
-      const up   = last >= prev;
-      trend.textContent = (up?'▲ ':'▼ ') + Math.abs(pct) + '% so hôm qua';
-      trend.style.background = up?'rgba(5,150,105,.12)':'rgba(220,38,38,.12)';
-      trend.style.color = up?'#059669':'#DC2626';
-    }
-    cashChartInstance = new Chart(canvas.getContext('2d'), {
-      type: _chartType,
-      data: {
-        labels: data.labels||[],
-        datasets: [
-          { label:'Tiền đầu ca',  data:data.opening||[], borderColor:'#1558A8', backgroundColor:_chartType==='bar'?'rgba(21,88,168,.7)':'rgba(21,88,168,.08)', borderWidth:_chartType==='bar'?0:2, pointRadius:4, fill:_chartType==='line', tension:.4 },
-          { label:'Tiền cuối ca', data:data.closing||[], borderColor:'#059669', backgroundColor:_chartType==='bar'?'rgba(5,150,105,.7)':'rgba(5,150,105,.08)', borderWidth:_chartType==='bar'?0:2, pointRadius:4, fill:_chartType==='line', tension:.4 }
-        ]
-      },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        interaction:{mode:'index',intersect:false},
-        plugins:{
-          legend:{display:false},
-          tooltip:{backgroundColor:'rgba(11,22,40,.92)',titleColor:'#fff',bodyColor:'#ccc',padding:10,cornerRadius:8,
-            callbacks:{label:c=>' '+c.dataset.label+': '+new Intl.NumberFormat('vi-VN').format(c.raw)+'đ'}}
-        },
-        scales:{
-          y:{ticks:{callback:v=>new Intl.NumberFormat('vi-VN',{notation:'compact'}).format(v)+'đ',font:{family:'Outfit',size:11},color:'#7A90B0'},grid:{color:'rgba(0,0,0,0.04)'}},
-          x:{ticks:{font:{family:'Outfit',size:11},color:'#7A90B0'},grid:{display:false}}
-        }
-      }
-    });
-  } catch(e) { console.warn('Chart error', e); }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const mSel = document.getElementById('chartMonthSel');
-  const ySel = document.getElementById('chartYearSel');
-  if (ySel) ySel.value = String(new Date().getFullYear());
-  if (mSel) mSel.value = String(new Date().getMonth()+1);
-  // Chỉ auto-load chart nếu đang ở tab revenue
-  if (document.getElementById('tab-revenue') && document.getElementById('tab-revenue').classList.contains('active')) loadChart();
-});
 
 // ── Hủy lịch ca từ week grid ─────────────────────────────────────────────
 

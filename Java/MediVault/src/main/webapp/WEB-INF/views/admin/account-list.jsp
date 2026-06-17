@@ -65,6 +65,12 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .page-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px}
 .breadcrumb{font-size:11.5px;color:var(--muted);font-weight:500;margin-bottom:4px}
 .page-head h1{font-family:'Outfit',sans-serif;font-size:26px;color:var(--ink)}
+.section-tabs{display:flex;gap:6px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content;margin-bottom:18px}
+.section-tab{padding:8px 18px;border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.section-tab:hover{background:var(--surface);color:var(--ink)}
+.section-tab.active{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;box-shadow:0 3px 10px rgba(21,88,168,.25)}
+.section-tab.disabled{cursor:not-allowed;opacity:.55;pointer-events:none}
+.soon-badge{font-size:9px;background:rgba(0,0,0,.08);padding:1px 6px;border-radius:8px;font-weight:700}
 .btn-primary{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;border:none;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .22s;box-shadow:0 4px 14px rgba(21,88,168,.25)}
 .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(21,88,168,.35)}
 .btn-trash{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--red);text-decoration:none;transition:all .18s}
@@ -157,6 +163,11 @@ body{display:flex;background:var(--surface);color:var(--ink)}
       <a href="${pageContext.request.contextPath}/accounts?action=trash" class="btn-secondary" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">🗑️ Thùng rác</a>
       <a href="${pageContext.request.contextPath}/accounts?action=new" class="btn-primary">＋ Tạo tài khoản</a>
     </div>
+    </div>
+
+    <div class="section-tabs">
+      <a href="${pageContext.request.contextPath}/accounts" class="section-tab active">👤 Quản lý nhân viên</a>
+      <a href="#" class="section-tab disabled" title="Chưa xây — sắp ra mắt">👥 Khách hàng <span class="soon-badge">Sắp ra mắt</span></a>
     </div>
 
     <%-- STATS --%>
