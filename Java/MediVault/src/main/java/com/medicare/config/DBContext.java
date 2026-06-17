@@ -20,6 +20,19 @@ public class DBContext {
     private static final HikariDataSource ds;
 
     static {
+        // ══ FIX MÚI GIỜ — PHẢI ĐẶT TRƯỚC TIÊN, TRƯỚC KHI TẠO POOL ══
+        // Server host có thể chạy JVM mặc định UTC (không phải giờ VN).
+        // JDBC driver SQL Server cache timezone/Calendar tại thời điểm driver
+        // được load lần đầu, nên phải set TimeZone.setDefault() ở đây — TRƯỚC
+        // khi HikariDataSource (và driver SQL Server bên trong nó) được khởi tạo.
+        // Đặt trong @WebListener riêng KHÔNG đủ tin cậy vì thứ tự nạp listener
+        // của Tomcat không đảm bảo chạy trước class loading của DBContext.
+        java.util.TimeZone vnTz = java.util.TimeZone.getTimeZone("Asia/Ho_Chi_Minh");
+        java.util.TimeZone.setDefault(vnTz);
+        System.setProperty("user.timezone", "Asia/Ho_Chi_Minh");
+        System.out.println("[DBContext] Đã set JVM timezone = Asia/Ho_Chi_Minh. "
+                + "Giờ JVM hiện tại: " + new java.util.Date());
+
         try (InputStream in = DBContext.class
                 .getClassLoader()
                 .getResourceAsStream("db.properties")) {

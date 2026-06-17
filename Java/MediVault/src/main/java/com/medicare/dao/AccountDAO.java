@@ -32,6 +32,11 @@ public class AccountDAO implements IAccountDAO {
         if (rs.getDate("TrainingDate") != null)
             a.setTrainingDate(rs.getDate("TrainingDate").toLocalDate());
         a.setFaceEnrollmentPath(rs.getString("FaceEnrollmentPath"));
+        try { a.setFaceVector(rs.getNString("FaceVector")); } catch (SQLException ignored) {}
+        try {
+            Timestamp fe = rs.getTimestamp("FaceEnrolledAt");
+            if (fe != null) a.setFaceEnrolledAt(fe.toLocalDateTime());
+        } catch (SQLException ignored) {}
         if (rs.getTimestamp("CreatedAt") != null)
             a.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
         if (rs.getTimestamp("LastLoginAt") != null)
@@ -409,5 +414,34 @@ public class AccountDAO implements IAccountDAO {
             ps.setInt(2, accountId);
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    @Override
+    public boolean updateFaceVector(int accountId, String faceVectorJson) {
+        String sql = "UPDATE Accounts SET FaceVector = ?, FaceEnrolledAt = " +
+                (faceVectorJson == null ? "NULL" : "GETDATE()") + " WHERE AccountID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            if (faceVectorJson == null) {
+                ps.setNull(1, java.sql.Types.NVARCHAR);
+            } else {
+                ps.setNString(1, faceVectorJson);
+            }
+            ps.setInt(2, accountId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    @Override
+    public List<Account> findAllWithFaceVector() {
+        List<Account> list = new ArrayList<>();
+        String sql = "SELECT * FROM Accounts " +
+                "WHERE FaceVector IS NOT NULL AND IsActive = 1 AND IsDeleted = 0";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) list.add(mapRow(rs));
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
     }
 }

@@ -418,11 +418,19 @@
 <script>
 // ── Đếm giờ ca đang mở ──
 <c:if test="${not empty currentShift}">
-const shiftStart = new Date("${currentShift.startTime}".replace(' ','T')+'Z');
+function parseLocalDateTime(raw) {
+    if (!raw) return null;
+    const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})/);
+    if (!m) return null;
+    const [, y, mo, d, h, mi, s] = m.map(Number);
+    return new Date(y, mo - 1, d, h, mi, s); // LOCAL TIME, không bị hiểu nhầm UTC
+}
+const shiftStart = parseLocalDateTime("${currentShift.startTime}");
 const timerEl    = document.getElementById('shiftTimer');
 
 function updateTimer() {
     if (!timerEl) return;
+    if (!shiftStart) { timerEl.textContent = '00:00:00'; return; }
     const diff = Math.floor((new Date() - shiftStart) / 1000);
     if (diff < 0) { timerEl.textContent = '00:00:00'; return; }
     const h = String(Math.floor(diff / 3600)).padStart(2, '0');

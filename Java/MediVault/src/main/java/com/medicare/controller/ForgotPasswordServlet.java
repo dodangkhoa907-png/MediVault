@@ -89,16 +89,29 @@ public class ForgotPasswordServlet extends HttpServlet {
         PasswordResetRequest resetReq = new PasswordResetRequest(
                 staff.getAccountId(), token, expiresAt);
 
-        boolean inserted = resetDAO.insert(resetReq);
-        if (!inserted) {
-            // Retry với token mới (phòng trường hợp UUID trùng — cực hiếm)
-            token = UUID.randomUUID().toString().replace("-", "")
-                    + Long.toHexString(System.currentTimeMillis());
-            resetReq = new PasswordResetRequest(staff.getAccountId(), token, expiresAt);
+        boolean inserted = false;
+        try {
             inserted = resetDAO.insert(resetReq);
+        } catch (Exception ex) {
+            System.err.println("[ForgotPassword] insert lần 1 exception: " + ex.getMessage());
+            ex.printStackTrace();
         }
         if (!inserted) {
-            req.setAttribute("error", "Lỗi hệ thống khi tạo yêu cầu. Vui lòng thử lại sau vài giây!");
+            // Retry với token mới (phòng trường hợp UUID trùng cực hiếm)
+            try {
+                token = UUID.randomUUID().toString().replace("-", "")
+                        + Long.toHexString(System.currentTimeMillis());
+                resetReq = new PasswordResetRequest(staff.getAccountId(), token, expiresAt);
+                inserted = resetDAO.insert(resetReq);
+            } catch (Exception ex) {
+                System.err.println("[ForgotPassword] insert lần 2 exception: " + ex.getMessage());
+                ex.printStackTrace();
+            }
+        }
+        if (!inserted) {
+            System.err.println("[ForgotPassword] insert thất bại 2 lần cho accountId="
+                    + staff.getAccountId() + " username=" + staff.getUsername());
+            req.setAttribute("error", "Lỗi hệ thống khi tạo yêu cầu. Vui lòng thử lại sau vài giây hoặc liên hệ Admin!");
             req.getRequestDispatcher("/WEB-INF/views/forgot-password.jsp").forward(req, resp);
             return;
         }

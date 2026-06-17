@@ -287,6 +287,9 @@ select.field-input{cursor:pointer}
 <% } else if ("force-purged".equals(msg)) { %><div class="toast toast-ok" style="background:#c0392b">⚠️ Đã xóa vĩnh viễn ngay lập tức!</div>
 <% } else if ("not-ready".equals(msg)) { %><div class="toast toast-warn">⏱️ Chưa đủ 30 ngày, chưa thể xóa vĩnh viễn!</div>
 <% } else if ("not-found".equals(msg)) { %><div class="toast toast-warn">❌ Không tìm thấy tài khoản để xóa!</div>
+<% } else if ("invalid-word".equals(msg)) { %><div class="toast toast-warn">❌ Xác nhận sai — phải gõ đúng chữ "delete" (chữ thường)!</div>
+<% } else if ("protected-admin".equals(msg)) { %><div class="toast toast-warn">🛡️ Tài khoản Admin gốc được bảo vệ — không thể xóa vĩnh viễn!</div>
+<% } else if ("system-error".equals(msg)) { %><div class="toast toast-warn">❌ Lỗi hệ thống khi xóa — kiểm tra log Tomcat!</div>
 <% } %>
 
 <script>

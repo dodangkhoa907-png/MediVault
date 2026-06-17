@@ -15,6 +15,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Điểm danh — MediCare</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="${pageContext.request.contextPath}/js/face-api/face-api.min.js" defer></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -105,6 +106,35 @@ tbody tr:last-child td{border-bottom:none}
 .badge-confirmed{background:#D1FAE5;color:#065F46}.badge-absent{background:#FEE2E2;color:#991B1B}
 .today-row td{background:#FFFBEB;font-weight:600}
 .empty-box{padding:30px;text-align:center;color:var(--muted)}
+
+/* ── Face Check-in Card ── */
+.face-checkin-card{background:linear-gradient(135deg,#F5F3FF,#EEF2FF);border:1.5px solid #C4B5FD;border-radius:var(--radius);padding:18px 20px;margin-top:14px;display:flex;align-items:center;gap:16px}
+.face-checkin-icon{font-size:30px;flex-shrink:0}
+.face-checkin-text{flex:1;min-width:0}
+.face-checkin-text strong{display:block;font-size:13.5px;color:var(--ink);margin-bottom:2px}
+.face-checkin-text span{font-size:12px;color:var(--muted)}
+.btn-face-checkin{flex-shrink:0;background:linear-gradient(135deg,var(--main),#4C1D95);color:#fff;border:none;padding:11px 18px;border-radius:10px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap;box-shadow:0 4px 12px rgba(109,40,217,.25)}
+.btn-face-checkin:hover{opacity:.9;transform:translateY(-1px)}
+.face-checkin-disabled{opacity:.55;cursor:not-allowed}
+
+/* ── Face Modal (camera) ── */
+.face-modal-overlay{display:none;position:fixed;inset:0;background:rgba(11,9,30,.7);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+.face-modal-overlay.open{display:flex}
+.face-modal{background:#fff;border-radius:20px;width:420px;max-width:92vw;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.face-modal-head{padding:18px 22px;background:linear-gradient(90deg,var(--mid),var(--main));color:#fff;display:flex;align-items:center;justify-content:space-between}
+.face-modal-head h3{font-size:15px;font-weight:700}
+.face-modal-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:14px}
+.face-modal-body{padding:20px 22px}
+.face-video-wrap{position:relative;width:100%;aspect-ratio:4/3;background:#0B1628;border-radius:14px;overflow:hidden;margin-bottom:14px}
+.face-video-wrap video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.face-video-wrap canvas{position:absolute;top:0;left:0;width:100%;height:100%;transform:scaleX(-1)}
+.face-modal-status{text-align:center;font-size:13px;font-weight:600;color:var(--main);margin-bottom:6px;min-height:18px}
+.face-modal-sub{text-align:center;font-size:11.5px;color:var(--muted);margin-bottom:14px}
+.face-spinner{width:34px;height:34px;border:3px solid #E2DCF5;border-top-color:var(--main);border-radius:50%;margin:0 auto 12px;animation:faceSpin .8s linear infinite}
+@keyframes faceSpin{to{transform:rotate(360deg)}}
+.face-modal-actions{display:flex;gap:10px}
+.face-modal-actions button{flex:1;padding:11px 0;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:700;cursor:pointer;border:none}
+.face-btn-cancel{background:var(--surface);color:var(--muted);border:1.5px solid var(--border)!important}
 </style></head>
 <body>
 <aside class="sidebar">
@@ -242,39 +272,32 @@ tbody tr:last-child td{border-bottom:none}
         </c:otherwise>
       </c:choose>
 
-      <%-- Form check-in hoặc check-out --%>
+      <%-- Khu vực thông tin trạng thái + nút quét khuôn mặt gộp ngay trong card --%>
       <c:choose>
         <c:when test="${not empty activeAtt}">
           <div class="form-card">
             <div class="form-head"><span>📤</span><h3>Kết thúc ca làm việc</h3></div>
-            <div class="form-body">
-              <form method="post" action="${pageContext.request.contextPath}/staff-checkin">
-                <input type="hidden" name="action" value="checkout">
-                <input type="hidden" name="uid"    value="${staffUid}">
-
-                <div class="fg">
-                  <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">
-                    💰 Tiền mặt bàn giao két <span style="color:#DC2626">*</span>
-                  </label>
-                  <input type="number" name="handoverCash" id="coHandoverCash"
-                         min="0" step="1000" required
-                         placeholder="Nhập số tiền mặt trong két (VNĐ)"
-                         oninput="updateCoPreview(this.value)"
-                         style="border:1.5px solid var(--border);border-radius:8px;
-                                padding:9px 12px;font-size:13px;width:100%;
-                                font-family:'Outfit',sans-serif;outline:none">
-                  <div id="coPreview" style="display:none;margin-top:6px;padding:7px 12px;
-                       border-radius:8px;font-size:12.5px;font-weight:700;text-align:center"></div>
+            <div class="form-body" style="text-align:center">
+              <% if (staffAcc.isFaceEnrolled()) { %>
+                <div style="padding:6px 0 14px;color:var(--muted);font-size:12.5px">
+                  Xác minh chính chủ rồi check-out chỉ trong 1 chạm
                 </div>
-                <div class="fg"><label>📝 Ghi chú bàn giao</label>
-                  <textarea name="notes" rows="2"
-                    placeholder="Ghi chú tình trạng ca, thuốc tủ khóa, vấn đề phát sinh..."></textarea>
-                </div>
-                <button type="submit" class="btn-checkout"
-                        onclick="return confirmCheckout(this.form)">
-                  ✅ Check-out — Bàn giao ca
+                <button type="button" class="btn-face-checkin" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px"
+                        onclick="openFaceCheckinModal()">
+                  📷 Quét khuôn mặt — Check-out
                 </button>
-              </form>
+              <% } else { %>
+                <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:10px;padding:16px;text-align:center">
+                  <div style="font-size:22px;margin-bottom:8px">📷</div>
+                  <div style="font-size:13.5px;font-weight:700;color:#991B1B;margin-bottom:6px">
+                    Chưa đăng ký khuôn mặt
+                  </div>
+                  <a href="${pageContext.request.contextPath}/staff-dashboard?uid=${staffUid}"
+                     style="font-size:12.5px;color:var(--main);font-weight:700;text-decoration:none">
+                    Vào Dashboard để đăng ký ngay →
+                  </a>
+                </div>
+              <% } %>
             </div>
           </div>
         </c:when>
@@ -284,7 +307,7 @@ tbody tr:last-child td{border-bottom:none}
             <div class="form-body">
               <c:choose>
                 <c:when test="${not empty todaySchedule}">
-                  <%-- Có lịch ca → cho check-in --%>
+                  <%-- Có lịch ca → cho check-in bằng khuôn mặt --%>
                   <div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:8px;padding:12px 16px;margin-bottom:14px">
                     <div style="font-size:13px;font-weight:700;color:#065F46;margin-bottom:4px">
                       ✅ Ca hôm nay: <strong>${todaySchedule.shiftTypeName}</strong>
@@ -293,18 +316,27 @@ tbody tr:last-child td{border-bottom:none}
                       🕐 ${fn:substring(todaySchedule.plannedStart.toString(),11,16)} – ${fn:substring(todaySchedule.plannedEnd.toString(),11,16)}
                       &nbsp;|&nbsp; ⏱️ Cho phép trễ ${todaySchedule.lateToleranceMinutes} phút
                     </div>
-                    <c:if test="${not empty todaySchedule.openingCash}">
-                      <div style="font-size:12px;color:#059669;margin-top:4px">
-                        💰 Tiền đầu ca: <strong><fmt:formatNumber value="${todaySchedule.openingCash}" type="number" maxFractionDigits="0"/>đ</strong>
-                        (do Admin thiết lập)
-                      </div>
-                    </c:if>
                   </div>
-                  <form method="post" action="${pageContext.request.contextPath}/staff-checkin">
-                    <input type="hidden" name="action" value="checkin">
-                    <input type="hidden" name="uid"    value="${staffUid}">
-                    <button type="submit" class="btn-checkin">🟢 Check-in — Bắt đầu ca</button>
-                  </form>
+                  <% if (staffAcc.isFaceEnrolled()) { %>
+                    <div style="text-align:center;color:var(--muted);font-size:12.5px;margin-bottom:12px">
+                      Xác minh chính chủ rồi check-in chỉ trong 1 chạm
+                    </div>
+                    <button type="button" class="btn-face-checkin" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px"
+                            onclick="openFaceCheckinModal()">
+                      📷 Quét khuôn mặt — Check-in
+                    </button>
+                  <% } else { %>
+                    <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:10px;padding:16px;text-align:center">
+                      <div style="font-size:22px;margin-bottom:8px">📷</div>
+                      <div style="font-size:13.5px;font-weight:700;color:#991B1B;margin-bottom:6px">
+                        Chưa đăng ký khuôn mặt
+                      </div>
+                      <a href="${pageContext.request.contextPath}/staff-dashboard?uid=${staffUid}"
+                         style="font-size:12.5px;color:var(--main);font-weight:700;text-decoration:none">
+                        Vào Dashboard để đăng ký ngay →
+                      </a>
+                    </div>
+                  <% } %>
                 </c:when>
                 <c:otherwise>
                   <%-- Không có lịch ca → ẩn nút, hiện alert --%>
@@ -324,6 +356,88 @@ tbody tr:last-child td{border-bottom:none}
           </div>
         </c:otherwise>
       </c:choose>
+    </div>
+
+    <!-- Modal nhập tiền ĐẦU CA (trước khi quét mặt check-in) -->
+    <div class="face-modal-overlay" id="openingCashModal">
+      <div class="face-modal">
+        <div class="face-modal-head">
+          <h3>💰 Tiền đầu ca</h3>
+          <button type="button" class="face-modal-close" onclick="closeOpeningCashModal()">✕</button>
+        </div>
+        <div class="face-modal-body">
+          <div class="fg">
+            <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">
+              Tiền mặt đầu ca <span style="color:#DC2626">*</span>
+            </label>
+            <input type="number" id="openingCashInput" min="0" step="1000" required
+                   placeholder="Nhập số tiền mặt trong két lúc bắt đầu ca (VNĐ)"
+                   style="border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;
+                          font-size:13px;width:100%;font-family:'Outfit',sans-serif;outline:none">
+            <div id="openingCashPreview" style="display:none;margin-top:6px;padding:7px 12px;
+                 border-radius:8px;font-size:12.5px;font-weight:700;text-align:center"></div>
+          </div>
+          <div class="face-modal-actions">
+            <button type="button" class="face-btn-cancel" onclick="closeOpeningCashModal()">Hủy</button>
+            <button type="button" class="face-btn-capture" onclick="confirmOpeningCash()">Tiếp tục → Quét mặt</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal nhập tiền BÀN GIAO (trước khi quét mặt check-out) -->
+    <div class="face-modal-overlay" id="handoverCashModal">
+      <div class="face-modal">
+        <div class="face-modal-head">
+          <h3>💰 Bàn giao ca</h3>
+          <button type="button" class="face-modal-close" onclick="closeHandoverCashModal()">✕</button>
+        </div>
+        <div class="face-modal-body">
+          <div class="fg">
+            <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">
+              💰 Tiền mặt bàn giao két <span style="color:#DC2626">*</span>
+            </label>
+            <input type="number" id="handoverCashInput" min="0" step="1000" required
+                   placeholder="Nhập số tiền mặt trong két (VNĐ)"
+                   oninput="updateHandoverPreview(this.value)"
+                   style="border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;
+                          font-size:13px;width:100%;font-family:'Outfit',sans-serif;outline:none">
+            <div id="handoverCashPreview" style="display:none;margin-top:6px;padding:7px 12px;
+                 border-radius:8px;font-size:12.5px;font-weight:700;text-align:center"></div>
+          </div>
+          <div class="fg" style="margin-top:10px"><label>📝 Ghi chú bàn giao</label>
+            <textarea id="handoverNotesInput" rows="2"
+              placeholder="Ghi chú tình trạng ca, thuốc tủ khóa, vấn đề phát sinh..."
+              style="border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;
+                     font-size:13px;width:100%;font-family:'Outfit',sans-serif;outline:none;resize:vertical"></textarea>
+          </div>
+          <div class="face-modal-actions">
+            <button type="button" class="face-btn-cancel" onclick="closeHandoverCashModal()">Hủy</button>
+            <button type="button" class="face-btn-capture" onclick="confirmHandoverCash()">Tiếp tục → Quét mặt</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Camera điểm danh khuôn mặt -->
+    <div class="face-modal-overlay" id="faceCheckinOverlay">
+      <div class="face-modal">
+        <div class="face-modal-head">
+          <h3>📷 Điểm danh khuôn mặt</h3>
+          <button type="button" class="face-modal-close" onclick="closeFaceCheckinModal()">✕</button>
+        </div>
+        <div class="face-modal-body">
+          <div class="face-video-wrap">
+            <video id="faceCheckinVideo" autoplay muted playsinline></video>
+            <canvas id="faceCheckinCanvas"></canvas>
+          </div>
+          <div class="face-modal-status" id="faceCheckinStatus">Đang khởi động camera...</div>
+          <div class="face-modal-sub" id="faceCheckinSub">Đưa mặt vào khung hình</div>
+          <div class="face-modal-actions">
+            <button type="button" class="face-btn-cancel" onclick="closeFaceCheckinModal()">Hủy</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <%-- Lịch ca sắp tới --%>
@@ -394,9 +508,20 @@ updateClock(); setInterval(updateClock,1000);
 // Timer ca đang mở
 const timerEl = document.getElementById('checkinTimer');
 if (timerEl) {
-  const startRaw = timerEl.dataset.time;
-  const start = new Date(startRaw.replace('T',' '));
+  const startRaw = timerEl.dataset.time; // dạng "2026-06-16T22:28:00" hoặc có ".123" millis
+  // KHÔNG dùng new Date(string) trực tiếp — một số browser hiểu nhầm chuỗi
+  // "YYYY-MM-DD HH:mm:ss" (không có Z/offset) là UTC, gây lệch đúng bằng
+  // độ lệch múi giờ (7 giờ với VN). Parse tay từng phần để chắc chắn là LOCAL TIME.
+  function parseLocalDateTime(raw) {
+    if (!raw) return null;
+    const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})/);
+    if (!m) return null;
+    const [, y, mo, d, h, mi, s] = m.map(Number);
+    return new Date(y, mo - 1, d, h, mi, s); // constructor 6-arg luôn là LOCAL TIME
+  }
+  const start = parseLocalDateTime(startRaw);
   function tick(){
+    if (!start) { timerEl.textContent='--:--:--'; return; }
     const diff = Math.floor((new Date()-start)/1000);
     if(isNaN(diff)||diff<0){timerEl.textContent='--:--:--';return;}
     timerEl.textContent=[Math.floor(diff/3600),Math.floor((diff%3600)/60),diff%60]
@@ -407,25 +532,206 @@ if (timerEl) {
 </script>
 
 <script>
-function confirmCheckout(form) {
-  const cash = form.handoverCash?.value;
-  if (!cash || parseInt(cash) < 0) {
-    alert('⚠️ Vui lòng nhập số tiền bàn giao két trước khi kết thúc ca!');
-    form.handoverCash?.focus();
-    return false;
-  }
-  const amt = parseInt(cash).toLocaleString('vi-VN');
-  return confirm('Xác nhận kết thúc ca?\n💰 Tiền bàn giao: ' + amt + 'đ');
+// ════════════════════════════════════════════════════
+// FACE CHECK-IN/OUT — nhập tiền trước, rồi quét mặt để xác minh + tự điểm danh
+// ════════════════════════════════════════════════════
+const FACE_CI_UID        = '<%= uid %>';
+const FACE_CI_HAS_ACTIVE = <%= (request.getAttribute("activeAtt") != null) %>;
+const FACE_CI_MODEL_URL  = '${pageContext.request.contextPath}/models';
+const FACE_CI_ACTION_URL = '${pageContext.request.contextPath}/staff-checkin';
+
+let faceCiStream = null;
+let faceCiModelsLoaded = false;
+let faceCiDetectLoopId = null;
+let faceCiBusy = false;
+
+// Dữ liệu thu thập ở bước nhập tiền (trước khi mở camera)
+let pendingOpeningCash = null;
+let pendingHandoverCash = null;
+let pendingNotes = '';
+
+// ── Bước 1: nút "Quét khuôn mặt" — mở đúng modal tiền tùy theo check-in/check-out ──
+function openFaceCheckinModal() {
+    if (FACE_CI_HAS_ACTIVE) {
+        document.getElementById('handoverCashModal').classList.add('open');
+    } else {
+        document.getElementById('openingCashModal').classList.add('open');
+    }
 }
-function updateCoPreview(val) {
-  const el = document.getElementById('coPreview');
-  if (!el) return;
-  const n = parseInt(val);
-  if (isNaN(n) || n < 0) { el.style.display='none'; return; }
-  el.style.display = 'block';
-  el.style.background = '#ECFDF5';
-  el.style.color = '#065F46';
-  el.textContent = '💰 ' + n.toLocaleString('vi-VN') + 'đ';
+
+function closeOpeningCashModal() {
+    document.getElementById('openingCashModal').classList.remove('open');
+}
+function closeHandoverCashModal() {
+    document.getElementById('handoverCashModal').classList.remove('open');
+}
+
+function updateHandoverPreview(val) {
+    const el = document.getElementById('handoverCashPreview');
+    if (!el) return;
+    const n = parseInt(val);
+    if (isNaN(n) || n < 0) { el.style.display = 'none'; return; }
+    el.style.display = 'block';
+    el.style.background = '#ECFDF5';
+    el.style.color = '#065F46';
+    el.textContent = '💰 ' + n.toLocaleString('vi-VN') + 'đ';
+}
+
+// ── Bước 2: xác nhận tiền → đóng modal tiền, mở modal camera ──
+function confirmOpeningCash() {
+    const val = document.getElementById('openingCashInput').value;
+    if (!val || parseInt(val) < 0) {
+        alert('⚠️ Vui lòng nhập số tiền đầu ca!');
+        document.getElementById('openingCashInput').focus();
+        return;
+    }
+    pendingOpeningCash = val;
+    closeOpeningCashModal();
+    openFaceCameraModal();
+}
+
+function confirmHandoverCash() {
+    const val = document.getElementById('handoverCashInput').value;
+    if (!val || parseInt(val) < 0) {
+        alert('⚠️ Vui lòng nhập số tiền bàn giao két!');
+        document.getElementById('handoverCashInput').focus();
+        return;
+    }
+    pendingHandoverCash = val;
+    pendingNotes = document.getElementById('handoverNotesInput').value || '';
+    closeHandoverCashModal();
+    openFaceCameraModal();
+}
+
+// ── Bước 3: mở camera, tự động nhận diện & gửi xác minh ──
+async function loadFaceCiModels() {
+    if (faceCiModelsLoaded) return;
+    await faceapi.nets.tinyFaceDetector.loadFromUri(FACE_CI_MODEL_URL);
+    await faceapi.nets.faceLandmark68Net.loadFromUri(FACE_CI_MODEL_URL);
+    await faceapi.nets.faceRecognitionNet.loadFromUri(FACE_CI_MODEL_URL);
+    faceCiModelsLoaded = true;
+}
+
+async function openFaceCameraModal() {
+    const overlay = document.getElementById('faceCheckinOverlay');
+    const statusEl = document.getElementById('faceCheckinStatus');
+    const subEl = document.getElementById('faceCheckinSub');
+    overlay.classList.add('open');
+    faceCiBusy = false;
+    statusEl.textContent = 'Đang tải model nhận diện...';
+    subEl.textContent = '';
+
+    try {
+        await loadFaceCiModels();
+        statusEl.textContent = 'Đang khởi động camera...';
+
+        faceCiStream = await navigator.mediaDevices.getUserMedia({ video: { width: 480, height: 360 } });
+        const video = document.getElementById('faceCheckinVideo');
+        video.srcObject = faceCiStream;
+        await video.play();
+
+        statusEl.textContent = 'Đưa mặt vào khung hình...';
+        subEl.textContent = 'Hệ thống sẽ tự động xác minh và điểm danh';
+        startFaceCiAutoDetect();
+    } catch (err) {
+        console.error(err);
+        statusEl.textContent = '❌ Không thể truy cập camera: ' + err.message;
+    }
+}
+
+function startFaceCiAutoDetect() {
+    const video = document.getElementById('faceCheckinVideo');
+    const canvas = document.getElementById('faceCheckinCanvas');
+
+    async function loop() {
+        if (!faceCiStream) return;
+        if (faceCiBusy) { faceCiDetectLoopId = requestAnimationFrame(loop); return; }
+
+        if (video.videoWidth > 0) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+
+            const result = await faceapi
+                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (result) {
+                faceapi.draw.drawDetections(canvas, [result.detection]);
+                // Phát hiện ổn định → tự động xác minh luôn (không cần bấm nút)
+                faceCiBusy = true;
+                await verifyAndSubmit(Array.from(result.descriptor));
+                faceCiBusy = false;
+            }
+        }
+        faceCiDetectLoopId = requestAnimationFrame(loop);
+    }
+    loop();
+}
+
+async function verifyAndSubmit(descriptor) {
+    const statusEl = document.getElementById('faceCheckinStatus');
+    const subEl = document.getElementById('faceCheckinSub');
+    statusEl.innerHTML = '<div class="face-spinner"></div>Đang xác minh khuôn mặt...';
+    subEl.textContent = '';
+
+    const action = FACE_CI_HAS_ACTIVE ? 'face-checkout' : 'face-checkin';
+    const params = {
+        action: action,
+        uid: FACE_CI_UID,
+        descriptor: JSON.stringify(descriptor)
+    };
+    if (FACE_CI_HAS_ACTIVE) {
+        params.handoverCash = pendingHandoverCash || '0';
+        params.notes = pendingNotes || '';
+    } else {
+        params.openingCash = pendingOpeningCash || '0';
+    }
+    const body = new URLSearchParams(params);
+
+    try {
+        const resp = await fetch(FACE_CI_ACTION_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body
+        });
+        const data = await resp.json();
+
+        if (data.ok) {
+            statusEl.textContent = '✅ Xác minh thành công! Đang chuyển hướng...';
+            stopFaceCiStream();
+            setTimeout(() => {
+                window.location.href = FACE_CI_ACTION_URL + '?uid=' + FACE_CI_UID + '&msg=' + (data.msg || 'checked-in');
+            }, 700);
+        } else {
+            const reasonMap = {
+                'no_match': '⚠️ Không khớp khuôn mặt. Vui lòng thử lại.',
+                'no_face_enrolled': '❌ Chưa đăng ký khuôn mặt.',
+                'missing_descriptor': '⚠️ Không nhận diện được khuôn mặt.',
+                'invalid_descriptor': '❌ Dữ liệu khuôn mặt lỗi.'
+            };
+            statusEl.textContent = reasonMap[data.reason] || ('❌ Lỗi: ' + data.reason);
+            subEl.textContent = 'Đang thử lại...';
+        }
+    } catch (err) {
+        statusEl.textContent = '❌ Lỗi kết nối: ' + err.message;
+    }
+}
+
+function stopFaceCiStream() {
+    if (faceCiDetectLoopId) { cancelAnimationFrame(faceCiDetectLoopId); faceCiDetectLoopId = null; }
+    if (faceCiStream) {
+        faceCiStream.getTracks().forEach(track => track.stop());
+        faceCiStream = null;
+    }
+}
+
+function closeFaceCheckinModal() {
+    document.getElementById('faceCheckinOverlay').classList.remove('open');
+    stopFaceCiStream();
+    faceCiBusy = false;
 }
 </script>
 </body></html>

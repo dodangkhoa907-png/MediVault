@@ -21,6 +21,8 @@
     java.lang.String vCertExp   = form != null && form.getProfessionalCertExp() != null ? form.getProfessionalCertExp().toString() : "";
     java.lang.String vTraining  = form != null && form.getTrainingDate() != null ? form.getTrainingDate().toString() : "";
     int    vRoleId    = form != null ? form.getRoleId() : 2;
+    boolean isFaceEnrolled = form != null && form.isFaceEnrolled();
+    int    vAccountIdForFace = form != null ? form.getAccountId() : 0;
 
     @SuppressWarnings("unchecked")
     java.util.List<String> errs =
@@ -46,6 +48,7 @@
 <title><%= isNew ? "Tạo tài khoản nhân viên" : "Cập nhật tài khoản" %> — MediCare</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="${pageContext.request.contextPath}/js/face-api/face-api.min.js" defer></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -224,7 +227,7 @@ select.field-input{
 
 /* Email OTP highlight */
 .email-highlight .field-label::after{
-  content:'· OTP sẽ gửi về đây';
+  content:'· Email liên lạc nhân viên';
   font-size:10.5px;font-weight:500;color:var(--cyan);
   background:rgba(58,189,224,.1);padding:2px 8px;border-radius:10px;margin-left:6px;
 }
@@ -277,6 +280,49 @@ select.field-input{
   animation:slideIn .3s ease;transition:opacity .4s;
 }
 @keyframes slideIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+
+/* ── Face Enroll Card ── */
+.face-card-body{padding:20px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.face-status-box{flex:1;min-width:220px;display:flex;align-items:center;gap:12px}
+.face-status-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.face-status-icon.enrolled{background:#D1FAE5;color:#059669}
+.face-status-icon.not-enrolled{background:#FEF3C7;color:#D97706}
+.face-status-text strong{display:block;font-size:13.5px;color:var(--ink);margin-bottom:2px}
+.face-status-text span{font-size:12px;color:var(--muted)}
+.btn-face-action{
+  display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:10px;
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .18s;
+}
+.btn-face-enroll{background:linear-gradient(135deg,var(--cyan),var(--blue));color:#fff;box-shadow:0 4px 14px rgba(58,189,224,.3)}
+.btn-face-enroll:hover{transform:translateY(-1px)}
+.btn-face-remove{background:#FEF2F2;color:#DC2626;border:1.5px solid #FECACA}
+.btn-face-remove:hover{background:#FEE2E2}
+
+/* Modal camera */
+.face-modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(11,22,40,.7);z-index:1000;
+  align-items:center;justify-content:center;backdrop-filter:blur(2px);
+}
+.face-modal-overlay.open{display:flex}
+.face-modal{
+  background:#fff;border-radius:20px;width:420px;max-width:92vw;overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,.3);
+}
+.face-modal-head{padding:18px 22px;background:linear-gradient(90deg,#0F2645,#1558A8);color:#fff;display:flex;align-items:center;justify-content:space-between}
+.face-modal-head h3{font-size:15px;font-weight:700}
+.face-modal-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:14px}
+.face-modal-body{padding:20px 22px}
+.face-video-wrap{position:relative;width:100%;aspect-ratio:4/3;background:#0B1628;border-radius:14px;overflow:hidden;margin-bottom:14px}
+.face-video-wrap video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.face-video-wrap canvas{position:absolute;top:0;left:0;width:100%;height:100%;transform:scaleX(-1)}
+.face-modal-status{text-align:center;font-size:13px;font-weight:600;color:var(--blue);margin-bottom:12px;min-height:18px}
+.face-progress{display:flex;gap:6px;justify-content:center;margin-bottom:14px}
+.face-progress-dot{width:10px;height:10px;border-radius:50%;background:#E2E8F0;transition:background .2s}
+.face-progress-dot.done{background:#059669}
+.face-modal-actions{display:flex;gap:10px}
+.face-modal-actions button{flex:1;padding:11px 0;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:700;cursor:pointer;border:none}
+.face-btn-capture{background:linear-gradient(135deg,var(--cyan),var(--blue));color:#fff}
+.face-btn-cancel{background:var(--surface);color:var(--muted);border:1.5px solid var(--border)!important}
 
 @media(max-width:768px){
   .page-wrap{flex-direction:column;padding:20px 16px}
@@ -332,7 +378,7 @@ select.field-input{
             </div>
             <div class="otp-note">
                 <div class="otp-note-title">🔐 Lưu ý bảo mật</div>
-                <p>Mật khẩu ít nhất 6 ký tự. Khuyến nghị nhân viên <strong style="color:var(--cyan)">đổi mật khẩu</strong> ngay sau lần đăng nhập đầu tiên.</p>
+                <p>Mật khẩu ít nhất 8 ký tự, gồm chữ hoa + thường + số + đặc biệt. Khuyến nghị nhân viên <strong style="color:var(--cyan)">đổi mật khẩu</strong> ngay sau lần đăng nhập đầu tiên.</p>
             </div>
             <% } %>
         </div>
@@ -409,17 +455,38 @@ select.field-input{
                             </select>
                         </div>
                         <% if (isNew) { %>
-                        <%-- TẠO MỚI: nhập MK bình thường --%>
-                        <div class="field span-2">
+                        <%-- TẠO MỚI: MK + rules checklist + xác nhận --%>
+                        <div class="field">
                             <label class="field-label" for="password">Mật khẩu <span class="req">*</span></label>
                             <div class="pw-wrap">
                                 <input type="password" id="password" name="password" class="field-input"
-                                       placeholder="Ít nhất 6 ký tự" required minlength="6" autocomplete="new-password">
+                                       placeholder="VD: Abc@1234" required minlength="8" autocomplete="new-password"
+                                       oninput="checkPwRules(); checkCreatePwMatch()">
                                 <button type="button" class="pw-toggle" id="togglePw" title="Hiện/ẩn">👁</button>
                             </div>
+                            <div id="pwRules" style="margin-top:8px;font-size:11.5px;line-height:1.8">
+                                <div id="rule-len"  style="color:#94A3B8">○ Ít nhất 8 ký tự</div>
+                                <div id="rule-upper" style="color:#94A3B8">○ Có chữ IN HOA (A-Z)</div>
+                                <div id="rule-lower" style="color:#94A3B8">○ Có chữ thường (a-z)</div>
+                                <div id="rule-digit" style="color:#94A3B8">○ Có chữ số (0-9)</div>
+                                <div id="rule-spec"  style="color:#94A3B8">○ Có ký tự đặc biệt (!@#$%...)</div>
+                            </div>
+                            <div style="margin-top:8px;padding:8px 10px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;font-size:11px;color:#166534;line-height:1.6">
+                                💡 <strong>Gợi ý:</strong> Abc@1234 &nbsp;•&nbsp; Staff#2026 &nbsp;•&nbsp; Nv@12345 &nbsp;•&nbsp; Pass!678
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="confirmPw">Xác nhận mật khẩu <span class="req">*</span></label>
+                            <div class="pw-wrap">
+                                <input type="password" id="confirmPw" class="field-input"
+                                       placeholder="Nhập lại mật khẩu" required minlength="8" autocomplete="new-password"
+                                       oninput="checkCreatePwMatch()">
+                                <button type="button" class="pw-toggle" onclick="togglePwField('confirmPw',this)" title="Hiện/ẩn">👁</button>
+                            </div>
+                            <div id="pwMatchHint" style="font-size:12px;margin-top:5px;font-weight:600"></div>
                         </div>
                         <% } else { %>
-                        <%-- CHỈNH SỬA: section đổi MK riêng, ẩn mặc định --%>
+                        <%-- CHỈNH SỬA: chỉ cần gõ "update" → OTP → nhập MK mới ở trang riêng --%>
                         <input type="hidden" name="password" id="passwordHidden" value="">
                         <input type="hidden" name="confirmWord" id="confirmWordHidden" value="">
                         <div class="field span-2">
@@ -432,30 +499,19 @@ select.field-input{
                             </button>
                             <div id="changePwSection" style="display:none;margin-top:12px">
                                 <div style="background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:12px;padding:16px 18px">
-                                    <div style="display:flex;flex-direction:column;gap:10px">
-                                        <div class="fg-inline">
-                                            <label style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;display:block">
-                                                Mật khẩu mới <span style="color:#DC2626">*</span>
-                                            </label>
-                                            <div class="pw-wrap">
-                                                <input type="password" id="newPasswordInput" class="field-input"
-                                                       placeholder="Ít nhất 6 ký tự" minlength="6" autocomplete="new-password"
-                                                       oninput="syncPwFields()">
-                                                <button type="button" class="pw-toggle" id="togglePw" title="Hiện/ẩn">👁</button>
-                                            </div>
-                                        </div>
-                                        <div class="fg-inline">
-                                            <label style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;display:block">
-                                                Xác nhận đổi — gõ chữ <strong style="color:#1558A8;font-family:monospace">update</strong>
-                                            </label>
-                                            <input type="text" id="confirmWordInput" class="field-input"
-                                                   placeholder='Gõ "update" để xác nhận đổi mật khẩu'
-                                                   autocomplete="off" oninput="syncPwFields(); checkConfirmWord(this)">
-                                            <div id="confirmWordHint" style="font-size:12px;margin-top:5px"></div>
-                                        </div>
-                                    </div>
-                                    <p style="font-size:12px;color:#7A90B0;margin-top:12px">
-                                        🔒 Sau khi bấm <strong>Lưu thay đổi</strong>, OTP sẽ gửi về <strong>Gmail admin</strong> để xác nhận.
+                                    <p style="font-size:13px;color:#1E40AF;font-weight:600;margin-bottom:10px">
+                                        Gõ chữ <strong style="font-family:monospace;font-size:15px;background:#DBEAFE;padding:2px 8px;border-radius:6px">update</strong>
+                                        (chữ thường) rồi bấm <strong>Lưu thay đổi</strong>
+                                    </p>
+                                    <input type="text" id="confirmWordInput" class="field-input"
+                                           placeholder='Gõ "update" để xác nhận đổi mật khẩu'
+                                           autocomplete="off"
+                                           oninput="syncConfirmWord(this)"
+                                           style="max-width:360px">
+                                    <div id="confirmWordHint" style="font-size:12px;margin-top:5px"></div>
+                                    <p style="font-size:12px;color:#7A90B0;margin-top:10px">
+                                        🔒 OTP sẽ gửi về <strong>Gmail admin</strong> để xác nhận.
+                                        Sau đó bạn sẽ nhập mật khẩu mới ở trang riêng.
                                     </p>
                                 </div>
                             </div>
@@ -503,25 +559,85 @@ select.field-input{
                         <input type="hidden" name="position" value="<%= vPosition %>">
                     </div>
                 </div>
+            </div>
 
-                <div class="action-row">
-                    <% if (isNew) { %>
-                    <%-- Khi tạo mới: 2 nút --%>
-                    <button type="submit" name="redirect" value="schedule" class="btn-submit" id="submitBtn">
-                        📅 Lưu &amp; Xếp lịch ngay
+            <% if (!isNew) { %>
+            <!-- Card 3: Đăng ký khuôn mặt (chỉ khi edit, cần accountId có sẵn) -->
+            <div class="form-card">
+                <div class="form-card-head">
+                    <div class="form-card-head-icon">📷</div>
+                    <div>
+                        <h2>Đăng ký khuôn mặt</h2>
+                        <p>Dùng để nhân viên điểm danh bằng khuôn mặt tại trang Check-in</p>
+                    </div>
+                </div>
+                <div class="face-card-body">
+                    <div class="face-status-box">
+                        <div class="face-status-icon <%= isFaceEnrolled ? "enrolled" : "not-enrolled" %>">
+                            <%= isFaceEnrolled ? "✅" : "⚠️" %>
+                        </div>
+                        <div class="face-status-text">
+                            <strong><%= isFaceEnrolled ? "Đã đăng ký khuôn mặt" : "Chưa đăng ký khuôn mặt" %></strong>
+                            <span><%= isFaceEnrolled ? "Nhân viên có thể điểm danh bằng khuôn mặt" : "Nhân viên chưa thể dùng điểm danh khuôn mặt" %></span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-face-action btn-face-enroll" onclick="openFaceModal()">
+                        📷 <%= isFaceEnrolled ? "Đăng ký lại" : "Đăng ký ngay" %>
                     </button>
-                    <button type="submit" name="redirect" value="more"
-                            class="btn-submit" id="submitBtnMore"
-                            style="background:var(--surface);color:var(--blue);border:2px solid var(--blue);margin-left:10px">
-                        ➕ Lưu &amp; Thêm tiếp
-                    </button>
-                    <% } else { %>
-                    <%-- Khi chỉnh sửa: 1 nút bình thường --%>
-                    <button type="submit" class="btn-submit" id="submitBtn">
-                        💾 Lưu thay đổi
+                    <% if (isFaceEnrolled) { %>
+                    <button type="button" class="btn-face-action btn-face-remove" onclick="removeFaceVector()">
+                        🗑️ Xóa dữ liệu
                     </button>
                     <% } %>
-                    <a href="${pageContext.request.contextPath}/accounts" class="btn-cancel">Hủy</a>
+                </div>
+            </div>
+            <% } %>
+
+            <div class="action-row" style="border-radius:18px;border:1px solid var(--border);margin-top:16px">
+                <% if (isNew) { %>
+                <%-- Khi tạo mới: 2 nút --%>
+                <button type="submit" name="redirect" value="schedule" class="btn-submit" id="submitBtn">
+                    📅 Lưu &amp; Xếp lịch ngay
+                </button>
+                <button type="submit" name="redirect" value="more"
+                        class="btn-submit" id="submitBtnMore"
+                        style="background:var(--surface);color:var(--blue);border:2px solid var(--blue);margin-left:10px">
+                    ➕ Lưu &amp; Thêm tiếp
+                </button>
+                <% } else { %>
+                <%-- Khi chỉnh sửa: 1 nút bình thường --%>
+                <button type="submit" class="btn-submit" id="submitBtn">
+                    💾 Lưu thay đổi
+                </button>
+                <% } %>
+                <a href="${pageContext.request.contextPath}/accounts" class="btn-cancel">Hủy</a>
+            </div>
+
+            <!-- Modal Camera đăng ký khuôn mặt -->
+            <div class="face-modal-overlay" id="faceModalOverlay">
+                <div class="face-modal">
+                    <div class="face-modal-head">
+                        <h3>📷 Đăng ký khuôn mặt</h3>
+                        <button type="button" class="face-modal-close" onclick="closeFaceModal()">✕</button>
+                    </div>
+                    <div class="face-modal-body">
+                        <div class="face-video-wrap">
+                            <video id="faceVideo" autoplay muted playsinline></video>
+                            <canvas id="faceCanvas"></canvas>
+                        </div>
+                        <div class="face-progress">
+                            <span class="face-progress-dot" id="dot1"></span>
+                            <span class="face-progress-dot" id="dot2"></span>
+                            <span class="face-progress-dot" id="dot3"></span>
+                        </div>
+                        <div class="face-modal-status" id="faceModalStatus">Đang khởi động camera...</div>
+                        <div class="face-modal-actions">
+                            <button type="button" class="face-btn-cancel" onclick="closeFaceModal()">Hủy</button>
+                            <button type="button" class="face-btn-capture" id="faceCaptureBtn" onclick="captureFrame()" disabled>
+                                📸 Chụp (<span id="captureCount">0</span>/3)
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -538,7 +654,7 @@ select.field-input{
 // ── Toggle show/hide password (tạo mới) ──
 const togglePwBtn = document.getElementById('togglePw');
 if (togglePwBtn) togglePwBtn.addEventListener('click', function() {
-    const target = document.getElementById('newPasswordInput') || document.getElementById('password');
+    const target = document.getElementById('password');
     if (!target) return;
     const show = target.type === 'password';
     target.type = show ? 'text' : 'password';
@@ -635,33 +751,31 @@ function toggleChangePwSection() {
     btn.textContent = isOpen ? '🔐 Mở rộng để đổi mật khẩu' : '✖ Đóng';
     if (isOpen) {
         // Reset khi đóng
-        document.getElementById('newPasswordInput').value = '';
         document.getElementById('confirmWordInput').value = '';
-        document.getElementById('passwordHidden').value = '';
         document.getElementById('confirmWordHidden').value = '';
         document.getElementById('confirmWordHint').textContent = '';
     }
 }
 
-// ── Sync giá trị vào hidden fields ──
-function syncPwFields() {
-    const pw  = document.getElementById('newPasswordInput').value;
-    const cw  = document.getElementById('confirmWordInput').value.trim().toLowerCase();
-    document.getElementById('passwordHidden').value    = pw;
-    document.getElementById('confirmWordHidden').value = cw;
-}
-
-// ── Check confirmWord feedback ──
-function checkConfirmWord(inp) {
+// ── Sync confirmWord vào hidden field + feedback ──
+function syncConfirmWord(inp) {
+    const raw  = inp.value.trim();
     const hint = document.getElementById('confirmWordHint');
-    const val  = inp.value.trim().toLowerCase();
-    if (!val) { hint.textContent = ''; inp.style.borderColor = ''; return; }
-    if (val === 'update') {
+    document.getElementById('confirmWordHidden').value = raw;
+    if (!raw) {
+        hint.textContent = '';
+        inp.style.borderColor = '';
+        inp.style.boxShadow = '';
+        return;
+    }
+    if (raw === 'update') {
         hint.innerHTML = '✅ <span style="color:#059669;font-weight:600">Xác nhận — OTP sẽ gửi về Gmail admin khi bấm Lưu.</span>';
         inp.style.borderColor = '#059669';
+        inp.style.boxShadow = '0 0 0 3px rgba(5,150,105,.1)';
     } else {
-        hint.innerHTML = '❌ <span style="color:#DC2626;font-weight:600">Phải gõ đúng chữ <code>update</code> (viết thường).</span>';
+        hint.innerHTML = '❌ <span style="color:#DC2626;font-weight:600">Phải gõ đúng chữ <code>update</code> (chữ thường, không phải UPDATE hay Update).</span>';
         inp.style.borderColor = '#DC2626';
+        inp.style.boxShadow = '0 0 0 3px rgba(220,38,38,.1)';
     }
 }
 
@@ -670,32 +784,25 @@ document.getElementById('mainForm').addEventListener('submit', function(e) {
     const changePwOpen = document.getElementById('changePwSection').style.display !== 'none';
 
     if (changePwOpen) {
-        // Đang muốn đổi MK
-        const pw = document.getElementById('newPasswordInput').value;
-        const cw = document.getElementById('confirmWordInput').value.trim().toLowerCase();
-
-        if (!pw || pw.length < 6) {
-            e.preventDefault();
-            alert('Mật khẩu mới phải có ít nhất 6 ký tự!');
-            document.getElementById('newPasswordInput').focus();
-            return;
-        }
+        // Đang muốn đổi MK — chỉ cần gõ "update" chính xác
+        const cw = document.getElementById('confirmWordInput').value.trim();
         if (cw !== 'update') {
             e.preventDefault();
             document.getElementById('confirmWordHint').innerHTML =
-                '❌ <span style="color:#DC2626;font-weight:600">Phải gõ đúng chữ <code>update</code> để xác nhận!</span>';
+                '❌ <span style="color:#DC2626;font-weight:600">Phải gõ đúng chữ <code>update</code> (chữ thường)!</span>';
             document.getElementById('confirmWordInput').focus();
             return;
         }
-        syncPwFields();
-        // Tiếp tục submit — Servlet sẽ xử lý OTP
+        // Sync hidden field
+        document.getElementById('confirmWordHidden').value = 'update';
+        document.getElementById('passwordHidden').value    = '';
+        // Tiếp tục submit → Servlet gửi OTP → sau OTP nhập MK mới ở trang riêng
     } else {
-        // Chỉ sửa thông tin thường — confirm popup
+        // Chỉ sửa thông tin thường
         if (!confirm('Xác nhận lưu thay đổi thông tin tài khoản?')) {
             e.preventDefault();
             return;
         }
-        // Đảm bảo password và confirmWord trống
         document.getElementById('passwordHidden').value    = '';
         document.getElementById('confirmWordHidden').value = '';
     }
@@ -704,12 +811,256 @@ document.getElementById('mainForm').addEventListener('submit', function(e) {
     if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Đang lưu…'; }
 });
 <% } else { %>
-// ── Tạo mới: disable double-submit ──
-document.getElementById('mainForm').addEventListener('submit', function() {
+// ── Toggle show/hide cho confirmPw ──
+function togglePwField(id, btn) {
+    const inp = document.getElementById(id);
+    if (!inp) return;
+    const show = inp.type === 'password';
+    inp.type = show ? 'text' : 'password';
+    btn.textContent = show ? '🙈' : '👁';
+}
+
+// ── Password rules checklist (realtime) ──
+function checkPwRules() {
+    const pw = document.getElementById('password').value;
+    const rules = [
+        { id:'rule-len',   ok: pw.length >= 8 },
+        { id:'rule-upper', ok: /[A-Z]/.test(pw) },
+        { id:'rule-lower', ok: /[a-z]/.test(pw) },
+        { id:'rule-digit', ok: /[0-9]/.test(pw) },
+        { id:'rule-spec',  ok: /[^A-Za-z0-9]/.test(pw) },
+    ];
+    rules.forEach(r => {
+        const el = document.getElementById(r.id);
+        const label = el.textContent.substring(2);
+        if (!pw) { el.style.color = '#94A3B8'; el.textContent = '○ ' + label; return; }
+        el.style.color = r.ok ? '#059669' : '#DC2626';
+        el.textContent = (r.ok ? '✓ ' : '✗ ') + label;
+    });
+    return rules.every(r => r.ok);
+}
+
+// ── Check MK khớp realtime ──
+function checkCreatePwMatch() {
+    const pw1  = document.getElementById('password').value;
+    const pw2  = document.getElementById('confirmPw').value;
+    const hint = document.getElementById('pwMatchHint');
+    if (!pw2) { hint.textContent = ''; return; }
+    const allOk = checkPwRules();
+    if (pw1 === pw2) {
+        hint.innerHTML = allOk
+            ? '<span style="color:#059669">✅ Mật khẩu hợp lệ và khớp</span>'
+            : '<span style="color:#D97706">⚠️ Khớp nhưng chưa đủ yêu cầu bảo mật</span>';
+    } else {
+        hint.innerHTML = '<span style="color:#DC2626">❌ Mật khẩu không khớp</span>';
+    }
+}
+
+// ── Submit handler ──
+document.getElementById('mainForm').addEventListener('submit', function(e) {
+    const pw1 = document.getElementById('password').value;
+    const pw2 = document.getElementById('confirmPw').value;
+    if (!checkPwRules()) {
+        e.preventDefault();
+        alert('Mật khẩu chưa đủ yêu cầu! Cần: ≥8 ký tự, chữ hoa, thường, số, ký tự đặc biệt.');
+        document.getElementById('password').focus();
+        return;
+    }
+    if (pw1 !== pw2) {
+        e.preventDefault();
+        document.getElementById('pwMatchHint').innerHTML =
+            '<span style="color:#DC2626">❌ Mật khẩu không khớp!</span>';
+        document.getElementById('confirmPw').focus();
+        return;
+    }
     const btn = document.getElementById('submitBtn');
     if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Đang tạo…'; }
 });
 <% } %>
 </script>
+
+<% if (!isNew) { %>
+<script>
+// ════════════════════════════════════════════════════
+// FACE ENROLLMENT — face-api.js (local model, offline)
+// ════════════════════════════════════════════════════
+const FACE_ACCOUNT_ID   = <%= vAccountIdForFace %>;
+const FACE_MODEL_URL    = '${pageContext.request.contextPath}/models';
+const FACE_ENROLL_URL   = '${pageContext.request.contextPath}/face-enroll';
+const REQUIRED_CAPTURES = 3;
+
+let faceStream = null;
+let faceModelsLoaded = false;
+let capturedDescriptors = [];
+let detectLoopId = null;
+
+async function loadFaceModels() {
+    if (faceModelsLoaded) return;
+    await faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODEL_URL);
+    await faceapi.nets.faceLandmark68Net.loadFromUri(FACE_MODEL_URL);
+    await faceapi.nets.faceRecognitionNet.loadFromUri(FACE_MODEL_URL);
+    faceModelsLoaded = true;
+}
+
+async function openFaceModal() {
+    const overlay = document.getElementById('faceModalOverlay');
+    const statusEl = document.getElementById('faceModalStatus');
+    const captureBtn = document.getElementById('faceCaptureBtn');
+    overlay.classList.add('open');
+    capturedDescriptors = [];
+    updateProgressDots();
+    captureBtn.disabled = true;
+    statusEl.textContent = 'Đang tải model nhận diện...';
+
+    try {
+        await loadFaceModels();
+        statusEl.textContent = 'Đang khởi động camera...';
+
+        faceStream = await navigator.mediaDevices.getUserMedia({ video: { width: 480, height: 360 } });
+        const video = document.getElementById('faceVideo');
+        video.srcObject = faceStream;
+        await video.play();
+
+        statusEl.textContent = 'Đưa mặt vào khung hình và bấm Chụp';
+        captureBtn.disabled = false;
+        startDetectLoop();
+    } catch (err) {
+        console.error(err);
+        statusEl.textContent = '❌ Không thể truy cập camera hoặc tải model: ' + err.message;
+    }
+}
+
+function startDetectLoop() {
+    const video = document.getElementById('faceVideo');
+    const canvas = document.getElementById('faceCanvas');
+    async function loop() {
+        if (!faceStream) return;
+        if (video.videoWidth > 0) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions());
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (detection) {
+                faceapi.draw.drawDetections(canvas, [detection]);
+            }
+        }
+        detectLoopId = requestAnimationFrame(loop);
+    }
+    loop();
+}
+
+async function captureFrame() {
+    const video = document.getElementById('faceVideo');
+    const statusEl = document.getElementById('faceModalStatus');
+    const captureBtn = document.getElementById('faceCaptureBtn');
+
+    captureBtn.disabled = true;
+    statusEl.textContent = 'Đang phân tích khuôn mặt...';
+
+    const result = await faceapi
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+
+    if (!result) {
+        statusEl.textContent = '⚠️ Không phát hiện khuôn mặt rõ ràng. Thử lại.';
+        captureBtn.disabled = false;
+        return;
+    }
+
+    capturedDescriptors.push(Array.from(result.descriptor));
+    updateProgressDots();
+    document.getElementById('captureCount').textContent = capturedDescriptors.length;
+
+    if (capturedDescriptors.length >= REQUIRED_CAPTURES) {
+        statusEl.textContent = 'Đang lưu dữ liệu khuôn mặt...';
+        await submitFaceVector();
+    } else {
+        statusEl.textContent = `Tốt! Chụp thêm ${REQUIRED_CAPTURES - capturedDescriptors.length} lần nữa (góc khác nhau)`;
+        captureBtn.disabled = false;
+    }
+}
+
+function updateProgressDots() {
+    for (let i = 1; i <= REQUIRED_CAPTURES; i++) {
+        const dot = document.getElementById('dot' + i);
+        if (dot) dot.classList.toggle('done', i <= capturedDescriptors.length);
+    }
+}
+
+function averageDescriptors(list) {
+    const len = list[0].length;
+    const avg = new Array(len).fill(0);
+    for (const desc of list) {
+        for (let i = 0; i < len; i++) avg[i] += desc[i];
+    }
+    for (let i = 0; i < len; i++) avg[i] = avg[i] / list.length;
+    return avg;
+}
+
+async function submitFaceVector() {
+    const statusEl = document.getElementById('faceModalStatus');
+    const avgDescriptor = averageDescriptors(capturedDescriptors);
+    const body = new URLSearchParams({
+        action: 'enroll',
+        accountId: String(FACE_ACCOUNT_ID),
+        descriptor: JSON.stringify(avgDescriptor)
+    });
+
+    try {
+        const resp = await fetch(FACE_ENROLL_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body
+        });
+        const data = await resp.json();
+        if (data.ok) {
+            statusEl.textContent = '✅ Đăng ký khuôn mặt thành công!';
+            setTimeout(() => { window.location.reload(); }, 900);
+        } else {
+            statusEl.textContent = '❌ Lỗi: ' + (data.reason || 'unknown');
+            document.getElementById('faceCaptureBtn').disabled = false;
+        }
+    } catch (err) {
+        statusEl.textContent = '❌ Lỗi kết nối: ' + err.message;
+        document.getElementById('faceCaptureBtn').disabled = false;
+    }
+}
+
+function closeFaceModal() {
+    const overlay = document.getElementById('faceModalOverlay');
+    overlay.classList.remove('open');
+    if (detectLoopId) { cancelAnimationFrame(detectLoopId); detectLoopId = null; }
+    if (faceStream) {
+        faceStream.getTracks().forEach(track => track.stop());
+        faceStream = null;
+    }
+    capturedDescriptors = [];
+    document.getElementById('captureCount').textContent = '0';
+    updateProgressDots();
+}
+
+async function removeFaceVector() {
+    if (!confirm('Xác nhận xóa dữ liệu khuôn mặt của nhân viên này?')) return;
+    const body = new URLSearchParams({ action: 'remove', accountId: String(FACE_ACCOUNT_ID) });
+    try {
+        const resp = await fetch(FACE_ENROLL_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body
+        });
+        const data = await resp.json();
+        if (data.ok) {
+            window.location.reload();
+        } else {
+            alert('❌ Lỗi: ' + (data.reason || 'unknown'));
+        }
+    } catch (err) {
+        alert('❌ Lỗi kết nối: ' + err.message);
+    }
+}
+</script>
+<% } %>
 </body>
 </html>

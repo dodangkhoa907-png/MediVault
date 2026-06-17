@@ -330,7 +330,8 @@ body{display:flex;background:var(--surface);color:var(--ink)}
   </div>
 </div>
 
-<% if ("created".equals(msg)) { %><div class="toast toast-ok">✅ Tạo tài khoản thành công!</div>
+<% if ("protected-admin".equals(msg)) { %><div class="toast toast-warn">🛡️ Tài khoản Admin gốc được bảo vệ — không thể khóa hoặc xóa!</div>
+<% } else if ("created".equals(msg)) { %><div class="toast toast-ok">✅ Tạo tài khoản thành công!</div>
 <% } else if ("updated".equals(msg)) { %><div class="toast toast-ok">✅ Cập nhật thành công!</div>
 <% } else if ("locked".equals(msg)) { %><div class="toast toast-warn">🔒 Đã khóa tài khoản.</div>
 <% } else if ("unlocked".equals(msg)) {

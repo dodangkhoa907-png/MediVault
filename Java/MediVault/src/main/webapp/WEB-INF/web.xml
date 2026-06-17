@@ -5,6 +5,27 @@
          https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
          version="6.0">
 
+    <!-- ══ UTF-8 Encoding Filter — áp dụng cho toàn bộ request POST ══ -->
+    <!-- Phải đứng đầu tiên để đảm bảo setCharacterEncoding chạy trước khi -->
+    <!-- Tomcat parse bất kỳ parameter nào (getParameter() sẽ cache encoding) -->
+    <filter>
+        <filter-name>encodingFilter</filter-name>
+        <filter-class>org.apache.catalina.filters.SetCharacterEncodingFilter</filter-class>
+        <init-param>
+            <param-name>encoding</param-name>
+            <param-value>UTF-8</param-value>
+        </init-param>
+        <init-param>
+            <!-- force=true: ghi đè ngay cả khi request đã có encoding -->
+            <param-name>ignore</param-name>
+            <param-value>false</param-value>
+        </init-param>
+    </filter>
+    <filter-mapping>
+        <filter-name>encodingFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
     <!-- JSP Servlet: development mode cho hot-reload khi dev -->
     <servlet>
         <servlet-name>jsp</servlet-name>

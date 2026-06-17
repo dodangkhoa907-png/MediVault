@@ -39,6 +39,7 @@
 <title>MediCare — <%= roleName %></title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<script src="${pageContext.request.contextPath}/js/face-api/face-api.min.js" defer></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -48,6 +49,45 @@
   --green:#059669;--red:#DC2626;--gold:#D97706;--cyan:#5EEAD4;
   --sidebar:228px;
 }
+
+/* ── Notification Bell ── */
+.notif-bell{position:relative;cursor:pointer;width:36px;height:36px;border-radius:10px;
+  background:rgba(109,40,217,.08);display:flex;align-items:center;justify-content:center;
+  transition:all .18s;flex-shrink:0}
+.notif-bell:hover{background:rgba(109,40,217,.15);transform:scale(1.05)}
+.notif-bell-icon{font-size:18px;line-height:1}
+.notif-badge{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;
+  background:#DC2626;color:#fff;font-size:10px;font-weight:800;border-radius:9px;
+  display:flex;align-items:center;justify-content:center;padding:0 4px;
+  border:2px solid var(--soft);animation:bellPulse 2s infinite}
+@keyframes bellPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+.notif-badge:empty,.notif-badge[data-count="0"]{display:none}
+.notif-dropdown{position:absolute;top:calc(100% + 8px);right:0;width:320px;
+  background:var(--white);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.18);
+  z-index:500;display:none;overflow:hidden;border:1px solid var(--border)}
+.notif-dropdown.show{display:block;animation:ndSlide .2s ease}
+@keyframes ndSlide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.nd-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.nd-title{font-size:13px;font-weight:700;color:var(--ink)}
+.nd-mark-all{font-size:11px;color:var(--main);cursor:pointer;font-weight:600;border:none;background:none}
+.nd-mark-all:hover{text-decoration:underline}
+.nd-list{max-height:320px;overflow-y:auto}
+.nd-item{padding:10px 16px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer;transition:background .12s}
+.nd-item:hover{background:var(--soft)}
+.nd-item:last-child{border-bottom:none}
+.nd-item-title{font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:2px}
+.nd-item-msg{font-size:11.5px;color:var(--muted);line-height:1.5}
+.nd-item-time{font-size:10px;color:var(--muted);margin-top:3px;opacity:.7}
+.nd-empty{padding:24px 16px;text-align:center;color:var(--muted);font-size:12px}
+/* Shift reminder banner */
+.shift-reminder{background:linear-gradient(135deg,#FEF3C7,#FDE68A);border:1.5px solid #F59E0B;
+  border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;
+  animation:reminderGlow 2s ease-in-out infinite alternate}
+@keyframes reminderGlow{from{box-shadow:0 0 0 0 rgba(245,158,11,.2)}to{box-shadow:0 0 0 8px rgba(245,158,11,.15)}}
+.shift-reminder-icon{font-size:22px;flex-shrink:0}
+.shift-reminder-text{font-size:13px;font-weight:600;color:#78350F}
+.shift-reminder-time{font-size:12px;color:#92400E;margin-top:2px}
+
 html,body{height:100%;font-family:'Outfit',sans-serif}
 body{display:flex;background:var(--soft);color:var(--ink)}
 
@@ -390,6 +430,48 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
 .b-purple{background:rgba(109,40,217,.1);color:var(--main)}
 .b-green{background:rgba(5,150,105,.1);color:var(--green)}
+
+/* ── Face Enroll Banner ── */
+.face-enroll-banner{
+  background:linear-gradient(135deg,#DBEAFE,#BFDBFE);border:1.5px solid #3B82F6;
+  border-radius:14px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:14px;
+  cursor:pointer;transition:transform .15s;
+}
+.face-enroll-banner:hover{transform:translateY(-1px)}
+.face-enroll-icon{font-size:26px;flex-shrink:0}
+.face-enroll-text{flex:1;min-width:0}
+.face-enroll-text strong{display:block;font-size:13.5px;color:#1E3A8A;margin-bottom:2px}
+.face-enroll-text span{font-size:12px;color:#1E40AF;opacity:.85}
+.face-enroll-cta{
+  flex-shrink:0;background:#1D4ED8;color:#fff;padding:9px 16px;border-radius:10px;
+  font-size:12.5px;font-weight:700;white-space:nowrap;border:none;cursor:pointer;
+}
+
+/* ── Face Modal (camera) ── */
+.face-modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(11,9,30,.7);z-index:1000;
+  align-items:center;justify-content:center;backdrop-filter:blur(2px);
+}
+.face-modal-overlay.open{display:flex}
+.face-modal{
+  background:#fff;border-radius:20px;width:420px;max-width:92vw;overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,.3);
+}
+.face-modal-head{padding:18px 22px;background:linear-gradient(90deg,var(--mid),var(--main));color:#fff;display:flex;align-items:center;justify-content:space-between}
+.face-modal-head h3{font-size:15px;font-weight:700}
+.face-modal-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:14px}
+.face-modal-body{padding:20px 22px}
+.face-video-wrap{position:relative;width:100%;aspect-ratio:4/3;background:#0B1628;border-radius:14px;overflow:hidden;margin-bottom:14px}
+.face-video-wrap video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.face-video-wrap canvas{position:absolute;top:0;left:0;width:100%;height:100%;transform:scaleX(-1)}
+.face-modal-status{text-align:center;font-size:13px;font-weight:600;color:var(--main);margin-bottom:12px;min-height:18px}
+.face-progress{display:flex;gap:6px;justify-content:center;margin-bottom:14px}
+.face-progress-dot{width:10px;height:10px;border-radius:50%;background:#E2E8F0;transition:background .2s}
+.face-progress-dot.done{background:#059669}
+.face-modal-actions{display:flex;gap:10px}
+.face-modal-actions button{flex:1;padding:11px 0;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:700;cursor:pointer;border:none}
+.face-btn-capture{background:linear-gradient(135deg,var(--light),var(--main));color:#fff}
+.face-btn-cancel{background:var(--surface);color:var(--muted);border:1.5px solid var(--border)!important}
 </style>
 </head>
 <body>
@@ -478,11 +560,113 @@ body{display:flex;background:var(--soft);color:var(--ink)}
         <span id="cH">00</span><span class="clock-sep">:</span><span id="cM">00</span>
         <span class="clock-date" id="cDate"></span>
       </div>
+      <%-- Notification Bell --%>
+      <div class="notif-bell" id="notifBell" onclick="toggleNotifDropdown()">
+        <span class="notif-bell-icon">🔔</span>
+        <span class="notif-badge" id="notifBadge">${staffNotifCount > 0 ? staffNotifCount : ''}</span>
+        <div class="notif-dropdown" id="notifDropdown">
+          <div class="nd-header">
+            <span class="nd-title">🔔 Thông báo</span>
+            <button class="nd-mark-all" onclick="event.stopPropagation();markAllRead()">Đọc tất cả</button>
+          </div>
+          <div class="nd-list" id="notifList">
+            <c:choose>
+              <c:when test="${empty staffNotifications}">
+                <div class="nd-empty">Không có thông báo mới</div>
+              </c:when>
+              <c:otherwise>
+                <c:forEach var="n" items="${staffNotifications}">
+                  <div class="nd-item" data-id="${n.id}" onclick="event.stopPropagation();markRead(${n.id},this)">
+                    <div class="nd-item-title">${n.title}</div>
+                    <div class="nd-item-msg">${n.message}</div>
+                    <div class="nd-item-time">${n.createdAt}</div>
+                  </div>
+                </c:forEach>
+              </c:otherwise>
+            </c:choose>
+          </div>
+        </div>
+      </div>
       <a href="${pageContext.request.contextPath}/staff-profile" class="topbar-av" title="Hồ sơ của tôi"><%= initials %></a>
     </div>
   </header>
 
   <div class="content">
+
+    <%-- Shift Reminder Banner --%>
+    <c:if test="${not empty todaySchedule}">
+      <c:set var="ts" value="${todaySchedule}"/>
+        <c:if test="${ts.status == 'SCHEDULED' and not empty ts.plannedStart}">
+          <%
+            com.medicare.entity.ShiftSchedule _ts =
+                (com.medicare.entity.ShiftSchedule) pageContext.getAttribute("ts");
+            if (_ts != null && _ts.getPlannedStart() != null) {
+                long _min = java.time.Duration.between(
+                    java.time.LocalDateTime.now(), _ts.getPlannedStart()).toMinutes();
+                if (_min > 0 && _min <= 30) {
+                    pageContext.setAttribute("reminderMin", _min);
+                    pageContext.setAttribute("reminderType", _ts.getShiftTypeName());
+                    pageContext.setAttribute("reminderTime",
+                        _ts.getPlannedStart().toLocalTime().toString().substring(0,5));
+          %>
+          <div class="shift-reminder">
+            <span class="shift-reminder-icon">⏰</span>
+            <div>
+              <div class="shift-reminder-text">
+                Còn ${reminderMin} phút nữa là tới ca ${reminderType}!
+              </div>
+              <div class="shift-reminder-time">
+                Bắt đầu lúc ${reminderTime} — Hãy chuẩn bị!
+              </div>
+            </div>
+          </div>
+          <%  }
+            }
+          %>
+        </c:if>
+    </c:if>
+
+    <!-- Face Enroll Banner — chỉ hiện nếu chưa đăng ký khuôn mặt -->
+    <% if (!acc.isFaceEnrolled()) { %>
+    <div class="face-enroll-banner" onclick="openFaceModal()">
+        <div class="face-enroll-icon">📷</div>
+        <div class="face-enroll-text">
+            <strong>Bạn chưa đăng ký khuôn mặt</strong>
+            <span>Đăng ký ngay để điểm danh nhanh bằng khuôn mặt, không cần bấm nút thủ công</span>
+        </div>
+        <button type="button" class="face-enroll-cta" onclick="event.stopPropagation(); openFaceModal();">
+            Đăng ký ngay
+        </button>
+    </div>
+    <% } %>
+
+    <!-- Modal Camera đăng ký khuôn mặt -->
+    <div class="face-modal-overlay" id="faceModalOverlay">
+        <div class="face-modal">
+            <div class="face-modal-head">
+                <h3>📷 Đăng ký khuôn mặt</h3>
+                <button type="button" class="face-modal-close" onclick="closeFaceModal()">✕</button>
+            </div>
+            <div class="face-modal-body">
+                <div class="face-video-wrap">
+                    <video id="faceVideo" autoplay muted playsinline></video>
+                    <canvas id="faceCanvas"></canvas>
+                </div>
+                <div class="face-progress">
+                    <span class="face-progress-dot" id="dot1"></span>
+                    <span class="face-progress-dot" id="dot2"></span>
+                    <span class="face-progress-dot" id="dot3"></span>
+                </div>
+                <div class="face-modal-status" id="faceModalStatus">Đang khởi động camera...</div>
+                <div class="face-modal-actions">
+                    <button type="button" class="face-btn-cancel" onclick="closeFaceModal()">Hủy</button>
+                    <button type="button" class="face-btn-capture" id="faceCaptureBtn" onclick="captureFrame()" disabled>
+                        📸 Chụp (<span id="captureCount">0</span>/3)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Welcome -->
     <div class="welcome">
@@ -763,11 +947,21 @@ updateClock(); setInterval(updateClock,1000);
 <c:if test="${not empty currentShift}">
 (function(){
   const startRaw = '${currentShift.startTime}';
-  // LocalDateTime format: "2026-06-09T19:00:00" hoặc "2026-06-09 19:00:00"
-  const shiftStart = new Date(startRaw.replace('T', ' '));
+  // KHÔNG dùng new Date(string) trực tiếp — một số browser hiểu nhầm chuỗi
+  // "YYYY-MM-DD HH:mm:ss" (không có Z/offset) là UTC, gây lệch đúng bằng
+  // độ lệch múi giờ (7 giờ với VN). Parse tay từng phần để chắc chắn là LOCAL TIME.
+  function parseLocalDateTime(raw) {
+    if (!raw) return null;
+    const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})/);
+    if (!m) return null;
+    const [, y, mo, d, h, mi, s] = m.map(Number);
+    return new Date(y, mo - 1, d, h, mi, s); // constructor 6-arg luôn là LOCAL TIME
+  }
+  const shiftStart = parseLocalDateTime(startRaw);
   const timerEl    = document.getElementById('shiftTimer');
   function tick() {
     if (!timerEl) return;
+    if (!shiftStart) { timerEl.textContent = '00:00:00'; return; }
     const diff = Math.floor((new Date() - shiftStart) / 1000);
     if (isNaN(diff) || diff < 0) { timerEl.textContent = '00:00:00'; return; }
     const h = String(Math.floor(diff / 3600)).padStart(2, '0');
@@ -877,5 +1071,227 @@ updateClock(); setInterval(updateClock,1000);
   }, 10000);
 })();
 </script>
+
+<script>
+// ── Notification Bell ──
+function toggleNotifDropdown() {
+  document.getElementById('notifDropdown').classList.toggle('show');
+}
+document.addEventListener('click', function(e) {
+  const bell = document.getElementById('notifBell');
+  if (bell && !bell.contains(e.target)) {
+    document.getElementById('notifDropdown').classList.remove('show');
+  }
+});
+
+function markRead(id, el) {
+  const uid = '<%= _uid %>';
+  fetch('${pageContext.request.contextPath}/staff-notifications?action=read&id=' + id + '&uid=' + uid, {method:'POST'})
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        el.style.opacity = '0.4';
+        setTimeout(() => el.remove(), 300);
+        updateBadge(-1);
+      }
+    });
+}
+
+function markAllRead() {
+  const uid = '<%= _uid %>';
+  fetch('${pageContext.request.contextPath}/staff-notifications?action=readAll&uid=' + uid, {method:'POST'})
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        document.getElementById('notifList').innerHTML = '<div class="nd-empty">Không có thông báo mới</div>';
+        updateBadge(0);
+      }
+    });
+}
+
+function updateBadge(delta) {
+  const badge = document.getElementById('notifBadge');
+  if (delta === 0) { badge.textContent = ''; return; }
+  let current = parseInt(badge.textContent) || 0;
+  current = Math.max(0, current + delta);
+  badge.textContent = current > 0 ? current : '';
+}
+
+// Auto-refresh notifications mỗi 60 giây
+setInterval(function() {
+  const uid = '<%= _uid %>';
+  fetch('${pageContext.request.contextPath}/staff-notifications?uid=' + uid)
+    .then(r => r.json())
+    .then(d => {
+      const badge = document.getElementById('notifBadge');
+      badge.textContent = d.count > 0 ? d.count : '';
+    })
+    .catch(() => {});
+}, 60000);
+</script>
+
+<script>
+// ════════════════════════════════════════════════════
+// FACE ENROLLMENT (Staff tự đăng ký) — face-api.js local model
+// ════════════════════════════════════════════════════
+const FACE_STAFF_UID     = '<%= _uid %>';
+const FACE_MODEL_URL     = '${pageContext.request.contextPath}/models';
+const FACE_ENROLL_URL    = '${pageContext.request.contextPath}/staff-face-enroll';
+const REQUIRED_CAPTURES  = 3;
+
+let faceStream = null;
+let faceModelsLoaded = false;
+let capturedDescriptors = [];
+let detectLoopId = null;
+
+async function loadFaceModels() {
+    if (faceModelsLoaded) return;
+    await faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODEL_URL);
+    await faceapi.nets.faceLandmark68Net.loadFromUri(FACE_MODEL_URL);
+    await faceapi.nets.faceRecognitionNet.loadFromUri(FACE_MODEL_URL);
+    faceModelsLoaded = true;
+}
+
+async function openFaceModal() {
+    const overlay = document.getElementById('faceModalOverlay');
+    const statusEl = document.getElementById('faceModalStatus');
+    const captureBtn = document.getElementById('faceCaptureBtn');
+    overlay.classList.add('open');
+    capturedDescriptors = [];
+    updateProgressDots();
+    document.getElementById('captureCount').textContent = '0';
+    captureBtn.disabled = true;
+    statusEl.textContent = 'Đang tải model nhận diện...';
+
+    try {
+        await loadFaceModels();
+        statusEl.textContent = 'Đang khởi động camera...';
+
+        faceStream = await navigator.mediaDevices.getUserMedia({ video: { width: 480, height: 360 } });
+        const video = document.getElementById('faceVideo');
+        video.srcObject = faceStream;
+        await video.play();
+
+        statusEl.textContent = 'Đưa mặt vào khung hình và bấm Chụp';
+        captureBtn.disabled = false;
+        startDetectLoop();
+    } catch (err) {
+        console.error(err);
+        statusEl.textContent = '❌ Không thể truy cập camera hoặc tải model: ' + err.message;
+    }
+}
+
+function startDetectLoop() {
+    const video = document.getElementById('faceVideo');
+    const canvas = document.getElementById('faceCanvas');
+    async function loop() {
+        if (!faceStream) return;
+        if (video.videoWidth > 0) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions());
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (detection) {
+                faceapi.draw.drawDetections(canvas, [detection]);
+            }
+        }
+        detectLoopId = requestAnimationFrame(loop);
+    }
+    loop();
+}
+
+async function captureFrame() {
+    const video = document.getElementById('faceVideo');
+    const statusEl = document.getElementById('faceModalStatus');
+    const captureBtn = document.getElementById('faceCaptureBtn');
+
+    captureBtn.disabled = true;
+    statusEl.textContent = 'Đang phân tích khuôn mặt...';
+
+    const result = await faceapi
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+
+    if (!result) {
+        statusEl.textContent = '⚠️ Không phát hiện khuôn mặt rõ ràng. Thử lại.';
+        captureBtn.disabled = false;
+        return;
+    }
+
+    capturedDescriptors.push(Array.from(result.descriptor));
+    updateProgressDots();
+    document.getElementById('captureCount').textContent = capturedDescriptors.length;
+
+    if (capturedDescriptors.length >= REQUIRED_CAPTURES) {
+        statusEl.textContent = 'Đang lưu dữ liệu khuôn mặt...';
+        await submitFaceVector();
+    } else {
+        statusEl.textContent = `Tốt! Chụp thêm ${REQUIRED_CAPTURES - capturedDescriptors.length} lần nữa (góc khác nhau)`;
+        captureBtn.disabled = false;
+    }
+}
+
+function updateProgressDots() {
+    for (let i = 1; i <= REQUIRED_CAPTURES; i++) {
+        const dot = document.getElementById('dot' + i);
+        if (dot) dot.classList.toggle('done', i <= capturedDescriptors.length);
+    }
+}
+
+function averageDescriptors(list) {
+    const len = list[0].length;
+    const avg = new Array(len).fill(0);
+    for (const desc of list) {
+        for (let i = 0; i < len; i++) avg[i] += desc[i];
+    }
+    for (let i = 0; i < len; i++) avg[i] = avg[i] / list.length;
+    return avg;
+}
+
+async function submitFaceVector() {
+    const statusEl = document.getElementById('faceModalStatus');
+    const avgDescriptor = averageDescriptors(capturedDescriptors);
+    const body = new URLSearchParams({
+        action: 'enroll',
+        uid: FACE_STAFF_UID,
+        descriptor: JSON.stringify(avgDescriptor)
+    });
+
+    try {
+        const resp = await fetch(FACE_ENROLL_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body
+        });
+        const data = await resp.json();
+        if (data.ok) {
+            statusEl.textContent = '✅ Đăng ký khuôn mặt thành công!';
+            setTimeout(() => { window.location.reload(); }, 900);
+        } else {
+            statusEl.textContent = '❌ Lỗi: ' + (data.reason || 'unknown');
+            document.getElementById('faceCaptureBtn').disabled = false;
+        }
+    } catch (err) {
+        statusEl.textContent = '❌ Lỗi kết nối: ' + err.message;
+        document.getElementById('faceCaptureBtn').disabled = false;
+    }
+}
+
+function closeFaceModal() {
+    const overlay = document.getElementById('faceModalOverlay');
+    overlay.classList.remove('open');
+    if (detectLoopId) { cancelAnimationFrame(detectLoopId); detectLoopId = null; }
+    if (faceStream) {
+        faceStream.getTracks().forEach(track => track.stop());
+        faceStream = null;
+    }
+    capturedDescriptors = [];
+    document.getElementById('captureCount').textContent = '0';
+    updateProgressDots();
+}
+</script>
+
 </body>
 </html>

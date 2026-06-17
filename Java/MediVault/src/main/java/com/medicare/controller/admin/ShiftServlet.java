@@ -16,6 +16,7 @@ import com.medicare.entity.Account;
 import com.medicare.entity.Shift;
 import com.medicare.entity.ShiftSchedule;
 import com.medicare.util.AuditHelper;
+import com.medicare.util.StaffNotifHelper;
 import com.medicare.util.SidebarHelper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -415,6 +416,23 @@ public class ShiftServlet extends HttpServlet {
             java.time.LocalDate from = java.time.LocalDate.parse(dateFrom);
             java.time.LocalDate to   = (dateTo != null && !dateTo.isEmpty())
                     ? java.time.LocalDate.parse(dateTo) : from;
+
+            // ── Xử lý ngày quá khứ thông minh ──
+            // Nếu toàn bộ range đều quá khứ → chặn hoàn toàn
+            // Nếu range bắt đầu từ quá khứ nhưng kết thúc ở tương lai → bỏ qua ngày quá khứ, tạo từ hôm nay
+            java.time.LocalDate today = java.time.LocalDate.now();
+            if (to.isBefore(today)) {
+                // Toàn bộ range đã qua → không thể tạo
+                resp.sendRedirect(req.getContextPath()
+                        + "/shifts?msg=past-date"); return;
+            }
+            // Đẩy from lên today nếu from < today (bỏ qua ngày quá khứ trong range)
+            int pastDaysSkipped = 0;
+            if (from.isBefore(today)) {
+                pastDaysSkipped = (int) java.time.temporal.ChronoUnit.DAYS.between(from, today);
+                from = today;
+            }
+
             for (String aId : accIds)
                 for (String tId : typeIds)
                     for (java.time.LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
@@ -423,8 +441,20 @@ public class ShiftServlet extends HttpServlet {
                                 d, admin.getAccountId());
                         if (r > 0) created++; else skipped++;
                     }
+            // Cộng pastDaysSkipped vào skipped cho mỗi combo (staff × type)
+            skipped += pastDaysSkipped * accIds.length * typeIds.length;
             AuditHelper.log(req, "Xếp lịch ca", "ShiftSchedule",
                     "Tạo " + created + " ca, bỏ qua " + skipped + " đã tồn tại");
+            // Notify từng nhân viên
+            if (created > 0) {
+                String dateRange = from + " → " + to;
+                for (String aId : accIds) {
+                    try {
+                        StaffNotifHelper.shiftAssignedBulk(
+                                Integer.parseInt(aId), created / accIds.length, dateRange);
+                    } catch (Exception ignored) {}
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
             resp.sendRedirect(req.getContextPath() + "/shifts?msg=error"); return;

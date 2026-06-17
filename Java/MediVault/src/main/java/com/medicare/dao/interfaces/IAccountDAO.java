@@ -24,4 +24,8 @@ public interface IAccountDAO {
     List<Account> findAllStaff();
     boolean forceDelete(int accountId);
     boolean updateAvatar(int accountId, String path);
+    /** Lưu Face Vector (JSON array 128 số) + cập nhật FaceEnrolledAt = GETDATE() */
+    boolean updateFaceVector(int accountId, String faceVectorJson);
+    /** Lấy danh sách (accountId, faceVector) của toàn bộ staff đã đăng ký mặt — dùng cho verification */
+    List<Account> findAllWithFaceVector();
 }

@@ -432,8 +432,16 @@ tbody tr:last-child td{border-bottom:none}
 const toast = document.getElementById('toast');
 if (toast) setTimeout(()=>{toast.style.opacity='0';setTimeout(()=>toast.remove(),400)},3500);
 
+function parseLocalDateTime(raw) {
+  if (!raw) return null;
+  const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})/);
+  if (!m) return null;
+  const [, y, mo, d, h, mi, s] = m.map(Number);
+  return new Date(y, mo - 1, d, h, mi, s); // LOCAL TIME, không bị hiểu nhầm UTC
+}
 function calcDur(startStr) {
-  const s = new Date(startStr.replace(' ','T')+'Z');
+  const s = parseLocalDateTime(startStr);
+  if (!s) return '--:--:--';
   const diff = Math.floor((new Date()-s)/1000);
   if(isNaN(diff)||diff<0) return '--:--:--';
   return [Math.floor(diff/3600),Math.floor((diff%3600)/60),diff%60]

@@ -97,13 +97,23 @@ public class ShiftTypeServlet extends HttpServlet {
         int id = parseInt(req.getParameter("id"), 0);
         ShiftType st = dao.findById(id);
         if (st == null) { resp.sendRedirect(req.getContextPath() + "/shifts?tab=types"); return; }
-        // Chỉ xóa khi inactive
+        // Chỉ xóa khi inactive — bắt buộc phải tạm dừng trước
         if (st.isActive()) {
             resp.sendRedirect(req.getContextPath() + "/shifts?tab=types&msg=type-err"); return;
         }
-        // TODO: check không có ShiftSchedule dùng loại này
+        // Kiểm tra còn ShiftSchedule nào đang dùng loại ca này không
+        // (dùng ShiftScheduleDAO — inject trực tiếp vì Servlet không extends HttpServlet với DI)
+        com.medicare.dao.ShiftScheduleDAO scheduleDAO = new com.medicare.dao.ShiftScheduleDAO();
+        boolean hasSchedules = scheduleDAO.existsByShiftTypeId(id);
+        if (hasSchedules) {
+            // Không cho xóa — còn lịch ca đang dùng loại này
+            resp.sendRedirect(req.getContextPath() + "/shifts?tab=types&msg=type-has-schedules"); return;
+        }
         boolean ok = dao.delete(id);
-        if (ok) AuditHelper.log(req, "Xóa loại ca", "ShiftType", "Xóa loại ca: " + st.getName());
+        if (ok) {
+            AppCache.invalidateShiftTypes();
+            AuditHelper.log(req, "Xóa loại ca", "ShiftType", "Xóa loại ca: " + st.getName());
+        }
         resp.sendRedirect(req.getContextPath() + "/shifts?tab=types&msg=" + (ok ? "type-deleted" : "type-err"));
     }
 

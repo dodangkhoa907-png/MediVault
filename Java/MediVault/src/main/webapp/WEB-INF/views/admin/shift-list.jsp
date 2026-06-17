@@ -371,8 +371,10 @@ tbody tr{cursor:pointer}
 .btn-nav{padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--white);font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;text-decoration:none;transition:all .18s;display:inline-flex;align-items:center}
 .btn-nav:hover{border-color:var(--blue);color:var(--blue)}
 .week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:20px}
-.day-col{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;min-height:160px}
+.day-col{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:visible;min-height:80px}
 .day-col.today-col{border-color:var(--blue);box-shadow:0 0 0 2px rgba(21,88,168,.1)}
+.day-col.past-col{opacity:.55}
+.day-col.past-col .day-head{background:var(--surface)}
 .day-head{padding:10px 8px;border-bottom:1px solid var(--border);text-align:center}
 .day-name{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 .day-date{font-size:20px;font-weight:900;color:var(--ink);margin-top:1px;line-height:1}
@@ -421,6 +423,184 @@ tbody tr{cursor:pointer}
 .sc-all-btn{font-size:12px;color:var(--blue);font-weight:600;cursor:pointer;background:none;border:none;padding:0;margin-bottom:6px;display:inline-flex;align-items:center;gap:4px}
 
 /* ── CHIP TOOLTIP (hover info đầy đủ) ── */
+
+/* ════════════════════════════════════════════════════
+   GROUPED STAFF CARD — week calendar (new design)
+   Mỗi nhân viên/ngày = 1 card gom tất cả ca
+   ════════════════════════════════════════════════════ */
+.staff-card{
+  background:var(--white);border:1px solid var(--border);border-radius:10px;
+  margin-bottom:6px;cursor:pointer;transition:box-shadow .18s,border-color .18s;
+  position:relative;overflow:visible;
+}
+.staff-card:hover{border-color:#93C5FD;box-shadow:0 3px 14px rgba(21,88,168,.13)}
+.staff-card-head{
+  display:flex;align-items:center;gap:7px;padding:7px 9px 5px;
+}
+.scard-av{
+  width:26px;height:26px;border-radius:7px;flex-shrink:0;font-size:10px;
+  font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;
+}
+.scard-av.av-morning  {background:linear-gradient(135deg,#3B82F6,#1D4ED8)}
+.scard-av.av-afternoon{background:linear-gradient(135deg,#F97316,#C2410C)}
+.scard-av.av-night    {background:linear-gradient(135deg,#7C3AED,#4C1D95)}
+.scard-name{font-size:11.5px;font-weight:700;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 60px)}
+.scard-count{margin-left:auto;flex-shrink:0;font-size:9.5px;font-weight:700;
+  padding:2px 6px;border-radius:10px;background:#EFF6FF;color:#1558A8}
+.scard-first{padding:0 9px 6px;font-size:10px;color:var(--muted);line-height:1.3}
+.scard-first-type{font-weight:600;color:var(--ink);font-size:11px}
+.scard-first-time{font-size:10px;color:var(--muted)}
+.scard-status-bar{
+  margin:0 9px 7px;display:flex;align-items:center;gap:4px;flex-wrap:wrap
+}
+.scard-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.scard-dot.st-ok   {background:#059669}
+.scard-dot.st-warn {background:#F59E0B}
+.scard-dot.st-err  {background:#DC2626}
+.scard-dot.st-pend {background:#93C5FD}
+.scard-status-txt{font-size:10px;font-weight:600}
+/* Cancel X button hiện khi hover */
+.scard-cancel-btn{
+  position:absolute;top:5px;right:5px;width:16px;height:16px;border-radius:50%;
+  background:rgba(220,38,38,.1);border:none;color:var(--red);font-size:9px;
+  cursor:pointer;display:none;align-items:center;justify-content:center;line-height:1;
+  z-index:10;
+}
+.staff-card:hover .scard-cancel-btn{display:flex}
+
+/* ── Tooltip popup (hover) ── */
+.scard-tooltip{
+  display:none;position:absolute;z-index:500;
+  left:calc(100% + 8px);top:-4px;
+  background:#0B1628;color:#fff;border-radius:10px;
+  padding:10px 12px;min-width:180px;max-width:220px;
+  box-shadow:0 6px 24px rgba(0,0,0,.3);
+  pointer-events:auto;
+  font-family:'Outfit',sans-serif;
+}
+/* Nếu cột cuối → hiện bên trái */
+.day-col:nth-child(6) .scard-tooltip,
+.day-col:nth-child(7) .scard-tooltip{
+  left:auto;right:calc(100% + 10px);
+}
+.scard-tooltip::before{
+  content:'';position:absolute;top:12px;left:-5px;
+  border:5px solid transparent;border-right-color:#0B1628;border-left:none;
+}
+.day-col:nth-child(6) .scard-tooltip::before,
+.day-col:nth-child(7) .scard-tooltip::before{
+  left:auto;right:-5px;
+  border-right:none;border-left-color:#0B1628;
+}
+/* tooltip đã thay bằng inline detail panel */
+.stt-name{font-size:11.5px;font-weight:700;color:#fff;margin-bottom:5px;
+  padding-bottom:5px;border-bottom:1px solid rgba(255,255,255,.12)}
+.stt-shift{padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.stt-shift:last-child{border-bottom:none}
+.stt-shift-name{font-size:10.5px;font-weight:700;color:#fff;margin-bottom:1px}
+.stt-shift-time{font-size:9.5px;color:rgba(255,255,255,.6);margin-bottom:2px}
+.stt-badge{display:inline-flex;align-items:center;gap:2px;font-size:9px;
+  font-weight:700;padding:1px 6px;border-radius:6px;margin-top:1px}
+.stt-badge.ok  {background:#D1FAE5;color:#065F46}
+.stt-badge.warn{background:#FEF9C3;color:#92400E}
+.stt-badge.err {background:#FEE2E2;color:#991B1B}
+.stt-badge.pend{background:#DBEAFE;color:#1E40AF}
+/* Action bar (nhỏ gọn bên trong tooltip) */
+.stt-actions{
+  display:flex;gap:4px;margin-top:6px;padding-top:6px;
+  border-top:1px solid rgba(255,255,255,.1);pointer-events:auto;
+}
+.stt-btn{
+  flex:1;padding:4px 2px;border-radius:5px;border:none;
+  font-family:'Outfit',sans-serif;font-size:9.5px;font-weight:700;
+  cursor:pointer;transition:all .15s;text-align:center;
+}
+.stt-btn:hover{opacity:.82;transform:scale(1.03)}
+.stt-btn.view{background:rgba(21,88,168,.15);color:#93C5FD}
+.stt-btn.edit{background:rgba(249,115,22,.15);color:#FDBA74}
+.stt-btn.del {background:rgba(220,38,38,.15);color:#FCA5A5}
+
+
+/* ════════════════════════════════════════════════════
+   DETAIL MODAL — overlay giống modal sửa/xóa
+   ════════════════════════════════════════════════════ */
+.detail-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:700;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s}
+.detail-overlay.open{opacity:1;pointer-events:auto}
+.detail-modal{background:var(--white);border-radius:16px;width:540px;max-width:94vw;
+  box-shadow:0 24px 70px rgba(0,0,0,.22);
+  transform:translateY(16px);transition:transform .22s;overflow:hidden}
+.detail-overlay.open .detail-modal{transform:translateY(0)}
+.sdp-header{
+  background:linear-gradient(135deg,var(--navy),var(--blue));padding:16px 22px;color:#fff;
+  display:flex;align-items:center;gap:12px;
+}
+.sdp-av{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.15);
+  display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0}
+.sdp-name{font-size:15px;font-weight:700}
+.sdp-type{font-size:11.5px;opacity:.7;margin-top:1px}
+.sdp-badge{margin-left:auto;padding:3px 10px;border-radius:14px;font-size:10.5px;font-weight:700}
+.sdp-badge.ok{background:rgba(110,231,183,.2);color:#6EE7B7}
+.sdp-badge.pend{background:rgba(147,197,253,.2);color:#93C5FD}
+.sdp-badge.err{background:rgba(252,165,165,.2);color:#FCA5A5}
+.sdp-badge.warn{background:rgba(253,224,71,.2);color:#FDE047}
+.sdp-close{margin-left:8px;width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.12);
+  border:none;color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.sdp-close:hover{background:rgba(255,255,255,.2)}
+.sdp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:16px 20px}
+.sdp-item{background:var(--surface);border-radius:8px;padding:9px 11px}
+.sdp-label{font-size:9.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.sdp-val{font-size:13px;font-weight:600;color:var(--ink)}
+/* ── Timeline ── */
+.sdp-timeline-wrap{padding:14px 20px 10px}
+.sdp-sec-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.sdp-timeline{position:relative;height:62px;background:var(--surface);border-radius:10px;overflow:visible;padding:0 4px}
+.sdp-tl-track{position:absolute;top:34px;left:0;right:0;height:3px;background:var(--border);border-radius:2px}
+.sdp-tl-seg{position:absolute;height:5px;border-radius:3px;top:33px}
+.sdp-tl-seg.morning{background:linear-gradient(90deg,#3B82F6,#60A5FA)}
+.sdp-tl-seg.afternoon{background:linear-gradient(90deg,#F97316,#FB923C)}
+.sdp-tl-seg.night{background:linear-gradient(90deg,#7C3AED,#A78BFA)}
+.sdp-tl-marker{position:absolute;top:6px;transform:translateX(-50%);text-align:center}
+.sdp-tl-time{font-size:12px;font-weight:700;color:var(--ink)}
+.sdp-tl-label{font-size:8.5px;color:var(--muted);margin-top:1px;white-space:nowrap;max-width:60px;overflow:hidden;text-overflow:ellipsis}
+.sdp-tl-dot{position:absolute;top:31px;width:11px;height:11px;border-radius:50%;border:2px solid var(--white);transform:translateX(-50%);z-index:2}
+/* ── Info chips ── */
+.sdp-info-row{display:flex;gap:6px;padding:4px 20px 12px;flex-wrap:wrap}
+.sdp-chip{display:flex;align-items:center;gap:5px;background:var(--surface);border-radius:8px;padding:7px 11px}
+.sdp-chip-icon{font-size:12px;flex-shrink:0}
+.sdp-chip-val{font-size:12.5px;font-weight:600;color:var(--ink)}
+.sdp-notes{padding:0 20px 12px}
+.sdp-notes-box{background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:9px 12px;font-size:12px;color:#78350F}
+.sdp-actions{display:flex;gap:8px;padding:0 20px 16px}
+.sdp-btn{flex:1;padding:9px;border-radius:8px;border:none;font-family:'Outfit',sans-serif;
+  font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;text-align:center}
+.sdp-btn:hover{transform:translateY(-1px)}
+.sdp-btn.edit{background:#EFF6FF;color:var(--blue);border:1.5px solid #BFDBFE}
+.sdp-btn.edit:hover{background:#DBEAFE}
+.sdp-btn.del{background:#FEF2F2;color:var(--red);border:1.5px solid #FECACA}
+.sdp-btn.del:hover{background:#FEE2E2}
+.sdp-btn.close-btn{background:var(--surface);color:var(--muted);border:1.5px solid var(--border)}
+.sdp-btn.close-btn:hover{border-color:var(--blue);color:var(--blue)}
+
+/* ── Mini hover tooltip (nhỏ gọn, chỉ hiện thông tin cơ bản) ── */
+.scard-mini-tip{
+  display:none;position:absolute;z-index:200;
+  left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);
+  background:#0B1628;color:#fff;border-radius:8px;
+  padding:7px 10px;min-width:130px;max-width:180px;
+  box-shadow:0 4px 16px rgba(0,0,0,.25);pointer-events:none;
+  font-family:'Outfit',sans-serif;text-align:center;white-space:nowrap;
+}
+.scard-mini-tip::after{
+  content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
+  border:5px solid transparent;border-top-color:#0B1628;
+}
+.staff-card:hover .scard-mini-tip{display:block}
+/* Card selected state */
+.staff-card.selected{border-color:var(--blue);box-shadow:0 0 0 2px rgba(21,88,168,.2)}
+
 .chip-wrap{position:relative;display:block}
 .chip-tooltip{
   display:none;position:absolute;z-index:200;
@@ -619,7 +799,22 @@ tbody tr{cursor:pointer}
       <c:when test="${param.msg == 'closed'}">       <div class="toast toast-ok"   id="toast">✅ Đóng ca thành công!</div></c:when>
       <c:when test="${param.msg == 'force-closed'}"> <div class="toast toast-info" id="toast">🔒 Admin đã đóng ca.</div></c:when>
       <c:when test="${param.msg == 'deleted'}">      <div class="toast toast-ok"   id="toast">🗑️ Xóa ca thành công!</div></c:when>
-      <c:when test="${param.msg == 'created'}">      <div class="toast toast-ok"   id="toast">✅ Xếp ca thành công!</div></c:when>
+      <c:when test="${param.msg == 'created'}">
+        <c:choose>
+          <c:when test="${param.count == '0' and param.skip != '0'}">
+            <div class="toast toast-warn" id="toast">⚠️ Không có ca mới — ${param.skip} ca đã tồn tại (bị bỏ qua)</div>
+          </c:when>
+          <c:when test="${param.count != '0' and param.skip != '0'}">
+            <div class="toast toast-ok" id="toast">✅ Đã xếp ${param.count} ca mới! (bỏ qua ${param.skip} ca đã tồn tại)</div>
+          </c:when>
+          <c:when test="${param.count != '0'}">
+            <div class="toast toast-ok" id="toast">✅ Xếp ${param.count} ca thành công!</div>
+          </c:when>
+          <c:otherwise>
+            <div class="toast toast-ok" id="toast">✅ Xếp ca thành công!</div>
+          </c:otherwise>
+        </c:choose>
+      </c:when>
       <c:when test="${param.msg == 'updated'}">      <div class="toast toast-ok"   id="toast">✅ Cập nhật ca thành công!</div></c:when>
       <c:when test="${param.msg == 'cancelled'}">    <div class="toast toast-info" id="toast">🚫 Đã hủy lịch ca!</div></c:when>
       <c:when test="${param.msg == 'delete-failed'}"><div class="toast toast-err"  id="toast">❌ Không thể xóa — ca đã có hóa đơn!</div></c:when>
@@ -638,6 +833,9 @@ tbody tr{cursor:pointer}
       <c:when test="${param.msg == 'type-saved'}">   <div class="toast toast-ok"   id="toast">✅ Lưu loại ca thành công!</div></c:when>
       <c:when test="${param.msg == 'type-deleted'}"> <div class="toast toast-ok"   id="toast">🗑️ Xóa loại ca thành công!</div></c:when>
       <c:when test="${param.msg == 'type-err'}">     <div class="toast toast-err"  id="toast">❌ Lỗi khi lưu loại ca!</div></c:when>
+      <c:when test="${param.msg == 'past-date'}"><div class="toast toast-err" id="toast">⛔ Không thể xếp ca cho ngày đã qua! Chỉ được xếp từ hôm nay trở đi.</div></c:when>
+      <c:when test="${param.msg == 'type-has-schedules'}"><div class="toast toast-err" id="toast">⚠️ Không thể xóa — loại ca này còn lịch ca đang dùng!</div></c:when>
+      <c:when test="${param.msg == 'type-has-schedules'}"><div class="toast toast-err" id="toast">⚠️ Không thể xóa — loại ca này còn lịch ca đang dùng!</div></c:when>
       <c:when test="${param.msg == 'sched-bulk-ok'}"><div class="toast toast-ok" id="toast">✅ Đã xếp ${param.count} lịch ca! <c:if test="${param.skip > 0}">(bỏ qua ${param.skip} trùng)</c:if></div></c:when>
       <c:when test="${param.msg == 'sched-bulk-err'}"><div class="toast toast-err" id="toast">❌ Lỗi khi xếp ca!</div></c:when>
       <c:otherwise>                                  <div class="toast toast-warn" id="toast">⚠️ Có lỗi xảy ra.</div></c:otherwise>
@@ -709,7 +907,7 @@ tbody tr{cursor:pointer}
         <span class="week-period">📅 Tuần ${weekStart} → ${weekEnd}</span>
         <a href="${pageContext.request.contextPath}/shifts?tab=list&w=${param.w != null ? param.w + 1 : 1}"  class="btn-nav">›</a>
         <a href="${pageContext.request.contextPath}/shifts?tab=list" class="btn-nav">Hôm nay</a>
-        <span class="week-sub">✕ để hủy • hover để xem chi tiết</span>
+        <span class="week-sub">click = xem chi tiết + sửa/xóa • ✕ để hủy nhanh</span>
         <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
           <button onclick="openEditSelectModal()" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:#fff;color:#1558A8;border:1.5px solid #BFDBFE;border-radius:10px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .18s" onmouseover="this.style.background='#EFF6FF'" onmouseout="this.style.background='#fff'">
             ✏️ Sửa ca
@@ -723,110 +921,215 @@ tbody tr{cursor:pointer}
         </div>
       </div>
 
-      <%-- 7-day grid --%>
+      <%-- 7-day GROUPED STAFF GRID
+           Mỗi nhân viên/ngày = 1 card compact.
+           Hover = tooltip đầy đủ tất cả ca + R/E/D actions.
+      --%>
       <div class="week-grid">
         <c:forEach begin="0" end="6" var="i">
           <c:set var="dayDate" value="${weekDays[i]}"/>
           <c:set var="isToday" value="${dayDate.equals(today)}"/>
-          <div class="day-col ${isToday ? 'today-col' : ''}">
+          <c:set var="isPastDay" value="${dayDate.isBefore(today)}"/>
+            <div class="day-col ${isToday ? 'today-col' : ''} ${isPastDay ? 'past-col' : ''}">
             <div class="day-head">
               <div class="day-name">${weekDayNames[i]}</div>
               <div class="day-date">${dayDate.dayOfMonth}</div>
               <div style="font-size:9px;color:var(--muted)">${dayDate.monthValue}/${dayDate.year}</div>
             </div>
             <div class="day-body">
-              <c:set var="hasShift" value="false"/>
-              <c:forEach var="sc" items="${schedules}">
-                <c:if test="${sc.workDate.equals(dayDate)}">
-                  <c:set var="hasShift" value="true"/>
-                  <c:set var="chipClass">
-                    <c:choose>
-                      <c:when test="${sc.startHour < 12}">chip-morning</c:when>
-                      <c:when test="${sc.startHour < 20}">chip-afternoon</c:when>
-                      <c:otherwise>chip-night</c:otherwise>
-                    </c:choose>
-                  </c:set>
-                  <div class="chip-wrap">
-                    <div class="shift-chip ${chipClass}">
-                      <div class="chip-name">${sc.staffName}</div>
-                      <div class="chip-time">${sc.shiftTypeName}</div>
-                      <div class="chip-status
-                        <c:choose>
-                          <c:when test="${sc.status=='CONFIRMED'}">st-confirmed</c:when>
-                          <c:when test="${sc.status=='ABSENT'}">st-absent</c:when>
-                          <c:when test="${sc.status=='ON_LEAVE' or sc.status=='LEAVE_PENDING'}">st-leave</c:when>
-                          <c:when test="${sc.status=='SYSTEM_CLOSED'}">st-sys-closed</c:when>
-                          <c:otherwise>st-scheduled</c:otherwise>
-                        </c:choose>
-                      ">
-                        <c:choose>
-                          <c:when test="${sc.status=='CONFIRMED'}">✅ Đúng giờ</c:when>
-                          <c:when test="${sc.status=='ABSENT'}">❌ Vắng</c:when>
-                          <c:when test="${sc.status=='ON_LEAVE'}">🏖️ Nghỉ phép</c:when>
-                          <c:when test="${sc.status=='SYSTEM_CLOSED'}">🔒 Hệ thống đóng</c:when>
-                          <c:otherwise>⏳ Chưa vào</c:otherwise>
-                        </c:choose>
+              <%
+                /* ── Group schedules theo accountId cho ngày này (Java scriptlet)
+                   Dùng LinkedHashMap giữ thứ tự insert (ca sớm nhất của mỗi NV).
+                   key = accountId, value = List<ShiftSchedule>
+                   schedules đã ORDER BY PlannedStart ASC từ DAO.               */
+                java.util.List<com.medicare.entity.ShiftSchedule> allSched =
+                    (java.util.List<com.medicare.entity.ShiftSchedule>) request.getAttribute("schedules");
+                java.time.LocalDate curDate =
+                    (java.time.LocalDate) pageContext.getAttribute("dayDate");
+
+                java.util.LinkedHashMap<Integer, java.util.List<com.medicare.entity.ShiftSchedule>> byStaff =
+                    new java.util.LinkedHashMap<>();
+
+                if (allSched != null && curDate != null) {
+                    for (com.medicare.entity.ShiftSchedule sc : allSched) {
+                        if (!curDate.equals(sc.getWorkDate())) continue;
+                        byStaff.computeIfAbsent(sc.getAccountId(),
+                            k -> new java.util.ArrayList<>()).add(sc);
+                    }
+                }
+                pageContext.setAttribute("staffGroupDay", byStaff);
+                pageContext.setAttribute("hasAnyShift", !byStaff.isEmpty());
+              %>
+
+              <c:choose>
+                <c:when test="${empty staffGroupDay}">
+                  <div class="empty-day">Trống</div>
+                </c:when>
+                <c:otherwise>
+                  <%-- Lặp qua từng nhóm NV (đã gom bởi Java scriptlet) --%>
+                  <c:forEach var="entry" items="${staffGroupDay}">
+                    <%
+                      /* Lấy list ca của NV này trong ngày — đã sắp xếp theo giờ */
+                      @SuppressWarnings("unchecked")
+                      java.util.Map.Entry<Integer,
+                        java.util.List<com.medicare.entity.ShiftSchedule>> grpEntry =
+                            (java.util.Map.Entry<Integer,
+                              java.util.List<com.medicare.entity.ShiftSchedule>>)
+                              pageContext.getAttribute("entry");
+
+                      java.util.List<com.medicare.entity.ShiftSchedule> grpList = grpEntry.getValue();
+                      com.medicare.entity.ShiftSchedule firstSc = grpList.get(0);
+                      int totalShifts = grpList.size();
+
+                      /* Avatar class theo ca đầu tiên trong ngày */
+                      String avClass = firstSc.getStartHour() < 12 ? "av-morning"
+                                     : firstSc.getStartHour() < 20 ? "av-afternoon" : "av-night";
+                      /* Initials từ staffName */
+                      String sn = firstSc.getStaffName() != null ? firstSc.getStaffName() : "?";
+                      String ini = sn.length() >= 2
+                          ? ("" + sn.charAt(0)).toUpperCase()
+                          : sn.substring(0,1).toUpperCase();
+                      /* Lấy chữ cái họ và tên — ví dụ "Le Thi Tu Van" → "LV" */
+                      String[] parts = sn.trim().split("\\s+");
+                      if (parts.length >= 2)
+                          ini = ("" + parts[0].charAt(0) + parts[parts.length-1].charAt(0)).toUpperCase();
+
+                      /* Giờ ca đầu tiên (hiển thị trên card) */
+                      String firstTime = "";
+                      if (firstSc.getPlannedStart() != null) {
+                          java.time.LocalDateTime ps = firstSc.getPlannedStart();
+                          java.time.LocalDateTime pe = firstSc.getPlannedEnd();
+                          firstTime = String.format("%02d:%02d", ps.getHour(), ps.getMinute());
+                          if (pe != null)
+                              firstTime += " → " + String.format("%02d:%02d", pe.getHour(), pe.getMinute());
+                      }
+
+                      /* Status tổng của card (worst-case: Vắng > Chưa vào > OK) */
+                      boolean anyAbsent   = grpList.stream().anyMatch(s -> "ABSENT".equals(s.getStatus()));
+                      boolean allConfirmed= grpList.stream().allMatch(s -> "CONFIRMED".equals(s.getStatus()));
+                      boolean anyScheduled= grpList.stream().anyMatch(s -> "SCHEDULED".equals(s.getStatus()) || "LEAVE_PENDING".equals(s.getStatus()));
+                      String dotClass = anyAbsent ? "st-err" : allConfirmed ? "st-ok" : anyScheduled ? "st-pend" : "st-warn";
+                      String dotLabel = anyAbsent ? "Có ca vắng"
+                                      : allConfirmed ? "Đã check-in"
+                                      : anyScheduled ? "Chưa vào" : "Đang làm";
+
+                      /* Có ca nào có thể hủy không */
+                      boolean hasCancellable = grpList.stream().anyMatch(s ->
+                          "SCHEDULED".equals(s.getStatus()) || "LEAVE_PENDING".equals(s.getStatus()));
+                      int firstCancellableId = grpList.stream()
+                          .filter(s -> "SCHEDULED".equals(s.getStatus()) || "LEAVE_PENDING".equals(s.getStatus()))
+                          .mapToInt(com.medicare.entity.ShiftSchedule::getScheduleId)
+                          .findFirst().orElse(0);
+
+                      pageContext.setAttribute("grpList",   grpList);
+                      pageContext.setAttribute("firstSc",   firstSc);
+                      pageContext.setAttribute("avClass",   avClass);
+                      pageContext.setAttribute("ini",       ini);
+                      pageContext.setAttribute("firstTime", firstTime);
+                      pageContext.setAttribute("totalShifts", totalShifts);
+                      pageContext.setAttribute("dotClass",  dotClass);
+                      pageContext.setAttribute("dotLabel",  dotLabel);
+                      pageContext.setAttribute("hasCancellable", hasCancellable);
+                      pageContext.setAttribute("firstCancelId", firstCancellableId);
+                    %>
+
+                    <%-- ── STAFF CARD ── --%>
+                    <div class="staff-card"
+                         data-sched-id="${firstSc.scheduleId}"
+                         data-staff-name="${firstSc.staffName}"
+                         data-shift-type="${firstSc.shiftTypeName}"
+                         data-shift-type-id="${firstSc.shiftTypeId}"
+                         data-status="${firstSc.status}"
+                         data-work-date="${firstSc.workDate}" data-is-past="${dayDate.isBefore(today)}"
+                         data-late-tol="${firstSc.lateToleranceMinutes}"
+                         data-notes="${firstSc.notes}"
+                         data-total="${totalShifts}"
+                         data-planned-start="${not empty firstSc.plannedStart ? fn:substring(firstSc.plannedStart.toString(),11,16) : ''}"
+                         data-planned-end="${not empty firstSc.plannedEnd ? fn:substring(firstSc.plannedEnd.toString(),11,16) : ''}"
+                         data-shifts-json='<%
+                           StringBuilder sjb = new StringBuilder("[");
+                           boolean sfirst = true;
+                           for (com.medicare.entity.ShiftSchedule ss : grpList) {
+                               if (!sfirst) sjb.append(",");
+                               sfirst = false;
+                               sjb.append("{");
+                               sjb.append("\"id\":").append(ss.getScheduleId()).append(",");
+                               sjb.append("\"type\":\"").append(ss.getShiftTypeName() != null ? ss.getShiftTypeName().replace("\"","") : "").append("\",");
+                               sjb.append("\"typeId\":").append(ss.getShiftTypeId()).append(",");
+                               sjb.append("\"status\":\"").append(ss.getStatus() != null ? ss.getStatus() : "").append("\",");
+                               sjb.append("\"late\":").append(ss.getLateToleranceMinutes()).append(",");
+                               String noteVal = ss.getNotes() != null ? ss.getNotes().replace("\"","\\\"").replace("'","") : "";
+                               sjb.append("\"notes\":\"").append(noteVal).append("\",");
+                               String ps = ss.getPlannedStart() != null ? ss.getPlannedStart().toString().substring(11,16) : "";
+                               String pe = ss.getPlannedEnd() != null ? ss.getPlannedEnd().toString().substring(11,16) : "";
+                               sjb.append("\"start\":\"").append(ps).append("\",");
+                               sjb.append("\"end\":\"").append(pe).append("\"");
+                               sjb.append("}");
+                           }
+                           sjb.append("]");
+                           out.print(sjb.toString());
+                         %>'
+                         onclick="showDetailPanel(this)">
+
+
+
+                      <%-- Header: avatar + tên + badge số ca --%>
+                      <div class="staff-card-head">
+                        <div class="scard-av ${avClass}">${ini}</div>
+                        <div class="scard-name">${firstSc.staffName}</div>
+                        <c:if test="${totalShifts > 1}">
+                          <span class="scard-count">${totalShifts} ca</span>
+                        </c:if>
                       </div>
-                      <c:if test="${sc.status=='SCHEDULED' or sc.status=='LEAVE_PENDING'}">
-                        <button class="chip-cancel"
-                          onclick="event.stopPropagation();cancelSchedule(${sc.scheduleId})">✕</button>
-                      </c:if>
-                    </div>
-                    <%-- TOOLTIP hover --%>
-                    <div class="chip-tooltip">
-                      <div class="tt-head">${sc.staffName}</div>
-                      <div class="tt-row"><span class="tt-icon">📋</span><span>${sc.shiftTypeName}</span></div>
-                      <c:if test="${not empty sc.plannedStart}">
-                        <div class="tt-row"><span class="tt-icon">🕐</span>
-                          <span><span class="tt-val">${fn:substring(sc.plannedStart.toString(),11,16)}</span>
-                          → <span class="tt-val">${fn:substring(sc.plannedEnd.toString(),11,16)}</span></span>
-                        </div>
-                      </c:if>
-                      <div class="tt-row"><span class="tt-icon">📅</span>
-                        <span>${sc.workDate.dayOfMonth}/${sc.workDate.monthValue}/${sc.workDate.year}</span>
+
+                      <%-- Tất cả ca trong ngày (compact) --%>
+                      <div class="scard-first">
+                        <c:forEach var="grpSc" items="${grpList}" varStatus="gs">
+                          <div style="display:flex;align-items:center;gap:5px;${gs.index > 0 ? 'margin-top:3px;padding-top:3px;border-top:1px dashed rgba(0,0,0,.06)' : ''}">
+                            <span style="width:6px;height:6px;border-radius:50%;flex-shrink:0;background:${grpSc.startHour < 12 ? '#3B82F6' : grpSc.startHour < 20 ? '#F97316' : '#7C3AED'}"></span>
+                            <span class="scard-first-type" style="font-size:11px">${grpSc.shiftTypeName}</span>
+                            <c:if test="${not empty grpSc.plannedStart}">
+                              <span class="scard-first-time">${fn:substring(grpSc.plannedStart.toString(),11,16)} → ${fn:substring(grpSc.plannedEnd.toString(),11,16)}</span>
+                            </c:if>
+                          </div>
+                        </c:forEach>
                       </div>
-                      <div class="tt-row"><span class="tt-icon">📌</span>
-                        <span class="tt-badge
-                          <c:choose>
-                            <c:when test="${sc.status=='CONFIRMED'}">tt-confirmed</c:when>
-                            <c:when test="${sc.status=='ABSENT'}">tt-absent</c:when>
-                            <c:when test="${sc.status=='ON_LEAVE' or sc.status=='LEAVE_PENDING'}">tt-leave</c:when>
-                            <c:when test="${sc.status=='SYSTEM_CLOSED'}">tt-sys</c:when>
-                            <c:otherwise>tt-scheduled</c:otherwise>
-                          </c:choose>
-                        ">
-                          <c:choose>
-                            <c:when test="${sc.status=='CONFIRMED'}">✅ Đã check-in</c:when>
-                            <c:when test="${sc.status=='ABSENT'}">❌ Vắng mặt</c:when>
-                            <c:when test="${sc.status=='ON_LEAVE'}">🏖️ Nghỉ phép</c:when>
-                            <c:when test="${sc.status=='LEAVE_PENDING'}">⏳ Chờ duyệt nghỉ</c:when>
-                            <c:when test="${sc.status=='SYSTEM_CLOSED'}">🔒 Hệ thống tự đóng</c:when>
-                            <c:otherwise>⏳ Chưa vào ca</c:otherwise>
-                          </c:choose>
+
+                      <%-- Status dot --%>
+                      <div class="scard-status-bar">
+                        <span class="scard-dot ${dotClass}"></span>
+                        <span class="scard-status-txt"
+                          style="color:${dotClass == 'st-ok' ? '#059669' : dotClass == 'st-err' ? '#DC2626' : dotClass == 'st-pend' ? '#1558A8' : '#D97706'}">
+                          ${dotLabel}
                         </span>
                       </div>
-                      <c:if test="${not empty sc.notes}">
-                        <div class="tt-row"><span class="tt-icon">💬</span>
-                          <span style="color:rgba(255,255,255,.6)">${fn:substring(sc.notes,0,60)}${fn:length(sc.notes)>60?'…':''}</span>
-                        </div>
-                      </c:if>
-                      <c:if test="${sc.lateToleranceMinutes > 0}">
-                        <div class="tt-row"><span class="tt-icon">⏱</span>
-                          <span>Cho phép trễ <span class="tt-val">${sc.lateToleranceMinutes}p</span></span>
-                        </div>
-                      </c:if>
-                    </div>
-                  </div>
-                </c:if>
-              </c:forEach>
-              <c:if test="${!hasShift}">
-                <div class="empty-day">Trống</div>
+
+<%-- Mini tooltip hover --%>
+                      <div class="scard-mini-tip">
+                        <div style="font-size:10.5px;font-weight:700">${firstSc.shiftTypeName}</div>
+                        <c:if test="${not empty firstSc.plannedStart}">
+                          <div style="font-size:9.5px;color:rgba(255,255,255,.65);margin-top:2px">
+                            ${fn:substring(firstSc.plannedStart.toString(),11,16)} → ${fn:substring(firstSc.plannedEnd.toString(),11,16)}
+                          </div>
+                        </c:if>
+                        <c:if test="${totalShifts > 1}">
+                          <div style="font-size:9px;color:#93C5FD;margin-top:2px">${totalShifts} ca trong ngày</div>
+                        </c:if>
+                      </div>
+
+                    </div><%-- end staff-card --%>
+                  </c:forEach>
+                </c:otherwise>
+              </c:choose>
+
+              <c:if test="${!dayDate.isBefore(today)}">
+                <a onclick="openSchedModalForDay('${dayDate}','')" class="day-add">＋ Thêm ca</a>
               </c:if>
-              <a onclick="openSchedModalForDay('${dayDate}','')" class="day-add">＋ Thêm ca</a>
             </div>
           </div>
         </c:forEach>
       </div>
+
 
       <%-- ────────────────────────── DANH SÁCH CA ────────────────────────── --%>
       <div style="display:flex;align-items:center;gap:12px;margin:24px 0 16px">
@@ -1335,7 +1638,7 @@ tbody tr{cursor:pointer}
               <c:set var="sn" value="${not empty staff.fullName ? staff.fullName : staff.username}"/>
               <c:set var="si" value="${fn:toUpperCase(fn:substring(sn,0,1))}${fn:toUpperCase(fn:substring(sn,1,2))}"/>
               <label class="sch-chip">
-                <input type="checkbox" name="accountIds" value="${staff.accountId}">
+                <input type="checkbox" name="accountId" value="${staff.accountId}">
                 <div class="sch-chip-av">${si}</div>
                 <div class="sch-chip-name">${sn}</div>
                 <div class="sch-chip-role">#${staff.accountId} • ${staff.roleId==2?'Dược sĩ':'Thủ kho'}</div>
@@ -1373,11 +1676,11 @@ tbody tr{cursor:pointer}
         <div class="mfg-row">
           <div class="mfg">
             <label>Từ ngày <span style="color:var(--red)">*</span></label>
-            <input type="date" name="fromDate" id="schedFrom" required onchange="updateSchedPreview()">
+            <input type="date" name="dateFrom" id="schedFrom" required onchange="updateSchedPreview()" min="${today}">
           </div>
           <div class="mfg">
             <label>Đến ngày</label>
-            <input type="date" name="toDate" id="schedTo" onchange="updateSchedPreview()">
+            <input type="date" name="dateTo" id="schedTo" onchange="updateSchedPreview()" min="${today}">
             <span class="field-hint">Bỏ trống = chỉ 1 ngày</span>
           </div>
         </div>
@@ -1520,12 +1823,12 @@ tbody tr{cursor:pointer}
           <div class="date-row">
             <div class="sched-fi">
               <label>Từ ngày</label>
-              <input type="date" name="dateFrom" id="fsDateFrom" required onchange="updateFullPreview()">
+              <input type="date" name="dateFrom" id="fsDateFrom" required onchange="updateFullPreview()" min="${today}">
             </div>
             <div class="date-sep">→</div>
             <div class="sched-fi">
               <label>Đến ngày</label>
-              <input type="date" name="dateTo" id="fsDateTo" onchange="updateFullPreview()">
+              <input type="date" name="dateTo" id="fsDateTo" onchange="updateFullPreview()" min="${today}">
               <span style="font-size:11px;color:var(--muted);margin-top:2px">Để trống = chỉ 1 ngày</span>
             </div>
           </div>
@@ -1731,7 +2034,7 @@ tbody tr{cursor:pointer}
               <c:forEach var="sc" items="${schedules}">
                 <c:if test="${sc.workDate.equals(dayDate)}">
                   <c:set var="hasSched" value="true"/>
-                  <c:set var="isEditable" value="${sc.status == 'SCHEDULED' or sc.status == 'LEAVE_PENDING'}"/>
+                  <c:set var="isEditable" value="${(sc.status == 'SCHEDULED' or sc.status == 'LEAVE_PENDING') and !sc.workDate.isBefore(today)}"/>
                   <c:set var="smChipClass">sm-chip <c:choose>
                     <c:when test="${sc.startHour < 12}">sm-morning</c:when>
                     <c:when test="${sc.startHour < 20}">sm-afternoon</c:when>
@@ -1860,7 +2163,7 @@ tbody tr{cursor:pointer}
               <c:forEach var="sc" items="${schedules}">
                 <c:if test="${sc.workDate.equals(dayDate)}">
                   <c:set var="hasSched2" value="true"/>
-                  <c:set var="isDeletable" value="${sc.status == 'SCHEDULED' or sc.status == 'LEAVE_PENDING' or sc.status == 'CANCELLED'}"/>
+                  <c:set var="isDeletable" value="${(sc.status == 'SCHEDULED' or sc.status == 'LEAVE_PENDING' or sc.status == 'CANCELLED') and !sc.workDate.isBefore(today)}"/>
                   <c:set var="smChipClass2">sm-chip <c:choose>
                     <c:when test="${sc.startHour < 12}">sm-morning</c:when>
                     <c:when test="${sc.startHour < 20}">sm-afternoon</c:when>
@@ -1933,6 +2236,53 @@ const SCHED_LIST = [
 ];
 </script>
 
+<%-- ══ DETAIL MODAL OVERLAY — redesigned UX ══ --%>
+<div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetailPanel()">
+  <div class="detail-modal">
+
+    <%-- ── Header ── --%>
+    <div class="sdp-header">
+      <div class="sdp-av" id="sdpAv">?</div>
+      <div style="flex:1;min-width:0">
+        <div class="sdp-name" id="sdpName">—</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap">
+          <span style="font-size:11.5px;opacity:.7" id="sdpDate">—</span>
+          <span style="font-size:10px;opacity:.4">•</span>
+          <span class="sdp-badge pend" id="sdpBadge">—</span>
+        </div>
+      </div>
+      <button class="sdp-close" onclick="closeDetailPanel()" title="Đóng">✕</button>
+    </div>
+
+    <%-- ── Timeline thời gian làm việc ── --%>
+    <div class="sdp-timeline-wrap">
+      <div class="sdp-sec-label">Thời gian làm việc</div>
+      <div class="sdp-timeline" id="sdpTimeline"></div>
+    </div>
+
+    <%-- ── Info chips (gọn, dễ scan) ── --%>
+    <div class="sdp-info-row">
+      <div class="sdp-chip" id="sdpChipId"><span class="sdp-chip-icon">#</span><span class="sdp-chip-val" id="sdpId">—</span></div>
+      <div class="sdp-chip" id="sdpChipType"><span class="sdp-chip-icon">📋</span><span class="sdp-chip-val" id="sdpShiftType">—</span></div>
+      <div class="sdp-chip" id="sdpChipLate"><span class="sdp-chip-icon">⏱</span><span class="sdp-chip-val" id="sdpLate">—</span></div>
+      <div class="sdp-chip" id="sdpChipTotal"><span class="sdp-chip-icon">📊</span><span class="sdp-chip-val" id="sdpTotal">—</span></div>
+    </div>
+
+    <%-- ── Notes ── --%>
+    <div class="sdp-notes" id="sdpNotesWrap" style="display:none">
+      <div class="sdp-notes-box" id="sdpNotes"></div>
+    </div>
+
+    <%-- ── Actions ── --%>
+    <div class="sdp-actions" id="sdpActions">
+      <button class="sdp-btn edit" id="sdpEditBtn" onclick="editFromPanel()">✏️ Sửa ca</button>
+      <button class="sdp-btn del" id="sdpDelBtn" onclick="deleteFromPanel()">🗑 Hủy ca</button>
+      <button class="sdp-btn close-btn" onclick="closeDetailPanel()">✕ Đóng</button>
+    </div>
+  </div>
+</div>
+
+
 <script>
 const ctx_path = '${pageContext.request.contextPath}';
 
@@ -1989,6 +2339,11 @@ function openSchedModal(preDate, preAccountId) {
   document.getElementById('schedModal').classList.add('open');
 }
 function openSchedModalForDay(date, accountId) {
+  const today = new Date().toISOString().split('T')[0];
+  if (date && date < today) {
+    alert('⛔ Không thể xếp ca cho ngày ' + date + ' — ngày này đã qua!');
+    return;
+  }
   openSchedModal(date, accountId);
 }
 function closeSchedModal() {
@@ -2015,6 +2370,12 @@ function submitSchedForm() {
   if (checkedStaff === 0) { alert('Vui lòng chọn ít nhất 1 nhân viên!'); return; }
   if (!checkedType) { alert('Vui lòng chọn loại ca!'); return; }
   if (!from) { alert('Vui lòng chọn ngày bắt đầu!'); return; }
+  const schedFromVal = document.getElementById('schedFrom').value; // name=dateFrom
+  const todayStr = new Date().toISOString().split('T')[0];
+  if (schedFromVal && schedFromVal < todayStr) {
+    alert('⛔ Không thể xếp ca cho ngày đã qua!');
+    return;
+  }
   document.getElementById('schedForm').submit();
 }
 document.getElementById('schedModal').addEventListener('click', function(e) {
@@ -2179,6 +2540,180 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── Hủy lịch ca từ week grid ─────────────────────────────────────────────
+
+// ════════════════════════════════════════════════════════
+//  INLINE DETAIL PANEL — click card → hiện panel chi tiết
+// ════════════════════════════════════════════════════════
+let _activeCard = null;  // card đang được chọn
+let _activeSchedId = null;
+let _activeShiftTypeId = null;
+let _activeLateTol = null;
+let _activeNotes = null;
+let _activeStaffName = null;
+let _activeWorkDate = null;
+let _activeStatus = null;
+
+function showDetailPanel(cardEl) {
+  if (_activeCard) _activeCard.classList.remove('selected');
+  if (_activeCard === cardEl) { closeDetailPanel(); return; }
+
+  _activeCard = cardEl;
+  cardEl.classList.add('selected');
+
+  // Đọc data
+  _activeSchedId     = cardEl.dataset.schedId;
+  _activeShiftTypeId = cardEl.dataset.shiftTypeId;
+  _activeLateTol     = cardEl.dataset.lateTol || '10';
+  _activeNotes       = cardEl.dataset.notes;
+  _activeStaffName   = cardEl.dataset.staffName;
+  _activeWorkDate    = cardEl.dataset.workDate;
+  _activeStatus      = cardEl.dataset.status;
+  const total        = cardEl.dataset.total;
+
+  // Parse all shifts JSON
+  let shifts = [];
+  try { shifts = JSON.parse(cardEl.dataset.shiftsJson || '[]'); } catch(e) {}
+  const firstShift = shifts[0] || {};
+
+  // Initials
+  const parts = _activeStaffName.trim().split(/\s+/);
+  const ini = parts.length >= 2
+    ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
+    : _activeStaffName.substring(0,2).toUpperCase();
+
+  // ── Header ──
+  document.getElementById('sdpAv').textContent   = ini;
+  document.getElementById('sdpName').textContent  = _activeStaffName;
+  document.getElementById('sdpDate').textContent  = formatDate(_activeWorkDate);
+
+  // Status badge
+  const badge = document.getElementById('sdpBadge');
+  const statusMap = {
+    SCHEDULED:     { cls:'pend', label:'⏳ Chưa vào' },
+    CONFIRMED:     { cls:'ok',   label:'✅ Đã check-in' },
+    ABSENT:        { cls:'err',  label:'❌ Vắng mặt' },
+    ON_LEAVE:      { cls:'warn', label:'🏖️ Nghỉ phép' },
+    LEAVE_PENDING: { cls:'warn', label:'⏳ Chờ duyệt' },
+    SYSTEM_CLOSED: { cls:'pend', label:'🔒 Đóng' },
+    CANCELLED:     { cls:'err',  label:'🚫 Đã hủy' },
+  };
+  const st = statusMap[_activeStatus] || { cls:'pend', label:_activeStatus };
+  badge.className = 'sdp-badge ' + st.cls;
+  badge.textContent = st.label;
+
+  // ── Timeline ──
+  renderTimeline(shifts);
+
+  // ── Info chips ──
+  document.getElementById('sdpId').textContent        = _activeSchedId;
+  document.getElementById('sdpShiftType').textContent  = firstShift.type || '—';
+  document.getElementById('sdpLate').textContent       = _activeLateTol + 'p trễ';
+  document.getElementById('sdpTotal').textContent      = total + ' ca/ngày';
+
+  // Notes
+  const nw = document.getElementById('sdpNotesWrap');
+  if (_activeNotes && _activeNotes !== 'null' && _activeNotes.trim()) {
+    nw.style.display = '';
+    document.getElementById('sdpNotes').textContent = '💬 ' + _activeNotes;
+  } else { nw.style.display = 'none'; }
+
+  // Actions
+  const isPast  = cardEl.dataset.isPast === 'true';
+  const canEdit = !isPast && (_activeStatus === 'SCHEDULED' || _activeStatus === 'LEAVE_PENDING');
+  document.getElementById('sdpEditBtn').style.display = canEdit ? '' : 'none';
+  document.getElementById('sdpDelBtn').style.display  = canEdit ? '' : 'none';
+
+  document.getElementById('detailOverlay').classList.add('open');
+}
+
+// ── Render timeline bar ──
+function renderTimeline(shifts) {
+  const box = document.getElementById('sdpTimeline');
+  if (!shifts.length) { box.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px">Không có dữ liệu</div>'; return; }
+
+  function toMin(t) { if (!t) return 0; const [h,m]=t.split(':').map(Number); return h*60+m; }
+  function fmtH(m)  { return String(Math.floor((m%1440)/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+  function getColor(m) { return m<720?'#3B82F6':m<1200?'#F97316':'#7C3AED'; }
+  function getCls(m)   { return m<720?'morning':m<1200?'afternoon':'night'; }
+
+  // Tính range
+  let lo=1440, hi=0;
+  shifts.forEach(s => { let a=toMin(s.start),b=toMin(s.end); if(b<=a)b+=1440; lo=Math.min(lo,a); hi=Math.max(hi,b); });
+  const pad=60, rS=Math.max(0,lo-pad), rE=Math.min(2880,hi+pad), rL=rE-rS;
+  function pct(v) { return ((v-rS)/rL*100); }
+
+  // Container padding 3% mỗi bên
+  const PL=3, PR=3;
+  function pos(v) { return (PL + pct(v)*(100-PL-PR)/100).toFixed(1); }
+
+  let h = '<div class="sdp-tl-track" style="left:'+PL+'%;right:'+PR+'%"></div>';
+
+  shifts.forEach(s => {
+    let a=toMin(s.start), b=toMin(s.end);
+    if(b<=a) b+=1440;
+    const col=getColor(a), cls=getCls(a);
+    const lp=pos(a), rp=pos(b), wp=(parseFloat(rp)-parseFloat(lp)).toFixed(1);
+
+    // Bar segment
+    h += '<div class="sdp-tl-seg '+cls+'" style="left:'+lp+'%;width:'+wp+'%"></div>';
+
+    // Start marker
+    h += '<div class="sdp-tl-marker" style="left:'+lp+'%">'
+       +   '<div class="sdp-tl-time">'+s.start+'</div>'
+       +   '<div class="sdp-tl-label">'+( s.type||'' )+'</div>'
+       + '</div>';
+    h += '<div class="sdp-tl-dot" style="left:'+lp+'%;background:'+col+'"></div>';
+
+    // End marker
+    h += '<div class="sdp-tl-marker" style="left:'+rp+'%">'
+       +   '<div class="sdp-tl-time">'+fmtH(b)+'</div>'
+       + '</div>';
+    h += '<div class="sdp-tl-dot" style="left:'+rp+'%;background:'+col+'"></div>';
+  });
+
+  box.innerHTML = h;
+}
+
+function closeDetailPanel() {
+  if (_activeCard) _activeCard.classList.remove('selected');
+  _activeCard = null;
+  document.getElementById('detailOverlay').classList.remove('open');
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  return d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
+}
+
+// ── Sửa ca: mở modal edit đã có, pre-fill cho ca đang xem ──
+function editFromPanel() {
+  if (!_activeSchedId) return;
+  // Đóng detail modal trước → mở edit modal sau (không chồng 2 modal)
+  closeDetailPanel();
+  setTimeout(function() {
+    openEditModal(
+      _activeSchedId,
+      _activeShiftTypeId,
+      document.getElementById('sdpShiftType')
+        ? document.getElementById('sdpShiftType').textContent : '',
+      _activeLateTol,
+      _activeNotes && _activeNotes !== 'null' ? _activeNotes : '',
+      _activeStaffName,
+      _activeWorkDate
+    );
+  }, 220); // đợi animation đóng xong (transition 0.2s)
+}
+
+// ── Xóa ca: đóng detail modal → confirm → POST ──
+function deleteFromPanel() {
+  if (!_activeSchedId) return;
+  closeDetailPanel();
+  setTimeout(function() {
+    cancelSchedule(parseInt(_activeSchedId));
+  }, 220);
+}
+
 function cancelSchedule(scheduleId) {
   if (confirm('Hủy lịch ca này?')) {
     // POST đến /shifts?action=cancel-schedule&id=X
@@ -2264,6 +2799,12 @@ function submitFullSched() {
   if (typeCount  === 0) { alert('Vui lòng chọn ít nhất 1 loại ca!');    return; }
   if (!fromVal)         { alert('Vui lòng chọn ngày bắt đầu!');          return; }
 
+  const fsFrom = document.getElementById('fsDateFrom').value;
+  const todayFs = new Date().toISOString().split('T')[0];
+  if (fsFrom && fsFrom < todayFs) {
+    alert('⛔ Không thể xếp ca cho ngày đã qua!');
+    return;
+  }
   document.getElementById('fullSchedForm').submit();
 }
 
@@ -2499,7 +3040,7 @@ function closeEditSelectModal() {
 }
 
 function toggleEditChip(el) {
-  if (el.dataset.editable !== 'true') return; // locked
+  if (el.dataset.editable !== 'true') return; // ca đã check-in → khóa
   const id = el.dataset.schedId;
   if (_editSelIds.has(id)) {
     _editSelIds.delete(id);
@@ -2507,6 +3048,24 @@ function toggleEditChip(el) {
   } else {
     _editSelIds.add(id);
     el.classList.add('sm-selected-edit');
+  }
+  // Pre-fill panel khi chỉ có đúng 1 ca được chọn
+  if (_editSelIds.size === 1) {
+    const selEl = document.querySelector('#editWeekGrid .sm-chip.sm-selected-edit');
+    if (selEl) {
+      const typeId  = selEl.dataset.shiftTypeId;
+      const lateTol = selEl.dataset.lateTol;
+      const notes   = selEl.dataset.notes;
+      const stSel   = document.getElementById('smEditShiftType');
+      if (typeId) stSel.value = typeId;
+      if (lateTol) document.getElementById('smEditLateTol').value = lateTol;
+      document.getElementById('smEditNotes').value = (notes && notes !== 'null') ? notes : '';
+    }
+  } else if (_editSelIds.size > 1) {
+    // Nhiều ca → reset về "giữ nguyên"
+    document.getElementById('smEditShiftType').value = '';
+    document.getElementById('smEditLateTol').value   = '';
+    document.getElementById('smEditNotes').value     = '';
   }
   updateEditSelUI();
 }
@@ -2532,7 +3091,7 @@ function updateEditSelUI() {
     hint.textContent = count + ' ca đã chọn — điều chỉnh bên dưới rồi bấm Lưu';
     btn1.classList.add('enabled');
     btn2.classList.add('enabled');
-    panel.classList.add('show');
+    panel.classList.add('open');
     // Preview
     const stSel = document.getElementById('smEditShiftType');
     const stName = stSel.options[stSel.selectedIndex]?.text || 'Giữ nguyên';

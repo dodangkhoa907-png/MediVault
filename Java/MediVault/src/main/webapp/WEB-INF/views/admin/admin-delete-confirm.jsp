@@ -14,7 +14,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Xác nhận xóa — medicare</title>
+<title>Xác nhận xóa vĩnh viễn — Medicare</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=DM+Serif+Display@400;400i&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -65,9 +65,9 @@ h2{font-family:'DM Serif Display',serif;font-size:24px;color:var(--ink);margin-b
     <div class="logo-icon">🗑️</div>
     <div class="logo-text">medicare — Xóa vĩnh viễn</div>
   </div>
-  <div class="warn-badge">⚠️ Bước 1 / 2 — Không thể hoàn tác</div>
+  <div class="warn-badge">⚠️ Thao tác không thể hoàn tác</div>
   <h2>Xác nhận xóa tài khoản</h2>
-  <p class="subtitle">Gõ <strong style="color:var(--red)">"delete"</strong> vào ô bên dưới rồi bấm tiếp tục để nhận OTP xác nhận cuối cùng.</p>
+  <p class="subtitle">Gõ <strong style="color:var(--red)">"delete"</strong> (chữ thường, không phải DELETE hay Delete) vào ô bên dưới rồi bấm xác nhận.</p>
 
   <div class="target-card">
     <div class="target-av"><%= av %></div>
@@ -78,15 +78,15 @@ h2{font-family:'DM Serif Display',serif;font-size:24px;color:var(--ink);margin-b
   </div>
 
   <form method="get" action="${pageContext.request.contextPath}/accounts" id="confirmForm">
-    <input type="hidden" name="action" value="delete-otp-page">
-    <input type="hidden" name="id" value="<%= delTarget.getAccountId() %>">
-    <label class="field-label">Nhập <strong>"delete"</strong> để tiếp tục</label>
+    <input type="hidden" name="action" value="purge-confirm">
+    <input type="hidden" name="confirmWord" id="confirmWordHidden" value="">
+    <label class="field-label">Nhập <strong>"delete"</strong> để xác nhận xóa</label>
     <input type="text" id="confirmInput" class="field-input"
            placeholder="delete" autocomplete="off" oninput="checkInput(this)">
     <div class="hint-text" id="hintText"></div>
     <div class="btn-row">
       <button type="submit" class="btn-danger" id="submitBtn" disabled>
-        Tiếp tục → Gửi OTP
+        🗑️ Xóa vĩnh viễn
       </button>
       <a href="${pageContext.request.contextPath}/accounts?action=trash" class="btn-cancel">Hủy</a>
     </div>
@@ -94,37 +94,42 @@ h2{font-family:'DM Serif Display',serif;font-size:24px;color:var(--ink);margin-b
 </div>
 <script>
 function checkInput(inp) {
-  const val = inp.value.trim().toLowerCase();
+  // So sánh EXACT: chỉ chấp nhận "delete" — không chấp nhận DELETE, Delete, dELETE...
+  const rawVal = inp.value.trim();
   const btn  = document.getElementById('submitBtn');
   const hint = document.getElementById('hintText');
-  if (!val) { hint.textContent=''; inp.style.borderColor=''; btn.disabled=true; return; }
-  if (val === 'delete') {
-    hint.innerHTML = '<span style="color:#059669">✅ Xác nhận — bấm tiếp tục để nhận OTP</span>';
+  if (!rawVal) { hint.textContent=''; inp.style.borderColor=''; btn.disabled=true; return; }
+  if (rawVal === 'delete') {
+    hint.innerHTML = '<span style="color:#059669">✅ Xác nhận — bấm Xóa vĩnh viễn để tiếp tục</span>';
     inp.style.borderColor = '#059669';
     inp.style.boxShadow   = '0 0 0 3px rgba(5,150,105,.1)';
+    document.getElementById('confirmWordHidden').value = rawVal;
     btn.disabled = false;
   } else {
-    hint.innerHTML = '<span style="color:#DC2626">❌ Phải gõ đúng chữ <strong>"delete"</strong></span>';
+    hint.innerHTML = '<span style="color:#DC2626">❌ Phải gõ đúng chữ thường <strong>"delete"</strong> (không phải DELETE hay Delete)</span>';
     inp.style.borderColor = '#DC2626';
     inp.style.boxShadow   = '0 0 0 3px rgba(220,38,38,.1)';
+    document.getElementById('confirmWordHidden').value = '';
     btn.disabled = true;
   }
 }
 let _submitted = false;
 document.getElementById('confirmForm').addEventListener('submit', function(e) {
-  const val = document.getElementById('confirmInput').value.trim().toLowerCase();
-  if (val !== 'delete') { e.preventDefault(); return; }
+  const rawVal = document.getElementById('confirmInput').value.trim();
+  // Double-check server-side sẽ reject nếu không phải "delete" exact
+  if (rawVal !== 'delete') { e.preventDefault(); return; }
   if (_submitted) { e.preventDefault(); return; }
   _submitted = true;
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;
-  btn.textContent = '⏳ Đang gửi OTP...';
+  btn.innerHTML = '⏳ Đang xử lý...';
   btn.style.opacity = '0.7';
 });
 document.getElementById('confirmInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') {
     e.preventDefault();
-    if (this.value.trim().toLowerCase() === 'delete' && !_submitted) {
+    if (this.value.trim() === 'delete' && !_submitted) {
+      document.getElementById('confirmWordHidden').value = 'delete';
       document.getElementById('confirmForm').submit();
     }
   }

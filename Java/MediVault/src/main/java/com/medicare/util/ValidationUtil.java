@@ -30,9 +30,12 @@ public class ValidationUtil {
     private static final Pattern CITIZEN_ID =
             Pattern.compile("^[0-9]{9}$|^[0-9]{12}$");
 
-    // Mật khẩu: ít nhất 6 ký tự, KHÔNG chứa khoảng trắng bất kỳ
-    private static final Pattern PASSWORD =
-            Pattern.compile("^[^\\s]{6,}$");
+    // Mật khẩu: ít nhất 8 ký tự, có chữ hoa + chữ thường + số + ký tự đặc biệt, không khoảng trắng
+    private static final Pattern PW_HAS_UPPER   = Pattern.compile("[A-Z]");
+    private static final Pattern PW_HAS_LOWER   = Pattern.compile("[a-z]");
+    private static final Pattern PW_HAS_DIGIT   = Pattern.compile("[0-9]");
+    private static final Pattern PW_HAS_SPECIAL = Pattern.compile("[^A-Za-z0-9]");
+    private static final Pattern PW_NO_SPACE    = Pattern.compile("^[^\\s]+$");
 
     // ── Public validators ────────────────────────────────────
 
@@ -51,6 +54,17 @@ public class ValidationUtil {
         return username != null && USERNAME.matcher(username.trim()).matches();
     }
 
+    /** Danh sách username cấm — không cho tạo/đổi thành các tên này */
+    private static final java.util.Set<String> RESERVED_USERNAMES = java.util.Set.of(
+            "admin", "administrator", "root", "system", "superadmin", "sysadmin",
+            "medicare", "medivault", "support", "helpdesk", "moderator"
+    );
+
+    /** Kiểm tra username có phải reserved/cấm không (case-insensitive) */
+    public static boolean isReservedUsername(String username) {
+        return username != null && RESERVED_USERNAMES.contains(username.trim().toLowerCase());
+    }
+
     /** Kiểm tra CMND/CCCD hợp lệ */
     public static boolean isValidCitizenId(String id) {
         return id == null || id.trim().isEmpty() || CITIZEN_ID.matcher(id.trim()).matches();
@@ -66,9 +80,40 @@ public class ValidationUtil {
         return s == null || s.trim().length() <= max;
     }
 
-    /** Kiểm tra mật khẩu: ít nhất 6 ký tự, không chứa khoảng trắng */
+    /** Kiểm tra mật khẩu: ít nhất 8 ký tự, có chữ hoa + thường + số + đặc biệt, không khoảng trắng */
     public static boolean isValidPassword(String pw) {
-        return pw != null && PASSWORD.matcher(pw).matches();
+        if (pw == null || pw.length() < 8) return false;
+        if (!PW_NO_SPACE.matcher(pw).matches()) return false;
+        if (!PW_HAS_UPPER.matcher(pw).find())   return false;
+        if (!PW_HAS_LOWER.matcher(pw).find())   return false;
+        if (!PW_HAS_DIGIT.matcher(pw).find())   return false;
+        if (!PW_HAS_SPECIAL.matcher(pw).find())  return false;
+        return true;
+    }
+
+    /**
+     * Trả về danh sách lỗi cụ thể cho mật khẩu (dùng hiển thị cho user).
+     * Trả về list rỗng = hợp lệ.
+     */
+    public static List<String> validatePassword(String pw) {
+        List<String> errors = new ArrayList<>();
+        if (pw == null || pw.trim().isEmpty()) {
+            errors.add("Mật khẩu không được để trống.");
+            return errors;
+        }
+        if (pw.length() < 8)
+            errors.add("Mật khẩu phải có ít nhất 8 ký tự (hiện có " + pw.length() + ").");
+        if (!PW_NO_SPACE.matcher(pw).matches())
+            errors.add("Mật khẩu không được chứa khoảng trắng.");
+        if (!PW_HAS_UPPER.matcher(pw).find())
+            errors.add("Phải có ít nhất 1 chữ cái IN HOA (A-Z).");
+        if (!PW_HAS_LOWER.matcher(pw).find())
+            errors.add("Phải có ít nhất 1 chữ cái thường (a-z).");
+        if (!PW_HAS_DIGIT.matcher(pw).find())
+            errors.add("Phải có ít nhất 1 chữ số (0-9).");
+        if (!PW_HAS_SPECIAL.matcher(pw).find())
+            errors.add("Phải có ít nhất 1 ký tự đặc biệt (!@#$%^&*...).");
+        return errors;
     }
 
     // ── Validate Account (dùng trước insert/update) ─────────

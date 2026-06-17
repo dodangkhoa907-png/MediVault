@@ -271,6 +271,7 @@ public class AuthFilter implements Filter {
         // ── 8. Trang chỉ dành cho Staff ──
         if (uri.startsWith(ctx + "/staff-dashboard")
                 || uri.equals(ctx + "/staff-profile")
+                || uri.startsWith(ctx + "/staff-notifications")
                 || uri.startsWith(ctx + "/staff-my-shifts")
                 || uri.startsWith(ctx + "/staff-checkin")
                 || (uri.startsWith(ctx + "/leave-requests")

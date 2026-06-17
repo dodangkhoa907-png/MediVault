@@ -273,4 +273,23 @@ public class ShiftScheduleDAO implements IShiftScheduleDAO {
         } catch (Exception e) { e.printStackTrace(); }
         return 0;
     }
+    // ── CHECK tồn tại theo ShiftType ──────────────────────────────────────────
+    /**
+     * Kiểm tra có ShiftSchedule nào đang dùng shiftTypeId này không.
+     * Dùng để bảo vệ khi admin muốn xóa loại ca — không xóa được nếu còn lịch ca.
+     * Không lọc theo Status vì dù CANCELLED hay COMPLETED vẫn có historical record.
+     */
+    public boolean existsByShiftTypeId(int shiftTypeId) {
+        String sql = "SELECT TOP 1 1 FROM ShiftSchedules WHERE ShiftTypeID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, shiftTypeId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return true; // an toàn: nếu lỗi DB thì chặn xóa
+        }
+    }
 }

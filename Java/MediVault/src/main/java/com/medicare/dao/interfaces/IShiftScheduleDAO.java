@@ -32,4 +32,8 @@ public interface IShiftScheduleDAO {
 
     // ── COUNT ─────────────────────────────────────────────────────
     int countAbsent(LocalDate from, LocalDate to);
+
+    // ── CHECK ─────────────────────────────────────────────────────
+    /** Kiểm tra có ShiftSchedule nào dùng shiftTypeId này không — dùng trước khi xóa ShiftType */
+    boolean existsByShiftTypeId(int shiftTypeId);
 }
