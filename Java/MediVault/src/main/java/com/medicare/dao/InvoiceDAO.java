@@ -359,8 +359,8 @@ public class InvoiceDAO implements IInvoiceDAO {
 
     @Override
     public BigDecimal sumRefundByDateRange(LocalDate from, LocalDate to) {
-        // Returns hiện chưa có luồng nghiệp vụ nào ghi dữ liệu (chưa có ReturnsServlet/DAO) →
-        // query này sẵn sàng cho tương lai, hiện tại sẽ luôn trả về 0.
+        // Từ 2026-06-19: đã có ReturnsServlet/ReturnsDAO ghi vào bảng Returns
+        // (xem TRG_ProcessReturn) → số liệu này giờ phản ánh đúng giá trị thực.
         String sql = "SELECT ISNULL(SUM(r.Quantity * id.UnitPrice), 0) " +
                 "FROM Returns r " +
                 "JOIN InvoiceDetails id ON id.InvoiceID = r.InvoiceID AND id.BatchID = r.BatchID " +

@@ -70,7 +70,6 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .section-tab:hover{background:var(--surface);color:var(--ink)}
 .section-tab.active{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;box-shadow:0 3px 10px rgba(21,88,168,.25)}
 .section-tab.disabled{cursor:not-allowed;opacity:.55;pointer-events:none}
-.soon-badge{font-size:9px;background:rgba(0,0,0,.08);padding:1px 6px;border-radius:8px;font-weight:700}
 .btn-primary{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;border:none;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .22s;box-shadow:0 4px 14px rgba(21,88,168,.25)}
 .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(21,88,168,.35)}
 .btn-trash{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--red);text-decoration:none;transition:all .18s}
@@ -167,7 +166,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 
     <div class="section-tabs">
       <a href="${pageContext.request.contextPath}/accounts" class="section-tab active">👤 Quản lý nhân viên</a>
-      <a href="#" class="section-tab disabled" title="Chưa xây — sắp ra mắt">👥 Khách hàng <span class="soon-badge">Sắp ra mắt</span></a>
+      <a href="${pageContext.request.contextPath}/customers" class="section-tab">👥 Khách hàng</a>
     </div>
 
     <%-- STATS --%>

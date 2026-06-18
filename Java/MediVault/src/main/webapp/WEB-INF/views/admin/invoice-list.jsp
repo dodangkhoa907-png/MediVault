@@ -57,7 +57,6 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .section-tab:hover{background:var(--surface);color:var(--ink)}
 .section-tab.active{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;box-shadow:0 3px 10px rgba(21,88,168,.25)}
 .section-tab.disabled{cursor:not-allowed;opacity:.55;pointer-events:none}
-.soon-badge{font-size:9px;background:rgba(0,0,0,.08);padding:1px 6px;border-radius:8px;font-weight:700}
 .table-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
 .filter-row{display:flex;gap:10px;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap}
 .filter-row input,.filter-row select{height:38px;padding:0 12px;border:1.5px solid var(--border);border-radius:9px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none}
@@ -115,7 +114,7 @@ tbody tr{cursor:pointer}
 
     <div class="section-tabs">
       <a href="${pageContext.request.contextPath}/invoices" class="section-tab active">🧾 Hóa đơn</a>
-      <a href="#" class="section-tab disabled" title="Chưa xây — sắp ra mắt">↩️ Trả hàng <span class="soon-badge">Sắp ra mắt</span></a>
+      <a href="${pageContext.request.contextPath}/returns" class="section-tab">↩️ Trả hàng</a>
     </div>
 
     <div class="table-card">

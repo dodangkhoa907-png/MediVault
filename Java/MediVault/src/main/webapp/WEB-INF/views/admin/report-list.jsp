@@ -266,7 +266,7 @@ tbody tr:hover td{background:#F7FBFF}
         </div>
         <div class="chart-card-body"><canvas id="waterfallChart"></canvas></div>
         <c:if test="${refund == 0}">
-          <div style="padding:0 18px 12px;font-size:11px;color:#7C6FAA">⚠️ Chưa có luồng xử lý "trả hàng" nên mục này hiện luôn 0đ.</div>
+          <div style="padding:0 18px 12px;font-size:11px;color:#7C6FAA">ℹ️ Chưa có phiếu trả hàng nào trong kỳ này. Tạo phiếu tại trang Trả hàng (tab trong Hóa đơn).</div>
         </c:if>
       </div>
       <div class="chart-card">

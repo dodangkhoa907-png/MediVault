@@ -17,13 +17,13 @@
                 Nhân viên & Khách hàng [Tài khoản + Khách hàng — 2 tab]) →
        Nhân sự (Ca & Lịch làm việc, Điểm danh, Bảng lương)
 
-     LƯU Ý GỘP MENU (2026-06-18): "Đơn đặt hàng", "Trả hàng", "Khách hàng"
-     không còn là mục riêng trên sidebar — vào qua tab-bar ngay trong trang
-     Kho thuốc / Hóa đơn / Tài khoản (xem .section-tabs trong medicine-list.jsp,
+     LƯU Ý GỘP MENU (2026-06-18, cập nhật 2026-06-19): "Đơn đặt hàng", "Trả hàng",
+     "Khách hàng" không còn là mục riêng trên sidebar — vào qua tab-bar ngay trong
+     trang Kho thuốc / Hóa đơn / Tài khoản (xem .section-tabs trong medicine-list.jsp,
      purchase-order-list.jsp, invoice-list.jsp, account-list.jsp). activeNav vẫn
      nhận "purchase-orders"/"returns"/"customers" để tô sáng đúng mục cha.
-     Tab "Khách hàng" và "Trả hàng" hiện disabled ("Sắp ra mắt") vì chưa có
-     CustomerServlet/ReturnsServlet — chỉ là chỗ chờ sẵn.
+     Cả 4 tab phụ (Đơn đặt hàng, Hóa đơn, Trả hàng, Khách hàng) đều đã có
+     servlet thật, không còn tab "Sắp ra mắt" nào.
 ══════════════════════════════════════════════════════════════ --%>
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>

@@ -66,7 +66,13 @@ tbody tr:last-child td{border-bottom:none}
 <div class="topbar">
   <a href="${pageContext.request.contextPath}/invoices" class="btn-back">← Hóa đơn</a>
   <span class="topbar-title">${inv.invoiceCode}</span>
-  <div class="topbar-right"><div class="user-av-sm"><%= initials %></div></div>
+  <div class="topbar-right">
+    <c:if test="${inv.status == 'COMPLETED'}">
+      <a href="${pageContext.request.contextPath}/returns?action=new&invoiceId=${inv.invoiceId}"
+         style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;background:#FFF7ED;color:#C2410C;font-size:13px;font-weight:700;text-decoration:none;margin-right:10px">↩️ Tạo phiếu trả hàng</a>
+    </c:if>
+    <div class="user-av-sm"><%= initials %></div>
+  </div>
 </div>
 
 <div class="content">

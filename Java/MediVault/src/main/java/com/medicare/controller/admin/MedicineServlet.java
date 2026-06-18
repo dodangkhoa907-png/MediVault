@@ -132,6 +132,7 @@ public class MedicineServlet extends HttpServlet {
         }
 
         req.setAttribute("batch",        b);
+        req.setAttribute("isNew",        b == null || b.getBatchId() == 0);
         req.setAttribute("medicine",     medicineDAO.findById(medicineId));
         req.setAttribute("suppliers",    supplierDAO.findAllActive());
         req.setAttribute("recentPOs",    recentPOs);

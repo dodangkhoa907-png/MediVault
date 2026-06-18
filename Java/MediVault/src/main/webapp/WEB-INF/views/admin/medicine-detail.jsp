@@ -228,6 +228,10 @@ tbody tr:hover td{background:#FAFBFF}
                     <div style="display:flex;gap:6px">
                       <a href="${pageContext.request.contextPath}/medicines?action=edit-batch&id=${b.batchId}"
                          class="btn-sm btn-edit">✏️</a>
+                      <c:if test="${b.currentQuantity > 0}">
+                        <a href="${pageContext.request.contextPath}/returns?action=new&batchId=${b.batchId}"
+                           class="btn-sm" style="background:#FFF7ED;color:#C2410C" title="Hủy/thu hồi lô này (hết hạn, lỗi...)">🗑️ Hủy</a>
+                      </c:if>
                       <c:if test="${b.currentQuantity == 0}">
                         <form method="post" action="${pageContext.request.contextPath}/medicines" style="display:inline"
                               onsubmit="return confirm('Xóa lô ${b.batchNumber}?')">
