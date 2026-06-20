@@ -154,7 +154,7 @@ body{display:flex}
             </div>
             <div class="fg">
               <label>Ngày làm</label>
-              <input type="date" name="dateFrom" value="${today}" required>
+              <input type="date" name="dateFrom" value="${today}" required min="${today}">
               <small>Để xếp nhiều ngày, dùng nút "Xếp ca mới"</small>
             </div>
           </div>

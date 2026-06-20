@@ -208,6 +208,17 @@ public class ShiftScheduleServlet extends HttpServlet {
             LocalDate from = LocalDate.parse(dateFromStr);
             LocalDate to   = (dateToStr != null && !dateToStr.isEmpty())
                     ? LocalDate.parse(dateToStr) : from;
+
+            // ── Xử lý ngày quá khứ thông minh ──
+            LocalDate today = LocalDate.now();
+            if (to.isBefore(today)) {
+                resp.sendRedirect(req.getContextPath()
+                        + "/shift-schedules?action=new&msg=past-date"); return;
+            }
+            if (from.isBefore(today)) {
+                from = today; // Bỏ qua ngày quá khứ, tạo từ hôm nay
+            }
+
             for (String accIdStr : accountIds) {
                 int accId = Integer.parseInt(accIdStr);
                 for (String stIdStr : shiftTypeIds) {

@@ -16,7 +16,9 @@ public class Attendance {
     private Double actualHours;
     private double overtimeHours;
     private boolean isAutoClose;
-    private String attendanceStatus; // NEW — tổng hợp tình trạng
+    private String attendanceStatus;
+    private java.math.BigDecimal penaltyAmount;  // Số tiền phạt (0 nếu chưa xử lý)
+    private java.math.BigDecimal handoverCash;   // Tiền bàn giao két khi check-out // NEW — tổng hợp tình trạng
 
     // ── Join fields ──
     private String staffName;
@@ -29,7 +31,12 @@ public class Attendance {
     public boolean isLate()        { return lateMinutes > 0; }
     public boolean isEarlyLeave()  { return earlyLeaveMinutes > 0; }
     public boolean isOvertime()    { return overtimeHours > 0; }
-    public boolean isOnTime()      { return "ON_TIME".equals(attendanceStatus); }
+    public boolean isOnTime()           { return "ON_TIME".equals(attendanceStatus); }
+    public boolean isLateUnexcused()    { return "LATE_UNEXCUSED".equals(attendanceStatus); }
+    public boolean isSystemClosed()     { return "SYSTEM_CLOSED".equals(attendanceStatus); }
+    public boolean isAbsent()           { return "ABSENT".equals(attendanceStatus); }
+    public boolean isForceCheckout()    { return "FORCE_CHECKOUT".equals(attendanceStatus); }
+    public boolean isPendingReview()    { return isLateUnexcused() || isSystemClosed(); }
 
     /** Label hiển thị cho badge */
     public String getStatusLabel() {
@@ -43,8 +50,11 @@ public class Attendance {
             case "LATE_EARLY"    -> "Trễ & Về sớm";
             case "OVERTIME"      -> "Tăng ca +" + String.format("%.1f",overtimeHours) + "h";
             case "NO_SCHEDULE"   -> "Ca tự do";
-            case "FORCE_CHECKOUT"-> "Admin đóng";
-            default              -> attendanceStatus;
+            case "FORCE_CHECKOUT"  -> "Admin đóng";
+            case "LATE_UNEXCUSED"  -> "Trễ chờ duyệt";
+            case "SYSTEM_CLOSED"   -> "Hệ thống tự đóng";
+            case "ABSENT"          -> "Vắng mặt";
+            default                -> attendanceStatus;
         };
     }
 
@@ -58,8 +68,11 @@ public class Attendance {
             case "LATE_EARLY"    -> "badge-late-early";
             case "OVERTIME"      -> "badge-overtime";
             case "NO_SCHEDULE"   -> "badge-free";
-            case "FORCE_CHECKOUT"-> "badge-force";
-            default              -> "badge-default";
+            case "FORCE_CHECKOUT"  -> "badge-force";
+            case "LATE_UNEXCUSED"  -> "badge-unexcused";
+            case "SYSTEM_CLOSED"   -> "badge-system-closed";
+            case "ABSENT"          -> "badge-absent";
+            default                -> "badge-default";
         };
     }
 
@@ -71,9 +84,12 @@ public class Attendance {
             case "LATE","LATE_EARLY" -> "#D97706"; // amber
             case "EARLY_LEAVE"   -> "#7C3AED"; // purple
             case "OVERTIME"      -> "#1558A8"; // blue
-            case "FORCE_CHECKOUT"-> "#DC2626"; // red
-            case "NO_SCHEDULE"   -> "#64748B"; // slate
-            default              -> "#059669";
+            case "FORCE_CHECKOUT"  -> "#DC2626"; // red
+            case "LATE_UNEXCUSED"  -> "#D97706"; // amber
+            case "SYSTEM_CLOSED"   -> "#6366F1"; // indigo — chờ xử lý
+            case "ABSENT"          -> "#DC2626"; // red
+            case "NO_SCHEDULE"     -> "#64748B"; // slate
+            default                -> "#059669";
         };
     }
 
@@ -112,4 +128,8 @@ public class Attendance {
     public void setShiftTypeName(String v)        { this.shiftTypeName = v; }
     public LocalDateTime getPlannedEnd()          { return plannedEnd; }
     public void setPlannedEnd(LocalDateTime v)    { this.plannedEnd = v; }
+    public java.math.BigDecimal getPenaltyAmount()              { return penaltyAmount; }
+    public void setPenaltyAmount(java.math.BigDecimal v)        { this.penaltyAmount = v; }
+    public java.math.BigDecimal getHandoverCash()               { return handoverCash; }
+    public void setHandoverCash(java.math.BigDecimal v)         { this.handoverCash = v; }
 }

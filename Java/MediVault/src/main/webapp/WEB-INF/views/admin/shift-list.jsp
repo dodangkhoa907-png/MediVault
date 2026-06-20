@@ -1,6 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <% String activeNav = "shifts"; %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="c"   uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%@ taglib prefix="fn"  uri="jakarta.tags.functions" %>
 <%
@@ -10,15 +10,14 @@
     String initials = fullName.length() >= 2
         ? fullName.substring(0,1).toUpperCase() + fullName.substring(1,2).toUpperCase()
         : fullName.toUpperCase();
-    String msg = request.getParameter("msg");
-    String activeTab = request.getParameter("tab") != null ? request.getParameter("tab") : "schedule";
+    String activeTab = request.getParameter("tab") != null ? request.getParameter("tab") : "list";
 %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Ca làm việc — medicare</title>
+<title>Ca làm việc — MediVault</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -27,13 +26,9 @@
   --ink:#0B1628;--navy:#0F2645;--blue:#1558A8;--cyan:#3ABDE0;
   --surface:#F1F5FB;--white:#fff;--muted:#7A90B0;--border:#D5E0F0;
   --green:#059669;--red:#DC2626;--gold:#D97706;--amber:#F59E0B;
-  --purple:#7C3AED;--pink:#DB2777;
-  /* Ca màu sắc */
-  --ca-long:#7C3AED;    /* Ca dài/gãy ≥10h — tím */
-  --ca-std:#1558A8;     /* Ca tiêu chuẩn 8h — xanh */
-  --ca-part:#059669;    /* Part-time ≤6h — xanh lá */
-  --ca-open:#D97706;    /* Đang làm — cam */
-  --ca-absent:#DC2626;  /* Vắng — đỏ */
+  --purple:#7C3AED;
+  --ca-long:#7C3AED;--ca-std:#1558A8;--ca-part:#059669;
+  --ca-open:#D97706;--ca-absent:#DC2626;--ca-leave:#6366F1;
   --sidebar:232px;--radius:14px;
 }
 html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--surface);color:var(--ink)}
@@ -60,10 +55,8 @@ body{display:flex}
 .logout-btn{margin-left:auto;width:28px;height:28px;flex-shrink:0;border-radius:8px;background:rgba(220,38,38,.12);border:none;display:flex;align-items:center;justify-content:center;color:rgba(220,38,38,.7);font-size:13px;cursor:pointer;text-decoration:none;transition:all .18s}
 .logout-btn:hover{background:rgba(220,38,38,.2);color:#DC2626}
 
-/* ── MAIN ── */
+/* ── MAIN LAYOUT ── */
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0}
-
-/* ── TOPBAR ── */
 .topbar{height:60px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50;flex-shrink:0}
 .topbar-left{display:flex;align-items:center;gap:10px}
 .topbar-icon{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,rgba(21,88,168,.12),rgba(58,189,224,.12));display:flex;align-items:center;justify-content:center;font-size:15px}
@@ -77,8 +70,6 @@ body{display:flex}
 .topbar-user:hover{border-color:var(--cyan)}
 .topbar-av{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff}
 .topbar-name{font-size:12.5px;font-weight:600;color:var(--navy)}
-
-/* ── CONTENT ── */
 .content{padding:22px 26px;flex:1;min-width:0}
 
 /* ── KPI STRIP ── */
@@ -90,151 +81,134 @@ body{display:flex}
 .kpi-amber{background:#FFFBEB}.kpi-purple{background:#F5F3FF}
 .kpi-num{font-size:24px;font-weight:900;line-height:1}
 .kpi-lbl{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
-.kpi-sub{font-size:11px;color:var(--muted);margin-top:2px}
 
 /* ── TABS ── */
 .tab-bar{display:flex;gap:2px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:20px;width:fit-content}
 .tab-btn{padding:8px 20px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .18s;display:flex;align-items:center;gap:6px}
 .tab-btn:hover{color:var(--ink);background:var(--surface)}
 .tab-btn.active{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;box-shadow:0 3px 10px rgba(21,88,168,.25)}
-
-/* ── TAB CONTENT ── */
 .tab-pane{display:none}
 .tab-pane.active{display:block}
 
-/* ── SCHEDULE TAB: Timeline ── */
-.schedule-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.schedule-nav{display:flex;align-items:center;gap:8px}
-.nav-arrow{width:32px;height:32px;border-radius:8px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--muted);transition:all .18s;text-decoration:none}
-.nav-arrow:hover{border-color:var(--blue);color:var(--blue)}
-.nav-period{font-size:14px;font-weight:700;color:var(--ink);padding:0 8px}
-.btn-today{padding:6px 14px;border-radius:8px;border:1.5px solid var(--border);background:var(--white);font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .18s;text-decoration:none}
-.btn-today:hover{border-color:var(--blue);color:var(--blue)}
+/* ── TOAST ── */
+.toast{position:fixed;top:18px;right:22px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:700;color:#fff;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 4px 18px rgba(0,0,0,.15);animation:slideIn .3s ease}
+.toast-ok{background:var(--green)}.toast-err{background:var(--red)}.toast-warn{background:var(--gold)}.toast-info{background:var(--blue)}
+@keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
 
-/* View toggle week/month */
-.view-toggle{display:flex;gap:2px;background:var(--surface);border-radius:8px;padding:3px}
-.vt-btn{padding:5px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .15s}
-.vt-btn.active{background:var(--white);color:var(--blue);box-shadow:0 2px 6px rgba(0,0,0,.08)}
-
-/* ── WEEK VIEW ── */
-.week-grid{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-.week-header{display:grid;grid-template-columns:64px repeat(7,1fr);border-bottom:1px solid var(--border)}
-.week-hcol{padding:10px 8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center;border-right:1px solid var(--border)}
-.week-hcol:last-child{border-right:none}
-.week-hcol.today-col{background:linear-gradient(135deg,rgba(21,88,168,.06),rgba(58,189,224,.06))}
-.week-hcol .day-num{font-size:18px;font-weight:900;color:var(--ink);display:block;line-height:1;margin-top:3px}
-.week-hcol.today-col .day-num{color:var(--blue)}
-.week-body{display:grid;grid-template-columns:64px repeat(7,1fr)}
-.time-col{border-right:1px solid var(--border)}
-.time-slot{height:52px;border-bottom:1px solid #F1F5F9;display:flex;align-items:flex-start;padding:4px 8px;font-size:10px;font-weight:600;color:var(--muted)}
-.day-col{border-right:1px solid var(--border);position:relative;min-height:624px}
-.day-col:last-child{border-right:none}
-.day-col.today-col{background:rgba(21,88,168,.02)}
-
-/* Shift block */
-.shift-block{
-  position:absolute;left:4px;right:4px;
-  border-radius:8px;padding:5px 8px;
-  font-size:11px;font-weight:700;
-  cursor:pointer;transition:all .18s;
-  overflow:hidden;border:1.5px solid transparent;
-}
-.shift-block:hover{opacity:.85;transform:scaleY(1.01)}
-.shift-block.ca-long{background:linear-gradient(135deg,rgba(124,58,237,.15),rgba(124,58,237,.08));border-color:rgba(124,58,237,.3);color:#5B21B6}
-.shift-block.ca-std{background:linear-gradient(135deg,rgba(21,88,168,.15),rgba(58,189,224,.08));border-color:rgba(21,88,168,.25);color:#1558A8}
-.shift-block.ca-part{background:linear-gradient(135deg,rgba(5,150,105,.15),rgba(16,185,129,.08));border-color:rgba(5,150,105,.25);color:#065F46}
-.shift-block.ca-open{background:linear-gradient(135deg,rgba(217,119,6,.18),rgba(245,158,11,.08));border-color:rgba(217,119,6,.3);color:#92400E;animation:pulse-border 2s infinite}
-.shift-block.ca-absent{background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.2);color:#991B1B}
-.shift-block.ca-leave{background:rgba(99,102,241,.08);border-color:rgba(99,102,241,.2);color:#3730A3}
-
-@keyframes pulse-border{
-  0%,100%{border-color:rgba(217,119,6,.3)}
-  50%{border-color:rgba(217,119,6,.7)}
-}
-
-.sb-name{font-size:10.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sb-time{font-size:9.5px;font-weight:500;opacity:.8;margin-top:1px}
-.sb-cash{font-size:9.5px;margin-top:2px;opacity:.7}
-
-/* Add shift button on day */
-.add-shift-btn{
-  position:absolute;bottom:6px;left:50%;transform:translateX(-50%);
-  width:24px;height:24px;border-radius:50%;
-  background:var(--blue);color:#fff;
-  border:none;font-size:14px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  opacity:0;transition:opacity .18s;
-  text-decoration:none;box-shadow:0 2px 8px rgba(21,88,168,.3)
-}
-.day-col:hover .add-shift-btn{opacity:1}
-
-/* Legend */
-.legend{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+/* ── LEGEND & NAV ── */
+.legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .leg-item{display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--muted)}
-.leg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.view-toggle{display:flex;background:#F1F5FB;border-radius:8px;padding:3px;gap:2px}
+.vt-btn{padding:5px 14px;border-radius:6px;border:none;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);transition:all .18s}
+.vt-btn.active{background:#fff;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.nav-arrow{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;background:var(--surface);border:1px solid var(--border);font-size:15px;color:var(--muted);cursor:pointer;transition:all .15s;text-decoration:none}
+.nav-arrow:hover{background:var(--border);color:var(--ink)}
+.btn-today{padding:5px 12px;border-radius:7px;background:var(--surface);border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;text-decoration:none}
+.btn-today:hover{background:var(--border)}
+.nav-period{font-size:14px;font-weight:700;color:var(--ink);min-width:110px;text-align:center}
 
-/* ── MONTH VIEW ── */
-.month-grid{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-.month-weekdays{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--border)}
-.mw-head{padding:10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center;border-right:1px solid var(--border)}
-.mw-head:last-child{border-right:none}
-.month-body{display:grid;grid-template-columns:repeat(7,1fr)}
-.month-cell{min-height:90px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:6px;cursor:pointer;transition:background .12s;position:relative}
-.month-cell:hover{background:#F7FBFF}
-.month-cell:nth-child(7n){border-right:none}
-.month-cell.other-month{background:#FAFBFC}
-.month-cell.today-cell{background:linear-gradient(135deg,rgba(21,88,168,.04),rgba(58,189,224,.04))}
-.mc-day{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px}
-.mc-day.today-num{width:22px;height:22px;background:var(--blue);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px}
-.mc-shift{font-size:10px;font-weight:700;border-radius:4px;padding:2px 5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
-.mc-shift.ca-long{background:rgba(124,58,237,.12);color:#5B21B6}
-.mc-shift.ca-std{background:rgba(21,88,168,.12);color:#1558A8}
-.mc-shift.ca-part{background:rgba(5,150,105,.12);color:#065F46}
-.mc-shift.ca-open{background:rgba(217,119,6,.12);color:#92400E}
-.mc-shift.ca-absent{background:rgba(220,38,38,.08);color:#991B1B}
-.mc-more{font-size:10px;color:var(--muted);font-weight:600;padding:1px 4px}
-.mc-add{position:absolute;top:5px;right:5px;width:18px;height:18px;border-radius:4px;background:var(--blue);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;text-decoration:none}
-.month-cell:hover .mc-add{opacity:1}
+/* ── CHART ── */
+.chart-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
+.chart-card-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.chart-card-head h3{font-size:15px;font-weight:700;color:var(--ink)}
+.chart-sub{font-size:12px;color:var(--muted);margin-top:2px;display:block}
+.chart-legend{padding:10px 20px;display:flex;gap:16px;border-top:1px solid var(--border)}
+.chart-legend span{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px}
 
-/* ── SHIFTS LIST TAB ── */
-.list-layout{display:grid;grid-template-columns:1fr 1.5fr;gap:14px;margin-bottom:20px;align-items:start}
-.open-panel{background:var(--white);border:1.5px solid #BFDBFE;border-radius:var(--radius);overflow:hidden}
-.open-panel-head{background:linear-gradient(135deg,#EFF6FF,#F0FDF4);padding:12px 18px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #DBEAFE}
-.open-panel-head h3{font-size:13px;font-weight:800;color:#1558A8}
-.open-panel-body{padding:14px 18px}
-.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
-.fg label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.fg select,.fg input[type=number]{border:1.5px solid var(--border);border-radius:8px;padding:8px 11px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;transition:border .18s;width:100%}
-.fg select:focus,.fg input:focus{border-color:var(--blue);background:#fff}
-.btn-open{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 0;background:linear-gradient(135deg,#10B981,#059669);color:#fff;border:none;border-radius:9px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;width:100%;box-shadow:0 3px 10px rgba(5,150,105,.25);transition:all .18s}
-.btn-open:hover{opacity:.9;transform:translateY(-1px)}
+/* ─────────────────────────────────────────────────────────
+   DOT CALENDAR — Mỗi nhân viên 1 hàng, dots theo ngày
+   ───────────────────────────────────────────────────────── */
+.sched-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
 
-.filter-panel{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-.filter-panel-head{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
-.filter-panel-head h3{font-size:13px;font-weight:800;color:var(--ink)}
-.filter-body{padding:14px 18px}
-.filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.fi{display:flex;flex-direction:column;gap:4px}
-.fi label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.fi input,.fi select{border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'Outfit',sans-serif;font-size:12.5px;color:var(--ink);background:var(--surface);outline:none;transition:border .18s}
-.fi input:focus,.fi select:focus{border-color:var(--blue);background:#fff}
-.filter-actions{display:flex;gap:8px;margin-top:12px}
-.btn-filter{flex:1;padding:8px 0;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:background .18s}
-.btn-filter:hover{background:#0D3F85}
-.btn-reset{padding:8px 14px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;transition:all .18s}
-.btn-reset:hover{border-color:var(--red);color:var(--red)}
+/* Header strip */
+.sched-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
 
-/* Table */
+/* Grid: [label 140px] + [7 cols equal] */
+.dc-grid{min-width:680px;overflow-x:auto}
+.dc-head-row{display:grid;grid-template-columns:140px repeat(7,1fr);border-bottom:1px solid var(--border)}
+.dc-head-label{padding:10px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.dc-head-day{padding:10px 8px;text-align:center;font-size:10px;font-weight:700;color:var(--muted);border-left:1px solid var(--border)}
+.dc-head-day .dn{font-size:17px;font-weight:900;color:var(--ink);display:block;line-height:1.1;margin-top:2px}
+.dc-head-day.today-hd{background:rgba(21,88,168,.04)}
+.dc-head-day.today-hd .dn{color:var(--blue)}
+
+/* Staff row */
+.dc-row{display:grid;grid-template-columns:140px repeat(7,1fr);border-bottom:0.5px solid #EEF2F8;min-height:52px;align-items:center}
+.dc-row:last-child{border-bottom:none}
+.dc-row:hover{background:#FAFCFF}
+
+/* Staff label cell */
+.dc-staff-cell{padding:8px 14px;display:flex;align-items:center;gap:8px}
+.dc-av{width:30px;height:30px;border-radius:8px;flex-shrink:0;background:linear-gradient(135deg,#1558A8,#4F81D9);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.dc-staff-name{font-size:12.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:88px}
+.dc-staff-role{font-size:10px;color:var(--muted)}
+
+/* Day cell với dots */
+.dc-day-cell{padding:6px 4px;border-left:1px solid var(--border);min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;position:relative}
+.dc-day-cell.today-dc{background:rgba(21,88,168,.03)}
+.dc-day-cell.empty-dc{color:var(--muted);font-size:10px}
+
+/* Dot chính */
+.dc-dot{
+  width:28px;height:28px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:800;cursor:pointer;
+  position:relative;transition:transform .15s,box-shadow .15s;
+  text-decoration:none;color:inherit;
+}
+.dc-dot:hover{transform:scale(1.15);box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:5}
+.dc-dot.dot-std{background:rgba(21,88,168,.12);color:#1558A8;border:1.5px solid rgba(21,88,168,.2)}
+.dc-dot.dot-long{background:rgba(124,58,237,.12);color:#7C3AED;border:1.5px solid rgba(124,58,237,.2)}
+.dc-dot.dot-part{background:rgba(5,150,105,.12);color:#059669;border:1.5px solid rgba(5,150,105,.2)}
+.dc-dot.dot-open{background:rgba(217,119,6,.15);color:#D97706;border:1.5px solid rgba(217,119,6,.3);animation:pulse-dot 2s infinite}
+.dc-dot.dot-absent{background:rgba(220,38,38,.1);color:#DC2626;border:1.5px solid rgba(220,38,38,.2)}
+.dc-dot.dot-leave{background:rgba(99,102,241,.1);color:#6366F1;border:1.5px solid rgba(99,102,241,.2)}
+@keyframes pulse-dot{0%,100%{border-color:rgba(217,119,6,.3)}50%{border-color:rgba(217,119,6,.7)}}
+
+/* Tooltip khi hover dot */
+.dc-dot-wrap{position:relative;display:inline-block}
+.dc-tooltip{
+  display:none;position:absolute;z-index:300;
+  bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:#0B1628;color:#fff;border-radius:10px;
+  padding:10px 14px;min-width:190px;max-width:230px;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);pointer-events:none;
+  font-family:'Outfit',sans-serif;
+}
+.dc-tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#0B1628}
+.dc-dot-wrap:hover .dc-tooltip{display:block}
+.tt-name{font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid rgba(255,255,255,.15)}
+.tt-row{font-size:11.5px;color:rgba(255,255,255,.8);padding:2px 0;display:flex;align-items:center;gap:5px}
+
+/* Add dot button on empty cell */
+.dc-add-btn{
+  width:26px;height:26px;border-radius:7px;
+  background:transparent;border:1.5px dashed var(--border);
+  color:var(--muted);font-size:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:all .15s;text-decoration:none;
+}
+.dc-day-cell:hover .dc-add-btn{opacity:1}
+.dc-day-cell:hover .dc-add-btn:hover{background:var(--blue);border-color:var(--blue);color:#fff}
+
+/* Empty state row */
+.dc-empty{padding:32px;text-align:center;color:var(--muted);font-size:13px;grid-column:1/-1}
+
+/* ─────────────────────────────────────────────────────────
+   TABLE: Danh sách ca
+   ───────────────────────────────────────────────────────── */
 .table-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-.table-card-head{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.table-card-head{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
 .table-card-head h2{font-size:14px;font-weight:800;color:var(--ink)}
 .table-card-sub{font-size:12px;color:var(--muted)}
 .tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
 thead th{padding:10px 16px;background:#F8FAFC;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);text-align:left;white-space:nowrap;border-bottom:1px solid var(--border)}
-tbody td{padding:12px 16px;font-size:13px;color:var(--ink);border-bottom:1px solid #F1F5F9;vertical-align:middle}
+tbody td{padding:11px 16px;font-size:13px;color:var(--ink);border-bottom:1px solid #F1F5F9;vertical-align:middle}
 tbody tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:#F7FBFF}
+tbody tr{cursor:pointer}
 .staff-cell{display:flex;align-items:center;gap:9px}
 .staff-av{width:30px;height:30px;border-radius:8px;flex-shrink:0;background:linear-gradient(135deg,#1558A8,#4F81D9);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
 .staff-name{font-weight:700;color:var(--ink);font-size:13px}
@@ -244,34 +218,38 @@ tbody tr:hover td{background:#F7FBFF}
 .dur-active{color:var(--green);font-weight:700;font-size:12.5px;display:flex;align-items:center;gap:4px}
 .cash-val{font-size:12.5px;font-weight:700;color:var(--ink)}
 .cash-empty{color:var(--muted)}
-
-/* Status badges */
 .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:700;white-space:nowrap}
 .badge-open{background:#ECFDF5;color:var(--green)}
 .badge-closed{background:#F1F5F9;color:#64748B}
 .badge-force{background:#FFF7ED;color:var(--gold)}
-.badge-absent{background:#FEF2F2;color:var(--red)}
-.badge-late{background:#FFFBEB;color:var(--amber)}
-
-/* Action buttons */
 .btn-detail{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;background:#EFF6FF;color:var(--blue);border:1.5px solid #BFDBFE;border-radius:7px;font-size:12px;font-weight:700;text-decoration:none;transition:all .18s;cursor:pointer}
 .btn-detail:hover{background:#DBEAFE}
-.btn-close-shift{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;background:#FFFBEB;color:var(--gold);border:1.5px solid #FDE68A;border-radius:7px;font-size:12px;font-weight:700;text-decoration:none;transition:all .18s;cursor:pointer}
+.btn-close-shift{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;background:#FFFBEB;color:var(--gold);border:1.5px solid #FDE68A;border-radius:7px;font-size:12px;font-weight:700;text-decoration:none;transition:all .18s}
 .btn-close-shift:hover{background:#FEF3C7}
 .btn-del{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:7px;background:#FEF2F2;border:1.5px solid #FECACA;color:var(--red);font-size:13px;cursor:pointer;text-decoration:none;transition:all .18s}
 .btn-del:hover{background:#FEE2E2}
+
+/* ── FILTER PANEL (compact, inline) ── */
+.filter-row{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:14px 20px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius)}
+.fi{display:flex;flex-direction:column;gap:4px;min-width:120px}
+.fi label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.fi input,.fi select{border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'Outfit',sans-serif;font-size:12.5px;color:var(--ink);background:var(--surface);outline:none;transition:border .18s;height:36px}
+.fi input:focus,.fi select:focus{border-color:var(--blue);background:#fff}
+.btn-filter{padding:7px 18px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;height:36px;transition:background .18s}
+.btn-filter:hover{background:#0D3F85}
+.btn-reset{padding:7px 14px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;height:36px;transition:all .18s}
+.btn-reset:hover{border-color:var(--red);color:var(--red)}
 
 /* ── SHIFT TYPES TAB ── */
 .types-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .types-header h2{font-size:16px;font-weight:800;color:var(--ink)}
 .btn-add-type{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;border:none;border-radius:9px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;box-shadow:0 3px 10px rgba(21,88,168,.2);transition:all .18s}
 .btn-add-type:hover{opacity:.9;transform:translateY(-1px)}
-
-.types-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.types-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
 .type-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:box-shadow .2s,transform .18s}
 .type-card:hover{box-shadow:0 6px 24px rgba(21,88,168,.1);transform:translateY(-2px)}
 .type-card-head{padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
-.type-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.type-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
 .type-name{font-size:14px;font-weight:800;color:var(--ink);flex:1}
 .type-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
 .type-active{background:#ECFDF5;color:var(--green)}
@@ -289,46 +267,547 @@ tbody tr:hover td{background:#F7FBFF}
 .btn-toggle-type:hover{border-color:var(--amber);color:var(--gold)}
 .btn-del-type{padding:7px 12px;background:#FEF2F2;color:var(--red);border:1.5px solid #FECACA;border-radius:8px;font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;transition:all .18s}
 .btn-del-type:hover{background:#FEE2E2}
+.empty-state{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty-state .es-icon{font-size:40px;margin-bottom:12px;display:block}
+.empty-state h3{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.empty-state p{font-size:13px}
 
-/* ── MODAL ── */
-.modal-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+/* ── MODAL (dùng cho cả ShiftType + Quick-schedule) ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:400;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
 .modal-overlay.open{opacity:1;pointer-events:auto}
-.modal{background:var(--white);border-radius:16px;width:480px;max-width:92vw;box-shadow:0 24px 80px rgba(0,0,0,.2);transform:translateY(20px);transition:transform .22s}
+.modal{background:var(--white);border-radius:16px;width:520px;max-width:94vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.2);transform:translateY(20px);transition:transform .22s}
 .modal-overlay.open .modal{transform:translateY(0)}
-.modal-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--white);z-index:1}
 .modal-title{font-size:15px;font-weight:800;color:var(--ink)}
 .modal-close{width:28px;height:28px;border-radius:7px;border:none;background:var(--surface);color:var(--muted);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
 .modal-close:hover{background:#FEE2E2;color:var(--red)}
 .modal-body{padding:22px}
 .mfg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
 .mfg label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.mfg input,.mfg select{border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-family:'Outfit',sans-serif;font-size:13.5px;color:var(--ink);background:var(--surface);outline:none;transition:border .18s;width:100%}
-.mfg input:focus,.mfg select:focus{border-color:var(--blue);background:#fff}
+.mfg input,.mfg select,.mfg textarea{border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-family:'Outfit',sans-serif;font-size:13.5px;color:var(--ink);background:var(--surface);outline:none;transition:border .18s;width:100%}
+.mfg input:focus,.mfg select:focus,.mfg textarea:focus{border-color:var(--blue);background:#fff}
 .mfg-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .modal-foot{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
-.btn-cancel{padding:8px 18px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s}
-.btn-cancel:hover{border-color:var(--muted)}
-.btn-save{padding:8px 22px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(21,88,168,.2);transition:all .18s}
-.btn-save:hover{opacity:.9}
+.btn-cancel-m{padding:8px 18px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s}
+.btn-cancel-m:hover{border-color:var(--muted)}
+.btn-save-m{padding:8px 22px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(21,88,168,.2);transition:all .18s}
+.btn-save-m:hover{opacity:.9}
 .field-hint{font-size:11px;color:var(--muted);margin-top:3px}
 .field-err{font-size:11px;color:var(--red);margin-top:3px;display:none}
 
-/* Toast */
-.toast{position:fixed;top:18px;right:22px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:700;color:#fff;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 4px 18px rgba(0,0,0,.15);animation:slideIn .3s ease}
-.toast-ok{background:var(--green)}.toast-err{background:var(--red)}.toast-warn{background:var(--gold)}.toast-info{background:var(--blue)}
-@keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+/* Staff chips in quick-schedule modal */
+.staff-chips-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.sch-chip{border:1.5px solid var(--border);border-radius:10px;padding:8px 10px;cursor:pointer;transition:all .18s;position:relative}
+.sch-chip:has(input:checked){border-color:var(--blue);background:#EFF6FF}
+.sch-chip input{position:absolute;opacity:0;width:0;height:0}
+.sch-chip-av{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#1558A8,#4F81D9);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;margin-bottom:4px}
+.sch-chip-name{font-size:12px;font-weight:700;color:var(--ink)}
+.sch-chip-role{font-size:10px;color:var(--muted)}
+/* ShiftType cards in modal */
+.stype-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.stype-card{border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .18s;position:relative;text-align:center}
+.stype-card:has(input:checked){border-color:var(--blue);background:#EFF6FF}
+.stype-card input{position:absolute;opacity:0;width:0;height:0}
+.stype-name{font-size:12.5px;font-weight:700;color:var(--ink);margin-top:4px}
+.stype-time{font-size:11px;color:var(--muted);margin-top:2px}
+.stype-rate{font-size:11px;color:var(--green);font-weight:700;margin-top:3px}
+.dur-preview{font-size:12px;color:var(--muted);padding:8px 12px;background:var(--surface);border-radius:8px;margin-top:-6px;margin-bottom:14px}
+.dur-warn{font-size:12px;font-weight:700;color:#991B1B;background:#FEF2F2;border:1.5px solid #FECACA;
+  border-radius:8px;padding:10px 12px;margin-top:-6px;margin-bottom:14px;line-height:1.5}
 
-/* ── WEEK BODY SIMPLE ────────────────────────── */
-.week-body-simple{display:grid;grid-template-columns:repeat(7,1fr);gap:0}
-.day-col-simple{border-right:1px solid var(--border);padding:6px;min-height:200px;position:relative;display:flex;flex-direction:column;gap:4px}
-.day-col-simple:last-child{border-right:none}
-.day-col-simple.today-col{background:rgba(21,88,168,.02)}
+/* ── MODAL XẾP CA ĐẦY ĐỦ ── */
+.sched-overlay{position:fixed;inset:0;background:rgba(11,22,40,.55);z-index:600;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s}
+.sched-overlay.open{opacity:1;pointer-events:auto}
+.sched-modal{background:var(--white);border-radius:18px;width:640px;max-width:95vw;max-height:88vh;overflow-y:auto;box-shadow:0 28px 80px rgba(0,0,0,.22);transform:translateY(20px);transition:transform .24s;display:flex;flex-direction:column}
+.sched-overlay.open .sched-modal{transform:translateY(0)}
+.sched-modal-head{padding:18px 24px 14px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--white);z-index:1;border-radius:18px 18px 0 0}
+.sched-modal-title{font-size:16px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:8px}
+.sched-modal-close{width:28px;height:28px;border-radius:8px;border:none;background:var(--surface);color:var(--muted);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.sched-modal-close:hover{background:#FEE2E2;color:var(--red)}
+.sched-modal-body{padding:20px 24px;flex:1}
+.sched-section{margin-bottom:20px}
+.sched-section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+/* Staff chips */
+.staff-chips-wrap{display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:var(--surface);border-radius:10px;border:1.5px solid var(--border);min-height:50px}
+.sc-chip{display:flex;align-items:center;gap:7px;padding:6px 12px;background:var(--white);border:1.5px solid var(--border);border-radius:20px;font-size:12.5px;cursor:pointer;transition:all .18s;user-select:none}
+.sc-chip input[type=checkbox]{accent-color:var(--blue);width:13px;height:13px}
+.sc-chip:has(input:checked){background:#EFF6FF;border-color:var(--blue)}
+.sc-chip-name{font-weight:600;color:var(--ink)}
+.sc-chip-role{font-size:10px;color:var(--muted)}
+.sc-all-btn{font-size:11.5px;color:var(--blue);font-weight:600;cursor:pointer;background:none;border:none;padding:0;margin-bottom:6px}
+/* ShiftType cards — dạng checkbox multi-select */
+.stype-cards-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.stc{border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer;transition:all .18s;position:relative;text-align:center;user-select:none}
+.stc:has(input:checked){border-color:var(--blue);background:#EFF6FF}
+.stc input{position:absolute;opacity:0;width:0;height:0}
+.stc-icon{font-size:22px;margin-bottom:5px}
+.stc-name{font-size:12.5px;font-weight:700;color:var(--ink)}
+.stc-time{font-size:10.5px;color:var(--muted);margin-top:2px}
+.stc-rate{font-size:11px;color:var(--green);font-weight:700;margin-top:4px}
+/* Ngày */
+.date-row{display:grid;grid-template-columns:1fr 28px 1fr;gap:8px;align-items:center}
+.date-sep{text-align:center;font-weight:700;color:var(--muted);font-size:15px}
+.sched-fi{display:flex;flex-direction:column;gap:4px}
+.sched-fi label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.sched-fi input,.sched-fi textarea{border:1.5px solid var(--border);border-radius:9px;padding:8px 11px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;transition:border .18s;width:100%}
+.sched-fi input:focus,.sched-fi textarea:focus{border-color:var(--blue);background:#fff}
+/* Preview box */
+.sched-preview{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 14px;font-size:12.5px;color:var(--muted);display:none;margin-top:10px}
+.sched-preview strong{color:var(--ink)}
+.sched-preview .sched-preview-count{font-size:15px;font-weight:800;color:var(--blue)}
+/* Footer */
+.sched-modal-foot{padding:14px 24px;border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;bottom:0;background:var(--white);border-radius:0 0 18px 18px}
+.btn-sched-cancel{padding:8px 18px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s}
+.btn-sched-cancel:hover{border-color:var(--red);color:var(--red)}
+.btn-sched-submit{padding:8px 26px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 12px rgba(21,88,168,.25);transition:all .18s}
+.btn-sched-submit:hover{opacity:.9;transform:translateY(-1px)}
 
-/* Empty state */
-.empty-state{text-align:center;padding:48px 20px;color:var(--muted)}
-.empty-state .es-icon{font-size:40px;margin-bottom:12px;display:block}
-.empty-state h3{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:6px}
-.empty-state p{font-size:13px}
+/* ── WEEK GRID CSS (bị thiếu) ── */
+.week-nav-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.week-period{font-size:15px;font-weight:800;color:var(--ink)}
+.week-sub{font-size:12px;color:var(--muted)}
+.btn-nav{padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--white);font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;text-decoration:none;transition:all .18s;display:inline-flex;align-items:center}
+.btn-nav:hover{border-color:var(--blue);color:var(--blue)}
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:20px}
+.day-col{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:visible;min-height:80px}
+.day-col.today-col{border-color:var(--blue);box-shadow:0 0 0 2px rgba(21,88,168,.1)}
+.day-col.past-col{opacity:.55}
+.day-col.past-col .day-head{background:var(--surface)}
+.day-head{padding:10px 8px;border-bottom:1px solid var(--border);text-align:center}
+.day-name{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.day-date{font-size:20px;font-weight:900;color:var(--ink);margin-top:1px;line-height:1}
+.day-col.today-col .day-date{color:var(--blue)}
+.day-body{padding:7px}
+.shift-chip{padding:6px 8px;border-radius:8px;margin-bottom:5px;font-size:11.5px;cursor:pointer;transition:opacity .15s;position:relative}
+.shift-chip:hover{opacity:.82}
+.chip-morning{background:#EFF6FF;border:1px solid #BFDBFE}
+.chip-afternoon{background:#FFF7ED;border:1px solid #FED7AA}
+.chip-night{background:#F5F3FF;border:1px solid #DDD6FE}
+.chip-name{font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;max-width:100%}
+.chip-time{font-size:10px;color:var(--muted);margin-top:1px}
+.chip-status{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;margin-top:3px;padding:1px 6px;border-radius:10px}
+.st-scheduled{background:#DBEAFE;color:#1E40AF}
+.st-confirmed{background:#D1FAE5;color:#065F46}
+.st-absent{background:#FEE2E2;color:#991B1B}
+.st-leave{background:#FEF3C7;color:#92400E}
+.st-sys-closed{background:#EEF2FF;color:#4338CA}
+.chip-cancel{position:absolute;top:3px;right:3px;width:15px;height:15px;border-radius:50%;background:rgba(220,38,38,.1);border:none;color:var(--red);font-size:9px;cursor:pointer;display:none;align-items:center;justify-content:center;line-height:1}
+.shift-chip:hover .chip-cancel{display:flex}
+.day-add{display:flex;align-items:center;justify-content:center;padding:7px;color:var(--muted);font-size:11px;border:1.5px dashed var(--border);border-radius:8px;cursor:pointer;transition:all .18s;margin-top:4px;background:transparent;width:100%;box-sizing:border-box}
+.day-add:hover{border-color:var(--blue);color:var(--blue);background:#EFF6FF}
+.empty-day{color:var(--muted);font-size:11px;text-align:center;padding:18px 0}
+/* Quick form */
+.quick-form-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px}
+.quick-form-card h3{font-size:13px;font-weight:800;color:var(--ink);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.qf-grid{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:flex-end}
+.qfi{display:flex;flex-direction:column;gap:4px}
+.qfi label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.qfi select,.qfi input{border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;height:36px;width:100%}
+.qfi select:focus,.qfi input:focus{border-color:var(--blue);background:#fff}
+.btn-qf-submit{padding:7px 20px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;height:36px;white-space:nowrap;transition:background .18s}
+.btn-qf-submit:hover{background:#0D3F85}
+/* Modal search staff */
+.staff-search-wrap{position:relative;margin-bottom:8px}
+.staff-search-input{width:100%;border:1.5px solid var(--border);border-radius:9px;padding:8px 12px 8px 36px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;transition:border .18s;box-sizing:border-box}
+.staff-search-input:focus{border-color:var(--blue);background:#fff}
+.staff-search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;pointer-events:none}
+.staff-chips-wrap{display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:var(--surface);border-radius:10px;border:1.5px solid var(--border);min-height:50px;max-height:180px;overflow-y:auto}
+.sc-chip{display:flex;align-items:center;gap:7px;padding:6px 12px;background:var(--white);border:1.5px solid var(--border);border-radius:20px;font-size:12.5px;cursor:pointer;transition:all .18s;user-select:none}
+.sc-chip.hidden{display:none}
+.sc-chip input[type=checkbox]{accent-color:var(--blue);width:13px;height:13px;flex-shrink:0}
+.sc-chip:has(input:checked){background:#EFF6FF;border-color:var(--blue)}
+.sc-chip-name{font-weight:600;color:var(--ink)}
+.sc-chip-role{font-size:10px;color:var(--muted)}
+.sc-all-btn{font-size:12px;color:var(--blue);font-weight:600;cursor:pointer;background:none;border:none;padding:0;margin-bottom:6px;display:inline-flex;align-items:center;gap:4px}
+
+/* ── CHIP TOOLTIP (hover info đầy đủ) ── */
+
+/* ════════════════════════════════════════════════════
+   GROUPED STAFF CARD — week calendar (new design)
+   Mỗi nhân viên/ngày = 1 card gom tất cả ca
+   ════════════════════════════════════════════════════ */
+.staff-card{
+  background:var(--white);border:1px solid var(--border);border-radius:10px;
+  margin-bottom:6px;cursor:pointer;transition:box-shadow .18s,border-color .18s;
+  position:relative;overflow:visible;
+}
+.staff-card:hover{border-color:#93C5FD;box-shadow:0 3px 14px rgba(21,88,168,.13)}
+.staff-card-head{
+  display:flex;align-items:center;gap:7px;padding:7px 9px 5px;
+}
+.scard-av{
+  width:26px;height:26px;border-radius:7px;flex-shrink:0;font-size:10px;
+  font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;
+}
+.scard-av.av-morning  {background:linear-gradient(135deg,#3B82F6,#1D4ED8)}
+.scard-av.av-afternoon{background:linear-gradient(135deg,#F97316,#C2410C)}
+.scard-av.av-night    {background:linear-gradient(135deg,#7C3AED,#4C1D95)}
+.scard-name{font-size:11.5px;font-weight:700;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 60px)}
+.scard-count{margin-left:auto;flex-shrink:0;font-size:9.5px;font-weight:700;
+  padding:2px 6px;border-radius:10px;background:#EFF6FF;color:#1558A8}
+.scard-first{padding:0 9px 6px;font-size:10px;color:var(--muted);line-height:1.3}
+.scard-first-type{font-weight:600;color:var(--ink);font-size:11px}
+.scard-first-time{font-size:10px;color:var(--muted)}
+.scard-status-bar{
+  margin:0 9px 7px;display:flex;align-items:center;gap:4px;flex-wrap:wrap
+}
+.scard-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.scard-dot.st-ok   {background:#059669}
+.scard-dot.st-warn {background:#F59E0B}
+.scard-dot.st-err  {background:#DC2626}
+.scard-dot.st-pend {background:#93C5FD}
+.scard-status-txt{font-size:10px;font-weight:600}
+/* Cancel X button hiện khi hover */
+.scard-cancel-btn{
+  position:absolute;top:5px;right:5px;width:16px;height:16px;border-radius:50%;
+  background:rgba(220,38,38,.1);border:none;color:var(--red);font-size:9px;
+  cursor:pointer;display:none;align-items:center;justify-content:center;line-height:1;
+  z-index:10;
+}
+.staff-card:hover .scard-cancel-btn{display:flex}
+
+/* ── Tooltip popup (hover) ── */
+.scard-tooltip{
+  display:none;position:absolute;z-index:500;
+  left:calc(100% + 8px);top:-4px;
+  background:#0B1628;color:#fff;border-radius:10px;
+  padding:10px 12px;min-width:180px;max-width:220px;
+  box-shadow:0 6px 24px rgba(0,0,0,.3);
+  pointer-events:auto;
+  font-family:'Outfit',sans-serif;
+}
+/* Nếu cột cuối → hiện bên trái */
+.day-col:nth-child(6) .scard-tooltip,
+.day-col:nth-child(7) .scard-tooltip{
+  left:auto;right:calc(100% + 10px);
+}
+.scard-tooltip::before{
+  content:'';position:absolute;top:12px;left:-5px;
+  border:5px solid transparent;border-right-color:#0B1628;border-left:none;
+}
+.day-col:nth-child(6) .scard-tooltip::before,
+.day-col:nth-child(7) .scard-tooltip::before{
+  left:auto;right:-5px;
+  border-right:none;border-left-color:#0B1628;
+}
+/* tooltip đã thay bằng inline detail panel */
+.stt-name{font-size:11.5px;font-weight:700;color:#fff;margin-bottom:5px;
+  padding-bottom:5px;border-bottom:1px solid rgba(255,255,255,.12)}
+.stt-shift{padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.stt-shift:last-child{border-bottom:none}
+.stt-shift-name{font-size:10.5px;font-weight:700;color:#fff;margin-bottom:1px}
+.stt-shift-time{font-size:9.5px;color:rgba(255,255,255,.6);margin-bottom:2px}
+.stt-badge{display:inline-flex;align-items:center;gap:2px;font-size:9px;
+  font-weight:700;padding:1px 6px;border-radius:6px;margin-top:1px}
+.stt-badge.ok  {background:#D1FAE5;color:#065F46}
+.stt-badge.warn{background:#FEF9C3;color:#92400E}
+.stt-badge.err {background:#FEE2E2;color:#991B1B}
+.stt-badge.pend{background:#DBEAFE;color:#1E40AF}
+/* Action bar (nhỏ gọn bên trong tooltip) */
+.stt-actions{
+  display:flex;gap:4px;margin-top:6px;padding-top:6px;
+  border-top:1px solid rgba(255,255,255,.1);pointer-events:auto;
+}
+.stt-btn{
+  flex:1;padding:4px 2px;border-radius:5px;border:none;
+  font-family:'Outfit',sans-serif;font-size:9.5px;font-weight:700;
+  cursor:pointer;transition:all .15s;text-align:center;
+}
+.stt-btn:hover{opacity:.82;transform:scale(1.03)}
+.stt-btn.view{background:rgba(21,88,168,.15);color:#93C5FD}
+.stt-btn.edit{background:rgba(249,115,22,.15);color:#FDBA74}
+.stt-btn.del {background:rgba(220,38,38,.15);color:#FCA5A5}
+
+
+/* ════════════════════════════════════════════════════
+   DETAIL MODAL — overlay giống modal sửa/xóa
+   ════════════════════════════════════════════════════ */
+.detail-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:700;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s}
+.detail-overlay.open{opacity:1;pointer-events:auto}
+.detail-modal{background:var(--white);border-radius:16px;width:540px;max-width:94vw;
+  box-shadow:0 24px 70px rgba(0,0,0,.22);
+  transform:translateY(16px);transition:transform .22s;overflow:hidden}
+.detail-overlay.open .detail-modal{transform:translateY(0)}
+.sdp-header{
+  background:linear-gradient(135deg,var(--navy),var(--blue));padding:16px 22px;color:#fff;
+  display:flex;align-items:center;gap:12px;
+}
+.sdp-av{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.15);
+  display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0}
+.sdp-name{font-size:15px;font-weight:700}
+.sdp-type{font-size:11.5px;opacity:.7;margin-top:1px}
+.sdp-badge{margin-left:auto;padding:3px 10px;border-radius:14px;font-size:10.5px;font-weight:700}
+.sdp-badge.ok{background:rgba(110,231,183,.2);color:#6EE7B7}
+.sdp-badge.pend{background:rgba(147,197,253,.2);color:#93C5FD}
+.sdp-badge.err{background:rgba(252,165,165,.2);color:#FCA5A5}
+.sdp-badge.warn{background:rgba(253,224,71,.2);color:#FDE047}
+.sdp-close{margin-left:8px;width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.12);
+  border:none;color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.sdp-close:hover{background:rgba(255,255,255,.2)}
+.sdp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:16px 20px}
+.sdp-item{background:var(--surface);border-radius:8px;padding:9px 11px}
+.sdp-label{font-size:9.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.sdp-val{font-size:13px;font-weight:600;color:var(--ink)}
+/* ── Timeline ── */
+.sdp-timeline-wrap{padding:14px 20px 10px}
+.sdp-sec-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.sdp-timeline{position:relative;height:62px;background:var(--surface);border-radius:10px;overflow:visible;padding:0 4px}
+.sdp-tl-track{position:absolute;top:34px;left:0;right:0;height:3px;background:var(--border);border-radius:2px}
+.sdp-tl-seg{position:absolute;height:5px;border-radius:3px;top:33px}
+.sdp-tl-seg.morning{background:linear-gradient(90deg,#3B82F6,#60A5FA)}
+.sdp-tl-seg.afternoon{background:linear-gradient(90deg,#F97316,#FB923C)}
+.sdp-tl-seg.night{background:linear-gradient(90deg,#7C3AED,#A78BFA)}
+.sdp-tl-marker{position:absolute;top:6px;transform:translateX(-50%);text-align:center}
+.sdp-tl-time{font-size:12px;font-weight:700;color:var(--ink)}
+.sdp-tl-label{font-size:8.5px;color:var(--muted);margin-top:1px;white-space:nowrap;max-width:60px;overflow:hidden;text-overflow:ellipsis}
+.sdp-tl-dot{position:absolute;top:31px;width:11px;height:11px;border-radius:50%;border:2px solid var(--white);transform:translateX(-50%);z-index:2}
+/* ── Info chips ── */
+.sdp-info-row{display:flex;gap:6px;padding:4px 20px 12px;flex-wrap:wrap}
+.sdp-chip{display:flex;align-items:center;gap:5px;background:var(--surface);border-radius:8px;padding:7px 11px}
+.sdp-chip-icon{font-size:12px;flex-shrink:0}
+.sdp-chip-val{font-size:12.5px;font-weight:600;color:var(--ink)}
+.sdp-notes{padding:0 20px 12px}
+.sdp-notes-box{background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:9px 12px;font-size:12px;color:#78350F}
+.sdp-actions{display:flex;gap:8px;padding:0 20px 16px}
+.sdp-btn{flex:1;padding:9px;border-radius:8px;border:none;font-family:'Outfit',sans-serif;
+  font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;text-align:center}
+.sdp-btn:hover{transform:translateY(-1px)}
+.sdp-btn.edit{background:#EFF6FF;color:var(--blue);border:1.5px solid #BFDBFE}
+.sdp-btn.edit:hover{background:#DBEAFE}
+.sdp-btn.del{background:#FEF2F2;color:var(--red);border:1.5px solid #FECACA}
+.sdp-btn.del:hover{background:#FEE2E2}
+.sdp-btn.close-btn{background:var(--surface);color:var(--muted);border:1.5px solid var(--border)}
+.sdp-btn.close-btn:hover{border-color:var(--blue);color:var(--blue)}
+
+/* ── Mini hover tooltip (nhỏ gọn, chỉ hiện thông tin cơ bản) ── */
+.scard-mini-tip{
+  display:none;position:absolute;z-index:200;
+  left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);
+  background:#0B1628;color:#fff;border-radius:8px;
+  padding:7px 10px;min-width:130px;max-width:180px;
+  box-shadow:0 4px 16px rgba(0,0,0,.25);pointer-events:none;
+  font-family:'Outfit',sans-serif;text-align:center;white-space:nowrap;
+}
+.scard-mini-tip::after{
+  content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
+  border:5px solid transparent;border-top-color:#0B1628;
+}
+.staff-card:hover .scard-mini-tip{display:block}
+/* Card selected state */
+.staff-card.selected{border-color:var(--blue);box-shadow:0 0 0 2px rgba(21,88,168,.2)}
+
+.chip-wrap{position:relative;display:block}
+.chip-tooltip{
+  display:none;position:absolute;z-index:200;
+  bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:#0B1628;color:#fff;border-radius:12px;
+  padding:12px 16px;min-width:210px;max-width:260px;
+  box-shadow:0 8px 28px rgba(0,0,0,.3);pointer-events:none;
+  font-family:'Outfit',sans-serif;
+}
+.chip-tooltip::after{
+  content:'';position:absolute;top:100%;left:50%;
+  transform:translateX(-50%);
+  border:7px solid transparent;border-top-color:#0B1628
+}
+/* Mở rộng chiều cao cột để tooltip không bị clip */
+.day-body{overflow:visible!important}
+.week-grid{overflow:visible!important}
+.day-col{overflow:visible!important}
+.chip-wrap:hover .chip-tooltip{display:block}
+.chip-wrap:hover .shift-chip{opacity:.9}
+.tt-head{font-size:13px;font-weight:800;color:#fff;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid rgba(255,255,255,.15)}
+.tt-row{font-size:12px;color:rgba(255,255,255,.8);padding:3px 0;display:flex;align-items:flex-start;gap:7px;line-height:1.4}
+.tt-icon{flex-shrink:0;width:14px;text-align:center}
+.tt-val{color:#fff;font-weight:500}
+.tt-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700}
+.tt-scheduled{background:#1E40AF;color:#DBEAFE}
+.tt-confirmed{background:#065F46;color:#D1FAE5}
+.tt-absent{background:#991B1B;color:#FEE2E2}
+.tt-leave{background:#92400E;color:#FEF3C7}
+.tt-sys{background:#4338CA;color:#EEF2FF}
+
+/* ── CHIP ACTION BUTTONS (edit/delete) ── */
+.chip-actions{display:flex;gap:4px;margin-top:5px}
+.chip-btn{display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:3px 8px;border-radius:6px;font-size:10.5px;font-weight:700;cursor:pointer;border:none;font-family:'Outfit',sans-serif;transition:all .15s;white-space:nowrap}
+.chip-btn-edit{background:#EFF6FF;color:#1558A8}
+.chip-btn-edit:hover{background:#DBEAFE}
+.chip-btn-del{background:#FEF2F2;color:#DC2626}
+.chip-btn-del:hover{background:#FEE2E2}
+.chip-btn-add-next{background:#ECFDF5;color:#059669}
+.chip-btn-add-next:hover{background:#D1FAE5}
+/* Chip đang active (CONFIRMED) — không edit được */
+.chip-active-note{font-size:10px;color:#059669;font-weight:600;margin-top:4px;padding:2px 6px;background:#ECFDF5;border-radius:5px;display:inline-block}
+/* Edit modal */
+.edit-modal-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:700;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.edit-modal-overlay.open{opacity:1;pointer-events:auto}
+.edit-modal{background:var(--white);border-radius:16px;width:480px;max-width:94vw;box-shadow:0 24px 70px rgba(0,0,0,.22);transform:translateY(16px);transition:transform .22s}
+.edit-modal-overlay.open .edit-modal{transform:translateY(0)}
+.em-head{padding:16px 20px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.em-title{font-size:14px;font-weight:800;color:var(--ink)}
+.em-close{width:26px;height:26px;border-radius:7px;border:none;background:var(--surface);color:var(--muted);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.em-close:hover{background:#FEE2E2;color:var(--red)}
+.em-body{padding:18px 20px}
+.em-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.em-fg{display:flex;flex-direction:column;gap:4px}
+.em-fg.full{grid-column:1/-1}
+.em-fg label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.em-fg select,.em-fg input,.em-fg textarea{border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;width:100%;transition:border .18s}
+.em-fg select:focus,.em-fg input:focus,.em-fg textarea:focus{border-color:var(--blue);background:#fff}
+.em-foot{padding:12px 20px;border-top:0.5px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.em-cancel{padding:7px 16px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+.em-submit{padding:7px 20px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+/* Delete modal */
+.del-modal-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:700;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.del-modal-overlay.open{opacity:1;pointer-events:auto}
+.del-modal{background:var(--white);border-radius:16px;width:560px;max-width:94vw;max-height:85vh;overflow-y:auto;box-shadow:0 24px 70px rgba(0,0,0,.22);transform:translateY(16px);transition:transform .22s}
+.del-modal-overlay.open .del-modal{transform:translateY(0)}
+.dm-head{padding:16px 20px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--white);z-index:1}
+.dm-title{font-size:14px;font-weight:800;color:var(--ink)}
+.dm-close{width:26px;height:26px;border-radius:7px;border:none;background:var(--surface);color:var(--muted);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.dm-close:hover{background:#FEE2E2;color:var(--red)}
+.dm-body{padding:16px 20px}
+.dm-staff-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border-radius:10px;margin-bottom:14px}
+.dm-staff-av{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#1558A8,#4F81D9);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0}
+.dm-date-row{display:grid;grid-template-columns:1fr 24px 1fr;gap:8px;align-items:center;margin-bottom:12px}
+.dm-sep{text-align:center;color:var(--muted);font-weight:700}
+.dm-fg{display:flex;flex-direction:column;gap:4px}
+.dm-fg label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.dm-fg input,.dm-fg select{border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;width:100%}
+.dm-preview{margin-top:10px;padding:10px 14px;background:var(--surface);border-radius:9px;font-size:12.5px;color:var(--muted);display:none}
+.dm-preview strong{color:var(--ink)}
+.dm-list{max-height:200px;overflow-y:auto;border:0.5px solid var(--border);border-radius:9px;margin-top:10px}
+.dm-item{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:0.5px solid var(--border);font-size:12.5px}
+.dm-item:last-child{border-bottom:none}
+.dm-item-check{accent-color:var(--red)}
+.dm-item-info{flex:1;margin-left:8px}
+.dm-item-name{font-weight:600;color:var(--ink)}
+.dm-item-meta{font-size:11px;color:var(--muted)}
+.dm-foot{padding:12px 20px;border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;bottom:0;background:var(--white)}
+.dm-cancel{padding:7px 16px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+.dm-confirm{padding:7px 20px;background:#DC2626;color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.dm-count{font-size:12px;color:var(--muted)}
+
+/* ── SELECT MODE (edit/delete checkbox overlay) ── */
+.sel-chip-wrap{position:relative}
+.sel-chip-check{position:absolute;top:6px;left:6px;width:18px;height:18px;
+  accent-color:var(--blue);cursor:pointer;z-index:10;display:none}
+.sel-chip-check.del-mode{accent-color:#DC2626}
+.select-mode-active .sel-chip-check{display:block}
+.shift-chip.chip-selected{outline:2.5px solid var(--blue);outline-offset:1px}
+.shift-chip.chip-selected-del{outline:2.5px solid #DC2626;outline-offset:1px}
+/* Modal chọn ca (edit/delete) — dùng lại sched-overlay CSS */
+.selmode-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:700;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s}
+.selmode-overlay.open{opacity:1;pointer-events:auto}
+.selmode-modal{background:var(--white);border-radius:18px;width:900px;max-width:96vw;
+  max-height:90vh;overflow-y:auto;box-shadow:0 28px 80px rgba(0,0,0,.25);
+  transform:translateY(18px);transition:transform .24s;display:flex;flex-direction:column}
+.selmode-overlay.open .selmode-modal{transform:translateY(0)}
+.sm-head{padding:16px 22px;border-bottom:0.5px solid var(--border);display:flex;
+  align-items:center;justify-content:space-between;position:sticky;top:0;
+  background:var(--white);z-index:2;border-radius:18px 18px 0 0;gap:12px}
+.sm-title{font-size:15px;font-weight:800;color:var(--ink);flex-shrink:0}
+.sm-selected-badge{background:#EFF6FF;color:#1558A8;padding:3px 12px;border-radius:20px;
+  font-size:12px;font-weight:700;display:none}
+.sm-selected-badge.del-badge{background:#FEF2F2;color:#DC2626}
+.sm-selected-badge.show{display:inline-block}
+.sm-close{width:28px;height:28px;border-radius:8px;border:none;background:var(--surface);
+  color:var(--muted);font-size:14px;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0}
+.sm-close:hover{background:#FEE2E2;color:var(--red)}
+.sm-instructions{padding:10px 22px;background:#F8FAFC;border-bottom:0.5px solid var(--border);
+  font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.sm-body{padding:16px 22px;flex:1}
+/* Grid trong modal select — nhỏ hơn, 7 cột */
+.sm-week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:0}
+.sm-day-col{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  overflow:visible;min-height:80px}
+.sm-day-col.sm-today{border-color:var(--blue)}
+.sm-day-head{padding:7px 6px;border-bottom:0.5px solid var(--border);text-align:center}
+.sm-day-name{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase}
+.sm-day-date{font-size:16px;font-weight:900;color:var(--ink);line-height:1}
+.sm-today .sm-day-date{color:var(--blue)}
+.sm-day-body{padding:5px}
+.sm-chip{padding:6px 8px;border-radius:7px;margin-bottom:4px;font-size:11px;
+  cursor:pointer;transition:all .15s;position:relative;border:2px solid transparent;
+  user-select:none}
+.sm-chip:hover{opacity:.85}
+.sm-chip.sm-morning{background:#EFF6FF}
+.sm-chip.sm-afternoon{background:#FFF7ED}
+.sm-chip.sm-night{background:#F5F3FF}
+.sm-chip.sm-selected-edit{border-color:var(--blue)!important;background:#DBEAFE!important}
+.sm-chip.sm-selected-del{border-color:#DC2626!important;background:#FEE2E2!important}
+.sm-chip.sm-locked{opacity:.45;cursor:not-allowed}
+.sm-chip-name{font-weight:700;color:var(--ink);font-size:11px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sm-chip-type{font-size:10px;color:var(--muted)}
+.sm-chip-status{font-size:9.5px;font-weight:700;margin-top:2px;
+  padding:1px 5px;border-radius:8px;display:inline-block}
+.sm-lock-badge{font-size:9px;color:var(--muted);font-style:italic;margin-top:2px;display:block}
+.sm-empty{font-size:10.5px;color:var(--muted);text-align:center;padding:12px 0}
+.sm-add-btn{display:flex;align-items:center;justify-content:center;
+  padding:5px;color:var(--muted);font-size:10px;border:1px dashed var(--border);
+  border-radius:6px;cursor:pointer;transition:all .18s;margin-top:3px;background:transparent}
+.sm-add-btn:hover{border-color:var(--blue);color:var(--blue);background:#EFF6FF}
+.sm-foot{padding:14px 22px;border-top:0.5px solid var(--border);display:flex;
+  justify-content:space-between;align-items:center;position:sticky;bottom:0;
+  background:var(--white);border-radius:0 0 18px 18px;gap:10px}
+.sm-foot-hint{font-size:12px;color:var(--muted);flex:1}
+.sm-cancel-btn{padding:8px 18px;background:var(--surface);color:var(--muted);
+  border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;
+  font-size:13px;font-weight:600;cursor:pointer}
+.sm-action-btn{padding:8px 22px;border:none;border-radius:8px;font-family:'Outfit',sans-serif;
+  font-size:13px;font-weight:700;cursor:pointer;transition:all .18s;opacity:.5;cursor:not-allowed}
+.sm-action-btn.enabled{opacity:1;cursor:pointer}
+.sm-action-edit{background:var(--blue);color:#fff}
+.sm-action-del{background:#DC2626;color:#fff}
+/* Edit panel (hiện khi đã chọn ca để sửa) */
+.sm-edit-panel{background:var(--surface);border-radius:10px;padding:14px 16px;
+  margin-top:14px;border:1px solid var(--border);display:none}
+.sm-edit-panel.show{display:block}
+.sm-edit-panel h4{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:10px}
+.sm-edit-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.sm-efg{display:flex;flex-direction:column;gap:4px}
+.sm-efg label{font-size:10px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.5px}
+.sm-efg select,.sm-efg input{border:1.5px solid var(--border);border-radius:8px;
+  padding:7px 10px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);
+  background:#fff;outline:none;width:100%}
+.sm-efg select:focus,.sm-efg input:focus{border-color:var(--blue)}
+.sm-efg.span2{grid-column:span 2}
+.sm-efg.span3{grid-column:span 3}
+
+/* ── Multi-select xóa loại ca ── */
+.btn-select-mode{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;
+  background:var(--surface);color:var(--ink);border:1.5px solid var(--border);border-radius:9px;
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-right:8px}
+.btn-select-mode.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.type-card{position:relative}
+.type-card-checkbox{display:none;position:absolute;top:14px;left:14px;width:20px;height:20px;
+  accent-color:var(--blue);cursor:pointer;z-index:5}
+.types-grid.select-mode .type-card-checkbox{display:block}
+.types-grid.select-mode .type-card{padding-left:38px;transition:border-color .15s}
+.types-grid.select-mode .type-card.checked{border:2px solid var(--blue);background:rgba(21,88,168,.03)}
+.types-grid.select-mode .type-card-foot{pointer-events:none;opacity:.45}
+.bulk-delete-bar{display:none;align-items:center;justify-content:space-between;gap:14px;
+  background:#FEF2F2;border:1.5px solid #FECACA;border-radius:12px;padding:12px 18px;margin-bottom:14px}
+.bulk-delete-bar.show{display:flex}
+.bulk-delete-count{font-size:13px;font-weight:700;color:#991B1B}
+.bulk-delete-actions{display:flex;gap:10px}
+.btn-bulk-delete{background:#DC2626;color:#fff;border:none;padding:8px 18px;border-radius:9px;
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.btn-bulk-delete:disabled{opacity:.5;cursor:not-allowed}
+.btn-bulk-cancel{background:#fff;color:var(--muted);border:1.5px solid var(--border);padding:8px 18px;
+  border-radius:9px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body>
@@ -336,7 +815,6 @@ tbody tr:hover td{background:#F7FBFF}
 <%-- ── SIDEBAR ── --%>
 <%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
 
-<%-- ── MAIN ── --%>
 <div class="main">
 
   <%-- Toast --%>
@@ -346,12 +824,56 @@ tbody tr:hover td{background:#F7FBFF}
       <c:when test="${param.msg == 'closed'}">       <div class="toast toast-ok"   id="toast">✅ Đóng ca thành công!</div></c:when>
       <c:when test="${param.msg == 'force-closed'}"> <div class="toast toast-info" id="toast">🔒 Admin đã đóng ca.</div></c:when>
       <c:when test="${param.msg == 'deleted'}">      <div class="toast toast-ok"   id="toast">🗑️ Xóa ca thành công!</div></c:when>
-      <c:when test="${param.msg == 'delete-failed'}"><div class="toast toast-err"  id="toast">❌ Không thể xóa — ca đã có hóa đơn liên kết!</div></c:when>
+      <c:when test="${param.msg == 'created'}">
+        <c:choose>
+          <c:when test="${param.count == '0' and param.skip != '0'}">
+            <div class="toast toast-warn" id="toast">⚠️ Không có ca mới — ${param.skip} ca đã tồn tại (bị bỏ qua)</div>
+          </c:when>
+          <c:when test="${param.count != '0' and param.skip != '0'}">
+            <div class="toast toast-ok" id="toast">✅ Đã xếp ${param.count} ca mới! (bỏ qua ${param.skip} ca đã tồn tại)</div>
+          </c:when>
+          <c:when test="${param.count != '0'}">
+            <div class="toast toast-ok" id="toast">✅ Xếp ${param.count} ca thành công!</div>
+          </c:when>
+          <c:otherwise>
+            <div class="toast toast-ok" id="toast">✅ Xếp ca thành công!</div>
+          </c:otherwise>
+        </c:choose>
+      </c:when>
+      <c:when test="${param.msg == 'updated'}">      <div class="toast toast-ok"   id="toast">✅ Cập nhật ca thành công!</div></c:when>
+      <c:when test="${param.msg == 'cancelled'}">    <div class="toast toast-info" id="toast">🚫 Đã hủy lịch ca!</div></c:when>
+      <c:when test="${param.msg == 'delete-failed'}"><div class="toast toast-err"  id="toast">❌ Không thể xóa — ca đã có hóa đơn!</div></c:when>
       <c:when test="${param.msg == 'already-open'}"> <div class="toast toast-warn" id="toast">⚠️ Nhân viên đang có ca chưa đóng!</div></c:when>
+      <c:when test="${param.msg == 'sched-created'}"><div class="toast toast-ok" id="toast">✅ Đã xếp ${param.count} lịch ca! <c:if test="${param.skip > 0}">(bỏ qua ${param.skip} đã tồn tại)</c:if></div></c:when>
+      <c:when test="${param.msg == 'quick-sched'}"><div class="toast toast-ok" id="toast">✅ Xếp ca nhanh thành công!</div></c:when>
+      <c:when test="${param.msg == 'cancelled'}"><div class="toast toast-info" id="toast">🗑️ Đã hủy lịch ca.</div></c:when>
+      <c:when test="${param.msg == 'sched-exists'}"><div class="toast toast-warn" id="toast">⚠️ Lịch ca đã tồn tại, bỏ qua.</div></c:when>
+      <c:when test="${param.msg == 'sched-updated'}"><div class="toast toast-ok" id="toast">✅ Đã cập nhật lịch ca!</div></c:when>
+      <c:when test="${param.msg == 'bulk-updated'}"><div class="toast toast-ok" id="toast">✅ Đã cập nhật ${param.count} ca!</div></c:when>
+      <c:when test="${param.msg == 'bulk-deleted'}"><div class="toast toast-ok" id="toast">🗑️ Đã xóa ${param.count} ca!</div></c:when>
+      <c:when test="${param.msg == 'sched-update-err'}"><div class="toast toast-err" id="toast">❌ Không thể sửa — ca đang hoạt động!</div></c:when>
+      <c:when test="${param.msg == 'sched-deleted'}"><div class="toast toast-ok" id="toast">🗑️ Đã xóa ${param.count} lịch ca!<c:if test="${not empty param.skip}"> (bỏ qua ${param.skip} ca đang hoạt động)</c:if></div></c:when>
+      <c:when test="${param.msg == 'type-bulk-deleted'}">
+        <div class="toast <c:choose><c:when test='${param.deleted > 0 and empty param.skippedActive and empty param.skippedSchedule}'>toast-ok</c:when><c:when test='${param.deleted == 0}'>toast-err</c:when><c:otherwise>toast-warn</c:otherwise></c:choose>" id="toast">
+          <c:if test="${param.deleted > 0}">🗑️ Đã xóa ${param.deleted} loại ca. </c:if>
+          <c:if test="${not empty param.skippedActive}">⚠️ Bỏ qua (đang dùng): ${param.skippedActive}. </c:if>
+          <c:if test="${not empty param.skippedSchedule}">⚠️ Bỏ qua (còn lịch ca): ${param.skippedSchedule}.</c:if>
+        </div>
+      </c:when>
+      <c:when test="${param.msg == 'quick-sched'}"><div class="toast toast-ok" id="toast">✅ Xếp ca nhanh thành công!</div></c:when>
+      <c:when test="${param.msg == 'cancelled'}"><div class="toast toast-info" id="toast">🗑️ Đã hủy lịch ca.</div></c:when>
       <c:when test="${param.msg == 'type-saved'}">   <div class="toast toast-ok"   id="toast">✅ Lưu loại ca thành công!</div></c:when>
       <c:when test="${param.msg == 'type-deleted'}"> <div class="toast toast-ok"   id="toast">🗑️ Xóa loại ca thành công!</div></c:when>
       <c:when test="${param.msg == 'type-err'}">     <div class="toast toast-err"  id="toast">❌ Lỗi khi lưu loại ca!</div></c:when>
-      <c:otherwise>                                  <div class="toast toast-err"  id="toast">⚠️ Có lỗi xảy ra.</div></c:otherwise>
+      <c:when test="${param.msg == 'type-err-name'}"> <div class="toast toast-err"  id="toast">⚠️ Bạn chưa nhập tên loại ca!</div></c:when>
+      <c:when test="${param.msg == 'type-err-time'}"> <div class="toast toast-err"  id="toast">⚠️ Vui lòng chọn đầy đủ giờ bắt đầu và kết thúc!</div></c:when>
+      <c:when test="${param.msg == 'type-err-rate'}"> <div class="toast toast-err"  id="toast">⚠️ Lương theo giờ phải từ 50,000đ trở lên!</div></c:when>
+      <c:when test="${param.msg == 'past-date'}"><div class="toast toast-err" id="toast">⛔ Không thể xếp ca cho ngày đã qua! Chỉ được xếp từ hôm nay trở đi.</div></c:when>
+      <c:when test="${param.msg == 'type-has-schedules'}"><div class="toast toast-err" id="toast">⚠️ Không thể xóa — loại ca này còn lịch ca đang dùng!</div></c:when>
+      <c:when test="${param.msg == 'type-has-schedules'}"><div class="toast toast-err" id="toast">⚠️ Không thể xóa — loại ca này còn lịch ca đang dùng!</div></c:when>
+      <c:when test="${param.msg == 'sched-bulk-ok'}"><div class="toast toast-ok" id="toast">✅ Đã xếp ${param.count} lịch ca! <c:if test="${param.skip > 0}">(bỏ qua ${param.skip} trùng)</c:if></div></c:when>
+      <c:when test="${param.msg == 'sched-bulk-err'}"><div class="toast toast-err" id="toast">❌ Lỗi khi xếp ca!</div></c:when>
+      <c:otherwise>                                  <div class="toast toast-warn" id="toast">⚠️ Có lỗi xảy ra.</div></c:otherwise>
     </c:choose>
   </c:if>
 
@@ -359,9 +881,7 @@ tbody tr:hover td{background:#F7FBFF}
   <header class="topbar">
     <div class="topbar-left">
       <div class="topbar-icon">🕐</div>
-      <div>
-        <div class="topbar-title">Ca làm việc</div>
-      </div>
+      <div class="topbar-title">Ca làm việc</div>
     </div>
     <div class="topbar-right">
       <span class="topbar-pill pill-total">📋 ${totalCount} ca</span>
@@ -380,233 +900,328 @@ tbody tr:hover td{background:#F7FBFF}
     <div class="kpi-strip">
       <div class="kpi">
         <div class="kpi-icon kpi-blue">📋</div>
-        <div>
-          <div class="kpi-num">${totalCount}</div>
-          <div class="kpi-lbl">Tổng ca</div>
-        </div>
+        <div><div class="kpi-num">${totalCount}</div><div class="kpi-lbl">Tổng ca</div></div>
       </div>
       <div class="kpi">
         <div class="kpi-icon kpi-green">🟢</div>
-        <div>
-          <div class="kpi-num" style="color:var(--green)">${openCount}</div>
-          <div class="kpi-lbl">Đang mở</div>
-          <div class="kpi-sub">Hôm nay</div>
-        </div>
+        <div><div class="kpi-num" style="color:var(--green)">${openCount}</div><div class="kpi-lbl">Đang mở</div></div>
       </div>
       <div class="kpi">
         <div class="kpi-icon kpi-amber">⚠️</div>
-        <div>
-          <div class="kpi-num" style="color:var(--gold)">${forceClosedCount}</div>
-          <div class="kpi-lbl">Đóng muộn</div>
-        </div>
+        <div><div class="kpi-num" style="color:var(--gold)">${forceClosedCount}</div><div class="kpi-lbl">Đóng muộn</div></div>
       </div>
       <div class="kpi">
         <div class="kpi-icon kpi-purple">👥</div>
-        <div>
-          <div class="kpi-num" style="color:var(--purple)">${fn:length(allStaff)}</div>
-          <div class="kpi-lbl">Nhân viên</div>
-        </div>
+        <div><div class="kpi-num" style="color:var(--purple)">${fn:length(allStaff)}</div><div class="kpi-lbl">Nhân viên</div></div>
       </div>
     </div>
 
     <%-- Tab bar --%>
     <div class="tab-bar">
-      <button class="tab-btn <%= "schedule".equals(activeTab) ? "active" : "" %>"
-              onclick="switchTab('schedule')">📅 Lịch ca</button>
-      <button class="tab-btn <%= "list".equals(activeTab) ? "active" : "" %>"
-              onclick="switchTab('list')">📋 Danh sách ca</button>
-      <button class="tab-btn <%= "types".equals(activeTab) ? "active" : "" %>"
-              onclick="switchTab('types')">⚙️ Loại ca</button>
+      <button class="tab-btn <%= ("week".equals(activeTab)||"list".equals(activeTab)) ? "active" : "" %>" onclick="switchTab('list',this)">📅 Ca làm việc</button>
+      <%-- Tab "💰 Doanh thu" đã được chuyển hẳn sang trang Báo cáo (/reports) — xem report-list.jsp --%>
+      <button class="tab-btn <%= "types".equals(activeTab) ? "active" : "" %>"    onclick="switchTab('types',this)">⚙️ Loại ca</button>
+      <button class="tab-btn <%= "leave".equals(activeTab) ? "active" : "" %>"    onclick="switchTab('leave',this)">
+        🏖️ Nghỉ phép
+        <c:if test="${pendingLeaveCount > 0}">
+          <span style="background:#DC2626;color:#fff;font-size:10px;font-weight:800;
+                       padding:1px 6px;border-radius:10px;margin-left:4px">${pendingLeaveCount}</span>
+        </c:if>
+      </button>
     </div>
 
-    <%-- ═══════════════════════════════════════════════ --%>
-    <%-- TAB 1: LỊCH CA (Timeline tuần/tháng)          --%>
-    <%-- ═══════════════════════════════════════════════ --%>
-    <div id="tab-schedule" class="tab-pane <%= "schedule".equals(activeTab) ? "active" : "" %>">
+    <%-- ══════════════════════════════════════════════
+         TAB: LỊCH CA TUẦN (Week Grid)
+         ══════════════════════════════════════════════ --%>
+    <div id="tab-list" class="tab-pane <%= ("week".equals(activeTab)||"list".equals(activeTab)) ? "active" : "" %>">
 
-      <div class="schedule-header">
-        <div class="schedule-nav">
-          <a href="${pageContext.request.contextPath}/shifts?tab=schedule&w=-1" class="nav-arrow">‹</a>
-          <span class="nav-period" id="periodLabel">Tuần này</span>
-          <a href="${pageContext.request.contextPath}/shifts?tab=schedule&w=1"  class="nav-arrow">›</a>
-          <a href="${pageContext.request.contextPath}/shifts?tab=schedule" class="btn-today">Hôm nay</a>
-        </div>
-        <div style="display:flex;align-items:center;gap:12px">
-          <!-- Legend -->
-          <div class="legend">
-            <div class="leg-item"><div class="leg-dot" style="background:var(--ca-long)"></div>Ca dài ≥10h</div>
-            <div class="leg-item"><div class="leg-dot" style="background:var(--ca-std)"></div>Ca 8h</div>
-            <div class="leg-item"><div class="leg-dot" style="background:var(--ca-part)"></div>Part-time</div>
-            <div class="leg-item"><div class="leg-dot" style="background:var(--ca-open)"></div>Đang làm</div>
-            <div class="leg-item"><div class="leg-dot" style="background:var(--ca-absent)"></div>Vắng</div>
-          </div>
-          <!-- View toggle -->
-          <div class="view-toggle">
-            <button class="vt-btn active" id="btnWeek" onclick="setView('week')">Tuần</button>
-            <button class="vt-btn" id="btnMonth" onclick="setView('month')">Tháng</button>
-          </div>
+
+      <%-- Week navigation --%>
+      <div class="week-nav-row">
+        <a href="${pageContext.request.contextPath}/shifts?tab=list&w=${param.w != null ? param.w - 1 : -1}" class="btn-nav">‹</a>
+        <span class="week-period">📅 Tuần ${weekStart} → ${weekEnd}</span>
+        <a href="${pageContext.request.contextPath}/shifts?tab=list&w=${param.w != null ? param.w + 1 : 1}"  class="btn-nav">›</a>
+        <a href="${pageContext.request.contextPath}/shifts?tab=list" class="btn-nav">Hôm nay</a>
+        <span class="week-sub">click = xem chi tiết + sửa/xóa • ✕ để hủy nhanh</span>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+          <button onclick="openEditSelectModal()" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:#fff;color:#1558A8;border:1.5px solid #BFDBFE;border-radius:10px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .18s" onmouseover="this.style.background='#EFF6FF'" onmouseout="this.style.background='#fff'">
+            ✏️ Sửa ca
+          </button>
+          <button onclick="openDeleteSelectModal()" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:#fff;color:#DC2626;border:1.5px solid #FECACA;border-radius:10px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .18s" onmouseover="this.style.background='#FEF2F2'" onmouseout="this.style.background='#fff'">
+            🗑️ Xóa ca
+          </button>
+          <button onclick="openFullSchedModal()" style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 12px rgba(21,88,168,.25);transition:all .18s">
+            + Xếp ca mới
+          </button>
         </div>
       </div>
 
-      <%-- WEEK VIEW --%>
-      <div id="viewWeek">
-        <div class="week-grid">
-          <%-- Header: giờ + 7 ngày --%>
-          <div class="week-header">
-            <div class="week-hcol" style="font-size:10px">GIỜ</div>
-            <c:forEach var="day" items="${weekDays}" varStatus="st">
-              <div class="week-hcol ${day.equals(today) ? 'today-col' : ''}">
-                <span style="font-size:10px">${weekDayNames[st.index]}</span>
-                <span class="day-num">${day.dayOfMonth}</span>
-                <span style="font-size:9px;color:var(--muted)">${day.monthValue}/${day.year}</span>
-              </div>
-            </c:forEach>
-          </div>
+      <%-- 7-day GROUPED STAFF GRID
+           Mỗi nhân viên/ngày = 1 card compact.
+           Hover = tooltip đầy đủ tất cả ca + R/E/D actions.
+      --%>
+      <div class="week-grid">
+        <c:forEach begin="0" end="6" var="i">
+          <c:set var="dayDate" value="${weekDays[i]}"/>
+          <c:set var="isToday" value="${dayDate.equals(today)}"/>
+          <c:set var="isPastDay" value="${dayDate.isBefore(today)}"/>
+            <div class="day-col ${isToday ? 'today-col' : ''} ${isPastDay ? 'past-col' : ''}">
+            <div class="day-head">
+              <div class="day-name">${weekDayNames[i]}</div>
+              <div class="day-date">${dayDate.dayOfMonth}</div>
+              <div style="font-size:9px;color:var(--muted)">${dayDate.monthValue}/${dayDate.year}</div>
+            </div>
+            <div class="day-body">
+              <%
+                /* ── Group schedules theo accountId cho ngày này (Java scriptlet)
+                   Dùng LinkedHashMap giữ thứ tự insert (ca sớm nhất của mỗi NV).
+                   key = accountId, value = List<ShiftSchedule>
+                   schedules đã ORDER BY PlannedStart ASC từ DAO.               */
+                java.util.List<com.medicare.entity.ShiftSchedule> allSched =
+                    (java.util.List<com.medicare.entity.ShiftSchedule>) request.getAttribute("schedules");
+                java.time.LocalDate curDate =
+                    (java.time.LocalDate) pageContext.getAttribute("dayDate");
 
-          <%-- Body: 7 cột ngày — dạng card đơn giản --%>
-          <div class="week-body-simple">
-            <c:forEach var="day" items="${weekDays}" varStatus="dst">
-              <div class="day-col-simple ${day.equals(today) ? 'today-col' : ''}">
-                <%-- Shift cards cho ngày này --%>
-                <c:set var="hasSched" value="false"/>
-                <c:forEach var="sch" items="${schedules}">
-                  <c:if test="${sch.workDate.equals(day)}">
-                    <c:set var="hasSched" value="true"/>
-                    <c:set var="caClass" value="ca-std"/>
-                    <c:if test="${sch.status == 'ABSENT'}"><c:set var="caClass" value="ca-absent"/></c:if>
-                    <c:if test="${sch.status == 'ON_LEAVE'}"><c:set var="caClass" value="ca-leave"/></c:if>
-                    <div class="shift-block ${caClass}"
-                         onclick="location.href='${pageContext.request.contextPath}/shift-schedules?action=detail&id=${sch.scheduleId}'"
-                         title="${sch.staffName}">
-                      <div class="sb-name">${sch.staffName}</div>
-                      <div class="sb-time">
-                        <c:if test="${not empty sch.plannedStart}">${fn:substring(sch.plannedStart.toString(),11,16)}</c:if>
-                        <c:if test="${not empty sch.plannedEnd}">–${fn:substring(sch.plannedEnd.toString(),11,16)}</c:if>
+                java.util.LinkedHashMap<Integer, java.util.List<com.medicare.entity.ShiftSchedule>> byStaff =
+                    new java.util.LinkedHashMap<>();
+
+                if (allSched != null && curDate != null) {
+                    for (com.medicare.entity.ShiftSchedule sc : allSched) {
+                        if (!curDate.equals(sc.getWorkDate())) continue;
+                        byStaff.computeIfAbsent(sc.getAccountId(),
+                            k -> new java.util.ArrayList<>()).add(sc);
+                    }
+                }
+                pageContext.setAttribute("staffGroupDay", byStaff);
+                pageContext.setAttribute("hasAnyShift", !byStaff.isEmpty());
+              %>
+
+              <c:choose>
+                <c:when test="${empty staffGroupDay}">
+                  <div class="empty-day">Trống</div>
+                </c:when>
+                <c:otherwise>
+                  <%-- Lặp qua từng nhóm NV (đã gom bởi Java scriptlet) --%>
+                  <c:forEach var="entry" items="${staffGroupDay}">
+                    <%
+                      /* Lấy list ca của NV này trong ngày — đã sắp xếp theo giờ */
+                      @SuppressWarnings("unchecked")
+                      java.util.Map.Entry<Integer,
+                        java.util.List<com.medicare.entity.ShiftSchedule>> grpEntry =
+                            (java.util.Map.Entry<Integer,
+                              java.util.List<com.medicare.entity.ShiftSchedule>>)
+                              pageContext.getAttribute("entry");
+
+                      java.util.List<com.medicare.entity.ShiftSchedule> grpList = grpEntry.getValue();
+                      com.medicare.entity.ShiftSchedule firstSc = grpList.get(0);
+                      int totalShifts = grpList.size();
+
+                      /* Avatar class theo ca đầu tiên trong ngày */
+                      String avClass = firstSc.getStartHour() < 12 ? "av-morning"
+                                     : firstSc.getStartHour() < 20 ? "av-afternoon" : "av-night";
+                      /* Initials từ staffName */
+                      String sn = firstSc.getStaffName() != null ? firstSc.getStaffName() : "?";
+                      String ini = sn.length() >= 2
+                          ? ("" + sn.charAt(0)).toUpperCase()
+                          : sn.substring(0,1).toUpperCase();
+                      /* Lấy chữ cái họ và tên — ví dụ "Le Thi Tu Van" → "LV" */
+                      String[] parts = sn.trim().split("\\s+");
+                      if (parts.length >= 2)
+                          ini = ("" + parts[0].charAt(0) + parts[parts.length-1].charAt(0)).toUpperCase();
+
+                      /* Giờ ca đầu tiên (hiển thị trên card) */
+                      String firstTime = "";
+                      if (firstSc.getPlannedStart() != null) {
+                          java.time.LocalDateTime ps = firstSc.getPlannedStart();
+                          java.time.LocalDateTime pe = firstSc.getPlannedEnd();
+                          firstTime = String.format("%02d:%02d", ps.getHour(), ps.getMinute());
+                          if (pe != null)
+                              firstTime += " → " + String.format("%02d:%02d", pe.getHour(), pe.getMinute());
+                      }
+
+                      /* Status tổng của card (worst-case: Vắng > Chưa vào > OK) */
+                      boolean anyAbsent   = grpList.stream().anyMatch(s -> "ABSENT".equals(s.getStatus()));
+                      boolean allConfirmed= grpList.stream().allMatch(s -> "CONFIRMED".equals(s.getStatus()));
+                      boolean anyScheduled= grpList.stream().anyMatch(s -> "SCHEDULED".equals(s.getStatus()) || "LEAVE_PENDING".equals(s.getStatus()));
+                      String dotClass = anyAbsent ? "st-err" : allConfirmed ? "st-ok" : anyScheduled ? "st-pend" : "st-warn";
+                      String dotLabel = anyAbsent ? "Có ca vắng"
+                                      : allConfirmed ? "Đã check-in"
+                                      : anyScheduled ? "Chưa vào" : "Đang làm";
+
+                      /* Có ca nào có thể hủy không */
+                      boolean hasCancellable = grpList.stream().anyMatch(s ->
+                          "SCHEDULED".equals(s.getStatus()) || "LEAVE_PENDING".equals(s.getStatus()));
+                      int firstCancellableId = grpList.stream()
+                          .filter(s -> "SCHEDULED".equals(s.getStatus()) || "LEAVE_PENDING".equals(s.getStatus()))
+                          .mapToInt(com.medicare.entity.ShiftSchedule::getScheduleId)
+                          .findFirst().orElse(0);
+
+                      pageContext.setAttribute("grpList",   grpList);
+                      pageContext.setAttribute("firstSc",   firstSc);
+                      pageContext.setAttribute("avClass",   avClass);
+                      pageContext.setAttribute("ini",       ini);
+                      pageContext.setAttribute("firstTime", firstTime);
+                      pageContext.setAttribute("totalShifts", totalShifts);
+                      pageContext.setAttribute("dotClass",  dotClass);
+                      pageContext.setAttribute("dotLabel",  dotLabel);
+                      pageContext.setAttribute("hasCancellable", hasCancellable);
+                      pageContext.setAttribute("firstCancelId", firstCancellableId);
+                    %>
+
+                    <%-- ── STAFF CARD ── --%>
+                    <div class="staff-card"
+                         data-sched-id="${firstSc.scheduleId}"
+                         data-staff-name="${firstSc.staffName}"
+                         data-shift-type="${firstSc.shiftTypeName}"
+                         data-shift-type-id="${firstSc.shiftTypeId}"
+                         data-status="${firstSc.status}"
+                         data-work-date="${firstSc.workDate}" data-is-past="${dayDate.isBefore(today)}"
+                         data-late-tol="${firstSc.lateToleranceMinutes}"
+                         data-notes="${firstSc.notes}"
+                         data-total="${totalShifts}"
+                         data-planned-start="${not empty firstSc.plannedStart ? fn:substring(firstSc.plannedStart.toString(),11,16) : ''}"
+                         data-planned-end="${not empty firstSc.plannedEnd ? fn:substring(firstSc.plannedEnd.toString(),11,16) : ''}"
+                         data-shifts-json='<%
+                           StringBuilder sjb = new StringBuilder("[");
+                           boolean sfirst = true;
+                           for (com.medicare.entity.ShiftSchedule ss : grpList) {
+                               if (!sfirst) sjb.append(",");
+                               sfirst = false;
+                               sjb.append("{");
+                               sjb.append("\"id\":").append(ss.getScheduleId()).append(",");
+                               sjb.append("\"type\":\"").append(ss.getShiftTypeName() != null ? ss.getShiftTypeName().replace("\"","") : "").append("\",");
+                               sjb.append("\"typeId\":").append(ss.getShiftTypeId()).append(",");
+                               sjb.append("\"status\":\"").append(ss.getStatus() != null ? ss.getStatus() : "").append("\",");
+                               sjb.append("\"late\":").append(ss.getLateToleranceMinutes()).append(",");
+                               String noteVal = ss.getNotes() != null ? ss.getNotes().replace("\"","\\\"").replace("'","") : "";
+                               sjb.append("\"notes\":\"").append(noteVal).append("\",");
+                               String ps = ss.getPlannedStart() != null ? ss.getPlannedStart().toString().substring(11,16) : "";
+                               String pe = ss.getPlannedEnd() != null ? ss.getPlannedEnd().toString().substring(11,16) : "";
+                               sjb.append("\"start\":\"").append(ps).append("\",");
+                               sjb.append("\"end\":\"").append(pe).append("\"");
+                               sjb.append("}");
+                           }
+                           sjb.append("]");
+                           out.print(sjb.toString());
+                         %>'
+                         onclick="showDetailPanel(this)">
+
+
+
+                      <%-- Header: avatar + tên + badge số ca --%>
+                      <div class="staff-card-head">
+                        <div class="scard-av ${avClass}">${ini}</div>
+                        <div class="scard-name">${firstSc.staffName}</div>
+                        <c:if test="${totalShifts > 1}">
+                          <span class="scard-count">${totalShifts} ca</span>
+                        </c:if>
                       </div>
-                      <c:if test="${not empty sch.openingCash and sch.openingCash > 0}">
-                        <div class="sb-cash">💰<fmt:formatNumber value="${sch.openingCash}" type="number" maxFractionDigits="0"/>đ</div>
-                      </c:if>
-                    </div>
-                  </c:if>
-                </c:forEach>
-                <c:if test="${hasSched == 'false'}">
-                  <div style="padding:8px;text-align:center;font-size:11px;color:var(--muted)">Chưa có ca</div>
-                </c:if>
-                <a href="${pageContext.request.contextPath}/shift-schedules?action=new&date=${day}"
-                   class="add-shift-btn" title="Xếp ca">+</a>
-              </div>
-            </c:forEach>
-          </div>
-        </div>
-      </div>
 
-      <%-- MONTH VIEW --%>
-      <div id="viewMonth" style="display:none">
-        <div class="month-grid">
-          <div class="month-weekdays">
-            <div class="mw-head">T2</div><div class="mw-head">T3</div><div class="mw-head">T4</div>
-            <div class="mw-head">T5</div><div class="mw-head">T6</div>
-            <div class="mw-head" style="color:var(--amber)">T7</div>
-            <div class="mw-head" style="color:var(--red)">CN</div>
-          </div>
-          <div class="month-body" id="monthBody">
-            <%-- Month view hiển thị danh sách ca theo ngày --%>
-            <c:forEach var="sch" items="${schedules}">
-              <div class="mc-shift ca-std"
-                   onclick="location.href='${pageContext.request.contextPath}/shift-schedules?action=detail&id=${sch.scheduleId}'"
-                   title="${sch.staffName} — ${sch.workDate}">
-                ${sch.staffName} (${fn:substring(sch.workDate.toString(),8,10)}/${fn:substring(sch.workDate.toString(),5,7)})
-              </div>
-            </c:forEach>
-            <c:if test="${empty schedules}">
-              <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">
-                Chưa có lịch ca nào trong tuần này
-              </div>
-            </c:if>
-          </div>
-        </div>
-      </div>
+                      <%-- Tất cả ca trong ngày (compact) --%>
+                      <div class="scard-first">
+                        <c:forEach var="grpSc" items="${grpList}" varStatus="gs">
+                          <div style="display:flex;align-items:center;gap:5px;${gs.index > 0 ? 'margin-top:3px;padding-top:3px;border-top:1px dashed rgba(0,0,0,.06)' : ''}">
+                            <span style="width:6px;height:6px;border-radius:50%;flex-shrink:0;background:${grpSc.startHour < 12 ? '#3B82F6' : grpSc.startHour < 20 ? '#F97316' : '#7C3AED'}"></span>
+                            <span class="scard-first-type" style="font-size:11px">${grpSc.shiftTypeName}</span>
+                            <c:if test="${not empty grpSc.plannedStart}">
+                              <span class="scard-first-time">${fn:substring(grpSc.plannedStart.toString(),11,16)} → ${fn:substring(grpSc.plannedEnd.toString(),11,16)}</span>
+                            </c:if>
+                          </div>
+                        </c:forEach>
+                      </div>
 
-    </div><%-- end tab-schedule --%>
+                      <%-- Status dot --%>
+                      <div class="scard-status-bar">
+                        <span class="scard-dot ${dotClass}"></span>
+                        <span class="scard-status-txt"
+                          style="color:${dotClass == 'st-ok' ? '#059669' : dotClass == 'st-err' ? '#DC2626' : dotClass == 'st-pend' ? '#1558A8' : '#D97706'}">
+                          ${dotLabel}
+                        </span>
+                      </div>
 
-    <%-- ═══════════════════════════════════════════════ --%>
-    <%-- TAB 2: DANH SÁCH CA (form mở + bảng)          --%>
-    <%-- ═══════════════════════════════════════════════ --%>
-    <div id="tab-list" class="tab-pane <%= "list".equals(activeTab) ? "active" : "" %>">
+<%-- Mini tooltip hover --%>
+                      <div class="scard-mini-tip">
+                        <div style="font-size:10.5px;font-weight:700">${firstSc.shiftTypeName}</div>
+                        <c:if test="${not empty firstSc.plannedStart}">
+                          <div style="font-size:9.5px;color:rgba(255,255,255,.65);margin-top:2px">
+                            ${fn:substring(firstSc.plannedStart.toString(),11,16)} → ${fn:substring(firstSc.plannedEnd.toString(),11,16)}
+                          </div>
+                        </c:if>
+                        <c:if test="${totalShifts > 1}">
+                          <div style="font-size:9px;color:#93C5FD;margin-top:2px">${totalShifts} ca trong ngày</div>
+                        </c:if>
+                      </div>
 
-      <div class="list-layout">
-        <%-- Form mở ca tự do (admin) --%>
-        <div class="open-panel">
-          <div class="open-panel-head">
-            <span>➕</span>
-            <h3>Mở ca mới cho nhân viên</h3>
-          </div>
-          <div class="open-panel-body">
-            <form method="post" action="${pageContext.request.contextPath}/shifts">
-              <input type="hidden" name="action" value="open">
-              <div class="fg">
-                <label>Nhân viên</label>
-                <select name="accountId" required>
-                  <option value="">-- Chọn nhân viên --</option>
-                  <c:forEach var="staff" items="${allStaff}">
-                    <option value="${staff.accountId}">${staff.fullName}</option>
+                    </div><%-- end staff-card --%>
                   </c:forEach>
-                </select>
-              </div>
-              <div class="fg">
-                <label>Tiền đầu ca (VNĐ)</label>
-                <input type="number" name="openingCash" min="50000" step="1000"
-                       placeholder="Tối thiểu 50,000đ" value="50000"
-                       oninput="validateCash(this)">
-                <span class="field-err" id="cashErr">⚠️ Tối thiểu 50,000đ</span>
-              </div>
-              <button type="submit" class="btn-open">🚀 Mở ca</button>
-            </form>
-          </div>
-        </div>
+                </c:otherwise>
+              </c:choose>
 
-        <%-- Filter --%>
-        <div class="filter-panel">
-          <div class="filter-panel-head"><span>🔍</span><h3>Lọc danh sách</h3></div>
-          <div class="filter-body">
-            <form method="get" action="${pageContext.request.contextPath}/shifts">
-              <input type="hidden" name="tab" value="list">
-              <div class="filter-grid">
-                <div class="fi"><label>Từ ngày</label><input type="date" name="from" value="${filterFrom}"></div>
-                <div class="fi"><label>Đến ngày</label><input type="date" name="to"   value="${filterTo}"></div>
-                <div class="fi">
-                  <label>Nhân viên</label>
-                  <select name="accountId">
-                    <option value="">-- Tất cả --</option>
-                    <c:forEach var="s" items="${allStaff}">
-                      <option value="${s.accountId}" ${filterAcc == s.accountId ? 'selected' : ''}>${s.fullName}</option>
-                    </c:forEach>
-                  </select>
-                </div>
-                <div class="fi">
-                  <label>Trạng thái</label>
-                  <select name="status">
-                    <option value="" ${empty filterStatus ? 'selected' : ''}>-- Tất cả --</option>
-                    <option value="open"        ${'open'        == filterStatus ? 'selected' : ''}>Đang mở</option>
-                    <option value="closed"      ${'closed'      == filterStatus ? 'selected' : ''}>Đã đóng</option>
-                    <option value="force-closed" ${'force-closed' == filterStatus ? 'selected' : ''}>Đóng muộn</option>
-                  </select>
-                </div>
-              </div>
-              <div class="filter-actions">
-                <button type="submit" class="btn-filter">🔍 Lọc</button>
-                <a href="${pageContext.request.contextPath}/shifts?tab=list" class="btn-reset">↺ Reset</a>
-              </div>
-            </form>
+              <c:if test="${!dayDate.isBefore(today)}">
+                <a onclick="openSchedModalForDay('${dayDate}','')" class="day-add">＋ Thêm ca</a>
+              </c:if>
+            </div>
           </div>
-        </div>
+        </c:forEach>
       </div>
 
-      <%-- Bảng danh sách ca --%>
+
+      <%-- ────────────────────────── DANH SÁCH CA ────────────────────────── --%>
+      <div style="display:flex;align-items:center;gap:12px;margin:24px 0 16px">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;padding:0 4px">📋 Danh sách ca làm việc</span>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+
+      <%-- Filter inline (compact 1 row) --%>
+      <form method="get" action="${pageContext.request.contextPath}/shifts">
+        <input type="hidden" name="tab" value="list">
+        <div class="filter-row">
+          <div class="fi">
+            <label>Từ ngày</label>
+            <input type="date" name="from" value="${filterFrom}">
+          </div>
+          <div class="fi">
+            <label>Đến ngày</label>
+            <input type="date" name="to" value="${filterTo}">
+          </div>
+          <div class="fi">
+            <label>Nhân viên</label>
+            <select name="accountId">
+              <option value="">— Tất cả —</option>
+              <c:forEach var="staff" items="${allStaff}">
+                <option value="${staff.accountId}" ${filterAcc == staff.accountId.toString() ? 'selected' : ''}>${staff.fullName}</option>
+              </c:forEach>
+            </select>
+          </div>
+          <div class="fi">
+            <label>Trạng thái</label>
+            <select name="status">
+              <option value="">— Tất cả —</option>
+              <option value="open"         ${'open'         == filterStatus ? 'selected' : ''}>Đang mở</option>
+              <option value="closed"       ${'closed'       == filterStatus ? 'selected' : ''}>Đã đóng</option>
+              <option value="force-closed" ${'force-closed' == filterStatus ? 'selected' : ''}>Đóng muộn</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-filter">🔍 Lọc</button>
+          <a href="${pageContext.request.contextPath}/shifts?tab=list" class="btn-reset">↺ Reset</a>
+        </div>
+      </form>
+
+      <%-- Table --%>
       <div class="table-card">
         <div class="table-card-head">
-          <h2>📋 Danh sách ca làm việc</h2>
-          <span class="table-card-sub">${totalCount} ca — mới nhất trước</span>
+          <div>
+            <h2>📋 Danh sách ca làm việc</h2>
+            <span class="table-card-sub">${totalCount} ca — mới nhất trước</span>
+          </div>
+          <div style="position:relative;max-width:250px;flex:1">
+            <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:12px;opacity:.4;pointer-events:none">🔍</span>
+            <input type="text" id="shiftSearch" placeholder="Tìm nhân viên, trạng thái..."
+              autocomplete="off"
+              style="width:100%;height:34px;padding:0 12px 0 32px;border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:12.5px;outline:none;background:#fff"
+              oninput="filterShiftTable(this.value)">
+          </div>
         </div>
         <div class="tbl-wrap">
           <table>
@@ -617,20 +1232,20 @@ tbody tr:hover td{background:#F7FBFF}
                 <th>Trạng thái</th><th>Thao tác</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="shiftTbody">
               <c:if test="${empty shifts}">
                 <tr><td colspan="9">
                   <div class="empty-state">
                     <span class="es-icon">🕐</span>
                     <h3>Chưa có ca nào</h3>
-                    <p>Mở ca mới hoặc điều chỉnh bộ lọc</p>
+                    <p>Điều chỉnh bộ lọc hoặc mở ca mới</p>
                   </div>
                 </td></tr>
               </c:if>
               <c:forEach var="s" items="${shifts}">
                 <c:set var="staff" value="${accountMap[s.accountId]}"/>
-                <c:set var="ini"   value="${not empty staff ? fn:substring(staff.fullName,0,1) : '?'}"/>
-                <tr onclick="location.href='${pageContext.request.contextPath}/shifts?action=detail&id=${s.shiftId}'" style="cursor:pointer">
+                <c:set var="ini"   value="${not empty staff ? fn:toUpperCase(fn:substring(not empty staff.fullName ? staff.fullName : '?',0,1)) : '?'}"/>
+                <tr onclick="location.href='${pageContext.request.contextPath}/shifts?action=detail&id=${s.shiftId}'">
                   <td style="font-weight:800;color:var(--muted)">#${s.shiftId}</td>
                   <td>
                     <div class="staff-cell">
@@ -642,12 +1257,8 @@ tbody tr:hover td{background:#F7FBFF}
                     </div>
                   </td>
                   <td>
-                    <div class="time-main">
-                      <c:if test="${not empty s.startTime}">${fn:substring(s.startTime.toString(),11,16)}</c:if>
-                    </div>
-                    <div class="time-date">
-                      <c:if test="${not empty s.startTime}">${fn:substring(s.startTime.toString(),0,10)}</c:if>
-                    </div>
+                    <div class="time-main"><c:if test="${not empty s.startTime}">${fn:substring(s.startTime.toString(),11,16)}</c:if></div>
+                    <div class="time-date"><c:if test="${not empty s.startTime}">${fn:substring(s.startTime.toString(),0,10)}</c:if></div>
                   </td>
                   <td>
                     <c:choose>
@@ -655,9 +1266,7 @@ tbody tr:hover td{background:#F7FBFF}
                         <div class="time-main">${fn:substring(s.endTime.toString(),11,16)}</div>
                         <div class="time-date">${fn:substring(s.endTime.toString(),0,10)}</div>
                       </c:when>
-                      <c:otherwise>
-                        <span class="dur-active">⏱️ Đang làm</span>
-                      </c:otherwise>
+                      <c:otherwise><span class="dur-active">⏱️ Đang làm</span></c:otherwise>
                     </c:choose>
                   </td>
                   <td>
@@ -684,10 +1293,10 @@ tbody tr:hover td{background:#F7FBFF}
                   </td>
                   <td>
                     <c:choose>
-                      <c:when test="${s.open}">        <span class="badge badge-open">🟢 Đang mở</span></c:when>
-                      <c:when test="${s.closed}">      <span class="badge badge-closed">✔ Đã đóng</span></c:when>
-                      <c:when test="${s.forceClose}">  <span class="badge badge-force">🔒 Đóng muộn</span></c:when>
-                      <c:otherwise>                   <span class="badge badge-closed">• ${s.status}</span></c:otherwise>
+                      <c:when test="${s.open}">      <span class="badge badge-open">🟢 Đang mở</span></c:when>
+                      <c:when test="${s.closed}">    <span class="badge badge-closed">✔ Đã đóng</span></c:when>
+                      <c:when test="${s.forceClose}"><span class="badge badge-force">🔒 Đóng muộn</span></c:when>
+                      <c:otherwise>                 <span class="badge badge-closed">• ${s.status}</span></c:otherwise>
                     </c:choose>
                   </td>
                   <td onclick="event.stopPropagation()">
@@ -711,22 +1320,31 @@ tbody tr:hover td{background:#F7FBFF}
       </div>
     </div><%-- end tab-list --%>
 
-    <%-- ═══════════════════════════════════════════════ --%>
-    <%-- TAB 3: LOẠI CA (ShiftType CRUD)               --%>
-    <%-- ═══════════════════════════════════════════════ --%>
-    <div id="tab-types" class="tab-pane <%= "types".equals(activeTab) ? "active" : "" %>">
 
+    <%-- ════════════════════════════════
+         TAB 3: LOẠI CA
+         ════════════════════════════════ --%>
+    <div id="tab-types" class="tab-pane <%= "types".equals(activeTab) ? "active" : "" %>">
       <div class="types-header">
         <div>
           <h2>⚙️ Loại ca làm việc</h2>
-          <p style="font-size:12.5px;color:var(--muted);margin-top:4px">
-            Quản lý các ca mẫu — Ca sáng, Ca chiều, Ca part-time...
-          </p>
+          <p style="font-size:12.5px;color:var(--muted);margin-top:4px">Quản lý ca mẫu — Ca sáng, Ca chiều, Ca part-time...</p>
         </div>
-        <button class="btn-add-type" onclick="openTypeModal()">+ Thêm loại ca</button>
+        <div>
+          <button class="btn-select-mode" id="typeSelectModeBtn" onclick="toggleTypeSelectMode()">☑️ Chọn</button>
+          <button class="btn-add-type" onclick="openTypeModal()">+ Thêm loại ca</button>
+        </div>
       </div>
 
-      <div class="types-grid">
+      <div class="bulk-delete-bar" id="typeBulkDeleteBar">
+        <span class="bulk-delete-count" id="typeBulkDeleteCount">Đã chọn 0 loại ca</span>
+        <div class="bulk-delete-actions">
+          <button class="btn-bulk-cancel" onclick="cancelTypeSelectMode()">Hủy</button>
+          <button class="btn-bulk-delete" id="typeBulkDeleteBtn" disabled onclick="submitBulkDeleteTypes()">🗑 Xóa các loại ca đã chọn</button>
+        </div>
+      </div>
+
+      <div class="types-grid" id="typesGrid">
         <c:if test="${empty shiftTypes}">
           <div class="empty-state" style="grid-column:1/-1">
             <span class="es-icon">⚙️</span>
@@ -735,27 +1353,26 @@ tbody tr:hover td{background:#F7FBFF}
           </div>
         </c:if>
         <c:forEach var="st" items="${shiftTypes}">
-          <div class="type-card">
+          <div class="type-card" data-type-id="${st.shiftTypeId}" onclick="onTypeCardClick(event, ${st.shiftTypeId})">
+            <input type="checkbox" class="type-card-checkbox" data-type-id="${st.shiftTypeId}"
+                   data-type-name="${st.name}"
+                   onclick="event.stopPropagation(); onTypeCheckboxChange(${st.shiftTypeId})">
             <div class="type-card-head">
               <div class="type-dot" style="background:var(--ca-std)"></div>
               <div>
                 <div class="type-name">${st.name}</div>
                 <div class="type-dur">${st.startHour}:${st.startMinute < 10 ? '0' : ''}${st.startMinute} – ${st.endHour}:${st.endMinute < 10 ? '0' : ''}${st.endMinute}</div>
               </div>
-              <span class="type-badge ${st.active ? 'type-active' : 'type-inactive'}">
-                ${st.active ? '✅ Đang dùng' : '⏸ Tạm dừng'}
-              </span>
+              <span class="type-badge ${st.active ? 'type-active' : 'type-inactive'}">${st.active ? '✅ Đang dùng' : '⏸ Tạm dừng'}</span>
             </div>
             <div class="type-card-body">
               <div class="type-row">
                 <span class="type-lbl">🕐 Giờ làm</span>
-                <span class="type-val">${st.startHour}:00 – ${st.endHour}:00</span>
+                <span class="type-val">${st.startHour}:${st.startMinute<10?'0':''}${st.startMinute} – ${st.endHour}:${st.endMinute<10?'0':''}${st.endMinute}</span>
               </div>
               <div class="type-row">
                 <span class="type-lbl">💰 Lương giờ</span>
-                <span class="type-val" style="color:var(--green)">
-                  <fmt:formatNumber value="${st.hourlyRate}" type="number" maxFractionDigits="0"/>đ/h
-                </span>
+                <span class="type-val" style="color:var(--green)"><fmt:formatNumber value="${st.hourlyRate}" type="number" maxFractionDigits="0"/>đ/h</span>
               </div>
               <c:if test="${st.allowanceAmount > 0}">
                 <div class="type-row">
@@ -765,19 +1382,10 @@ tbody tr:hover td{background:#F7FBFF}
               </c:if>
             </div>
             <div class="type-card-foot">
-              <button class="btn-edit-type"
-                      onclick="editType(${st.shiftTypeId},'${st.name}',${st.startHour},${st.startMinute},${st.endHour},${st.endMinute},${st.hourlyRate},${st.allowanceAmount})">
-                ✏️ Sửa
-              </button>
-              <button class="btn-toggle-type"
-                      onclick="toggleType(${st.shiftTypeId},${st.active})">
-                ${st.active ? '⏸ Tạm dừng' : '▶️ Kích hoạt'}
-              </button>
+              <button class="btn-edit-type" onclick="editType(${st.shiftTypeId},'${st.name}',${st.startHour},${st.startMinute},${st.endHour},${st.endMinute},${st.hourlyRate},${st.allowanceAmount})">✏️ Sửa</button>
+              <button class="btn-toggle-type" onclick="toggleType(${st.shiftTypeId},${st.active})">${st.active ? '⏸ Tạm dừng' : '▶️ Kích hoạt'}</button>
               <c:if test="${!st.active}">
-                <button class="btn-del-type"
-                        onclick="deleteType(${st.shiftTypeId},'${st.name}')">
-                  🗑
-                </button>
+                <button class="btn-del-type" onclick="deleteType(${st.shiftTypeId},'${st.name}')">🗑</button>
               </c:if>
             </div>
           </div>
@@ -785,10 +1393,202 @@ tbody tr:hover td{background:#F7FBFF}
       </div>
     </div><%-- end tab-types --%>
 
+    <%-- ════════════════════════════════
+         TAB 4: NGHỈ PHÉP
+         ════════════════════════════════ --%>
+    <div id="tab-leave" class="tab-pane <%= "leave".equals(activeTab) ? "active" : "" %>">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div>
+          <h2 style="font-size:16px;font-weight:800;color:var(--ink)">🏖️ Đơn xin nghỉ phép</h2>
+          <p style="font-size:12.5px;color:var(--muted);margin-top:3px">Duyệt hoặc từ chối đơn xin nghỉ của nhân viên</p>
+        </div>
+        <a href="${pageContext.request.contextPath}/leave-requests?action=list"
+           style="font-size:13px;font-weight:600;color:var(--blue);text-decoration:none;
+                  padding:7px 14px;border:1.5px solid var(--blue);border-radius:9px;
+                  transition:all .18s"
+           onmouseover="this.style.background='#EFF6FF'" onmouseout="this.style.background=''">
+          📋 Xem tất cả đơn →
+        </a>
+      </div>
+
+      <div class="table-card">
+        <div class="table-card-head">
+          <h2>⏳ Đơn chờ duyệt</h2>
+          <span class="table-card-sub">${pendingLeaveCount} đơn đang chờ</span>
+        </div>
+        <c:choose>
+          <c:when test="${empty pendingLeaves}">
+            <div style="text-align:center;padding:48px 24px;color:var(--muted)">
+              <div style="font-size:44px;margin-bottom:12px">✅</div>
+              <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:4px">Không có đơn nào chờ duyệt</div>
+              <div style="font-size:13px">Tất cả đơn đã được xử lý!</div>
+            </div>
+          </c:when>
+          <c:otherwise>
+            <table>
+              <thead>
+                <tr>
+                  <th>Nhân viên</th>
+                  <th>Ngày nghỉ</th>
+                  <th>Loại</th>
+                  <th>Lý do</th>
+                  <th>Gửi lúc</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                <c:forEach var="lr" items="${pendingLeaves}">
+                  <tr>
+                    <td><strong>${lr.staffName}</strong></td>
+                    <td style="font-weight:700;color:var(--ink)">${lr.leaveDate}</td>
+                    <td>
+                      <span style="padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;
+                        background:<c:choose>
+                          <c:when test="${lr.leaveType=='ANNUAL'}">#ECFDF5;color:#065F46</c:when>
+                          <c:when test="${lr.leaveType=='SICK'}">#FFF7ED;color:#92400E</c:when>
+                          <c:when test="${lr.leaveType=='UNPAID'}">#F5F3FF;color:#5B21B6</c:when>
+                          <c:otherwise>#EFF6FF;color:#1E40AF</c:otherwise>
+                        </c:choose>">
+                        <c:choose>
+                          <c:when test="${lr.leaveType=='ANNUAL'}">🌴 Phép năm</c:when>
+                          <c:when test="${lr.leaveType=='SICK'}">🤒 Nghỉ ốm</c:when>
+                          <c:when test="${lr.leaveType=='UNPAID'}">💸 Không lương</c:when>
+                          <c:otherwise>⚡ Đột xuất</c:otherwise>
+                        </c:choose>
+                      </span>
+                    </td>
+                    <td style="max-width:180px;font-size:12.5px;color:var(--muted)">${lr.reason}</td>
+                    <td style="font-size:12px;color:var(--muted);white-space:nowrap">
+                      ${fn:substring(lr.requestedAt.toString(),0,16)}
+                    </td>
+                    <td>
+                      <div style="display:flex;gap:6px;align-items:center">
+                        <form method="post" action="${pageContext.request.contextPath}/leave-requests">
+                          <input type="hidden" name="action"       value="approve">
+                          <input type="hidden" name="id"           value="${lr.leaveId}">
+                          <input type="hidden" name="deductAmount" value="0">
+                          <button type="submit"
+                                  style="padding:5px 12px;background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0;
+                                         border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;
+                                         transition:all .18s"
+                                  onmouseover="this.style.background='#A7F3D0'"
+                                  onmouseout="this.style.background='#ECFDF5'">
+                            ✅ Duyệt
+                          </button>
+                        </form>
+                        <form method="post" action="${pageContext.request.contextPath}/leave-requests">
+                          <input type="hidden" name="action" value="reject">
+                          <input type="hidden" name="id"     value="${lr.leaveId}">
+                          <button type="submit"
+                                  onclick="return confirm('Từ chối đơn nghỉ của ${lr.staffName}?')"
+                                  style="padding:5px 12px;background:#FEF2F2;color:#991B1B;border:1px solid #FECACA;
+                                         border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;
+                                         transition:all .18s"
+                                  onmouseover="this.style.background='#FECACA'"
+                                  onmouseout="this.style.background='#FEF2F2'">
+                            ✕ Từ chối
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                </c:forEach>
+              </tbody>
+            </table>
+          </c:otherwise>
+        </c:choose>
+      </div>
+    </div><%-- end tab-leave --%>
+
   </div><%-- end content --%>
 </div><%-- end main --%>
 
-<%-- ── MODAL: Thêm/Sửa loại ca ── --%>
+<%-- ══════════════════════════════════════════════════════
+     MODAL 1: Xếp ca mới (Quick Schedule — KHÔNG redirect)
+     ══════════════════════════════════════════════════════ --%>
+<div class="modal-overlay" id="schedModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">📅 Xếp lịch ca mới</span>
+      <button class="modal-close" onclick="closeSchedModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="schedForm" method="post" action="${pageContext.request.contextPath}/shifts">
+        <input type="hidden" name="action" value="schedule-bulk">
+
+        <%-- Nhân viên --%>
+        <div class="mfg">
+          <label>Nhân viên <span style="color:var(--red)">*</span></label>
+          <div class="staff-chips-grid" id="staffChipsGrid">
+            <c:forEach var="staff" items="${allStaff}">
+              <c:set var="sn" value="${not empty staff.fullName ? staff.fullName : staff.username}"/>
+              <c:set var="si" value="${fn:toUpperCase(fn:substring(sn,0,1))}${fn:toUpperCase(fn:substring(sn,1,2))}"/>
+              <label class="sch-chip">
+                <input type="checkbox" name="accountId" value="${staff.accountId}">
+                <div class="sch-chip-av">${si}</div>
+                <div class="sch-chip-name">${sn}</div>
+                <div class="sch-chip-role">#${staff.accountId} • ${staff.roleId==2?'Dược sĩ':'Thủ kho'}</div>
+              </label>
+            </c:forEach>
+          </div>
+          <div class="field-hint">Có thể chọn nhiều nhân viên — mỗi người sẽ được tạo 1 lịch ca riêng</div>
+        </div>
+
+        <%-- Loại ca --%>
+        <div class="mfg">
+          <label>Loại ca <span style="color:var(--red)">*</span></label>
+          <div class="stype-grid">
+            <c:forEach var="st" items="${shiftTypes}">
+              <c:if test="${st.active}">
+                <label class="stype-card" onclick="updateSchedPreview()">
+                  <input type="radio" name="shiftTypeId" value="${st.shiftTypeId}" required>
+                  <div style="font-size:20px">
+                    <c:choose>
+                      <c:when test="${st.startHour < 12}">☀️</c:when>
+                      <c:when test="${st.startHour < 18}">⛅</c:when>
+                      <c:otherwise>🌙</c:otherwise>
+                    </c:choose>
+                  </div>
+                  <div class="stype-name">${st.name}</div>
+                  <div class="stype-time">${st.startHour}:${st.startMinute<10?'0':''}${st.startMinute} – ${st.endHour}:${st.endMinute<10?'0':''}${st.endMinute}</div>
+                  <div class="stype-rate"><fmt:formatNumber value="${st.hourlyRate}" type="number" maxFractionDigits="0"/>đ/giờ</div>
+                </label>
+              </c:if>
+            </c:forEach>
+          </div>
+        </div>
+
+        <%-- Khoảng ngày --%>
+        <div class="mfg-row">
+          <div class="mfg">
+            <label>Từ ngày <span style="color:var(--red)">*</span></label>
+            <input type="date" name="dateFrom" id="schedFrom" required onchange="updateSchedPreview()" min="${today}">
+          </div>
+          <div class="mfg">
+            <label>Đến ngày</label>
+            <input type="date" name="dateTo" id="schedTo" onchange="updateSchedPreview()" min="${today}">
+            <span class="field-hint">Bỏ trống = chỉ 1 ngày</span>
+          </div>
+        </div>
+
+        <div class="dur-preview" id="schedPreview" style="display:none"></div>
+
+        <div class="mfg">
+          <label>Ghi chú</label>
+          <textarea name="note" rows="2" placeholder="Ghi chú tùy chọn..."></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel-m" onclick="closeSchedModal()">Hủy</button>
+      <button class="btn-save-m" onclick="submitSchedForm()">📅 Xếp lịch ca</button>
+    </div>
+  </div>
+</div>
+
+<%-- ══════════════════════════════════════
+     MODAL 2: Thêm/Sửa loại ca
+     ══════════════════════════════════════ --%>
 <div class="modal-overlay" id="typeModal">
   <div class="modal">
     <div class="modal-head">
@@ -799,12 +1599,10 @@ tbody tr:hover td{background:#F7FBFF}
       <form id="typeForm" method="post" action="${pageContext.request.contextPath}/shift-types">
         <input type="hidden" name="action" id="typeAction" value="create">
         <input type="hidden" name="shiftTypeId" id="editTypeId" value="">
-
         <div class="mfg">
           <label>Tên loại ca *</label>
-          <input type="text" name="name" id="typeName" placeholder="Ví dụ: Ca sáng Long Châu" required>
+          <input type="text" name="name" id="typeName" placeholder="VD: Ca sáng Long Châu" required>
         </div>
-
         <div class="mfg-row">
           <div class="mfg">
             <label>Giờ bắt đầu *</label>
@@ -815,17 +1613,16 @@ tbody tr:hover td{background:#F7FBFF}
             <input type="time" name="endTime" id="typeEndTime" required value="14:00">
           </div>
         </div>
-        <div id="durPreview" style="font-size:12px;color:var(--muted);margin:-8px 0 14px;padding:6px 10px;background:var(--surface);border-radius:7px"></div>
-
+        <div id="durPreview" class="dur-preview"></div>
+        <div id="durWarn" class="dur-warn" style="display:none"></div>
         <div class="mfg">
           <label>Lương theo giờ (VNĐ) *</label>
           <input type="number" name="hourlyRate" id="typeRate" min="50000" step="1000"
                  placeholder="Tối thiểu 50,000đ" required value="60000"
                  oninput="validateRate(this)">
           <span class="field-err" id="rateErr">⚠️ Tối thiểu 50,000đ/giờ</span>
-          <span class="field-hint">Tổng lương ca sẽ được tính tự động</span>
+          <span class="field-hint">Tổng lương ca sẽ tự tính</span>
         </div>
-
         <div class="mfg">
           <label>Phụ cấp ca (VNĐ)</label>
           <input type="number" name="allowanceAmount" id="typeAllowance" min="0" step="1000" value="0" placeholder="0">
@@ -834,62 +1631,649 @@ tbody tr:hover td{background:#F7FBFF}
       </form>
     </div>
     <div class="modal-foot">
-      <button class="btn-cancel" onclick="closeTypeModal()">Hủy</button>
-      <button class="btn-save" onclick="submitTypeForm()">💾 Lưu loại ca</button>
+      <button class="btn-cancel-m" onclick="closeTypeModal()">Hủy</button>
+      <button class="btn-save-m" onclick="submitTypeForm()">💾 Lưu loại ca</button>
     </div>
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<%-- ════════════════════════════════════════════════════════
+     MODAL XẾP CA ĐẦY ĐỦ — nhiều NV + nhiều ca + khoảng ngày
+     POST /shifts?action=schedule-bulk
+     ════════════════════════════════════════════════════════ --%>
+<div class="sched-overlay" id="fullSchedModal">
+  <div class="sched-modal">
+    <div class="sched-modal-head">
+      <span class="sched-modal-title">📅 Xếp lịch ca làm việc</span>
+      <button class="sched-modal-close" onclick="closeFullSchedModal()">✕</button>
+    </div>
+    <div class="sched-modal-body">
+      <form id="fullSchedForm" method="post" action="${pageContext.request.contextPath}/shifts">
+        <input type="hidden" name="action" value="schedule-bulk">
+
+        <%-- Nhân viên --%>
+        <div class="sched-section">
+          <div class="sched-section-title">👤 Nhân viên <span style="color:var(--red)">*</span></div>
+          <div class="staff-search-wrap">
+            <span class="staff-search-icon">🔍</span>
+            <input type="text" class="staff-search-input" id="staffSearchInput"
+                   placeholder="Tìm theo tên, tài khoản, email, SĐT..."
+                   oninput="filterStaffChips(this.value)"
+                   autocomplete="off">
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <button type="button" class="sc-all-btn" onclick="toggleAllStaff()">☑️ Chọn tất cả</button>
+            <span id="staffSearchCount" style="font-size:11px;color:var(--muted)"></span>
+          </div>
+          <div class="staff-chips-wrap" id="fullStaffChips">
+            <c:forEach var="s" items="${allStaff}">
+              <c:set var="sn2" value="${not empty s.fullName ? s.fullName : s.username}"/>
+              <c:set var="si2" value="${fn:toUpperCase(fn:substring(sn2,0,1))}${fn:toUpperCase(fn:substring(sn2,1,2))}"/>
+              <label class="sc-chip" onclick="updateFullPreview()" data-search="${fn:toLowerCase(sn2)} ${fn:toLowerCase(s.username)} ${fn:toLowerCase(s.email != null ? s.email : '')} ${s.phone != null ? s.phone : ''}">
+                <input type="checkbox" name="accountId" value="${s.accountId}">
+                <div class="user-av" style="width:22px;height:22px;font-size:9px;border-radius:6px;background:linear-gradient(135deg,#1558A8,#4F81D9);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0">${si2}</div>
+                <span class="sc-chip-name">${sn2}</span>
+                <span class="sc-chip-role">${s.roleId==2?'DS':'TK'}</span>
+              </label>
+            </c:forEach>
+          </div>
+        </div>
+
+        <%-- Loại ca — checkbox multi-select --%>
+        <div class="sched-section">
+          <div class="sched-section-title">🕐 Loại ca <span style="color:var(--red)">*</span> <span style="color:var(--muted);font-weight:400;font-size:10px">Có thể chọn nhiều</span></div>
+          <div class="stype-cards-wrap" id="fullStypeCards">
+            <c:forEach var="st" items="${shiftTypes}">
+              <c:if test="${st.active}">
+                <label class="stc" onclick="updateFullPreview()">
+                  <input type="checkbox" name="shiftTypeId" value="${st.shiftTypeId}">
+                  <div class="stc-icon">
+                    <c:choose>
+                      <c:when test="${st.startHour < 12}">☀️</c:when>
+                      <c:when test="${st.startHour < 18}">☀️</c:when>
+                      <c:otherwise>🌙</c:otherwise>
+                    </c:choose>
+                  </div>
+                  <div class="stc-name">${st.name}</div>
+                  <div class="stc-time">${st.startHour}:${st.startMinute < 10 ? '0' : ''}${st.startMinute} – ${st.endHour}:${st.endMinute < 10 ? '0' : ''}${st.endMinute}</div>
+                  <div class="stc-rate"><fmt:formatNumber value="${st.hourlyRate}" type="number" maxFractionDigits="0"/>đ/giờ</div>
+                </label>
+              </c:if>
+            </c:forEach>
+          </div>
+        </div>
+
+        <%-- Khoảng ngày --%>
+        <div class="sched-section">
+          <div class="sched-section-title">📆 Khoảng ngày <span style="color:var(--red)">*</span></div>
+          <div class="date-row">
+            <div class="sched-fi">
+              <label>Từ ngày</label>
+              <input type="date" name="dateFrom" id="fsDateFrom" required onchange="updateFullPreview()" min="${today}">
+            </div>
+            <div class="date-sep">→</div>
+            <div class="sched-fi">
+              <label>Đến ngày</label>
+              <input type="date" name="dateTo" id="fsDateTo" onchange="updateFullPreview()" min="${today}">
+              <span style="font-size:11px;color:var(--muted);margin-top:2px">Để trống = chỉ 1 ngày</span>
+            </div>
+          </div>
+        </div>
+
+        <%-- Ghi chú --%>
+        <div class="sched-section">
+          <div class="sched-section-title">📝 Ghi chú <span style="color:var(--muted);font-weight:400">(tùy chọn)</span></div>
+          <div class="sched-fi">
+            <textarea name="note" rows="2" placeholder="Ghi chú cho lịch ca này..."></textarea>
+          </div>
+        </div>
+
+        <%-- Preview tự động --%>
+        <div class="sched-preview" id="fullSchedPreview">
+          <div>📅 <span id="fpDays" class="sched-preview-count">—</span> ngày
+             × <span id="fpStaff" class="sched-preview-count">—</span> nhân viên
+             × <span id="fpTypes" class="sched-preview-count">—</span> loại ca
+             = <strong><span id="fpTotal" class="sched-preview-count">—</span> lịch ca</strong>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">
+            💡 Lịch ca đã tồn tại sẽ tự động bỏ qua
+          </div>
+        </div>
+
+      </form>
+    </div>
+    <div class="sched-modal-foot">
+      <button type="button" class="btn-sched-cancel" onclick="closeFullSchedModal()">Hủy</button>
+      <button type="button" class="btn-sched-submit" onclick="submitFullSched()">📅 Xếp lịch ca</button>
+    </div>
+  </div>
+</div>
+
+
+<%-- ════════════════════════════════════════════════════
+     MODAL EDIT LỊCH CA (cho ca chưa vào — SCHEDULED)
+     POST /shifts?action=schedule-update
+     ════════════════════════════════════════════════════ --%>
+<div class="edit-modal-overlay" id="editSchedModal">
+  <div class="edit-modal">
+    <div class="em-head">
+      <span class="em-title" id="editModalTitle">✏️ Sửa lịch ca</span>
+      <button class="em-close" onclick="closeEditModal()">✕</button>
+    </div>
+    <div class="em-body">
+      <form id="editSchedForm" method="post" action="${pageContext.request.contextPath}/shifts">
+        <input type="hidden" name="action" value="schedule-update">
+        <input type="hidden" name="scheduleId" id="editSchedId">
+
+        <%-- Loại ca --%>
+        <div class="em-fg" style="margin-bottom:12px">
+          <label>Loại ca <span style="color:var(--red)">*</span></label>
+          <select name="shiftTypeId" id="editShiftType" required>
+            <option value="">-- Chọn --</option>
+            <c:forEach var="st" items="${shiftTypes}">
+              <c:if test="${st.active}">
+                <option value="${st.shiftTypeId}"
+                  data-label="${st.name} (${st.startHour}:${st.startMinute < 10 ? '0' : ''}${st.startMinute}–${st.endHour}:${st.endMinute < 10 ? '0' : ''}${st.endMinute})">
+                  ${st.name} — ${st.startHour}:${st.startMinute < 10 ? '0' : ''}${st.startMinute}→${st.endHour}:${st.endMinute < 10 ? '0' : ''}${st.endMinute}
+                  (<fmt:formatNumber value="${st.hourlyRate}" type="number" maxFractionDigits="0"/>đ/giờ)
+                </option>
+              </c:if>
+            </c:forEach>
+          </select>
+        </div>
+
+        <%-- Dung sai trễ --%>
+        <div class="em-row">
+          <div class="em-fg">
+            <label>Cho phép trễ (phút)</label>
+            <input type="number" name="lateToleranceMinutes" id="editLateTol"
+                   min="0" max="120" step="5" value="10">
+            <span style="font-size:10.5px;color:var(--muted);margin-top:2px">Mặc định 10 phút</span>
+          </div>
+          <div class="em-fg">
+            <label>Ngày làm việc</label>
+            <input type="text" id="editWorkDate" readonly
+                   style="background:#F8FAFC;color:var(--muted);cursor:default">
+          </div>
+        </div>
+
+        <%-- Ghi chú --%>
+        <div class="em-fg full" style="margin-bottom:0">
+          <label>Ghi chú</label>
+          <textarea name="notes" id="editNotes" rows="2"
+                    placeholder="Ghi chú cho ca này..."></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="em-foot">
+      <button class="em-cancel" onclick="closeEditModal()">Hủy</button>
+      <button class="em-submit" onclick="submitEditSched()">💾 Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
+<%-- ════════════════════════════════════════════════════
+     MODAL XÓA LỊCH CA THEO NHÂN VIÊN
+     POST /shifts?action=schedule-delete-staff
+     ════════════════════════════════════════════════════ --%>
+<div class="del-modal-overlay" id="deleteStaffModal">
+  <div class="del-modal">
+    <div class="dm-head">
+      <span class="dm-title">🗑️ Xóa lịch ca của nhân viên</span>
+      <button class="dm-close" onclick="closeDeleteModal()">✕</button>
+    </div>
+    <div class="dm-body">
+      <%-- Info nhân viên --%>
+      <div class="dm-staff-row">
+        <div class="dm-staff-av" id="delStaffAv">NV</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--ink)" id="delStaffName">—</div>
+          <div style="font-size:11.5px;color:var(--muted)">Chỉ xóa lịch ca chưa check-in (SCHEDULED)</div>
+        </div>
+      </div>
+
+      <%-- Chú ý --%>
+      <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:9px;padding:10px 14px;font-size:12.5px;color:#991B1B;margin-bottom:14px;display:flex;gap:8px">
+        <span>⚠️</span>
+        <span>Ca đang làm hoặc đã điểm danh <strong>không thể xóa</strong>. Hệ thống sẽ tự bỏ qua các ca đó.</span>
+      </div>
+
+      <%-- Khoảng ngày --%>
+      <div class="dm-date-row">
+        <div class="dm-fg">
+          <label>Từ ngày <span style="color:var(--red)">*</span></label>
+          <input type="date" id="delFromDate" oninput="loadDelPreview()">
+        </div>
+        <div class="dm-sep">→</div>
+        <div class="dm-fg">
+          <label>Đến ngày</label>
+          <input type="date" id="delToDate" oninput="loadDelPreview()">
+          <span style="font-size:10.5px;color:var(--muted);margin-top:2px">Để trống = chỉ 1 ngày</span>
+        </div>
+      </div>
+
+      <%-- Preview: hiện danh sách ca sẽ bị xóa --%>
+      <div id="delPreviewBox" style="display:none">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">
+          Các lịch ca sẽ bị xóa (<span id="delCount">0</span>)
+        </div>
+        <div class="dm-list" id="delItemsList"></div>
+      </div>
+      <div id="delEmptyBox" style="display:none;text-align:center;padding:20px;color:var(--muted);font-size:13px">
+        Không tìm thấy lịch ca nào có thể xóa trong khoảng ngày này.
+      </div>
+      <div id="delLoadingBox" style="display:none;text-align:center;padding:14px;color:var(--muted);font-size:13px">
+        ⏳ Đang tải...
+      </div>
+    </div>
+    <div class="dm-foot">
+      <span class="dm-count" id="delTotalCount"></span>
+      <div style="display:flex;gap:8px">
+        <button class="dm-cancel" onclick="closeDeleteModal()">Hủy</button>
+        <button class="dm-confirm" id="delConfirmBtn" onclick="submitDeleteStaff()" disabled
+                style="opacity:.5;cursor:not-allowed">🗑️ Xác nhận xóa</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<%-- ════════════════════════════════════════════════════════
+     MODAL CHỌN CA ĐỂ SỬA
+     ════════════════════════════════════════════════════════ --%>
+<div class="selmode-overlay" id="editSelectModal">
+  <div class="selmode-modal">
+    <div class="sm-head">
+      <span class="sm-title">✏️ Chọn ca muốn sửa</span>
+      <span class="sm-selected-badge" id="editSelBadge">0 ca đã chọn</span>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="sm-cancel-btn" onclick="closeEditSelectModal()">Hủy</button>
+        <button id="editSelActionBtn" class="sm-action-btn sm-action-edit"
+                onclick="applyEditSel()">✏️ Sửa ca đã chọn</button>
+      </div>
+      <button class="sm-close" onclick="closeEditSelectModal()">✕</button>
+    </div>
+    <div class="sm-instructions">
+      💡 <span>Click vào chip ca để <strong>chọn/bỏ chọn</strong>. Chỉ chọn được ca chưa check-in (SCHEDULED). Ca đang làm / đã điểm danh bị khóa.</span>
+    </div>
+    <div class="sm-body">
+      <%-- Week nav mini --%>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <a href="${pageContext.request.contextPath}/shifts?tab=list&w=${param.w != null ? param.w - 1 : -1}" class="btn-nav" style="font-size:12px;padding:4px 10px">‹</a>
+        <span style="font-size:13px;font-weight:700;color:var(--ink)">📅 ${weekStart} → ${weekEnd}</span>
+        <a href="${pageContext.request.contextPath}/shifts?tab=list&w=${param.w != null ? param.w + 1 : 1}" class="btn-nav" style="font-size:12px;padding:4px 10px">›</a>
+      </div>
+      <%-- Grid chọn ca --%>
+      <div class="sm-week-grid" id="editWeekGrid">
+        <c:forEach begin="0" end="6" var="i">
+          <c:set var="dayDate" value="${weekDays[i]}"/>
+          <c:set var="isToday" value="${dayDate.equals(today)}"/>
+          <div class="sm-day-col ${isToday ? 'sm-today' : ''}">
+            <div class="sm-day-head">
+              <div class="sm-day-name">${weekDayNames[i]}</div>
+              <div class="sm-day-date">${dayDate.dayOfMonth}</div>
+              <div style="font-size:8px;color:var(--muted)">${dayDate.monthValue}/${dayDate.year}</div>
+            </div>
+            <div class="sm-day-body">
+              <c:set var="hasSched" value="false"/>
+              <c:forEach var="sc" items="${schedules}">
+                <c:if test="${sc.workDate.equals(dayDate)}">
+                  <c:set var="hasSched" value="true"/>
+                  <c:set var="isEditable" value="${(sc.status == 'SCHEDULED' or sc.status == 'LEAVE_PENDING') and !sc.workDate.isBefore(today)}"/>
+                  <c:set var="smChipClass">sm-chip <c:choose>
+                    <c:when test="${sc.startHour < 12}">sm-morning</c:when>
+                    <c:when test="${sc.startHour < 20}">sm-afternoon</c:when>
+                    <c:otherwise>sm-night</c:otherwise>
+                  </c:choose> ${!isEditable ? 'sm-locked' : ''}</c:set>
+                  <div class="${smChipClass}"
+                       id="edit-chip-${sc.scheduleId}"
+                       data-sched-id="${sc.scheduleId}"
+                       data-shift-type-id="${sc.shiftTypeId}"
+                       data-shift-type-name="${sc.shiftTypeName}"
+                       data-late-tol="${sc.lateToleranceMinutes}"
+                       data-notes="${sc.notes}"
+                       data-staff="${sc.staffName}"
+                       data-date="${sc.workDate}"
+                       data-editable="${isEditable}"
+                       onclick="toggleEditChip(this)">
+                    <div class="sm-chip-name">${sc.staffName}</div>
+                    <div class="sm-chip-type">${sc.shiftTypeName}</div>
+                    <div class="sm-chip-status" style="background:<c:choose>
+                      <c:when test="${sc.status=='CONFIRMED'}">#D1FAE5;color:#065F46</c:when>
+                      <c:when test="${sc.status=='ABSENT'}">#FEE2E2;color:#991B1B</c:when>
+                      <c:when test="${sc.status=='SCHEDULED'}">#DBEAFE;color:#1E40AF</c:when>
+                      <c:otherwise>#F1F5F9;color:#64748B</c:otherwise>
+                    </c:choose>">
+                      <c:choose>
+                        <c:when test="${sc.status=='CONFIRMED'}">✅ Đang làm</c:when>
+                        <c:when test="${sc.status=='ABSENT'}">❌ Vắng</c:when>
+                        <c:when test="${sc.status=='SCHEDULED'}">⏳ Chưa vào</c:when>
+                        <c:otherwise>${sc.status}</c:otherwise>
+                      </c:choose>
+                    </div>
+                    <c:if test="${!isEditable}">
+                      <span class="sm-lock-badge">🔒 Không thể sửa</span>
+                    </c:if>
+                  </div>
+                </c:if>
+              </c:forEach>
+              <c:if test="${!hasSched}"><div class="sm-empty">Trống</div></c:if>
+            </div>
+          </div>
+        </c:forEach>
+      </div>
+
+      <%-- Panel chỉnh sửa — hiện khi đã chọn ít nhất 1 ca --%>
+      <div class="sm-edit-panel" id="editPanel">
+        <h4>⚙️ Thông tin chỉnh sửa (áp dụng cho tất cả ca đã chọn)</h4>
+        <div class="sm-edit-grid">
+          <div class="sm-efg">
+            <label>Loại ca <span style="color:var(--red)">*</span></label>
+            <select id="smEditShiftType">
+              <option value="">-- Giữ nguyên --</option>
+              <c:forEach var="st" items="${shiftTypes}">
+                <c:if test="${st.active}">
+                  <option value="${st.shiftTypeId}">
+                    ${st.name} (${st.startHour}:${st.startMinute<10?'0':''}${st.startMinute}→${st.endHour}:${st.endMinute<10?'0':''}${st.endMinute})
+                    — <fmt:formatNumber value="${st.hourlyRate}" type="number" maxFractionDigits="0"/>đ/h
+                  </option>
+                </c:if>
+              </c:forEach>
+            </select>
+          </div>
+          <div class="sm-efg">
+            <label>Cho phép trễ (phút)</label>
+            <input type="number" id="smEditLateTol" min="0" max="120" step="5"
+                   placeholder="Giữ nguyên" value="">
+            <span style="font-size:10px;color:var(--muted);margin-top:2px">Để trống = giữ nguyên</span>
+          </div>
+          <div class="sm-efg">
+            <label>Xem trước</label>
+            <div id="smEditPreview" style="font-size:12px;color:var(--muted);padding:8px;background:#F8FAFC;border-radius:7px;min-height:36px">
+              Chọn ca để xem trước
+            </div>
+          </div>
+          <div class="sm-efg span3">
+            <label>Ghi chú</label>
+            <input type="text" id="smEditNotes" placeholder="Ghi chú (để trống = giữ nguyên)">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sm-foot">
+      <span class="sm-foot-hint" id="editSelHint">Click vào chip ca để chọn</span>
+      <button class="sm-cancel-btn" onclick="closeEditSelectModal()">Hủy</button>
+      <button id="editSelFootBtn" class="sm-action-btn sm-action-edit"
+              onclick="applyEditSel()">✏️ Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
+<%-- ════════════════════════════════════════════════════════
+     MODAL CHỌN CA ĐỂ XÓA
+     ════════════════════════════════════════════════════════ --%>
+<div class="selmode-overlay" id="deleteSelectModal">
+  <div class="selmode-modal">
+    <div class="sm-head">
+      <span class="sm-title">🗑️ Chọn ca muốn xóa</span>
+      <span class="sm-selected-badge del-badge" id="deleteSelBadge">0 ca đã chọn</span>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="sm-cancel-btn" onclick="closeDeleteSelectModal()">Hủy</button>
+        <button id="deleteSelActionBtn" class="sm-action-btn sm-action-del"
+                onclick="applyDeleteSel()">🗑️ Xóa ca đã chọn</button>
+      </div>
+      <button class="sm-close" onclick="closeDeleteSelectModal()">✕</button>
+    </div>
+    <div class="sm-instructions" style="background:#FEF9F9">
+      ⚠️ <span>Click để chọn ca cần xóa. Chỉ xóa được ca <strong>chưa check-in</strong>. Ca đang làm / đã điểm danh không thể xóa.</span>
+    </div>
+    <div class="sm-body">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <a href="${pageContext.request.contextPath}/shifts?tab=list&w=${param.w != null ? param.w - 1 : -1}" class="btn-nav" style="font-size:12px;padding:4px 10px">‹</a>
+        <span style="font-size:13px;font-weight:700;color:var(--ink)">📅 ${weekStart} → ${weekEnd}</span>
+        <a href="${pageContext.request.contextPath}/shifts?tab=list&w=${param.w != null ? param.w + 1 : 1}" class="btn-nav" style="font-size:12px;padding:4px 10px">›</a>
+      </div>
+      <div class="sm-week-grid" id="deleteWeekGrid">
+        <c:forEach begin="0" end="6" var="i">
+          <c:set var="dayDate" value="${weekDays[i]}"/>
+          <c:set var="isToday" value="${dayDate.equals(today)}"/>
+          <div class="sm-day-col ${isToday ? 'sm-today' : ''}">
+            <div class="sm-day-head">
+              <div class="sm-day-name">${weekDayNames[i]}</div>
+              <div class="sm-day-date">${dayDate.dayOfMonth}</div>
+              <div style="font-size:8px;color:var(--muted)">${dayDate.monthValue}/${dayDate.year}</div>
+            </div>
+            <div class="sm-day-body">
+              <c:set var="hasSched2" value="false"/>
+              <c:forEach var="sc" items="${schedules}">
+                <c:if test="${sc.workDate.equals(dayDate)}">
+                  <c:set var="hasSched2" value="true"/>
+                  <c:set var="isDeletable" value="${(sc.status == 'SCHEDULED' or sc.status == 'LEAVE_PENDING' or sc.status == 'CANCELLED') and !sc.workDate.isBefore(today)}"/>
+                  <c:set var="smChipClass2">sm-chip <c:choose>
+                    <c:when test="${sc.startHour < 12}">sm-morning</c:when>
+                    <c:when test="${sc.startHour < 20}">sm-afternoon</c:when>
+                    <c:otherwise>sm-night</c:otherwise>
+                  </c:choose> ${!isDeletable ? 'sm-locked' : ''}</c:set>
+                  <div class="${smChipClass2}"
+                       id="del-chip-${sc.scheduleId}"
+                       data-sched-id="${sc.scheduleId}"
+                       data-deletable="${isDeletable}"
+                       onclick="toggleDelChip(this)">
+                    <div class="sm-chip-name">${sc.staffName}</div>
+                    <div class="sm-chip-type">${sc.shiftTypeName}</div>
+                    <div class="sm-chip-status" style="background:<c:choose>
+                      <c:when test="${sc.status=='CONFIRMED'}">#D1FAE5;color:#065F46</c:when>
+                      <c:when test="${sc.status=='ABSENT'}">#FEE2E2;color:#991B1B</c:when>
+                      <c:when test="${sc.status=='SCHEDULED'}">#DBEAFE;color:#1E40AF</c:when>
+                      <c:otherwise>#F1F5F9;color:#64748B</c:otherwise>
+                    </c:choose>">
+                      <c:choose>
+                        <c:when test="${sc.status=='CONFIRMED'}">✅ Đang làm</c:when>
+                        <c:when test="${sc.status=='ABSENT'}">❌ Vắng</c:when>
+                        <c:when test="${sc.status=='SCHEDULED'}">⏳ Chưa vào</c:when>
+                        <c:otherwise>${sc.status}</c:otherwise>
+                      </c:choose>
+                    </div>
+                    <c:if test="${!isDeletable}">
+                      <span class="sm-lock-badge">🔒 Không thể xóa</span>
+                    </c:if>
+                  </div>
+                </c:if>
+              </c:forEach>
+              <c:if test="${!hasSched2}"><div class="sm-empty">Trống</div></c:if>
+            </div>
+          </div>
+        </c:forEach>
+      </div>
+      <%-- Danh sách ca đã chọn để xóa --%>
+      <div id="delSelSummary" style="display:none;margin-top:14px;background:#FEF2F2;
+           border:1px solid #FECACA;border-radius:10px;padding:12px 16px">
+        <div style="font-size:12px;font-weight:700;color:#991B1B;margin-bottom:8px">
+          🗑️ Ca sẽ bị xóa (<span id="delSelCount">0</span>):
+        </div>
+        <div id="delSelList" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+    </div>
+    <div class="sm-foot">
+      <span class="sm-foot-hint" id="deleteSelHint">Click vào chip ca để chọn</span>
+      <button class="sm-cancel-btn" onclick="closeDeleteSelectModal()">Hủy</button>
+      <button id="deleteSelFootBtn" class="sm-action-btn sm-action-del"
+              onclick="applyDeleteSel()">🗑️ Xóa ca đã chọn</button>
+    </div>
+  </div>
+</div>
+
+<%-- Schedules JSON cho JS delete preview --%>
+<script id="schedDataScript">
+const SCHED_LIST = [
+  <c:forEach var="sc" items="${schedules}" varStatus="st">
+  {
+    id: ${sc.scheduleId},
+    accountId: ${sc.accountId},
+    staffName: "${sc.staffName}",
+    shiftTypeName: "${sc.shiftTypeName}",
+    workDate: "${sc.workDate}",
+    status: "${sc.status}",
+    plannedStart: "${not empty sc.plannedStart ? fn:substring(sc.plannedStart.toString(),11,16) : ''}",
+    plannedEnd: "${not empty sc.plannedEnd ? fn:substring(sc.plannedEnd.toString(),11,16) : ''}"
+  }${!st.last ? ',' : ''}
+  </c:forEach>
+];
+</script>
+
+<%-- ══ DETAIL MODAL OVERLAY — redesigned UX ══ --%>
+<div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetailPanel()">
+  <div class="detail-modal">
+
+    <%-- ── Header ── --%>
+    <div class="sdp-header">
+      <div class="sdp-av" id="sdpAv">?</div>
+      <div style="flex:1;min-width:0">
+        <div class="sdp-name" id="sdpName">—</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap">
+          <span style="font-size:11.5px;opacity:.7" id="sdpDate">—</span>
+          <span style="font-size:10px;opacity:.4">•</span>
+          <span class="sdp-badge pend" id="sdpBadge">—</span>
+        </div>
+      </div>
+      <button class="sdp-close" onclick="closeDetailPanel()" title="Đóng">✕</button>
+    </div>
+
+    <%-- ── Timeline thời gian làm việc ── --%>
+    <div class="sdp-timeline-wrap">
+      <div class="sdp-sec-label">Thời gian làm việc</div>
+      <div class="sdp-timeline" id="sdpTimeline"></div>
+    </div>
+
+    <%-- ── Info chips (gọn, dễ scan) ── --%>
+    <div class="sdp-info-row">
+      <div class="sdp-chip" id="sdpChipId"><span class="sdp-chip-icon">#</span><span class="sdp-chip-val" id="sdpId">—</span></div>
+      <div class="sdp-chip" id="sdpChipType"><span class="sdp-chip-icon">📋</span><span class="sdp-chip-val" id="sdpShiftType">—</span></div>
+      <div class="sdp-chip" id="sdpChipLate"><span class="sdp-chip-icon">⏱</span><span class="sdp-chip-val" id="sdpLate">—</span></div>
+      <div class="sdp-chip" id="sdpChipTotal"><span class="sdp-chip-icon">📊</span><span class="sdp-chip-val" id="sdpTotal">—</span></div>
+    </div>
+
+    <%-- ── Notes ── --%>
+    <div class="sdp-notes" id="sdpNotesWrap" style="display:none">
+      <div class="sdp-notes-box" id="sdpNotes"></div>
+    </div>
+
+    <%-- ── Actions ── --%>
+    <div class="sdp-actions" id="sdpActions">
+      <button class="sdp-btn edit" id="sdpEditBtn" onclick="editFromPanel()">✏️ Sửa ca</button>
+      <button class="sdp-btn del" id="sdpDelBtn" onclick="deleteFromPanel()">🗑 Hủy ca</button>
+      <button class="sdp-btn close-btn" onclick="closeDetailPanel()">✕ Đóng</button>
+    </div>
+  </div>
+</div>
+
+
 <script>
-// ── Tab switching ─────────────────────────────────────────────
-function switchTab(tab) {
+const ctx_path = '${pageContext.request.contextPath}';
+
+// ── Tab switching ─────────────────────────────────
+function switchTab(tab, btn) {
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
-  event.currentTarget.classList.add('active');
+  if (btn) btn.classList.add('active');
 }
 
-// ── Week/Month view toggle ────────────────────────────────────
-function setView(v) {
-  document.getElementById('viewWeek').style.display  = v === 'week'  ? '' : 'none';
-  document.getElementById('viewMonth').style.display = v === 'month' ? '' : 'none';
-  document.getElementById('btnWeek').classList.toggle('active', v==='week');
-  document.getElementById('btnMonth').classList.toggle('active', v==='month');
+// ── Period label ──────────────────────────────────
+(function() {
+  const weekStart = new Date('${weekStart}');
+  const weekEnd   = new Date('${weekEnd}');
+  const opts = { day:'numeric', month:'numeric' };
+  const label = document.getElementById('periodLabel');
+  if (label && weekStart && !isNaN(weekStart)) {
+    label.textContent = weekStart.toLocaleDateString('vi-VN', opts)
+      + ' – ' + weekEnd.toLocaleDateString('vi-VN', opts);
+  }
+})();
+
+// ── Toast auto-hide ───────────────────────────────
+const toast = document.getElementById('toast');
+if (toast) setTimeout(() => { toast.style.opacity='0'; toast.style.transition='opacity .5s'; setTimeout(()=>toast.remove(),500); }, 3500);
+
+// ── Search table ──────────────────────────────────
+function filterShiftTable(q) {
+  q = (q||'').toLowerCase().trim();
+  document.querySelectorAll('#shiftTbody tr').forEach(row => {
+    row.style.display = (!q || row.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
 }
 
-// ── Duration preview in modal ─────────────────────────────────
-function updateDurPreview() {
-  const s = document.getElementById('typeStartTime').value;
-  const e = document.getElementById('typeEndTime').value;
-  const p = document.getElementById('durPreview');
-  if (!s || !e) { p.textContent = ''; return; }
-  const sh = parseInt(s.split(':')[0]), sm = parseInt(s.split(':')[1]);
-  const eh = parseInt(e.split(':')[0]), em = parseInt(e.split(':')[1]);
-  let dur = (eh * 60 + em - sh * 60 - sm) / 60;
-  if (dur <= 0) dur += 24;
-  const rate = parseInt(document.getElementById('typeRate').value) || 60000;
-  const total = Math.round(dur * rate);
-  const caType = dur >= 10 ? '🟣 Ca dài/gãy' : dur >= 7 ? '🔵 Ca tiêu chuẩn' : '🟢 Part-time';
-  p.innerHTML = `${caType} &nbsp;|&nbsp; ⏱ ${dur.toFixed(1)} tiếng &nbsp;|&nbsp; 💰 Tổng lương: <strong>${total.toLocaleString('vi')}đ</strong>`;
+// ══════════════════════════════════════════════════
+//  MODAL: Xếp ca mới (Quick Schedule)
+// ══════════════════════════════════════════════════
+function openSchedModal(preDate, preAccountId) {
+  // Pre-fill ngày nếu có
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('schedFrom').value = preDate || today;
+  document.getElementById('schedTo').value   = '';
+  // Pre-check nhân viên nếu có
+  if (preAccountId) {
+    const cb = document.querySelector('#staffChipsGrid input[value="'+preAccountId+'"]');
+    if (cb) cb.checked = true;
+  }
+  // Uncheck all radio
+  document.querySelectorAll('#schedForm input[name="shiftTypeId"]').forEach(r => r.checked = false);
+  updateSchedPreview();
+  document.getElementById('schedModal').classList.add('open');
 }
-document.getElementById('typeStartTime').addEventListener('input', updateDurPreview);
-document.getElementById('typeEndTime').addEventListener('input', updateDurPreview);
-document.getElementById('typeRate').addEventListener('input', updateDurPreview);
+function openSchedModalForDay(date, accountId) {
+  const today = new Date().toISOString().split('T')[0];
+  if (date && date < today) {
+    alert('⛔ Không thể xếp ca cho ngày ' + date + ' — ngày này đã qua!');
+    return;
+  }
+  openSchedModal(date, accountId);
+}
+function closeSchedModal() {
+  document.getElementById('schedModal').classList.remove('open');
+}
+function updateSchedPreview() {
+  const from = document.getElementById('schedFrom').value;
+  const to   = document.getElementById('schedTo').value;
+  const prev = document.getElementById('schedPreview');
+  if (!from) { prev.style.display='none'; return; }
+  const checkedStaff = document.querySelectorAll('#staffChipsGrid input:checked').length;
+  const fromD = new Date(from);
+  const toD   = to ? new Date(to) : fromD;
+  if (isNaN(fromD) || isNaN(toD)) { prev.style.display='none'; return; }
+  const days = Math.max(1, Math.round((toD - fromD) / 86400000) + 1);
+  const total = days * Math.max(1, checkedStaff);
+  prev.style.display = 'block';
+  prev.innerHTML = '📅 <strong>' + days + ' ngày</strong> × <strong>' + Math.max(1,checkedStaff) + ' nhân viên</strong> = tạo <strong>' + total + ' lịch ca</strong>';
+}
+function submitSchedForm() {
+  const checkedStaff = document.querySelectorAll('#staffChipsGrid input:checked').length;
+  const checkedType  = document.querySelector('#schedForm input[name="shiftTypeId"]:checked');
+  const from = document.getElementById('schedFrom').value;
+  if (checkedStaff === 0) { alert('Vui lòng chọn ít nhất 1 nhân viên!'); return; }
+  if (!checkedType) { alert('Vui lòng chọn loại ca!'); return; }
+  if (!from) { alert('Vui lòng chọn ngày bắt đầu!'); return; }
+  const schedFromVal = document.getElementById('schedFrom').value; // name=dateFrom
+  const todayStr = new Date().toISOString().split('T')[0];
+  if (schedFromVal && schedFromVal < todayStr) {
+    alert('⛔ Không thể xếp ca cho ngày đã qua!');
+    return;
+  }
+  document.getElementById('schedForm').submit();
+}
+document.getElementById('schedModal').addEventListener('click', function(e) {
+  if (e.target === this) closeSchedModal();
+});
+// Update preview khi tick nhân viên
+document.querySelectorAll('#staffChipsGrid input').forEach(cb => {
+  cb.addEventListener('change', updateSchedPreview);
+});
 
-// ── Validate ─────────────────────────────────────────────────
-function validateRate(el) {
-  const err = document.getElementById('rateErr');
-  if (parseInt(el.value) < 50000) { err.style.display='block'; el.style.borderColor='var(--red)'; }
-  else { err.style.display='none'; el.style.borderColor=''; }
-  updateDurPreview();
-}
-function validateCash(el) {
-  const err = document.getElementById('cashErr');
-  if (parseInt(el.value) < 50000) { err.style.display='block'; el.style.borderColor='var(--red)'; }
-  else { err.style.display='none'; el.style.borderColor=''; }
-}
-
-// ── Modal ─────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════
+//  MODAL: ShiftType CRUD
+// ══════════════════════════════════════════════════
 function openTypeModal() {
   document.getElementById('modalTitle').textContent = 'Thêm loại ca mới';
   document.getElementById('typeAction').value = 'create';
@@ -913,47 +2297,865 @@ function editType(id, name, sh, sm, eh, em, rate, allow) {
   updateDurPreview();
   document.getElementById('typeModal').classList.add('open');
 }
-function closeTypeModal() {
-  document.getElementById('typeModal').classList.remove('open');
-}
+function closeTypeModal() { document.getElementById('typeModal').classList.remove('open'); }
 document.getElementById('typeModal').addEventListener('click', function(e) {
   if (e.target === this) closeTypeModal();
 });
+function updateDurPreview() {
+  const s = document.getElementById('typeStartTime').value;
+  const e = document.getElementById('typeEndTime').value;
+  const p = document.getElementById('durPreview');
+  const warnEl = document.getElementById('durWarn');
+  if (!s || !e) { p.textContent = ''; if (warnEl) warnEl.style.display = 'none'; return; }
+  const sh = parseInt(s.split(':')[0]), sm = parseInt(s.split(':')[1]);
+  const eh = parseInt(e.split(':')[0]), em = parseInt(e.split(':')[1]);
+  let dur = (eh * 60 + em - sh * 60 - sm) / 60;
+  if (dur <= 0) dur += 24; // ca qua đêm (VD: 22:00 → 06:00)
+  const rate = parseInt(document.getElementById('typeRate').value) || 60000;
+  const total = Math.round(dur * rate);
+
+  const MAX_SAFE_HOURS = 10; // chuẩn an toàn theo luật lao động VN thông thường
+  const isTooLong = dur > MAX_SAFE_HOURS;
+
+  const caType = isTooLong ? '🔴 Vượt ngưỡng an toàn' : dur >= 8 ? '🔵 Ca tiêu chuẩn' : '🟢 Part-time';
+  const startLabel = String(sh).padStart(2,'0') + ':' + String(sm).padStart(2,'0');
+  const endLabel   = String(eh).padStart(2,'0') + ':' + String(em).padStart(2,'0');
+  const crossDay   = (eh * 60 + em) <= (sh * 60 + sm) ? ' (qua ngày sau)' : '';
+  p.innerHTML = caType + ' &nbsp;|&nbsp; 🕐 ' + startLabel + ' → ' + endLabel + crossDay
+              + ' &nbsp;|&nbsp; ⏱ ' + dur.toFixed(1) + ' tiếng &nbsp;|&nbsp; 💰 Tổng lương: <strong>' + total.toLocaleString('vi') + 'đ</strong>';
+  p.style.color = isTooLong ? '#DC2626' : '';
+  p.style.fontWeight = isTooLong ? '700' : '';
+
+  if (warnEl) {
+    if (isTooLong) {
+      warnEl.style.display = 'block';
+      warnEl.textContent = '🔴 Cảnh báo: ca dài ' + dur.toFixed(1) + ' tiếng — vượt quá ' + MAX_SAFE_HOURS + ' tiếng/ca theo chuẩn an toàn lao động. Vui lòng kiểm tra lại giờ bắt đầu/kết thúc, hoặc tự chịu trách nhiệm nếu chủ ý tạo ca đặc biệt dài.';
+    } else {
+      warnEl.style.display = 'none';
+    }
+  }
+}
+['typeStartTime','typeEndTime','typeRate'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', updateDurPreview);
+});
+function validateRate(el) {
+  const err = document.getElementById('rateErr');
+  if (parseInt(el.value) < 50000) { err.style.display='block'; el.style.borderColor='var(--red)'; }
+  else { err.style.display='none'; el.style.borderColor=''; }
+  updateDurPreview();
+}
 function submitTypeForm() {
+  const nameEl = document.getElementById('typeName');
+  if (!nameEl.value || !nameEl.value.trim()) {
+    alert('⚠️ Vui lòng nhập tên loại ca!');
+    nameEl.focus();
+    return;
+  }
+  const startEl = document.getElementById('typeStartTime');
+  const endEl   = document.getElementById('typeEndTime');
+  if (!startEl.value || !endEl.value) {
+    alert('⚠️ Vui lòng chọn đầy đủ giờ bắt đầu và giờ kết thúc!');
+    return;
+  }
   const rate = parseInt(document.getElementById('typeRate').value);
-  if (rate < 50000) { validateRate(document.getElementById('typeRate')); return; }
+  if (isNaN(rate) || rate < 50000) { validateRate(document.getElementById('typeRate')); return; }
   document.getElementById('typeForm').submit();
 }
 function toggleType(id, active) {
   if (confirm(active ? 'Tạm dừng loại ca này?' : 'Kích hoạt lại loại ca này?')) {
     const f = document.createElement('form');
     f.method = 'post';
-    f.action = '${pageContext.request.contextPath}/shift-types';
+    f.action = ctx_path + '/shift-types';
     f.innerHTML = '<input name="action" value="toggle"><input name="shiftTypeId" value="'+id+'">';
     document.body.appendChild(f); f.submit();
   }
 }
 function deleteType(id, name) {
   if (confirm('Xóa loại ca "'+name+'"?\nChỉ xóa được khi không còn lịch ca nào dùng loại này.')) {
-    location.href = '${pageContext.request.contextPath}/shift-types?action=delete&id=' + id;
+    location.href = ctx_path + '/shift-types?action=delete&id=' + id;
   }
 }
 
-// ── Toast auto-hide ───────────────────────────────────────────
-const toast = document.getElementById('toast');
-if (toast) setTimeout(() => { toast.style.opacity='0'; toast.style.transition='opacity .5s'; setTimeout(()=>toast.remove(),500); }, 3500);
+// ══════════════════════════════════════════════════
+//  MULTI-SELECT XÓA LOẠI CA
+// ══════════════════════════════════════════════════
+let _typeSelectMode = false;
+let _selectedTypeIds = new Set();
 
-// ── Period label ──────────────────────────────────────────────
-(function() {
-  const weekStart = new Date('${weekStart}');
-  const weekEnd   = new Date('${weekEnd}');
-  const opts = { day:'numeric', month:'numeric' };
-  const label = document.getElementById('periodLabel');
-  if (label && weekStart && !isNaN(weekStart)) {
-    label.textContent = weekStart.toLocaleDateString('vi-VN', opts)
-      + ' – ' + weekEnd.toLocaleDateString('vi-VN', opts);
+function toggleTypeSelectMode() {
+  _typeSelectMode = !_typeSelectMode;
+  const grid = document.getElementById('typesGrid');
+  const btn  = document.getElementById('typeSelectModeBtn');
+  const bar  = document.getElementById('typeBulkDeleteBar');
+
+  if (_typeSelectMode) {
+    grid.classList.add('select-mode');
+    btn.classList.add('active');
+    btn.textContent = '✕ Thoát chọn';
+    bar.classList.add('show');
+  } else {
+    cancelTypeSelectMode();
   }
-})();
+}
+
+function cancelTypeSelectMode() {
+  _typeSelectMode = false;
+  _selectedTypeIds.clear();
+  const grid = document.getElementById('typesGrid');
+  grid.classList.remove('select-mode');
+  document.getElementById('typeSelectModeBtn').classList.remove('active');
+  document.getElementById('typeSelectModeBtn').textContent = '☑️ Chọn';
+  document.getElementById('typeBulkDeleteBar').classList.remove('show');
+  grid.querySelectorAll('.type-card-checkbox').forEach(cb => cb.checked = false);
+  grid.querySelectorAll('.type-card.checked').forEach(c => c.classList.remove('checked'));
+  updateTypeBulkDeleteBar();
+}
+
+function onTypeCardClick(evt, id) {
+  if (!_typeSelectMode) return; // không ở chế độ chọn → click card vẫn để Sửa/Tạm dừng hoạt động bình thường
+  const checkbox = document.querySelector('.type-card-checkbox[data-type-id="'+id+'"]');
+  if (checkbox) { checkbox.checked = !checkbox.checked; onTypeCheckboxChange(id); }
+}
+
+function onTypeCheckboxChange(id) {
+  const checkbox = document.querySelector('.type-card-checkbox[data-type-id="'+id+'"]');
+  const card = document.querySelector('.type-card[data-type-id="'+id+'"]');
+  if (!checkbox) return;
+  if (checkbox.checked) { _selectedTypeIds.add(id); card?.classList.add('checked'); }
+  else { _selectedTypeIds.delete(id); card?.classList.remove('checked'); }
+  updateTypeBulkDeleteBar();
+}
+
+function updateTypeBulkDeleteBar() {
+  const count = _selectedTypeIds.size;
+  document.getElementById('typeBulkDeleteCount').textContent = 'Đã chọn ' + count + ' loại ca';
+  document.getElementById('typeBulkDeleteBtn').disabled = count === 0;
+}
+
+function submitBulkDeleteTypes() {
+  if (_selectedTypeIds.size === 0) return;
+  const names = [..._selectedTypeIds].map(id => {
+    const cb = document.querySelector('.type-card-checkbox[data-type-id="'+id+'"]');
+    return cb ? cb.dataset.typeName : id;
+  }).join(', ');
+
+  if (!confirm('Xóa ' + _selectedTypeIds.size + ' loại ca đã chọn?\n(' + names + ')\n\nChỉ xóa được các loại ca đang Tạm dừng và không còn lịch ca nào dùng. Loại ca đang Dùng hoặc còn lịch sẽ tự động bỏ qua.')) return;
+
+  const f = document.createElement('form');
+  f.method = 'post';
+  f.action = ctx_path + '/shift-types';
+  f.innerHTML = '<input name="action" value="bulk-delete">'
+              + '<input name="ids" value="' + [..._selectedTypeIds].join(',') + '">';
+  document.body.appendChild(f);
+  f.submit();
+}
+
+// ── Hủy lịch ca từ week grid ─────────────────────────────────────────────
+
+// ════════════════════════════════════════════════════════
+//  INLINE DETAIL PANEL — click card → hiện panel chi tiết
+// ════════════════════════════════════════════════════════
+let _activeCard = null;  // card đang được chọn
+let _activeSchedId = null;
+let _activeShiftTypeId = null;
+let _activeLateTol = null;
+let _activeNotes = null;
+let _activeStaffName = null;
+let _activeWorkDate = null;
+let _activeStatus = null;
+
+function showDetailPanel(cardEl) {
+  if (_activeCard) _activeCard.classList.remove('selected');
+  if (_activeCard === cardEl) { closeDetailPanel(); return; }
+
+  _activeCard = cardEl;
+  cardEl.classList.add('selected');
+
+  // Đọc data
+  _activeSchedId     = cardEl.dataset.schedId;
+  _activeShiftTypeId = cardEl.dataset.shiftTypeId;
+  _activeLateTol     = cardEl.dataset.lateTol || '10';
+  _activeNotes       = cardEl.dataset.notes;
+  _activeStaffName   = cardEl.dataset.staffName;
+  _activeWorkDate    = cardEl.dataset.workDate;
+  _activeStatus      = cardEl.dataset.status;
+  const total        = cardEl.dataset.total;
+
+  // Parse all shifts JSON
+  let shifts = [];
+  try { shifts = JSON.parse(cardEl.dataset.shiftsJson || '[]'); } catch(e) {}
+  const firstShift = shifts[0] || {};
+
+  // Initials
+  const parts = _activeStaffName.trim().split(/\s+/);
+  const ini = parts.length >= 2
+    ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
+    : _activeStaffName.substring(0,2).toUpperCase();
+
+  // ── Header ──
+  document.getElementById('sdpAv').textContent   = ini;
+  document.getElementById('sdpName').textContent  = _activeStaffName;
+  document.getElementById('sdpDate').textContent  = formatDate(_activeWorkDate);
+
+  // Status badge
+  const badge = document.getElementById('sdpBadge');
+  const statusMap = {
+    SCHEDULED:     { cls:'pend', label:'⏳ Chưa vào' },
+    CONFIRMED:     { cls:'ok',   label:'✅ Đã check-in' },
+    ABSENT:        { cls:'err',  label:'❌ Vắng mặt' },
+    ON_LEAVE:      { cls:'warn', label:'🏖️ Nghỉ phép' },
+    LEAVE_PENDING: { cls:'warn', label:'⏳ Chờ duyệt' },
+    SYSTEM_CLOSED: { cls:'pend', label:'🔒 Đóng' },
+    CANCELLED:     { cls:'err',  label:'🚫 Đã hủy' },
+  };
+  const st = statusMap[_activeStatus] || { cls:'pend', label:_activeStatus };
+  badge.className = 'sdp-badge ' + st.cls;
+  badge.textContent = st.label;
+
+  // ── Timeline ──
+  renderTimeline(shifts);
+
+  // ── Info chips ──
+  document.getElementById('sdpId').textContent        = _activeSchedId;
+  document.getElementById('sdpShiftType').textContent  = firstShift.type || '—';
+  document.getElementById('sdpLate').textContent       = _activeLateTol + 'p trễ';
+  document.getElementById('sdpTotal').textContent      = total + ' ca/ngày';
+
+  // Notes
+  const nw = document.getElementById('sdpNotesWrap');
+  if (_activeNotes && _activeNotes !== 'null' && _activeNotes.trim()) {
+    nw.style.display = '';
+    document.getElementById('sdpNotes').textContent = '💬 ' + _activeNotes;
+  } else { nw.style.display = 'none'; }
+
+  // Actions
+  const isPast  = cardEl.dataset.isPast === 'true';
+  const canEdit = !isPast && (_activeStatus === 'SCHEDULED' || _activeStatus === 'LEAVE_PENDING');
+  document.getElementById('sdpEditBtn').style.display = canEdit ? '' : 'none';
+  document.getElementById('sdpDelBtn').style.display  = canEdit ? '' : 'none';
+
+  document.getElementById('detailOverlay').classList.add('open');
+}
+
+// ── Render timeline bar ──
+function renderTimeline(shifts) {
+  const box = document.getElementById('sdpTimeline');
+  if (!shifts.length) { box.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px">Không có dữ liệu</div>'; return; }
+
+  function toMin(t) { if (!t) return 0; const [h,m]=t.split(':').map(Number); return h*60+m; }
+  function fmtH(m)  { return String(Math.floor((m%1440)/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+  function getColor(m) { return m<720?'#3B82F6':m<1200?'#F97316':'#7C3AED'; }
+  function getCls(m)   { return m<720?'morning':m<1200?'afternoon':'night'; }
+
+  // Tính range
+  let lo=1440, hi=0;
+  shifts.forEach(s => { let a=toMin(s.start),b=toMin(s.end); if(b<=a)b+=1440; lo=Math.min(lo,a); hi=Math.max(hi,b); });
+  const pad=60, rS=Math.max(0,lo-pad), rE=Math.min(2880,hi+pad), rL=rE-rS;
+  function pct(v) { return ((v-rS)/rL*100); }
+
+  // Container padding 3% mỗi bên
+  const PL=3, PR=3;
+  function pos(v) { return (PL + pct(v)*(100-PL-PR)/100).toFixed(1); }
+
+  let h = '<div class="sdp-tl-track" style="left:'+PL+'%;right:'+PR+'%"></div>';
+
+  shifts.forEach(s => {
+    let a=toMin(s.start), b=toMin(s.end);
+    if(b<=a) b+=1440;
+    const col=getColor(a), cls=getCls(a);
+    const lp=pos(a), rp=pos(b), wp=(parseFloat(rp)-parseFloat(lp)).toFixed(1);
+
+    // Bar segment
+    h += '<div class="sdp-tl-seg '+cls+'" style="left:'+lp+'%;width:'+wp+'%"></div>';
+
+    // Start marker
+    h += '<div class="sdp-tl-marker" style="left:'+lp+'%">'
+       +   '<div class="sdp-tl-time">'+s.start+'</div>'
+       +   '<div class="sdp-tl-label">'+( s.type||'' )+'</div>'
+       + '</div>';
+    h += '<div class="sdp-tl-dot" style="left:'+lp+'%;background:'+col+'"></div>';
+
+    // End marker
+    h += '<div class="sdp-tl-marker" style="left:'+rp+'%">'
+       +   '<div class="sdp-tl-time">'+fmtH(b)+'</div>'
+       + '</div>';
+    h += '<div class="sdp-tl-dot" style="left:'+rp+'%;background:'+col+'"></div>';
+  });
+
+  box.innerHTML = h;
+}
+
+function closeDetailPanel() {
+  if (_activeCard) _activeCard.classList.remove('selected');
+  _activeCard = null;
+  document.getElementById('detailOverlay').classList.remove('open');
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  return d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
+}
+
+// ── Sửa ca: mở modal edit đã có, pre-fill cho ca đang xem ──
+function editFromPanel() {
+  if (!_activeSchedId) return;
+  // Đóng detail modal trước → mở edit modal sau (không chồng 2 modal)
+  closeDetailPanel();
+  setTimeout(function() {
+    openEditModal(
+      _activeSchedId,
+      _activeShiftTypeId,
+      document.getElementById('sdpShiftType')
+        ? document.getElementById('sdpShiftType').textContent : '',
+      _activeLateTol,
+      _activeNotes && _activeNotes !== 'null' ? _activeNotes : '',
+      _activeStaffName,
+      _activeWorkDate
+    );
+  }, 220); // đợi animation đóng xong (transition 0.2s)
+}
+
+// ── Xóa ca: đóng detail modal → confirm → POST ──
+function deleteFromPanel() {
+  if (!_activeSchedId) return;
+  closeDetailPanel();
+  setTimeout(function() {
+    cancelSchedule(parseInt(_activeSchedId));
+  }, 220);
+}
+
+function cancelSchedule(scheduleId) {
+  if (confirm('Hủy lịch ca này?')) {
+    // POST đến /shifts?action=cancel-schedule&id=X
+    const f = document.createElement('form');
+    f.method = 'post';
+    f.action = ctx_path + '/shifts';
+    f.innerHTML = '<input name="action" value="cancel-schedule">' +
+                  '<input name="scheduleId" value="' + scheduleId + '">';
+    document.body.appendChild(f);
+    f.submit();
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  FULL SCHEDULE MODAL — nhiều NV + nhiều ca + range ngày
+// ══════════════════════════════════════════════════════
+function openFullSchedModal(preDate, preAccountId) {
+  const today = new Date().toISOString().split('T')[0];
+  const fromEl = document.getElementById('fsDateFrom');
+  const toEl   = document.getElementById('fsDateTo');
+  if (fromEl) fromEl.value = preDate || today;
+  if (toEl)   toEl.value   = '';
+
+  // Uncheck all staff & types
+  document.querySelectorAll('#fullStaffChips input').forEach(cb => cb.checked = false);
+  document.querySelectorAll('#fullStypeCards input').forEach(cb => cb.checked = false);
+
+  // Pre-check nhân viên nếu có
+  if (preAccountId) {
+    const cb = document.querySelector('#fullStaffChips input[value="' + preAccountId + '"]');
+    if (cb) cb.checked = true;
+  }
+
+  updateFullPreview();
+  document.getElementById('fullSchedModal').classList.add('open');
+  // Đóng modal xếp ca cũ nếu đang mở
+  const old = document.getElementById('schedModal');
+  if (old) old.classList.remove('open');
+}
+
+function closeFullSchedModal() {
+  document.getElementById('fullSchedModal').classList.remove('open');
+}
+
+function toggleAllStaff() {
+  const visibleCbs = [...document.querySelectorAll('#fullStaffChips .sc-chip:not(.hidden) input')];
+  if (visibleCbs.length === 0) return;
+  const allChecked = visibleCbs.every(cb => cb.checked);
+  visibleCbs.forEach(cb => { cb.checked = !allChecked; });
+  updateFullPreview();
+}
+
+function updateFullPreview() {
+  const staffCount = document.querySelectorAll('#fullStaffChips .sc-chip:not(.hidden) input:checked').length;
+  const typeCount  = document.querySelectorAll('#fullStypeCards input:checked').length;
+  const fromVal    = document.getElementById('fsDateFrom')?.value;
+  const toVal      = document.getElementById('fsDateTo')?.value;
+  const preview    = document.getElementById('fullSchedPreview');
+
+  if (!fromVal || staffCount === 0 || typeCount === 0) {
+    if (preview) preview.style.display = 'none';
+    return;
+  }
+
+  const fromD = new Date(fromVal);
+  const toD   = toVal ? new Date(toVal) : fromD;
+  const days  = Math.max(1, Math.round((toD - fromD) / 86400000) + 1);
+  const total = days * staffCount * typeCount;
+
+  document.getElementById('fpDays').textContent  = days;
+  document.getElementById('fpStaff').textContent = staffCount;
+  document.getElementById('fpTypes').textContent = typeCount;
+  document.getElementById('fpTotal').textContent = total;
+  if (preview) preview.style.display = 'block';
+}
+
+function submitFullSched() {
+  const staffCount = document.querySelectorAll('#fullStaffChips .sc-chip:not(.hidden) input:checked').length;
+  const typeCount  = document.querySelectorAll('#fullStypeCards input:checked').length;
+  const fromVal    = document.getElementById('fsDateFrom')?.value;
+
+  if (staffCount === 0) { alert('Vui lòng chọn ít nhất 1 nhân viên!'); return; }
+  if (typeCount  === 0) { alert('Vui lòng chọn ít nhất 1 loại ca!');    return; }
+  if (!fromVal)         { alert('Vui lòng chọn ngày bắt đầu!');          return; }
+
+  const fsFrom = document.getElementById('fsDateFrom').value;
+  const todayFs = new Date().toISOString().split('T')[0];
+  if (fsFrom && fsFrom < todayFs) {
+    alert('⛔ Không thể xếp ca cho ngày đã qua!');
+    return;
+  }
+  document.getElementById('fullSchedForm').submit();
+}
+
+// Click outside to close
+document.getElementById('fullSchedModal').addEventListener('click', function(e) {
+  if (e.target === this) closeFullSchedModal();
+});
+
+// Update preview khi tick nhân viên / loại ca
+document.querySelectorAll('#fullStaffChips input, #fullStypeCards input').forEach(cb => {
+  cb.addEventListener('change', updateFullPreview);
+});
+
+// Đổi hàm openSchedModal và openSchedModalForDay → gọi modal mới
+function openSchedModal(preDate, preAccountId) {
+  openFullSchedModal(preDate, preAccountId);
+}
+function openSchedModalForDay(date, accountId) {
+  openFullSchedModal(date, accountId);
+}
+
+
+// ── Tìm kiếm nhân viên trong modal ───────────────────────────────────────
+function filterStaffChips(q) {
+  q = (q || '').toLowerCase().trim();
+  const chips = document.querySelectorAll('#fullStaffChips .sc-chip');
+  let visible = 0;
+  chips.forEach(chip => {
+    const search = (chip.dataset.search || '').toLowerCase();
+    const match = !q || search.includes(q);
+    chip.classList.toggle('hidden', !match);
+    if (match) visible++;
+  });
+  const countEl = document.getElementById('staffSearchCount');
+  if (countEl) {
+    countEl.textContent = q ? visible + ' kết quả' : '';
+  }
+  updateFullPreview();
+}
+
+// Xóa search khi đóng modal
+const _origClose = closeFullSchedModal;
+closeFullSchedModal = function() {
+  const si = document.getElementById('staffSearchInput');
+  if (si) { si.value = ''; filterStaffChips(''); }
+  _origClose();
+};
+
+
+// ════════════════════════════════════════════════════════
+//  EDIT MODAL — sửa lịch ca SCHEDULED
+// ════════════════════════════════════════════════════════
+function openEditModal(schedId, shiftTypeId, shiftTypeName, lateTol, notes, staffName, workDate) {
+  document.getElementById('editSchedId').value   = schedId;
+  document.getElementById('editShiftType').value  = shiftTypeId;
+  document.getElementById('editLateTol').value    = lateTol || 10;
+  document.getElementById('editNotes').value      = notes && notes !== 'null' ? notes : '';
+  document.getElementById('editWorkDate').value   = workDate;
+  document.getElementById('editModalTitle').textContent = '✏️ Sửa ca ' + staffName + ' — ' + workDate;
+  document.getElementById('editSchedModal').classList.add('open');
+}
+function closeEditModal() {
+  document.getElementById('editSchedModal').classList.remove('open');
+}
+function submitEditSched() {
+  const stId = document.getElementById('editShiftType').value;
+  if (!stId) { alert('Vui lòng chọn loại ca!'); return; }
+  document.getElementById('editSchedForm').submit();
+}
+document.getElementById('editSchedModal').addEventListener('click', function(e) {
+  if (e.target === this) closeEditModal();
+});
+
+// ════════════════════════════════════════════════════════
+//  ADD NEXT DAY — xếp ca ngày hôm sau (ca đang chạy)
+// ════════════════════════════════════════════════════════
+function openAddNextDay(accountId, staffName, shiftTypeId, workDate) {
+  // Tính ngày hôm sau
+  const d = new Date(workDate);
+  d.setDate(d.getDate() + 1);
+  const nextDate = d.toISOString().split('T')[0];
+  // Mở modal xếp ca đầy đủ với pre-fill
+  openFullSchedModal(nextDate, accountId);
+}
+
+// ════════════════════════════════════════════════════════
+//  DELETE STAFF MODAL — xóa lịch ca theo nhân viên
+// ════════════════════════════════════════════════════════
+let _delAccountId = null;
+let _delItems     = [];
+
+function openDeleteStaffModal(accountId, staffName, refDate) {
+  _delAccountId = accountId;
+  _delItems     = [];
+
+  // Set staff info
+  const ini = staffName.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  document.getElementById('delStaffAv').textContent   = ini;
+  document.getElementById('delStaffName').textContent = staffName;
+
+  // Set default date range = tuần hiện tại
+  document.getElementById('delFromDate').value = refDate || new Date().toISOString().split('T')[0];
+  document.getElementById('delToDate').value   = '';
+
+  document.getElementById('delPreviewBox').style.display  = 'none';
+  document.getElementById('delEmptyBox').style.display    = 'none';
+  document.getElementById('delLoadingBox').style.display  = 'none';
+  document.getElementById('delConfirmBtn').disabled       = true;
+  document.getElementById('delConfirmBtn').style.opacity  = '.5';
+  document.getElementById('delConfirmBtn').style.cursor   = 'not-allowed';
+  document.getElementById('delTotalCount').textContent    = '';
+  document.getElementById('delItemsList').innerHTML       = '';
+
+  document.getElementById('deleteStaffModal').classList.add('open');
+
+  // Load preview ngay
+  loadDelPreview();
+}
+
+function closeDeleteModal() {
+  document.getElementById('deleteStaffModal').classList.remove('open');
+}
+
+function loadDelPreview() {
+  if (!_delAccountId) return;
+  const from = document.getElementById('delFromDate').value;
+  const to   = document.getElementById('delToDate').value || from;
+  if (!from) { document.getElementById('delPreviewBox').style.display = 'none'; return; }
+
+  // Lọc từ SCHED_LIST (data đã inject từ server)
+  const fromD = new Date(from);
+  const toD   = new Date(to);
+
+  _delItems = (typeof SCHED_LIST !== 'undefined' ? SCHED_LIST : []).filter(sc => {
+    if (sc.accountId != _delAccountId) return false;
+    const d = new Date(sc.workDate);
+    if (d < fromD || d > toD) return false;
+    // Chỉ xóa được SCHEDULED, LEAVE_PENDING, CANCELLED
+    return ['SCHEDULED','LEAVE_PENDING','CANCELLED'].includes(sc.status);
+  });
+
+  const listEl  = document.getElementById('delItemsList');
+  const preview = document.getElementById('delPreviewBox');
+  const empty   = document.getElementById('delEmptyBox');
+  const countEl = document.getElementById('delCount');
+  const totalEl = document.getElementById('delTotalCount');
+  const btnEl   = document.getElementById('delConfirmBtn');
+
+  listEl.innerHTML = '';
+
+  if (_delItems.length === 0) {
+    preview.style.display = 'none';
+    empty.style.display   = 'block';
+    btnEl.disabled        = true;
+    btnEl.style.opacity   = '.5';
+    btnEl.style.cursor    = 'not-allowed';
+    totalEl.textContent   = '';
+    return;
+  }
+
+  empty.style.display   = 'none';
+  preview.style.display = 'block';
+  countEl.textContent   = _delItems.length;
+  totalEl.textContent   = _delItems.length + ' lịch ca sẽ bị xóa';
+  btnEl.disabled        = false;
+  btnEl.style.opacity   = '1';
+  btnEl.style.cursor    = 'pointer';
+
+  _delItems.forEach(sc => {
+    const row = document.createElement('div');
+    row.className = 'dm-item';
+    const timeStr = sc.plannedStart ? sc.plannedStart + '→' + sc.plannedEnd : '';
+    const statusBg = sc.status === 'SCHEDULED' ? '#DBEAFE' : '#FEF3C7';
+    const statusColor = sc.status === 'SCHEDULED' ? '#1E40AF' : '#92400E';
+    row.innerHTML = `
+      <div class="dm-item-info">
+        <div class="dm-item-name">${sc.shiftTypeName}</div>
+        <div class="dm-item-meta">${sc.workDate} ${timeStr}</div>
+      </div>
+      <span style="font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:6px;background:${statusBg};color:${statusColor}">${sc.status}</span>
+    `;
+    listEl.appendChild(row);
+  });
+}
+
+function submitDeleteStaff() {
+  if (!_delAccountId || _delItems.length === 0) return;
+  const from = document.getElementById('delFromDate').value;
+  const to   = document.getElementById('delToDate').value || from;
+  if (!confirm('Xác nhận xóa ' + _delItems.length + ' lịch ca của nhân viên này?')) return;
+
+  const f = document.createElement('form');
+  f.method = 'post';
+  f.action = ctx_path + '/shifts';
+  f.innerHTML =
+    '<input name="action" value="schedule-delete-staff">' +
+    '<input name="accountId" value="' + _delAccountId + '">' +
+    '<input name="dateFrom"  value="' + from + '">' +
+    '<input name="dateTo"    value="' + to   + '">';
+  // Thêm từng scheduleId để xóa chính xác
+  _delItems.forEach(sc => {
+    const inp = document.createElement('input');
+    inp.name  = 'scheduleIds';
+    inp.value = sc.id;
+    f.appendChild(inp);
+  });
+  document.body.appendChild(f);
+  f.submit();
+}
+
+document.getElementById('deleteStaffModal').addEventListener('click', function(e) {
+  if (e.target === this) closeDeleteModal();
+});
+
+
+// ════════════════════════════════════════════════════════
+//  EDIT SELECT MODAL
+// ════════════════════════════════════════════════════════
+let _editSelIds = new Set(); // scheduleId đã chọn
+
+function openEditSelectModal() {
+  _editSelIds.clear();
+  // Reset tất cả chip
+  document.querySelectorAll('#editWeekGrid .sm-chip').forEach(ch => {
+    ch.classList.remove('sm-selected-edit');
+  });
+  document.getElementById('editPanel').classList.remove('show');
+  updateEditSelUI();
+  document.getElementById('editSelectModal').classList.add('open');
+}
+function closeEditSelectModal() {
+  document.getElementById('editSelectModal').classList.remove('open');
+}
+
+function toggleEditChip(el) {
+  if (el.dataset.editable !== 'true') return; // ca đã check-in → khóa
+  const id = el.dataset.schedId;
+  if (_editSelIds.has(id)) {
+    _editSelIds.delete(id);
+    el.classList.remove('sm-selected-edit');
+  } else {
+    _editSelIds.add(id);
+    el.classList.add('sm-selected-edit');
+  }
+  // Pre-fill panel khi chỉ có đúng 1 ca được chọn
+  if (_editSelIds.size === 1) {
+    const selEl = document.querySelector('#editWeekGrid .sm-chip.sm-selected-edit');
+    if (selEl) {
+      const typeId  = selEl.dataset.shiftTypeId;
+      const lateTol = selEl.dataset.lateTol;
+      const notes   = selEl.dataset.notes;
+      const stSel   = document.getElementById('smEditShiftType');
+      if (typeId) stSel.value = typeId;
+      if (lateTol) document.getElementById('smEditLateTol').value = lateTol;
+      document.getElementById('smEditNotes').value = (notes && notes !== 'null') ? notes : '';
+    }
+  } else if (_editSelIds.size > 1) {
+    // Nhiều ca → reset về "giữ nguyên"
+    document.getElementById('smEditShiftType').value = '';
+    document.getElementById('smEditLateTol').value   = '';
+    document.getElementById('smEditNotes').value     = '';
+  }
+  updateEditSelUI();
+}
+
+function updateEditSelUI() {
+  const count = _editSelIds.size;
+  const badge = document.getElementById('editSelBadge');
+  const hint  = document.getElementById('editSelHint');
+  const btn1  = document.getElementById('editSelActionBtn');
+  const btn2  = document.getElementById('editSelFootBtn');
+  const panel = document.getElementById('editPanel');
+  const prev  = document.getElementById('smEditPreview');
+
+  badge.textContent = count + ' ca đã chọn';
+  badge.classList.toggle('show', count > 0);
+
+  if (count === 0) {
+    hint.textContent = 'Click vào chip ca để chọn';
+    btn1.classList.remove('enabled');
+    btn2.classList.remove('enabled');
+    panel.classList.remove('show');
+  } else {
+    hint.textContent = count + ' ca đã chọn — điều chỉnh bên dưới rồi bấm Lưu';
+    btn1.classList.add('enabled');
+    btn2.classList.add('enabled');
+    panel.classList.add('open');
+    // Preview
+    const stSel = document.getElementById('smEditShiftType');
+    const stName = stSel.options[stSel.selectedIndex]?.text || 'Giữ nguyên';
+    const lat = document.getElementById('smEditLateTol').value;
+    prev.textContent = count + ' ca sẽ được cập nhật' +
+      (stSel.value ? ' → ' + stName : '') +
+      (lat ? ', trễ ' + lat + 'p' : '');
+  }
+}
+
+// Update preview khi đổi loại ca
+document.getElementById('smEditShiftType')?.addEventListener('change', updateEditSelUI);
+document.getElementById('smEditLateTol')?.addEventListener('input', updateEditSelUI);
+
+function applyEditSel() {
+  if (_editSelIds.size === 0) return;
+  const stId  = document.getElementById('smEditShiftType').value;
+  const lat   = document.getElementById('smEditLateTol').value;
+  const notes = document.getElementById('smEditNotes').value;
+
+  if (!stId && !lat && !notes.trim()) {
+    alert('Vui lòng chọn ít nhất 1 thông tin cần thay đổi (loại ca, dung sai, hoặc ghi chú)!');
+    return;
+  }
+  // Không bắt buộc chọn loại ca — để trống = giữ nguyên loại ca hiện tại
+  if (!confirm('Lưu thay đổi cho ' + _editSelIds.size + ' ca đã chọn?')) return;
+
+  const f = document.createElement('form');
+  f.method = 'post';
+  f.action = ctx_path + '/shifts';
+  let html = '<input name="action" value="schedule-bulk-update">'
+    + '<input name="shiftTypeId" value="' + stId + '">'
+    + '<input name="lateToleranceMinutes" value="' + (lat || '10') + '">'
+    + '<input name="notes" value="' + notes.replace(/"/g,'&quot;') + '">';
+  _editSelIds.forEach(id => {
+    html += '<input name="scheduleIds" value="' + id + '">';
+  });
+  f.innerHTML = html;
+  document.body.appendChild(f);
+  f.submit();
+}
+
+document.getElementById('editSelectModal').addEventListener('click', function(e) {
+  if (e.target === this) closeEditSelectModal();
+});
+
+// ════════════════════════════════════════════════════════
+//  DELETE SELECT MODAL
+// ════════════════════════════════════════════════════════
+let _delSelIds = new Set();
+
+function openDeleteSelectModal() {
+  _delSelIds.clear();
+  document.querySelectorAll('#deleteWeekGrid .sm-chip').forEach(ch => {
+    ch.classList.remove('sm-selected-del');
+  });
+  document.getElementById('delSelSummary').style.display = 'none';
+  document.getElementById('delSelList').innerHTML = '';
+  updateDelSelUI();
+  document.getElementById('deleteSelectModal').classList.add('open');
+}
+function closeDeleteSelectModal() {
+  document.getElementById('deleteSelectModal').classList.remove('open');
+}
+
+function toggleDelChip(el) {
+  if (el.dataset.deletable !== 'true') return;
+  const id = el.dataset.schedId;
+  if (_delSelIds.has(id)) {
+    _delSelIds.delete(id);
+    el.classList.remove('sm-selected-del');
+  } else {
+    _delSelIds.add(id);
+    el.classList.add('sm-selected-del');
+  }
+  updateDelSelUI();
+}
+
+function updateDelSelUI() {
+  const count   = _delSelIds.size;
+  const badge   = document.getElementById('deleteSelBadge');
+  const hint    = document.getElementById('deleteSelHint');
+  const btn1    = document.getElementById('deleteSelActionBtn');
+  const btn2    = document.getElementById('deleteSelFootBtn');
+  const summary = document.getElementById('delSelSummary');
+  const listEl  = document.getElementById('delSelList');
+  const countEl = document.getElementById('delSelCount');
+
+  badge.textContent = count + ' ca đã chọn';
+  badge.classList.toggle('show', count > 0);
+
+  if (count === 0) {
+    hint.textContent = 'Click vào chip ca để chọn';
+    btn1.classList.remove('enabled');
+    btn2.classList.remove('enabled');
+    summary.style.display = 'none';
+    listEl.innerHTML = '';
+    return;
+  }
+
+  hint.textContent = count + ' ca sẽ bị xóa vĩnh viễn';
+  btn1.classList.add('enabled');
+  btn2.classList.add('enabled');
+  summary.style.display = 'block';
+  countEl.textContent = count;
+
+  // Build tag list
+  listEl.innerHTML = '';
+  _delSelIds.forEach(id => {
+    const chip = document.getElementById('del-chip-' + id);
+    if (!chip) return;
+    const name = chip.querySelector('.sm-chip-name')?.textContent || '';
+    const type = chip.querySelector('.sm-chip-type')?.textContent || '';
+    const tag = document.createElement('span');
+    tag.style.cssText = 'background:#fff;border:1px solid #FECACA;border-radius:6px;padding:3px 8px;font-size:11.5px;font-weight:600;color:#991B1B';
+    tag.textContent = name + ' · ' + type;
+    listEl.appendChild(tag);
+  });
+}
+
+function applyDeleteSel() {
+  if (_delSelIds.size === 0) return;
+  if (!confirm('Xóa vĩnh viễn ' + _delSelIds.size + ' ca đã chọn?\nHành động này không thể hoàn tác!')) return;
+
+  const f = document.createElement('form');
+  f.method = 'post';
+  f.action = ctx_path + '/shifts';
+  let html = '<input name="action" value="schedule-bulk-delete">';
+  _delSelIds.forEach(id => {
+    html += '<input name="scheduleIds" value="' + id + '">';
+  });
+  f.innerHTML = html;
+  document.body.appendChild(f);
+  f.submit();
+}
+
+document.getElementById('deleteSelectModal').addEventListener('click', function(e) {
+  if (e.target === this) closeDeleteSelectModal();
+});
+
+function openChipEditModal(scheduleId, staffName, workDate, currentTypeId) {
+  // Mở modal sửa ca inline (editSchedModal hoặc editSchedForm)
+  const modal = document.getElementById('editSchedModal');
+  if (!modal) return;
+  document.getElementById('editSchedStaffName')  && (document.getElementById('editSchedStaffName').textContent = staffName);
+  document.getElementById('editSchedDate')        && (document.getElementById('editSchedDate').textContent = workDate);
+  document.getElementById('editSchedId')          && (document.getElementById('editSchedId').value = scheduleId);
+  // Pre-select loại ca
+  const sel = document.getElementById('editSchedTypeId');
+  if (sel) sel.value = currentTypeId;
+  modal.classList.add('open');
+}
 </script>
 </body>
 </html>

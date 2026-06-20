@@ -36,10 +36,28 @@ public class SessionTracker {
         loginTokens.remove(accountId);
     }
 
-    // ── Kiểm tra session hợp lệ (chỉ token, bỏ tabId) ──────
-    // tabId giữ trong signature để không đổi StaffPingServlet
+    // ── LoginOrKeep: giữ token cũ nếu còn, tạo mới nếu chưa có ──
+    // Dùng khi AuthFilter restore session (F5, Tomcat restart)
+    // KHÔNG tạo token mới → không kick tab đang dùng
+    public static String loginOrKeep(int accountId) {
+        onlineStaff.add(accountId);
+        return loginTokens.computeIfAbsent(accountId,
+                k -> UUID.randomUUID().toString().replace("-", "").substring(0, 16));
+    }
+
+    // ── Lấy token hiện tại (để inject vào meta tag trong JSP) ──
+    public static String getToken(int accountId) {
+        return loginTokens.get(accountId);
+    }
+
+    // ── Kiểm tra session hợp lệ ────────────────────────────────
     public static boolean isValidSession(int accountId, String token, String tabId) {
-        return token != null && token.equals(loginTokens.get(accountId));
+        if (token == null || token.isEmpty()) return false;
+        String current = loginTokens.get(accountId);
+        // Grace: nếu map trống (Tomcat restart) → không kick ngay
+        // Browser navigate lại → AuthFilter sẽ loginOrKeep()
+        if (current == null) return true;
+        return token.equals(current);
     }
 
     // ── Getters ──────────────────────────────────────────────

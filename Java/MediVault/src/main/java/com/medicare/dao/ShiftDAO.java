@@ -42,7 +42,8 @@ public class ShiftDAO implements IShiftDAO {
     @Override
     public boolean openShift(int accountId, BigDecimal openingCash) {
         if (findCurrent(accountId) != null) return false;
-        String sql = "INSERT INTO Shifts (AccountID, OpeningCash) VALUES (?, ?)";
+        // Explicit StartTime để tránh DB dùng GETDATE()=UTC
+        String sql = "INSERT INTO Shifts (AccountID, OpeningCash, StartTime) VALUES (?, ?, DATEADD(HOUR,7,GETUTCDATE()))";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, accountId);
@@ -53,7 +54,8 @@ public class ShiftDAO implements IShiftDAO {
 
     @Override
     public boolean closeShift(int shiftId, BigDecimal closingCash, String notes) {
-        String sql = "UPDATE Shifts SET EndTime=GETDATE(), ClosingCash=?, Notes=? " +
+        // FIX: GETDATE()=UTC → dùng DATEADD(HOUR,7,GETUTCDATE()) = giờ VN
+        String sql = "UPDATE Shifts SET EndTime=DATEADD(HOUR,7,GETUTCDATE()), ClosingCash=?, Notes=?, Status='CLOSED' " +
                 "WHERE ShiftID=? AND EndTime IS NULL";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
@@ -66,7 +68,7 @@ public class ShiftDAO implements IShiftDAO {
 
     @Override
     public boolean forceClose(int shiftId, String notes) {
-        String sql = "UPDATE Shifts SET EndTime=GETDATE(), Notes=?, Status='FORCE_CLOSED' " +
+        String sql = "UPDATE Shifts SET EndTime=DATEADD(HOUR,7,GETUTCDATE()), Notes=?, Status='FORCE_CLOSED' " +
                 "WHERE ShiftID=? AND EndTime IS NULL";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {

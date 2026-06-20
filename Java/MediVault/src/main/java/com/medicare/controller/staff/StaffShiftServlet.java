@@ -1,7 +1,11 @@
 package com.medicare.controller.staff;
 
 import com.medicare.dao.ShiftDAO;
+import com.medicare.dao.ShiftScheduleDAO;
 import com.medicare.dao.interfaces.IShiftDAO;
+import com.medicare.dao.interfaces.IShiftScheduleDAO;
+import com.medicare.dao.AttendanceDAO;
+import com.medicare.dao.interfaces.IAttendanceDAO;
 import com.medicare.entity.Account;
 import com.medicare.entity.Shift;
 import com.medicare.util.AuditHelper;
@@ -20,7 +24,9 @@ import java.util.List;
 @WebServlet(urlPatterns = {"/staff-my-shifts", "/staff-shift"})
 public class StaffShiftServlet extends HttpServlet {
 
-    private final IShiftDAO shiftDAO = new ShiftDAO();
+    private final IShiftDAO         shiftDAO     = new ShiftDAO();
+    private final IShiftScheduleDAO scheduleDAO  = new ShiftScheduleDAO();
+    private final IAttendanceDAO    attDAO       = new AttendanceDAO();
 
     // ── GET: hiện trang xem ca ────────────────────────────────────────────────
     @Override
@@ -48,6 +54,10 @@ public class StaffShiftServlet extends HttpServlet {
         // Ca đang mở
         Shift currentShift = shiftDAO.findCurrent(staffAcc.getAccountId());
         req.setAttribute("currentShift", currentShift);
+
+        // Lịch ca hôm nay (để hiện widget)
+        req.setAttribute("todaySchedule",
+                scheduleDAO.findTodaySchedule(staffAcc.getAccountId()));
 
         // Toàn bộ lịch sử ca (mới nhất trước)
         List<Shift> allShifts = shiftDAO.findByAccount(staffAcc.getAccountId());
@@ -92,6 +102,16 @@ public class StaffShiftServlet extends HttpServlet {
                             Account staffAcc, String uid) throws IOException {
         BigDecimal openingCash = parseCash(req.getParameter("openingCash"));
 
+        // Block nếu đã có Attendance đang active (chưa check-out)
+        // HOẶC đã có ca đang mở — không cho phép mở 2 ca / 2 attendance cùng lúc
+        boolean hasActiveAttendance = attDAO.findActiveByAccount(staffAcc.getAccountId()) != null;
+        boolean hasOpenShift        = shiftDAO.findCurrent(staffAcc.getAccountId()) != null;
+
+        if (hasActiveAttendance || hasOpenShift) {
+            resp.sendRedirect(req.getContextPath() + "/staff-my-shifts?uid=" + uid + "&msg=already-open");
+            return;
+        }
+
         boolean ok = shiftDAO.openShift(staffAcc.getAccountId(), openingCash);
 
         if (ok) {
@@ -108,8 +128,15 @@ public class StaffShiftServlet extends HttpServlet {
     private void handleClose(HttpServletRequest req, HttpServletResponse resp,
                              Account staffAcc, String uid) throws IOException {
         String shiftIdStr  = req.getParameter("shiftId");
-        BigDecimal closingCash = parseCash(req.getParameter("closingCash"));
+        String closingCashStr = req.getParameter("closingCash");
         String notes       = req.getParameter("notes");
+
+        // FIX 4: validate closingCash bắt buộc
+        if (closingCashStr == null || closingCashStr.trim().isEmpty()) {
+            resp.sendRedirect(req.getContextPath() + "/staff-my-shifts?uid=" + uid + "&msg=need-cash");
+            return;
+        }
+        BigDecimal closingCash = parseCash(closingCashStr);
 
         if (shiftIdStr == null || shiftIdStr.isEmpty()) {
             resp.sendRedirect(req.getContextPath() + "/staff-dashboard?uid=" + uid + "&msg=error");

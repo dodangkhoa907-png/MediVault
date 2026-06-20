@@ -18,6 +18,8 @@ public class Account {
     private LocalDate trainingDate;
     private boolean isActive;
     private String faceEnrollmentPath;
+    private String faceVector;
+    private LocalDateTime faceEnrolledAt;
     private LocalDateTime createdAt;
     private LocalDateTime lastLoginAt;
     private boolean deleted;
@@ -157,6 +159,26 @@ public class Account {
 
     public void setFaceEnrollmentPath(String faceEnrollmentPath) {
         this.faceEnrollmentPath = faceEnrollmentPath;
+    }
+
+    public String getFaceVector() {
+        return faceVector;
+    }
+
+    public void setFaceVector(String faceVector) {
+        this.faceVector = faceVector;
+    }
+
+    public LocalDateTime getFaceEnrolledAt() {
+        return faceEnrolledAt;
+    }
+
+    public void setFaceEnrolledAt(LocalDateTime faceEnrolledAt) {
+        this.faceEnrolledAt = faceEnrolledAt;
+    }
+
+    public boolean isFaceEnrolled() {
+        return faceVector != null && !faceVector.trim().isEmpty();
     }
 
     public LocalDateTime getCreatedAt() {

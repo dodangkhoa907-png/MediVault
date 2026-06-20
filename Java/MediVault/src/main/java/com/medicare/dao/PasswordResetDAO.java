@@ -24,17 +24,21 @@ public class PasswordResetDAO implements IPasswordResetDAO {
 
     @Override
     public boolean insert(PasswordResetRequest req) {
-        String sql = "INSERT INTO PasswordResetRequests (AccountID, Token, ExpiresAt) " +
-                "SELECT ?,?,? WHERE (SELECT COUNT(*) FROM PasswordResetRequests " +
-                "WHERE AccountID = ? AND CAST(RequestedAt AS DATE) = CAST(GETDATE() AS DATE)) < 3";
+        // INSERT đơn giản — không dùng subquery guard để tránh nested cursor conflict
+        // (selectMethod=cursor đã bị bỏ trong DBContext, nhưng giữ INSERT đơn để an toàn)
+        // Logic giới hạn 3 lần/ngày và check PENDING/CONFIRMED được xử lý ở Servlet
+        String sql = "INSERT INTO PasswordResetRequests (AccountID, Token, ExpiresAt) VALUES (?,?,?)";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, req.getAccountId());
             ps.setString(2, req.getToken());
             ps.setTimestamp(3, Timestamp.valueOf(req.getExpiresAt()));
-            ps.setInt(4, req.getAccountId());  // ← THÊM DÒNG NÀY
             return ps.executeUpdate() > 0;
-        } catch (Exception e) { e.printStackTrace(); return false; }
+        } catch (Exception e) {
+            System.err.println("[PasswordResetDAO] insert failed: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 
     @Override
@@ -52,7 +56,9 @@ public class PasswordResetDAO implements IPasswordResetDAO {
 
     @Override
     public PasswordResetRequest findPendingByAccountId(int accountId) {
-        String sql = "SELECT * FROM PasswordResetRequests WHERE AccountID = ? AND Status = 'PENDING' AND ExpiresAt > GETDATE()";
+        // Không filter ExpiresAt ở đây — tránh timezone lệch giữa Java app (UTC+7) và GETDATE() (UTC)
+        // expireOld() ở Servlet đã xử lý expire trước khi gọi hàm này
+        String sql = "SELECT * FROM PasswordResetRequests WHERE AccountID = ? AND Status = 'PENDING' ORDER BY RequestedAt DESC";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, accountId);

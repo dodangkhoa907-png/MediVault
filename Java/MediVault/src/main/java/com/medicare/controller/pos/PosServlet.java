@@ -20,6 +20,7 @@ public class PosServlet extends HttpServlet {
     private final IInvoiceDAO       invoiceDAO   = new InvoiceDAO();
     private final ICategoryDAO      categoryDAO  = new CategoryDAO();
     private final IStaffAuditLogDAO staffAuditDAO = new StaffAuditLogDAO();
+    private final IShiftDAO         shiftDAO      = new ShiftDAO();
 
     private static final int POS_ACCOUNT_ID = 1;
 
@@ -131,6 +132,11 @@ public class PosServlet extends HttpServlet {
                 }
                 int accountId = acc != null ? acc.getAccountId() : POS_ACCOUNT_ID;
 
+                // Lấy shiftId ca đang mở của nhân viên — dùng để liên kết hóa đơn với ca
+                // Quan trọng: không có ShiftID → doanh thu ca bị tính sai
+                com.medicare.entity.Shift currentShift = shiftDAO.findCurrent(accountId);
+                Integer shiftId = currentShift != null ? currentShift.getShiftId() : null;
+
                 Integer customerId = parseIntOrNull(req.getParameter("customerId"));
                 String  payMethod  = req.getParameter("paymentMethod");
                 String  discStr    = req.getParameter("discount");
@@ -153,7 +159,7 @@ public class PosServlet extends HttpServlet {
                 }
 
                 int invoiceId = invoiceDAO.completeSaleTransaction(
-                        accountId, customerId, payMethod, discount, medicineIds, quantities);
+                        accountId, shiftId, customerId, payMethod, discount, medicineIds, quantities);
 
                 if (invoiceId > 0) {
                     // Ghi log giao dịch bán hàng vào StaffAuditLogs

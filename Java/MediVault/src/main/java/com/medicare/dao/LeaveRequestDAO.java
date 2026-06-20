@@ -35,11 +35,11 @@ public class LeaveRequestDAO implements ILeaveRequestDAO {
     }
 
     private static final String SELECT_FULL =
-        "SELECT lr.*, a.FullName AS StaffName, "
-        + "ab.FullName AS ApprovedByName "
-        + "FROM LeaveRequests lr "
-        + "JOIN Accounts a ON a.AccountID = lr.AccountID "
-        + "LEFT JOIN Accounts ab ON ab.AccountID = lr.ApprovedBy ";
+            "SELECT lr.*, a.FullName AS StaffName, "
+                    + "ab.FullName AS ApprovedByName "
+                    + "FROM LeaveRequests lr "
+                    + "JOIN Accounts a ON a.AccountID = lr.AccountID "
+                    + "LEFT JOIN Accounts ab ON ab.AccountID = lr.ApprovedBy ";
 
     @Override
     public boolean insert(LeaveRequest lr) {
@@ -174,4 +174,22 @@ public class LeaveRequestDAO implements ILeaveRequestDAO {
             }
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
+
+    /** Đếm số ngày phép năm đã được approve trong năm → kiểm tra quỹ 12 ngày */
+    public int countApprovedAnnualDays(int accountId, int year) {
+        String sql = "SELECT COUNT(*) FROM LeaveRequests "
+                + "WHERE AccountID=? AND LeaveType='ANNUAL' "
+                + "AND Status='APPROVED' AND YEAR(LeaveDate)=?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, accountId);
+            ps.setInt(2, year);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return 0;
+    }
+
+
 }

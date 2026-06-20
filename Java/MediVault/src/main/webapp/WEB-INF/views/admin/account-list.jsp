@@ -65,6 +65,11 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .page-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px}
 .breadcrumb{font-size:11.5px;color:var(--muted);font-weight:500;margin-bottom:4px}
 .page-head h1{font-family:'Outfit',sans-serif;font-size:26px;color:var(--ink)}
+.section-tabs{display:flex;gap:6px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content;margin-bottom:18px}
+.section-tab{padding:8px 18px;border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.section-tab:hover{background:var(--surface);color:var(--ink)}
+.section-tab.active{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;box-shadow:0 3px 10px rgba(21,88,168,.25)}
+.section-tab.disabled{cursor:not-allowed;opacity:.55;pointer-events:none}
 .btn-primary{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;border:none;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .22s;box-shadow:0 4px 14px rgba(21,88,168,.25)}
 .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(21,88,168,.35)}
 .btn-trash{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--red);text-decoration:none;transition:all .18s}
@@ -160,6 +165,11 @@ body{display:flex;background:var(--surface);color:var(--ink)}
     </div>
     </div>
 
+    <div class="section-tabs">
+      <a href="${pageContext.request.contextPath}/accounts" class="section-tab active">👤 Quản lý nhân viên</a>
+      <a href="${pageContext.request.contextPath}/customers" class="section-tab">👥 Khách hàng</a>
+    </div>
+
     <%-- STATS --%>
     <%
       java.util.List<com.medicare.entity.Account> allList =
@@ -213,7 +223,6 @@ body{display:flex;background:var(--surface);color:var(--ink)}
             <option value="active">✅ Hoạt động</option>
             <option value="0">🔒 Đã khóa</option>
           </select>
-          <button type="button" class="fchip" onclick="applyFilter()">🔍 Lọc</button>
           <button type="button" class="fchip clear" onclick="clearFilter()">✕ Xóa lọc</button>
         </div>
 
@@ -332,7 +341,8 @@ body{display:flex;background:var(--surface);color:var(--ink)}
   </div>
 </div>
 
-<% if ("created".equals(msg)) { %><div class="toast toast-ok">✅ Tạo tài khoản thành công!</div>
+<% if ("protected-admin".equals(msg)) { %><div class="toast toast-warn">🛡️ Tài khoản Admin gốc được bảo vệ — không thể khóa hoặc xóa!</div>
+<% } else if ("created".equals(msg)) { %><div class="toast toast-ok">✅ Tạo tài khoản thành công!</div>
 <% } else if ("updated".equals(msg)) { %><div class="toast toast-ok">✅ Cập nhật thành công!</div>
 <% } else if ("locked".equals(msg)) { %><div class="toast toast-warn">🔒 Đã khóa tài khoản.</div>
 <% } else if ("unlocked".equals(msg)) {
@@ -416,6 +426,11 @@ async function refreshOnlineStatus() {
     const res = await fetch('${pageContext.request.contextPath}/accounts?action=online-status', {
       headers: {'X-Requested-With': 'XMLHttpRequest'}
     });
+    // 401 = session hết hạn sau restart → redirect về login
+    if (res.status === 401) {
+      window.location.href = '${pageContext.request.contextPath}/login';
+      return;
+    }
     if (!res.ok) return;
     const data = await res.json();
     if (!data.onlineIds) return;

@@ -20,8 +20,11 @@ public class CustomerDAO implements ICustomerDAO {
         if (dob != null) c.setDateOfBirth(dob.toLocalDate());
         c.setGender(rs.getString("Gender"));
         c.setNationalId(rs.getString("NationalId"));
+        c.setOccupation(rs.getNString("Occupation"));
         c.setAllergyHistory(rs.getNString("AllergyHistory"));
         c.setChronicDisease(rs.getNString("ChronicDisease"));
+        if (rs.getTimestamp("CreatedAt") != null)
+            c.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
         return c;
     }
 
@@ -62,8 +65,8 @@ public class CustomerDAO implements ICustomerDAO {
 
     public boolean insert(Customer c) {
         String sql = "INSERT INTO Customers (CustomerName, Phone, Email, Address, " +
-                "DateOfBirth, Gender, NationalId, AllergyHistory, ChronicDisease) " +
-                "VALUES (?,?,?,?,?,?,?,?,?)";
+                "DateOfBirth, Gender, NationalId, Occupation, AllergyHistory, ChronicDisease) " +
+                "VALUES (?,?,?,?,?,?,?,?,?,?)";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setNString(1, c.getCustomerName());
@@ -73,15 +76,16 @@ public class CustomerDAO implements ICustomerDAO {
             ps.setObject(5, c.getDateOfBirth() != null ? Date.valueOf(c.getDateOfBirth()) : null);
             ps.setString(6, c.getGender());
             ps.setString(7, c.getNationalId());
-            ps.setNString(8, c.getAllergyHistory());
-            ps.setNString(9, c.getChronicDisease());
+            ps.setNString(8, c.getOccupation());
+            ps.setNString(9, c.getAllergyHistory());
+            ps.setNString(10, c.getChronicDisease());
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
 
     public boolean update(Customer c) {
         String sql = "UPDATE Customers SET CustomerName=?, Phone=?, Email=?, Address=?, " +
-                "DateOfBirth=?, Gender=?, NationalId=?, AllergyHistory=?, ChronicDisease=? " +
+                "DateOfBirth=?, Gender=?, NationalId=?, Occupation=?, AllergyHistory=?, ChronicDisease=? " +
                 "WHERE CustomerID=?";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
@@ -92,9 +96,10 @@ public class CustomerDAO implements ICustomerDAO {
             ps.setObject(5, c.getDateOfBirth() != null ? Date.valueOf(c.getDateOfBirth()) : null);
             ps.setString(6, c.getGender());
             ps.setString(7, c.getNationalId());
-            ps.setNString(8, c.getAllergyHistory());
-            ps.setNString(9, c.getChronicDisease());
-            ps.setInt(10, c.getCustomerId());
+            ps.setNString(8, c.getOccupation());
+            ps.setNString(9, c.getAllergyHistory());
+            ps.setNString(10, c.getChronicDisease());
+            ps.setInt(11, c.getCustomerId());
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }

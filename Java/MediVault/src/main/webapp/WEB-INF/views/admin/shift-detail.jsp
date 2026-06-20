@@ -399,10 +399,18 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 </div>
 
 <script>
+function parseLocalDateTime(raw) {
+    if (!raw) return null;
+    const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})/);
+    if (!m) return null;
+    const [, y, mo, d, h, mi, s] = m.map(Number);
+    return new Date(y, mo - 1, d, h, mi, s); // LOCAL TIME, không bị hiểu nhầm UTC
+}
 function calcDuration(startStr, endStr) {
     if (!startStr) return '—';
-    const start = new Date(startStr.replace('T', ' '));
-    const end   = endStr ? new Date(endStr.replace('T', ' ')) : new Date();
+    const start = parseLocalDateTime(startStr);
+    const end   = endStr ? parseLocalDateTime(endStr) : new Date();
+    if (!start || !end) return '—';
     const diff  = Math.floor((end - start) / 60000);
     if (isNaN(diff) || diff < 0) return '—';
     const h = Math.floor(diff / 60);

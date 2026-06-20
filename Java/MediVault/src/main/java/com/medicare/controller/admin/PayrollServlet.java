@@ -4,6 +4,7 @@ import com.medicare.dao.*;
 import com.medicare.dao.interfaces.*;
 import com.medicare.entity.*;
 import com.medicare.util.AuditHelper;
+import com.medicare.util.SidebarHelper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -98,6 +99,8 @@ public class PayrollServlet extends HttpServlet {
         req.setAttribute("confirmedCount",confirmedCount);
         req.setAttribute("draftCount",    draftCount);
         req.setAttribute("allStaff",      accountDAO.findAllStaff());
+        SidebarHelper.load(req);
+
         req.getRequestDispatcher("/WEB-INF/views/admin/payroll-list.jsp")
                 .forward(req, resp);
     }
@@ -112,6 +115,8 @@ public class PayrollServlet extends HttpServlet {
         if (payroll == null) { resp.sendRedirect(req.getContextPath() + "/payroll?msg=not-found"); return; }
 
         req.setAttribute("payroll", payroll);
+        SidebarHelper.load(req);
+
         req.getRequestDispatcher("/WEB-INF/views/admin/payroll-detail.jsp")
                 .forward(req, resp);
     }
@@ -150,7 +155,7 @@ public class PayrollServlet extends HttpServlet {
             Payroll p = payrollDAO.findById(id);
             AuditHelper.log(req, "Xác nhận bảng lương", "Payroll",
                     "Xác nhận bảng lương ID " + id
-                    + (p != null ? " — " + p.getMonthLabel() : ""));
+                            + (p != null ? " — " + p.getMonthLabel() : ""));
         }
         resp.sendRedirect(req.getContextPath() + "/payroll?action=detail&id=" + id
                 + "&msg=" + (ok ? "confirmed" : "error"));

@@ -23,7 +23,7 @@ import java.util.List;
 public class LeaveRequestServlet extends HttpServlet {
 
     private final ILeaveRequestDAO  leaveDAO    = new LeaveRequestDAO();
-    private final IShiftScheduleDAO scheduleDAO = new ShiftScheduleDAO();
+    private final IShiftScheduleDAO scheduleDAO    = new ShiftScheduleDAO();
     private final IShiftDAO         shiftDAO    = new ShiftDAO();
     private final IPayrollDAO       payrollDAO  = new PayrollDAO();
     private final IAccountDAO       accountDAO  = new AccountDAO();
@@ -95,7 +95,9 @@ public class LeaveRequestServlet extends HttpServlet {
     private void showPending(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         List<LeaveRequest> pending = leaveDAO.findPending();
-        req.setAttribute("pending", pending);
+        req.setAttribute("pending",      pending);
+        req.setAttribute("pendingCount", pending.size());
+        com.medicare.util.SidebarHelper.load(req);
         NotificationUtil.loadAdminNotifications(req);
         req.getRequestDispatcher("/WEB-INF/views/admin/leave-request-pending.jsp").forward(req, resp);
     }
@@ -123,15 +125,13 @@ public class LeaveRequestServlet extends HttpServlet {
                     if (ss != null) {
                         scheduleDAO.updateStatus(ss.getScheduleId(), "ON_LEAVE");
 
-                        // 4. Tự đóng Shift thực tế nếu đang mở
+                        // 4. Tự đóng Shift nếu đang mở VÀ thuộc ngày nghỉ
+                        // (không tạo Attendance giả — SP_GeneratePayroll đọc LeaveRequests trực tiếp)
                         Shift openShift = shiftDAO.findCurrent(lr.getAccountId());
-                        if (openShift != null) {
-                            // Kiểm tra shift này thuộc ngày nghỉ
-                            if (openShift.getStartTime().toLocalDate()
-                                    .equals(lr.getLeaveDate())) {
-                                shiftDAO.forceClose(openShift.getShiftId(),
-                                        "[Auto-đóng do nghỉ phép được duyệt]");
-                            }
+                        if (openShift != null
+                                && openShift.getStartTime().toLocalDate().equals(lr.getLeaveDate())) {
+                            shiftDAO.forceClose(openShift.getShiftId(),
+                                    "[Auto-đóng do nghỉ phép được duyệt]");
                         }
                     }
 

@@ -296,9 +296,17 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 </div>
 
 <script>
+function parseLocalDateTime(raw) {
+    if (!raw) return null;
+    const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})/);
+    if (!m) return null;
+    const [, y, mo, d, h, mi, s] = m.map(Number);
+    return new Date(y, mo - 1, d, h, mi, s); // LOCAL TIME, không bị hiểu nhầm UTC
+}
 function calcDuration(startStr) {
     if (!startStr) return '—';
-    const start = new Date(startStr.replace('T', ' '));
+    const start = parseLocalDateTime(startStr);
+    if (!start) return '—';
     const diff = Math.floor((new Date() - start) / 60000);
     if (isNaN(diff) || diff < 0) return '—';
     const h = Math.floor(diff / 60), m = diff % 60;

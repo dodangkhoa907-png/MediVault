@@ -13,9 +13,9 @@ public class ShiftSchedule {
     private LocalDateTime plannedEnd;
     private int lateToleranceMinutes;
     private String status;
-    // SCHEDULED | CONFIRMED | LATE | ABSENT | ON_LEAVE | LEAVE_PENDING | CANCELLED
+    // SCHEDULED | CONFIRMED | LATE | LATE_UNEXCUSED | ABSENT | SYSTEM_CLOSED | ON_LEAVE | LEAVE_PENDING | CANCELLED
     private BigDecimal openingCash;          // Admin set từng ngày, tối thiểu 50,000đ
-    private BigDecimal penaltyRatePerMinute;  // Phạt mỗi phút trễ/lố giờ (mặc định 5,000đ) | CONFIRMED | LATE | ABSENT | ON_LEAVE | LEAVE_PENDING | CANCELLED
+    private BigDecimal penaltyRatePerMinute;  // Phạt mỗi phút trễ/lố giờ (mặc định 5,000đ)
     private String notes;
     private int createdBy;
     private LocalDateTime createdAt;
@@ -38,7 +38,10 @@ public class ShiftSchedule {
     public boolean isAbsent()       { return "ABSENT".equals(status); }
     public boolean isOnLeave()      { return "ON_LEAVE".equals(status); }
     public boolean isLeavePending() { return "LEAVE_PENDING".equals(status); }
-    public boolean isCancelled()    { return "CANCELLED".equals(status); }
+    public boolean isCancelled()       { return "CANCELLED".equals(status); }
+    public boolean isLateUnexcused()   { return "LATE_UNEXCUSED".equals(status); }
+    public boolean isSystemClosed()    { return "SYSTEM_CLOSED".equals(status); }
+    public boolean isPendingReview()   { return isLateUnexcused() || isSystemClosed(); }
 
     public String getStatusLabel() {
         if (status == null) return "—";
@@ -49,8 +52,10 @@ public class ShiftSchedule {
             case "ABSENT"        -> "Vắng mặt";
             case "ON_LEAVE"      -> "Nghỉ phép";
             case "LEAVE_PENDING" -> "Chờ duyệt nghỉ";
-            case "CANCELLED"     -> "Đã hủy";
-            default              -> status;
+            case "CANCELLED"      -> "Đã hủy";
+            case "LATE_UNEXCUSED" -> "Trễ chờ duyệt";
+            case "SYSTEM_CLOSED"  -> "Hệ thống tự đóng";
+            default               -> status;
         };
     }
 
@@ -63,8 +68,10 @@ public class ShiftSchedule {
             case "ABSENT"        -> "❌";
             case "ON_LEAVE"      -> "🏖️";
             case "LEAVE_PENDING" -> "📋";
-            case "CANCELLED"     -> "🚫";
-            default              -> "❓";
+            case "CANCELLED"      -> "🚫";
+            case "LATE_UNEXCUSED" -> "⏳";
+            case "SYSTEM_CLOSED"  -> "🔒";
+            default               -> "❓";
         };
     }
 
