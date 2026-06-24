@@ -60,11 +60,8 @@ public class DBContext {
             config.addDataSourceProperty("prepStmtCacheSize",        "300");  // cache 300 stmt
             config.addDataSourceProperty("prepStmtCacheSqlLimit",    "2048"); // max 2KB/stmt
 
-            // ── SQL Server specific optimizations ─────────────────────────
-            // sendStringParametersAsUnicode=false: cực kỳ quan trọng với SQL Server
-            // → tránh full table scan khi query cột VARCHAR (không phải NVARCHAR)
-            // → tăng tốc query có WHERE clause với string parameter ~30-50%
-            config.addDataSourceProperty("sendStringParametersAsUnicode", "false");
+            // BẮT BUỘC: sendStringParametersAsUnicode=true để lưu tiếng Việt (NVARCHAR) không bị lỗi Mojibake
+            config.addDataSourceProperty("sendStringParametersAsUnicode", "true");
 
             // responseBuffering=adaptive: chỉ buffer khi cần, tiết kiệm memory
             config.addDataSourceProperty("responseBuffering", "adaptive");

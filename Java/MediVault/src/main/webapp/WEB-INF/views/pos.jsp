@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
     com.medicare.entity.Account acc = (com.medicare.entity.Account) session.getAttribute("staffAccount");
     boolean isLoggedIn = (acc != null && acc.getRoleId() != 1);
@@ -267,27 +268,27 @@ body{display:flex}
       </c:choose>
       <div class="${cardCls}"
            data-id="${m.medicineId}"
-           data-name="${m.medicineName}"
+           data-name="<c:out value='${m.medicineName}' />"
            data-price="${m.sellingPrice}"
-           data-unit="${m.unit}"
+           data-unit="<c:out value='${m.unit}' />"
            data-cat="${m.categoryId}"
            data-rx="${m.prescriptionRequired}"
-           data-dosage="${m.dosage}"
-           data-code="${m.medicineCode}"
+           data-dosage="<c:out value='${m.dosage}' />"
+           data-code="<c:out value='${m.medicineCode}' />"
            data-stock="${mStock}"
-           data-batchno="${mBatch}"
+           data-batchno="<c:out value='${mBatch}' />"
            data-expiry="${mExpiry}"
            data-minstock="${m.minInventory}"
            onclick="addToCart(this)">
         <div class="mc-top">
-          <span class="mc-code">${m.medicineCode}</span>
+          <span class="mc-code"><c:out value="${m.medicineCode}" /></span>
           <c:choose>
             <c:when test="${m.prescriptionRequired}"><span class="mc-badge mb-rx">Rx</span></c:when>
             <c:otherwise><span class="mc-badge mb-otc">OTC</span></c:otherwise>
           </c:choose>
         </div>
-        <div class="mc-name">${m.medicineName}</div>
-        <div class="mc-unit">${m.unit}</div>
+        <div class="mc-name"><c:out value="${m.medicineName}" /></div>
+        <div class="mc-unit"><c:out value="${m.unit}" /></div>
         <div class="mc-footer">
           <span class="mc-price"><fmt:formatNumber value="${m.sellingPrice}" pattern="#,###"/>đ</span>
           <span class="${stkCls}">${stkLbl}</span>
@@ -645,13 +646,13 @@ function submitSale() {
   const btn = document.getElementById('checkoutBtn');
   btn.disabled = true;
   btn.textContent = '⏳ Đang xử lý…';
-  const formData = new FormData();
-  formData.append('action', 'complete-sale');
-  formData.append('paymentMethod', selectedPayment);
-  formData.append('discount', document.getElementById('discountInput').value || '0');
-  if (selectedCustomer) formData.append('customerId', selectedCustomer.id);
-  cart.forEach(item => { formData.append('medId[]', item.id); formData.append('qty[]', item.qty); });
-  fetch(ctx + '/pos', { method: 'POST', body: formData })
+  const fd = new URLSearchParams();
+  fd.append('action', 'complete-sale');
+  fd.append('paymentMethod', selectedPayment);
+  fd.append('discount', document.getElementById('discountInput').value || '0');
+  if (selectedCustomer) fd.append('customerId', selectedCustomer.id);
+  cart.forEach(item => { fd.append('medId[]', item.id); fd.append('qty[]', item.qty); });
+  fetch(ctx + '/pos', { method: 'POST', body: fd, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } })
     .then(r => r.json()).then(data => {
       if (data.ok) {
         currentInvoiceId = data.invoiceId || 0;
@@ -663,9 +664,10 @@ function submitSale() {
         showToast('❌ ' + (data.msg || 'Lỗi xử lý!'), 'err');
         btn.disabled = false; btn.innerHTML = '🛒 THANH TOÁN';
       }
-    }).catch(() => {
+    }).catch(err => {
       showToast('❌ Lỗi kết nối!', 'err');
       btn.disabled = false; btn.innerHTML = '🛒 THANH TOÁN';
+      console.error(err);
     });
 }
 

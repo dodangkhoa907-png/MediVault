@@ -35,6 +35,10 @@ public class AppFilter implements Filter {
 
         String uri = req.getRequestURI();
 
+        // ── Force UTF-8 Encoding ──────────────────────────────────────────
+        req.setCharacterEncoding("UTF-8");
+        resp.setCharacterEncoding("UTF-8");
+
         // ── Cache-Control headers ─────────────────────────────────────────
         if (isStaticAsset(uri)) {
             // Browser cache 7 ngày cho static files
