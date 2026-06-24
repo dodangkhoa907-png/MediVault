@@ -83,15 +83,35 @@ public class DashboardServlet extends HttpServlet {
         java.util.Map<Integer, Account> resetAccountMap = new java.util.HashMap<>();
         List<Integer> blockedIds = resetDAO.findBlockedAccountIds();
         java.util.Map<Integer, Account> blockedAccountMap = new java.util.HashMap<>();
-        for (Integer bid : blockedIds) {
-            Account a = accountDAO.findById(bid);
-            if (a != null) blockedAccountMap.put(bid, a);
-        }
-        req.setAttribute("blockedAccountMap", blockedAccountMap);
+        
+        // --- Tối ưu hóa N+1 query: Lấy danh sách ID cần fetch ---
+        java.util.Set<Integer> accountIdsToFetch = new java.util.HashSet<>(blockedIds);
         for (PasswordResetRequest pr : pendingResets) {
-            Account a = accountDAO.findById(pr.getAccountId());
-            if (a != null) resetAccountMap.put(pr.getAccountId(), a);
+            accountIdsToFetch.add(pr.getAccountId());
         }
+        
+        // Fetch tất cả trong 1 lần
+        if (!accountIdsToFetch.isEmpty()) {
+            List<Account> fetchedAccounts = accountDAO.findAccountsByIds(new java.util.ArrayList<>(accountIdsToFetch));
+            java.util.Map<Integer, Account> fetchedMap = new java.util.HashMap<>();
+            for (Account a : fetchedAccounts) {
+                fetchedMap.put(a.getAccountId(), a);
+            }
+            
+            // Map kết quả về blockedAccountMap
+            for (Integer bid : blockedIds) {
+                Account a = fetchedMap.get(bid);
+                if (a != null) blockedAccountMap.put(bid, a);
+            }
+            
+            // Map kết quả về resetAccountMap
+            for (PasswordResetRequest pr : pendingResets) {
+                Account a = fetchedMap.get(pr.getAccountId());
+                if (a != null) resetAccountMap.put(pr.getAccountId(), a);
+            }
+        }
+        
+        req.setAttribute("blockedAccountMap", blockedAccountMap);
         req.setAttribute("resetAccountMap", resetAccountMap);
 
         SidebarHelper.load(req);

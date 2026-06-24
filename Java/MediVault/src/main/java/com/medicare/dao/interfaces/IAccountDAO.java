@@ -29,4 +29,6 @@ public interface IAccountDAO {
     boolean updateFaceVector(int accountId, String faceVectorJson);
     /** Lấy danh sách (accountId, faceVector) của toàn bộ staff đã đăng ký mặt — dùng cho verification */
     List<Account> findAllWithFaceVector();
+    /** Truy xuất hàng loạt account dựa trên list ID (giải quyết N+1 queries) */
+    List<Account> findAccountsByIds(List<Integer> ids);
 }

@@ -462,4 +462,32 @@ public class AccountDAO implements IAccountDAO {
         } catch (Exception e) { e.printStackTrace(); }
         return list;
     }
+
+    @Override
+    public List<Account> findAccountsByIds(List<Integer> ids) {
+        List<Account> list = new ArrayList<>();
+        if (ids == null || ids.isEmpty()) return list;
+
+        StringBuilder placeholders = new StringBuilder();
+        for (int i = 0; i < ids.size(); i++) {
+            placeholders.append("?");
+            if (i < ids.size() - 1) placeholders.append(",");
+        }
+
+        String sql = "SELECT * FROM Accounts WHERE AccountID IN (" + placeholders.toString() + ") AND IsDeleted = 0";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            for (int i = 0; i < ids.size(); i++) {
+                ps.setInt(i + 1, ids.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapRow(rs));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
 }
