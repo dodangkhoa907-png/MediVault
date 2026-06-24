@@ -104,6 +104,7 @@ public class ShiftScheduleDAO implements IShiftScheduleDAO {
         List<ShiftSchedule> list = new ArrayList<>();
         String sql = SELECT_FULL
                 + "WHERE ss.WorkDate BETWEEN ? AND ? "
+                + "AND ss.Status != 'CANCELLED' "
                 + "ORDER BY ss.WorkDate ASC, ss.PlannedStart ASC";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {

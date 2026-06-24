@@ -2031,59 +2031,52 @@ tbody tr{cursor:pointer}
     </div>
     <div class="sm-body">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-        <a href="${pageContext.request.contextPath}/shifts?tab=list&w=${param.w != null ? param.w - 1 : -1}" class="btn-nav" style="font-size:12px;padding:4px 10px">‹</a>
-        <span style="font-size:13px;font-weight:700;color:var(--ink)">📅 ${weekStart} → ${weekEnd}</span>
-        <a href="${pageContext.request.contextPath}/shifts?tab=list&w=${param.w != null ? param.w + 1 : 1}" class="btn-nav" style="font-size:12px;padding:4px 10px">›</a>
+        <a href="${pageContext.request.contextPath}/shifts?tab=list&delMonth=${prevDelMonth}" class="btn-nav" style="font-size:12px;padding:4px 10px">‹</a>
+        <span style="font-size:13px;font-weight:700;color:var(--ink)">📅 ${delMonthLabel}</span>
+        <a href="${pageContext.request.contextPath}/shifts?tab=list&delMonth=${nextDelMonth}" class="btn-nav" style="font-size:12px;padding:4px 10px">›</a>
       </div>
-      <div class="sm-week-grid" id="deleteWeekGrid">
-        <c:forEach begin="0" end="6" var="i">
-          <c:set var="dayDate" value="${weekDays[i]}"/>
+      
+      <%-- Lưới lịch tháng (7 cột) --%>
+      <div style="display:grid;grid-template-columns:repeat(7, 1fr);gap:6px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)">
+        <%-- Header (T2 - CN) --%>
+        <c:forEach var="dn" items="${weekDayNames}">
+          <div style="text-align:center;padding:8px 0;font-size:11px;font-weight:700;color:var(--muted);background:#F8FAFC;border-bottom:1px solid var(--border)">
+            ${dn}
+          </div>
+        </c:forEach>
+        
+        <%-- Các ô ngày --%>
+        <c:forEach var="dayDate" items="${monthDays}">
           <c:set var="isToday" value="${dayDate.equals(today)}"/>
-          <div class="sm-day-col ${isToday ? 'sm-today' : ''}">
-            <div class="sm-day-head">
-              <div class="sm-day-name">${weekDayNames[i]}</div>
-              <div class="sm-day-date">${dayDate.dayOfMonth}</div>
-              <div style="font-size:8px;color:var(--muted)">${dayDate.monthValue}/${dayDate.year}</div>
+          <c:set var="isCurrentMonth" value="${fn:startsWith(dayDate.toString(), delMonth)}"/>
+          <div style="min-height:90px;background:#fff;padding:6px;display:flex;flex-direction:column;gap:4px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);opacity:${isCurrentMonth ? '1' : '0.5'};${isToday ? 'background:#F0FDF4' : ''}">
+            <div style="font-size:11px;font-weight:${isToday ? '800' : '600'};color:${isToday ? 'var(--green)' : 'var(--ink)'};text-align:right;margin-bottom:4px">
+              ${dayDate.dayOfMonth}
             </div>
-            <div class="sm-day-body">
-              <c:set var="hasSched2" value="false"/>
-              <c:forEach var="sc" items="${schedules}">
-                <c:if test="${sc.workDate.equals(dayDate)}">
-                  <c:set var="hasSched2" value="true"/>
-                  <c:set var="isDeletable" value="${(sc.status == 'SCHEDULED' or sc.status == 'LEAVE_PENDING' or sc.status == 'CANCELLED') and !sc.workDate.isBefore(today)}"/>
-                  <c:set var="smChipClass2">sm-chip <c:choose>
-                    <c:when test="${sc.startHour < 12}">sm-morning</c:when>
-                    <c:when test="${sc.startHour < 20}">sm-afternoon</c:when>
-                    <c:otherwise>sm-night</c:otherwise>
-                  </c:choose> ${!isDeletable ? 'sm-locked' : ''}</c:set>
-                  <div class="${smChipClass2}"
-                       id="del-chip-${sc.scheduleId}"
-                       data-sched-id="${sc.scheduleId}"
-                       data-deletable="${isDeletable}"
-                       onclick="toggleDelChip(this)">
-                    <div class="sm-chip-name">${sc.staffName}</div>
-                    <div class="sm-chip-type">${sc.shiftTypeName}</div>
-                    <div class="sm-chip-status" style="background:<c:choose>
-                      <c:when test="${sc.status=='CONFIRMED'}">#D1FAE5;color:#065F46</c:when>
-                      <c:when test="${sc.status=='ABSENT'}">#FEE2E2;color:#991B1B</c:when>
-                      <c:when test="${sc.status=='SCHEDULED'}">#DBEAFE;color:#1E40AF</c:when>
-                      <c:otherwise>#F1F5F9;color:#64748B</c:otherwise>
-                    </c:choose>">
-                      <c:choose>
-                        <c:when test="${sc.status=='CONFIRMED'}">✅ Đang làm</c:when>
-                        <c:when test="${sc.status=='ABSENT'}">❌ Vắng</c:when>
-                        <c:when test="${sc.status=='SCHEDULED'}">⏳ Chưa vào</c:when>
-                        <c:otherwise>${sc.status}</c:otherwise>
-                      </c:choose>
-                    </div>
-                    <c:if test="${!isDeletable}">
-                      <span class="sm-lock-badge">🔒 Không thể xóa</span>
-                    </c:if>
-                  </div>
-                </c:if>
-              </c:forEach>
-              <c:if test="${!hasSched2}"><div class="sm-empty">Trống</div></c:if>
-            </div>
+            
+            <c:forEach var="sc" items="${monthSchedules}">
+              <c:if test="${sc.workDate.equals(dayDate)}">
+                <c:set var="isDeletable" value="${(sc.status == 'SCHEDULED' or sc.status == 'LEAVE_PENDING' or sc.status == 'CANCELLED') and !sc.workDate.isBefore(today)}"/>
+                <c:set var="smChipClass2">sm-chip <c:choose>
+                  <c:when test="${sc.startHour < 12}">sm-morning</c:when>
+                  <c:when test="${sc.startHour < 20}">sm-afternoon</c:when>
+                  <c:otherwise>sm-night</c:otherwise>
+                </c:choose> ${!isDeletable ? 'sm-locked' : ''}</c:set>
+                
+                <div class="${smChipClass2}"
+                     id="del-chip-${sc.scheduleId}"
+                     data-sched-id="${sc.scheduleId}"
+                     data-deletable="${isDeletable}"
+                     onclick="toggleDelChip(this)"
+                     style="padding:4px;font-size:9.5px;border-radius:6px;margin-bottom:2px">
+                  <div class="sm-chip-name" style="font-size:10px">${sc.staffName}</div>
+                  <div style="font-size:8.5px;opacity:0.8">${sc.shiftTypeName}</div>
+                  <c:if test="${!isDeletable}">
+                    <div style="font-size:8px;color:#991B1B;margin-top:2px">🔒 KHÓA</div>
+                  </c:if>
+                </div>
+              </c:if>
+            </c:forEach>
           </div>
         </c:forEach>
       </div>

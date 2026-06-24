@@ -9,6 +9,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
@@ -57,11 +58,13 @@ public class MedicineServlet extends HttpServlet {
         if (action == null) action = "";
 
         switch (action) {
-            case "save-medicine"   -> saveMedicine(req, resp);
-            case "delete-medicine" -> deleteMedicine(req, resp);
-            case "toggle-medicine" -> toggleMedicine(req, resp);
-            case "save-batch"      -> saveBatch(req, resp);
-            case "delete-batch"    -> deleteBatch(req, resp);
+            case "save-medicine"         -> saveMedicine(req, resp);
+            case "delete-medicine"       -> deleteMedicine(req, resp);
+            case "toggle-medicine"       -> toggleMedicine(req, resp);
+            case "save-batch"            -> saveBatch(req, resp);
+            case "delete-batch"          -> deleteBatch(req, resp);
+            case "create-category-ajax" -> createCategoryAjax(req, resp);
+            case "create-manufacturer-ajax" -> createManufacturerAjax(req, resp);
             default -> resp.sendRedirect(req.getContextPath() + "/medicines");
         }
     }
@@ -360,5 +363,53 @@ public class MedicineServlet extends HttpServlet {
         try { m.setExpiryAlertDays(Integer.parseInt(req.getParameter("expiryAlertDays"))); } catch (Exception ignored) {}
 
         return m;
+    }
+
+    // ── AJAX: Tạo danh mục mới inline ──────────────────────────────────────────────────────
+    private void createCategoryAjax(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        PrintWriter out = resp.getWriter();
+        String name = req.getParameter("categoryName");
+        String desc = req.getParameter("description");
+        if (name == null || name.trim().isEmpty()) {
+            out.print("{\"ok\":false,\"error\":\"Tên danh mục không được để trống!\"}");
+            return;
+        }
+        Category cat = new Category();
+        cat.setCategoryName(name.trim());
+        cat.setDescription(desc != null ? desc.trim() : "");
+        int newId = categoryDAO.insertGetId(cat);
+        if (newId > 0) {
+            AuditHelper.log(req, "Tạo danh mục thuốc", "Category", "Thêm danh mục: " + name.trim());
+            out.print("{\"ok\":true,\"id\":" + newId + ",\"name\":\"" + name.trim().replace("\"","&quot;") + "\"}");
+        } else {
+            out.print("{\"ok\":false,\"error\":\"Lỗi khi lưu danh mục, vui lòng thử lại!\"}");
+        }
+    }
+
+    // ── AJAX: Tạo nhà sản xuất mới inline ──────────────────────────────────────────────
+    private void createManufacturerAjax(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        PrintWriter out = resp.getWriter();
+        String name    = req.getParameter("name");
+        String country = req.getParameter("country");
+        String contact = req.getParameter("contactInfo");
+        if (name == null || name.trim().isEmpty()) {
+            out.print("{\"ok\":false,\"error\":\"Tên nhà sản xuất không được để trống!\"}");
+            return;
+        }
+        Manufacturer mfr = new Manufacturer();
+        mfr.setName(name.trim());
+        mfr.setCountry(country != null ? country.trim() : "");
+        mfr.setAddress(contact != null ? contact.trim() : "");
+        int newId = manufacturerDAO.insertGetId(mfr);
+        if (newId > 0) {
+            AuditHelper.log(req, "Tạo nhà sản xuất", "Manufacturer", "Thêm NSX: " + name.trim());
+            out.print("{\"ok\":true,\"id\":" + newId + ",\"name\":\"" + name.trim().replace("\"","&quot;") + "\"}");
+        } else {
+            out.print("{\"ok\":false,\"error\":\"Lỗi khi lưu nhà sản xuất, vui lòng thử lại!\"}");
+        }
     }
 }

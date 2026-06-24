@@ -193,6 +193,38 @@ public class ShiftServlet extends HttpServlet {
         req.setAttribute("weekEnd",      sunday.toString());
         req.setAttribute("today",        today2);
         req.setAttribute("schedules",    weekSchedules);
+
+        // ── Dữ liệu cho Modal Xóa ca — hiển thị 1 THÁNG ─────────────────────
+        // Navigate tháng cho modal xóa: param "delMonth" (YYYY-MM)
+        String delMonthStr = req.getParameter("delMonth");
+        java.time.YearMonth delMonth = java.time.YearMonth.now();
+        if (delMonthStr != null && !delMonthStr.isBlank()) {
+            try { delMonth = java.time.YearMonth.parse(delMonthStr); } catch (Exception ignored) {}
+        }
+        java.time.LocalDate monthStart = delMonth.atDay(1);
+        java.time.LocalDate monthEnd   = delMonth.atEndOfMonth();
+        // Mở rộng sang tuần đầu/cuối để bảng calendar đủ 6 hàng
+        java.time.LocalDate calStart = monthStart.minusDays(monthStart.getDayOfWeek().getValue() - 1);
+        java.time.LocalDate calEnd   = monthEnd.plusDays(7 - monthEnd.getDayOfWeek().getValue());
+        java.util.List<com.medicare.entity.ShiftSchedule> monthSchedules =
+                scheduleDAO.findByDateRange(calStart, calEnd);
+
+        java.util.List<java.time.LocalDate> monthDays = new java.util.ArrayList<>();
+        for (java.time.LocalDate d = calStart; !d.isAfter(calEnd); d = d.plusDays(1)) {
+            monthDays.add(d);
+        }
+
+        req.setAttribute("monthSchedules", monthSchedules);
+        req.setAttribute("monthDays",      monthDays);
+        req.setAttribute("delMonth",       delMonth.toString());
+        req.setAttribute("delMonthLabel",  delMonth.getMonth().getDisplayName(
+                java.time.format.TextStyle.FULL, new java.util.Locale("vi", "VN"))
+                + " " + delMonth.getYear());
+        req.setAttribute("prevDelMonth",   delMonth.minusMonths(1).toString());
+        req.setAttribute("nextDelMonth",   delMonth.plusMonths(1).toString());
+        req.setAttribute("calStart",       calStart.toString());
+        req.setAttribute("calEnd",         calEnd.toString());
+
         // ── Dữ liệu cho Tab Loại ca ──────────────────────────────────────────
         req.setAttribute("shiftTypes",   shiftTypeDAO.findAll());
 

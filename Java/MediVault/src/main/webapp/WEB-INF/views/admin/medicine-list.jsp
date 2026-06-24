@@ -143,6 +143,7 @@ tbody tr:hover td{background:#FAFBFF}
     <div class="section-tabs">
       <a href="${pageContext.request.contextPath}/medicines" class="section-tab active">💊 Thuốc &amp; Lô hàng</a>
       <a href="${pageContext.request.contextPath}/purchase-orders" class="section-tab">📑 Đơn đặt hàng</a>
+      <a href="${pageContext.request.contextPath}/categories" class="section-tab">🏷️ Danh mục</a>
     </div>
 
     <%-- Stats --%>

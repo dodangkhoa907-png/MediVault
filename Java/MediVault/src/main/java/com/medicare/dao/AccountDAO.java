@@ -97,6 +97,24 @@ public class AccountDAO implements IAccountDAO {
         return false;
     }
 
+    /**
+     * Kiểm tra số điện thoại đã tồn tại chưa.
+     * excludeId: bỏ qua account hiện tại khi update (truyền -1 khi insert)
+     */
+    public boolean isPhoneTaken(String phone, int excludeId) {
+        if (phone == null || phone.trim().isEmpty()) return false;
+        String sql = "SELECT 1 FROM Accounts WHERE Phone = ? AND AccountID != ? AND IsDeleted = 0";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, phone.trim());
+            ps.setInt(2, excludeId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return false;
+    }
+
     // ================================================================
     // QUERIES
     // ================================================================
