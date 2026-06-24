@@ -213,6 +213,12 @@ public class AccountServlet extends HttpServlet {
         String password  = req.getParameter("password");
         String roleStr   = req.getParameter("roleId");
 
+        // ── Auto-generate username từ SĐT nếu admin bỏ trống ──
+        // Ưu tiên: username nhập tay → nếu trống → dùng SĐT → nếu SĐT cũng trống → giữ nguyên
+        if ((username == null || username.trim().isEmpty()) && ValidationUtil.notBlank(phone)) {
+            username = phone.trim().replaceAll("[^0-9]", ""); // chỉ giữ số
+        }
+
         List<String> errors = new java.util.ArrayList<>(ValidationUtil.validateAccount(
                 username, fullName, email, phone, citizenId, position));
         errors.addAll(ValidationUtil.validatePassword(password));
@@ -226,6 +232,9 @@ public class AccountServlet extends HttpServlet {
             errors.add("Tên đăng nhập '" + username + "' đã tồn tại.");
         if (ValidationUtil.notBlank(email) && dao.isEmailTaken(email, -1))
             errors.add("Email '" + email + "' đã được dùng.");
+        // ── Kiểm tra SĐT trùng ──
+        if (ValidationUtil.notBlank(phone) && dao.isPhoneTaken(phone, -1))
+            errors.add("Số điện thoại '" + phone.trim() + "' đã được dùng bởi tài khoản khác.");
 
         if (!errors.isEmpty()) {
             Account draft = new Account();
@@ -394,11 +403,13 @@ public class AccountServlet extends HttpServlet {
         Account current = null;
         boolean emailChanged = false, phoneChanged = false;
         if (isNew) {
-            // Tạo mới: check username + email luôn
+            // Tạo mới: check username + email + phone
             if (ValidationUtil.notBlank(username) && dao.isUsernameTaken(username))
                 errors.add("Tên đăng nhập '" + username + "' đã tồn tại.");
             if (ValidationUtil.notBlank(email) && dao.isEmailTaken(email, -1))
                 errors.add("Email '" + email + "' đã được dùng bởi tài khoản khác.");
+            if (ValidationUtil.notBlank(phone) && dao.isPhoneTaken(phone, -1))
+                errors.add("Số điện thoại '" + phone.trim() + "' đã được dùng bởi tài khoản khác.");
         } else {
             // Edit: chỉ query DB nếu email/phone THỰC SỰ thay đổi so với giá trị cũ
             current = dao.findById(Integer.parseInt(idStr));
@@ -410,7 +421,8 @@ public class AccountServlet extends HttpServlet {
 
                 if (emailChanged && dao.isEmailTaken(email, Integer.parseInt(idStr)))
                     errors.add("Email '" + email + "' đã được dùng bởi tài khoản khác.");
-                // phone chưa có isPhoneTaken trong DAO — bỏ qua hoặc thêm sau
+                if (phoneChanged && dao.isPhoneTaken(phone, Integer.parseInt(idStr)))
+                    errors.add("Số điện thoại '" + phone.trim() + "' đã được dùng bởi tài khoản khác.");
             }
         }
         // ── BƯỚC 3: Nếu có lỗi → GỬI LẠI FORM + GIỮ DỮ LIỆU ──

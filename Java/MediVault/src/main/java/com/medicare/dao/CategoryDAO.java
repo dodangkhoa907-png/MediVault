@@ -50,6 +50,22 @@ public class CategoryDAO implements ICategoryDAO {
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
 
+    /** Tạo category mới và trả về ID mới (0 nếu thất bại) */
+    public int insertGetId(Category c) {
+        String sql = "INSERT INTO Categories (CategoryName, Description) VALUES (?,?)";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setNString(1, c.getCategoryName());
+            ps.setNString(2, c.getDescription());
+            if (ps.executeUpdate() > 0) {
+                try (ResultSet keys = ps.getGeneratedKeys()) {
+                    if (keys.next()) return keys.getInt(1);
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return 0;
+    }
+
     public boolean update(Category c) {
         String sql = "UPDATE Categories SET CategoryName=?, Description=? WHERE CategoryID=?";
         try (Connection cn = DBContext.getConnection();
