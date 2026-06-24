@@ -9,7 +9,9 @@ import jakarta.servlet.http.*;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @WebServlet("/pos")
 public class PosServlet extends HttpServlet {
@@ -104,8 +106,24 @@ public class PosServlet extends HttpServlet {
             return;
         }
 
+        List<Medicines> medicines = medicineDAO.findAll();
+        // Batch info map: medicineId → stock/batchNo/expiry
+        Map<Integer, Integer> stockMap  = new HashMap<>();
+        Map<Integer, String>  batchNoMap = new HashMap<>();
+        Map<Integer, String>  expiryMap  = new HashMap<>();
+        for (Medicines m : medicines) {
+            int mid = m.getMedicineId();
+            int totalQty = batchesDAO.getTotalQuantity(mid);
+            Batches nb   = batchesDAO.findNearestExpiry(mid);
+            stockMap.put(mid,    totalQty);
+            batchNoMap.put(mid,  nb != null ? nb.getBatchNumber()           : "");
+            expiryMap.put(mid,   nb != null ? nb.getExpiryDate().toString() : "");
+        }
         req.setAttribute("categories", categoryDAO.findAll());
-        req.setAttribute("medicines",  medicineDAO.findAll());
+        req.setAttribute("medicines",  medicines);
+        req.setAttribute("stockMap",   stockMap);
+        req.setAttribute("batchNoMap", batchNoMap);
+        req.setAttribute("expiryMap",  expiryMap);
         req.getRequestDispatcher("/WEB-INF/views/pos.jsp").forward(req, resp);
     }
 
