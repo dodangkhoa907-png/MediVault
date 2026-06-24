@@ -7,5 +7,6 @@ public interface IManufacturerDAO {
     List<Manufacturer> findAll();
     Manufacturer findById(int id);
     boolean insert(Manufacturer m);
+    int insertGetId(Manufacturer m);
     boolean update(Manufacturer m);
 }

@@ -642,6 +642,7 @@ let cart = [];
 let selectedCustomer = null;
 let selectedPayment = 'CASH';
 let allMedicines = [];
+let currentInvoiceId = 0;
 
 // ── Clock ──
 function updateClock() {
@@ -958,6 +959,7 @@ function submitSale() {
     .then(data => {
       if (data.ok) {
         const total = calcTotal();
+        currentInvoiceId = data.invoiceId || 0;
         document.getElementById('smCode').textContent  = data.invoiceCode + ' · ' + new Date().toLocaleString('vi-VN');
         document.getElementById('smTotal').textContent = fmtMoney(total);
         document.getElementById('successModal').classList.add('show');
@@ -992,8 +994,12 @@ function printTemp() {
 }
 
 function printReceipt() {
+  if (currentInvoiceId > 0) {
+    window.open(ctx + '/invoices?action=detail&id=' + currentInvoiceId, '_blank');
+  } else {
+    showToast('⚠️ Không tìm thấy hóa đơn để in!', 'err');
+  }
   closeSuccess();
-  showToast('🖨️ Đang in hóa đơn…', 'ok');
 }
 
 function showToast(msg, type) {

@@ -1412,6 +1412,7 @@ BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM ShiftSchedules
         WHERE AccountID = @AccountID AND WorkDate = @WorkDate AND ShiftTypeID = @ShiftTypeID
+          AND Status != 'CANCELLED'
     )
     BEGIN
         INSERT INTO ShiftSchedules

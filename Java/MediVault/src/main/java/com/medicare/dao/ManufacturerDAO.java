@@ -63,4 +63,21 @@ public class ManufacturerDAO implements IManufacturerDAO {
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
+
+    /** Tạo manufacturer mới và trả về ID mới (0 nếu thất bại) */
+    public int insertGetId(Manufacturer m) {
+        String sql = "INSERT INTO Manufacturers (ManufacturerName, Country, Address) VALUES (?,?,?)";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setNString(1, m.getName());
+            ps.setString(2, m.getCountry() != null ? m.getCountry() : "");
+            ps.setNString(3, m.getAddress() != null ? m.getAddress() : "");
+            if (ps.executeUpdate() > 0) {
+                try (ResultSet keys = ps.getGeneratedKeys()) {
+                    if (keys.next()) return keys.getInt(1);
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return 0;
+    }
 }
