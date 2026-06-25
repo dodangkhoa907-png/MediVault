@@ -477,7 +477,7 @@ public class InvoiceDAO implements IInvoiceDAO {
     @Override
     public java.util.TreeMap<String, BigDecimal[]> dailyFinanceByDateRange(LocalDate from, LocalDate to) {
         java.util.TreeMap<String, BigDecimal[]> result = new java.util.TreeMap<>();
-        String sqlRev = "SELECT CAST(CreatedAt AS DATE) AS Day, SUM(FinalAmount) AS Rev FROM Invoices " +
+        String sqlRev = "SELECT CAST(CreatedAt AS DATE) AS Day, ISNULL(SUM(FinalAmount),0) AS Rev FROM Invoices " +
                 "WHERE Status = 'COMPLETED' AND CAST(CreatedAt AS DATE) BETWEEN ? AND ? " +
                 "GROUP BY CAST(CreatedAt AS DATE)";
         String sqlCogs = "SELECT CAST(inv.CreatedAt AS DATE) AS Day, SUM(id.Quantity * b.ImportPrice) AS Cogs " +

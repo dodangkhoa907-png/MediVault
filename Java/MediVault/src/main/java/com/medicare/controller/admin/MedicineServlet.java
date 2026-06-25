@@ -2,6 +2,9 @@ package com.medicare.controller.admin;
 
 import com.medicare.dao.*;
 import com.medicare.entity.*;
+import com.medicare.service.MedicineService;
+import com.medicare.service.ServiceResult;
+import com.medicare.service.interfaces.IMedicineService;
 import com.medicare.util.AuditHelper;
 import com.medicare.util.SidebarHelper;
 import com.medicare.util.ValidationUtil;
@@ -17,13 +20,16 @@ import java.util.*;
 @WebServlet("/medicines")
 public class MedicineServlet extends HttpServlet {
 
-    private final MedicineDAO     medicineDAO     = new MedicineDAO();
-    private final BatchesDAO      batchesDAO      = new BatchesDAO();
-    private final CategoryDAO     categoryDAO     = new CategoryDAO();
-    private final ManufacturerDAO manufacturerDAO = new ManufacturerDAO();
-    private final SupplierDAO     supplierDAO     = new SupplierDAO();
-    private final ShelfDAO        shelfDAO        = new ShelfDAO();
-    private final PurchaseOrderDAO poDAO          = new PurchaseOrderDAO();
+    private static final int PAGE_SIZE = 20;
+
+    private final MedicineDAO      medicineDAO     = new MedicineDAO();
+    private final BatchesDAO       batchesDAO      = new BatchesDAO();
+    private final CategoryDAO      categoryDAO     = new CategoryDAO();
+    private final ManufacturerDAO  manufacturerDAO = new ManufacturerDAO();
+    private final SupplierDAO      supplierDAO     = new SupplierDAO();
+    private final ShelfDAO         shelfDAO        = new ShelfDAO();
+    private final PurchaseOrderDAO poDAO           = new PurchaseOrderDAO();
+    private final IMedicineService medicineService = new MedicineService();
 
     // ── GET ───────────────────────────────────────────────────────────────────
     @Override
@@ -69,23 +75,33 @@ public class MedicineServlet extends HttpServlet {
         }
     }
 
-    // ── LIST ──────────────────────────────────────────────────────────────────
+    // ── LIST (server-side pagination) ─────────────────────────────────────────
     private void showList(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         String keyword = req.getParameter("q");
-        List<Medicines> list = (keyword != null && !keyword.trim().isEmpty())
-                ? medicineDAO.search(keyword.trim())
-                : medicineDAO.findAllIncludeInactive();
+        Integer catId  = null;
+        try { catId = Integer.parseInt(req.getParameter("catId")); } catch (Exception ignored) {}
 
-        // Gắn tồn kho vào từng thuốc để hiển thị
-        Map<Integer, Integer> stockMap = new HashMap<>();
-        for (Medicines m : list)
-            stockMap.put(m.getMedicineId(), batchesDAO.getTotalQuantity(m.getMedicineId()));
+        int page = 1;
+        try { page = Math.max(1, Integer.parseInt(req.getParameter("page"))); } catch (Exception ignored) {}
+
+        int total      = medicineDAO.countForList(keyword, catId);
+        int totalPages = Math.max(1, (int) Math.ceil((double) total / PAGE_SIZE));
+        page = Math.min(page, totalPages);
+
+        List<Medicines> list = medicineDAO.findPaged(keyword, catId, page, PAGE_SIZE);
+
+        // 1 query cho toàn bộ tồn kho — nhanh hơn N queries per trang
+        Map<Integer, Integer> stockMap = batchesDAO.getTotalQuantityMap();
 
         req.setAttribute("medicines",   list);
         req.setAttribute("stockMap",    stockMap);
         req.setAttribute("categories",  categoryDAO.findAll());
         req.setAttribute("keyword",     keyword);
+        req.setAttribute("catId",       catId);
+        req.setAttribute("currentPage", page);
+        req.setAttribute("totalPages",  totalPages);
+        req.setAttribute("totalCount",  total);
         req.setAttribute("totalActive", medicineDAO.countAll());
         req.setAttribute("lowStock",    medicineDAO.countLowStock());
         SidebarHelper.load(req);
@@ -218,27 +234,26 @@ public class MedicineServlet extends HttpServlet {
         String bidStr = req.getParameter("batchId");
         boolean isNew = (bidStr == null || bidStr.isBlank());
 
-        String batchNo  = req.getParameter("batchNumber");
-        String expiry   = req.getParameter("expiryDate");
-        String qty      = req.getParameter("initialQuantity");
-        String price    = req.getParameter("importPrice");
-        String midStr   = req.getParameter("medicineId");
+        String batchNo = req.getParameter("batchNumber");
+        String expiry  = req.getParameter("expiryDate");
+        String qty     = req.getParameter("initialQuantity");
+        String price   = req.getParameter("importPrice");
+        String midStr  = req.getParameter("medicineId");
 
         if (ValidationUtil.isBlank(batchNo)) errors.add("Số lô không được để trống!");
         if (ValidationUtil.isBlank(expiry))  errors.add("Ngày hết hạn không được để trống!");
         if (ValidationUtil.isBlank(qty))     errors.add("Số lượng không được để trống!");
         if (ValidationUtil.isBlank(price))   errors.add("Giá nhập không được để trống!");
 
-        // Kiểm tra ngày hết hạn phải > hôm nay
         if (!ValidationUtil.isBlank(expiry)) {
             try {
-                LocalDate exp = LocalDate.parse(expiry);
-                if (!exp.isAfter(LocalDate.now()))
+                if (!LocalDate.parse(expiry).isAfter(LocalDate.now()))
                     errors.add("Ngày hết hạn phải sau ngày hôm nay!");
             } catch (Exception e) { errors.add("Ngày hết hạn không hợp lệ!"); }
         }
 
-        int medicineId = midStr != null ? Integer.parseInt(midStr) : 0;
+        int medicineId = 0;
+        try { medicineId = Integer.parseInt(midStr); } catch (Exception ignored) {}
 
         if (!errors.isEmpty()) {
             req.setAttribute("errors", errors);
@@ -251,73 +266,35 @@ public class MedicineServlet extends HttpServlet {
         b.setBatchNumber(batchNo.trim());
         b.setExpiryDate(LocalDate.parse(expiry));
         b.setImportPrice(new BigDecimal(price));
-
+        b.setInitialQuantity(isNew ? Integer.parseInt(qty) : 0);
         String mfDate = req.getParameter("manufactureDate");
         if (!ValidationUtil.isBlank(mfDate)) b.setManufactureDate(LocalDate.parse(mfDate));
         b.setImportDate(LocalDate.now());
+        if (!isNew) b.setBatchId(Integer.parseInt(bidStr));
 
-        boolean ok;
-        if (isNew) {
-            // ── Bắt buộc gắn lô hàng vào 1 Đơn đặt hàng (FK_Batch_PO NOT NULL) ──
-            // Trước đây PoId/SupplierId không được set → lưu lô mới luôn lỗi FK.
-            String poMode   = req.getParameter("poMode"); // "existing" | "new"
-            String poIdStr  = req.getParameter("poId");
-            String newSupId = req.getParameter("newPoSupplierId");
-            String newNotes = req.getParameter("newPoNotes");
+        Account adminAcc = (Account) req.getSession(false).getAttribute("adminAccount");
+        int adminId = adminAcc != null ? adminAcc.getAccountId() : 1;
 
-            int poId = -1;
-            int supplierId = -1;
+        ServiceResult<Batches> result = medicineService.saveBatch(
+                b, isNew,
+                req.getParameter("poMode"),
+                req.getParameter("poId"),
+                req.getParameter("newPoSupplierId"),
+                req.getParameter("newPoNotes"),
+                adminId);
 
-            if ("existing".equals(poMode)) {
-                if (ValidationUtil.isBlank(poIdStr)) {
-                    errors.add("Vui lòng chọn đơn đặt hàng đã có!");
-                } else {
-                    PurchaseOrders po = poDAO.findById(Integer.parseInt(poIdStr));
-                    if (po == null) {
-                        errors.add("Đơn đặt hàng không tồn tại, vui lòng chọn lại!");
-                    } else {
-                        poId = po.getPoId();
-                        supplierId = po.getSupplierId();
-                    }
-                }
-            } else { // "new" — tạo đơn đặt hàng mới ngay trong lúc nhập lô
-                if (ValidationUtil.isBlank(newSupId)) {
-                    errors.add("Vui lòng chọn nhà cung cấp cho đơn đặt hàng mới!");
-                } else {
-                    Account adminAcc = (Account) req.getSession(false).getAttribute("adminAccount");
-                    PurchaseOrders po = new PurchaseOrders();
-                    po.setSupplierId(Integer.parseInt(newSupId));
-                    po.setAccountId(adminAcc != null ? adminAcc.getAccountId() : 1);
-                    po.setNotes(!ValidationUtil.isBlank(newNotes) ? newNotes.trim() : null);
-                    poId = poDAO.insert(po);
-                    supplierId = po.getSupplierId();
-                    if (poId <= 0) errors.add("Không tạo được đơn đặt hàng mới, vui lòng thử lại!");
-                }
-            }
-
-            if (!errors.isEmpty()) {
-                req.setAttribute("errors", errors);
-                showBatchForm(req, resp, null);
-                return;
-            }
-
-            b.setPoId(poId);
-            b.setSupplierId(supplierId);
-            b.setInitialQuantity(Integer.parseInt(qty));
-            ok = batchesDAO.insert(b);
-            if (ok) {
-                poDAO.recalcTotalValue(poId);
-                AuditHelper.log(req, "Nhập lô thuốc", "Batch",
-                        "Nhập lô " + batchNo + " — SL: " + qty);
-            }
-        } else {
-            b.setBatchId(Integer.parseInt(bidStr));
-            ok = batchesDAO.update(b);
-            if (ok) AuditHelper.log(req, "Sửa lô thuốc", "Batch", "Sửa lô " + batchNo);
+        if (result.isFail()) {
+            req.setAttribute("errors", result.hasErrors()
+                    ? result.getErrors() : List.of(result.getMessage()));
+            showBatchForm(req, resp, isNew ? null : b);
+            return;
         }
 
+        AuditHelper.log(req, isNew ? "Nhập lô thuốc" : "Sửa lô thuốc", "Batch",
+                (isNew ? "Nhập lô " : "Sửa lô ") + batchNo + (isNew ? " — SL: " + qty : ""));
+
         resp.sendRedirect(req.getContextPath() + "/medicines?action=detail&id=" + medicineId
-                + "&msg=" + (ok ? (isNew ? "batch-added" : "batch-updated") : "error"));
+                + "&msg=" + (isNew ? "batch-added" : "batch-updated"));
     }
 
     // ── DELETE LÔ ─────────────────────────────────────────────────────────────

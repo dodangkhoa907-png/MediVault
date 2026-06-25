@@ -29,8 +29,20 @@ public class Medicines {
     private boolean status;
     private LocalDateTime createdAt;
 
+    // Transient fields — populated by JOIN queries, not stored in DB
+    private int totalStock;
+    private String nearestBatchNo;
+    private String nearestExpiry;
+
     public Medicines() {
     }
+
+    public int getTotalStock()            { return totalStock; }
+    public void setTotalStock(int v)      { this.totalStock = v; }
+    public String getNearestBatchNo()     { return nearestBatchNo; }
+    public void setNearestBatchNo(String v){ this.nearestBatchNo = v; }
+    public String getNearestExpiry()      { return nearestExpiry; }
+    public void setNearestExpiry(String v){ this.nearestExpiry = v; }
 
     public Medicines(int medicineId, String medicineCode, String medicineName, String genericName, String barcode, String registrationNumber, Integer categoryId, Integer manufacturerId, String unit, Integer shelfId, BigDecimal storageTempMin, BigDecimal storageTempMax, String storageConditions, String dosage, BigDecimal defaultDosageMin, BigDecimal defaultDosageMax, String dosageWarning, int expiryAlertDays, String contraindications, boolean isPrescriptionRequired, BigDecimal sellingPrice, int minInventory, boolean status, LocalDateTime createdAt) {
         this.medicineId = medicineId;
