@@ -113,6 +113,16 @@ body{display:flex}
 .stock-out{background:#fee2e2;color:#991b1b}
 .empty-state{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted)}
 .empty-state .ei{font-size:44px;margin-bottom:12px}
+/* Qty row on card */
+.mc-qty-row{display:flex;align-items:center;gap:3px;margin-top:5px;padding-top:5px;border-top:1px solid var(--border)}
+.mc-qty-lbl{font-size:10.5px;color:var(--muted);font-weight:600;flex-shrink:0;margin-right:1px}
+.mc-qty-btn{width:22px;height:22px;border:1.5px solid var(--border);background:#f8f9fa;border-radius:5px;font-size:14px;font-weight:700;color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.12s;font-family:inherit;padding:0;line-height:1}
+.mc-qty-btn:hover{border-color:var(--sky);background:#eff6ff;color:var(--blue)}
+.mc-qty-inp{width:42px;height:22px;border:1.5px solid var(--border);border-radius:5px;text-align:center;font-size:12px;font-weight:700;color:var(--navy);font-family:inherit;outline:none;background:#fff}
+.mc-qty-inp:focus{border-color:var(--sky)}
+.mc-qty-inp::-webkit-inner-spin-button,.mc-qty-inp::-webkit-outer-spin-button{-webkit-appearance:none}
+.mc-qty-warn{font-size:10px;color:var(--red);font-weight:700;display:none;margin-top:3px;line-height:1.3;background:#fee2e2;padding:2px 6px;border-radius:4px;text-align:center}
+.med-card.out-of-stock .mc-qty-row{display:none}
 
 /* RIGHT PANEL */
 .invoice-panel{width:var(--rw);height:100vh;background:#fff;border-left:2px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
@@ -152,7 +162,9 @@ body{display:flex}
 .qty-btn{width:25px;height:25px;border-radius:6px;border:1.5px solid var(--border);background:#fff;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;color:var(--navy);transition:.15s}
 .qty-btn:hover{border-color:var(--sky);color:var(--blue)}
 .qty-btn.minus:hover{border-color:var(--red);color:var(--red)}
-.qty-val{width:26px;text-align:center;font-size:13px;font-weight:700}
+.qty-val{width:38px;height:25px;text-align:center;font-size:13px;font-weight:700;border:1.5px solid var(--border);border-radius:6px;outline:none;font-family:inherit;color:var(--navy);background:#fff;padding:0}
+.qty-val:focus{border-color:var(--sky)}
+.qty-val::-webkit-inner-spin-button,.qty-val::-webkit-outer-spin-button{-webkit-appearance:none}
 .inv-i-sub{font-size:13px;font-weight:800;color:var(--navy);white-space:nowrap;flex-shrink:0}
 .inv-i-rm{color:#d1d5db;cursor:pointer;background:none;border:none;font-size:15px;line-height:1;transition:.15s;flex-shrink:0}
 .inv-i-rm:hover{color:var(--red)}
@@ -400,6 +412,14 @@ body{display:flex}
           <span class="mc-price"><fmt:formatNumber value="${m.sellingPrice}" pattern="#,###"/>đ</span>
           <span class="${stkCls}">${stkLbl}</span>
         </div>
+        <div class="mc-qty-row" onclick="event.stopPropagation()">
+          <span class="mc-qty-lbl">SL:</span>
+          <button class="mc-qty-btn" onclick="cardQtyChange(this,-1)">−</button>
+          <input class="mc-qty-inp" type="number" value="1" min="1"
+                 oninput="cardQtyValidate(this)" onclick="event.stopPropagation()" onfocus="this.select()">
+          <button class="mc-qty-btn" onclick="cardQtyChange(this,1)">+</button>
+        </div>
+        <div class="mc-qty-warn"></div>
       </div>
     </c:forEach>
   </div>
@@ -601,18 +621,57 @@ function checkEmpty() {
   } else if (es) es.remove();
 }
 
+// ── Card qty helpers ──
+function cardQtyChange(btn, delta) {
+  event.stopPropagation();
+  const row  = btn.closest('.mc-qty-row');
+  const inp  = row.querySelector('.mc-qty-inp');
+  let v = Math.max(1, (parseInt(inp.value) || 1) + delta);
+  inp.value = v;
+  cardQtyValidate(inp);
+}
+function cardQtyValidate(inp) {
+  const card  = inp.closest('.med-card');
+  const stock = parseInt(card.dataset.stock) || 0;
+  const v     = parseInt(inp.value) || 1;
+  if (v < 1) inp.value = 1;
+  const warn = card.querySelector('.mc-qty-warn');
+  if (warn) {
+    if (stock > 0 && v > stock) {
+      warn.textContent = '⚠ Chỉ còn ' + stock + ' trong kho';
+      warn.style.display = 'block';
+    } else {
+      warn.style.display = 'none';
+    }
+  }
+}
+
 // ── Cart ──
 function addToCart(card) {
   if (card.classList.contains('out-of-stock')) return;
   const id    = parseInt(card.dataset.id);
   const stock = parseInt(card.dataset.stock) || 0;
-  const existing = cart.find(i => i.id === id);
-  if (existing) {
-    if (stock > 0 && existing.qty >= stock) {
-      showToast('⚠️ Không đủ tồn kho! Còn ' + stock + ' ' + card.dataset.unit, 'err');
-      return;
+
+  const qtyInp = card.querySelector('.mc-qty-inp');
+  const addQty = qtyInp ? Math.max(1, parseInt(qtyInp.value) || 1) : 1;
+
+  const existing    = cart.find(i => i.id === id);
+  const inCartQty   = existing ? existing.qty : 0;
+  const afterTotal  = inCartQty + addQty;
+
+  if (stock > 0 && afterTotal > stock) {
+    const avail = Math.max(0, stock - inCartQty);
+    if (avail <= 0) {
+      showToast('⚠️ Đã thêm tối đa tồn kho (' + stock + ' ' + (card.dataset.unit||'') + ')', 'err');
+    } else {
+      showToast('⚠️ Chỉ còn ' + avail + ' ' + (card.dataset.unit||'') + ' có thể thêm (kho: ' + stock + ')', 'err');
+      if (qtyInp) qtyInp.value = avail;
     }
-    existing.qty++;
+    return;
+  }
+
+  if (existing) {
+    existing.qty += addQty;
   } else {
     if (stock === 0) { showToast('❌ Thuốc này đã hết hàng!', 'err'); return; }
     cart.push({
@@ -625,9 +684,16 @@ function addToCart(card) {
       dosage:  card.dataset.dosage  || '',
       code:    card.dataset.code    || '',
       rx:      card.dataset.rx === 'true',
-      qty: 1
+      qty: addQty
     });
   }
+
+  if (qtyInp) {
+    qtyInp.value = 1;
+    const warn = card.querySelector('.mc-qty-warn');
+    if (warn) warn.style.display = 'none';
+  }
+
   renderCart();
   card.style.transform = 'scale(.95)';
   setTimeout(() => card.style.transform = '', 130);
@@ -636,8 +702,25 @@ function addToCart(card) {
 function changeQty(id, delta) {
   const item = cart.find(i => i.id === id);
   if (!item) return;
-  item.qty += delta;
-  if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
+  const newQty = item.qty + delta;
+  if (newQty <= 0) { cart = cart.filter(i => i.id !== id); renderCart(); return; }
+  if (item.stock > 0 && newQty > item.stock) {
+    showToast('⚠️ Chỉ còn ' + item.stock + ' ' + item.unit + ' trong kho', 'err'); return;
+  }
+  item.qty = newQty;
+  renderCart();
+}
+
+function setCartQty(id, inp) {
+  const item = cart.find(i => i.id === id);
+  if (!item) return;
+  let v = parseInt(inp.value) || 1;
+  if (v < 1) v = 1;
+  if (item.stock > 0 && v > item.stock) {
+    showToast('⚠️ Chỉ còn ' + item.stock + ' ' + item.unit + ' trong kho', 'err');
+    v = item.stock;
+  }
+  item.qty = v;
   renderCart();
 }
 
@@ -674,15 +757,17 @@ function renderCart() {
       if (item.batchNo) meta.push('🏷 Lô: ' + item.batchNo);
       if (item.expiry)  meta.push('📅 HSD: ' + fmtDate(item.expiry));
       const metaHtml = meta.length ? '<div class="inv-i-meta">' + meta.join(' · ') + '</div>' : '';
+      const rxBadge = item.rx ? '<span class="mc-badge mb-rx" style="font-size:9px;padding:1px 4px;margin-right:6px;border-radius:3px;">Rx</span>' : '<span class="mc-badge mb-otc" style="font-size:9px;padding:1px 4px;margin-right:6px;border-radius:3px;">OTC</span>';
       return '<div class="inv-item">'
         + '<div class="inv-i-info">'
-          + '<div class="inv-i-name">' + escHtml(item.name) + '</div>'
-          + '<div class="inv-i-price">' + fmtMoney(item.price) + ' / ' + escHtml(item.unit) + '</div>'
+          + '<div class="inv-i-name" style="display:flex;align-items:center;">' + rxBadge + escHtml(item.name) + '</div>'
+          + '<div class="inv-i-price" style="margin-top:3px;color:#475569;">M\u00E3: <span style="font-weight:700;color:#0F172A;">' + escHtml(item.code) + '</span> \u00B7 ' + fmtMoney(item.price) + ' / ' + escHtml(item.unit) + '</div>'
           + metaHtml
         + '</div>'
         + '<div class="qty-ctrl">'
           + '<button class="qty-btn minus" onclick="changeQty('+item.id+',-1)">−</button>'
-          + '<span class="qty-val">'+item.qty+'</span>'
+          + '<input type="number" class="qty-val" value="'+item.qty+'" min="1" max="'+item.stock+'"'
+          + ' onchange="setCartQty('+item.id+',this)" onfocus="this.select()">'
           + '<button class="qty-btn" onclick="changeQty('+item.id+',1)">＋</button>'
         + '</div>'
         + '<div class="inv-i-sub">' + fmtMoney(item.price * item.qty) + '</div>'
@@ -794,13 +879,27 @@ function calcChange() {
 function updateCheckoutBtnState() {
   const btn = document.getElementById('checkoutBtn');
   if (!btn) return;
-  if (cart.length === 0) { btn.disabled = true; return; }
+  if (cart.length === 0) { 
+    btn.disabled = true; 
+    btn.innerHTML = '\uD83D\uDED2 THANH TO\u00C1N (Ch\u01B0a c\u00F3 h\u00E0ng)';
+    return; 
+  }
   if (selectedPayment === 'CASH') {
     const total = calcTotal();
     const cash  = parseFloat(document.getElementById('cashInput').value) || 0;
-    btn.disabled = (cash <= 0 || cash < total);
+    if (cash <= 0) {
+      btn.disabled = true;
+      btn.innerHTML = '\u23F3 \u0110ang \u0111\u1EE3i nh\u1EADp ti\u1EC1n...';
+    } else if (cash < total) {
+      btn.disabled = true;
+      btn.innerHTML = '\u26A0\uFE0F Ch\u01B0a \u0111\u1EE7 ti\u1EC1n';
+    } else {
+      btn.disabled = false;
+      btn.innerHTML = '\uD83D\uDED2 THANH TO\u00C1N (ENTER)';
+    }
   } else {
     btn.disabled = false;
+    btn.innerHTML = '\uD83D\uDED2 THANH TO\u00C1N (ENTER)';
   }
 }
 
@@ -1118,6 +1217,22 @@ document.addEventListener('click', e => {
   if (wrap && !wrap.contains(e.target)) {
     const p = document.getElementById('checkinPanel');
     if (p) p.style.display = 'none';
+  }
+});
+
+// Allow Enter key to trigger checkout when cashInput is focused
+document.addEventListener('DOMContentLoaded', () => {
+  const ci = document.getElementById('cashInput');
+  if (ci) {
+    ci.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const btn = document.getElementById('checkoutBtn');
+        if (btn && !btn.disabled) {
+          doCheckout();
+        }
+      }
+    });
   }
 });
 </script>
