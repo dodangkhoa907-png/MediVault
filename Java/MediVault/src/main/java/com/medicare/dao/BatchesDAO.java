@@ -5,7 +5,9 @@ import com.medicare.dao.interfaces.IBatchesDAO;
 import com.medicare.entity.Batches;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class BatchesDAO implements IBatchesDAO {
 
@@ -224,6 +226,20 @@ public class BatchesDAO implements IBatchesDAO {
             e.printStackTrace();
             return false;
         }
+    }
+
+    /** Tổng tồn kho tất cả thuốc — 1 query thay N queries trong showList(). */
+    public Map<Integer, Integer> getTotalQuantityMap() {
+        Map<Integer, Integer> map = new HashMap<>();
+        String sql = "SELECT MedicineID, ISNULL(SUM(CurrentQuantity),0) AS TotalStock" +
+                " FROM Batches WHERE ExpiryDate > CAST(GETDATE() AS DATE)" +
+                " GROUP BY MedicineID";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) map.put(rs.getInt("MedicineID"), rs.getInt("TotalStock"));
+        } catch (Exception e) { e.printStackTrace(); }
+        return map;
     }
 
     /**

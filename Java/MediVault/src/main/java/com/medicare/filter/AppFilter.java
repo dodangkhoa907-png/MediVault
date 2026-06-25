@@ -49,9 +49,26 @@ public class AppFilter implements Filter {
             resp.setHeader("Pragma",        "no-cache");
         }
 
-        // ── Security headers (nhỏ nhưng cần thiết) ───────────────────────
-        resp.setHeader("X-Content-Type-Options", "nosniff");
-        resp.setHeader("X-Frame-Options",        "SAMEORIGIN");
+        // ── Security headers ──────────────────────────────────────────────
+        resp.setHeader("X-Content-Type-Options",  "nosniff");
+        resp.setHeader("X-Frame-Options",         "SAMEORIGIN");
+        resp.setHeader("X-XSS-Protection",        "1; mode=block");
+        resp.setHeader("Referrer-Policy",         "strict-origin-when-cross-origin");
+        // CSP: cho phép fonts từ Google, Chart.js từ cdnjs, inline styles/scripts (cần cho JSP)
+        resp.setHeader("Content-Security-Policy",
+                "default-src 'self'; "
+                + "script-src 'self' 'unsafe-inline' 'unsafe-eval' "
+                + "  https://fonts.googleapis.com "
+                + "  https://cdnjs.cloudflare.com "
+                + "  https://cdn.jsdelivr.net; "
+                + "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; "
+                + "font-src 'self' https://fonts.gstatic.com data:; "
+                + "img-src 'self' data: blob:; "
+                + "connect-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
+                + "frame-ancestors 'self';");
+
+        // ── Inject CSRF token vào request attribute (dùng trong JSP: ${csrfToken}) ──
+        com.medicare.util.CsrfUtil.injectToRequest(req);
 
         // ── GZIP Compression ──────────────────────────────────────────────
         String acceptEncoding = req.getHeader("Accept-Encoding");

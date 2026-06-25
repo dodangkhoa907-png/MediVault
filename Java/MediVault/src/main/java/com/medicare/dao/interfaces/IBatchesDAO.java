@@ -2,6 +2,7 @@ package com.medicare.dao.interfaces;
 
 import com.medicare.entity.Batches;
 import java.util.List;
+import java.util.Map;
 
 public interface IBatchesDAO {
     List<Batches> findAll();
@@ -15,7 +16,7 @@ public interface IBatchesDAO {
     boolean delete(int batchId);
     Batches findById(int batchId);
     int getTotalQuantity(int medicineId);
+    Map<Integer, Integer> getTotalQuantityMap(); // all medicines in 1 query
     int countByMedicine(int medicineId);
     Batches findNearestExpiry(int medicineId);
-
 }

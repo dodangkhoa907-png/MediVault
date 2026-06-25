@@ -353,6 +353,13 @@ body{display:flex;background:var(--surface);color:var(--ink)}
   display:flex;align-items:center;gap:8px;
   box-shadow:0 8px 32px rgba(0,0,0,.2);z-index:999;transition:opacity .4s;
 }
+/* Charts */
+.chart-row{display:grid;grid-template-columns:1.7fr 1fr 1fr;gap:14px;margin-bottom:22px}
+.chart-card{background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+.chart-card-header{padding:16px 20px 12px;border-bottom:1px solid var(--border)}
+.chart-card-title{font-size:14px;font-weight:700;color:var(--ink)}
+.chart-card-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.chart-card-body{padding:16px 20px;position:relative}
 </style>
 </head>
 <body>
@@ -513,6 +520,31 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                 </div>
                 <div class="stat-value"><%= activeAccounts %></div>
                 <div class="stat-diff"><span id="onlineCountText">Đang tải...</span></div>
+            </div>
+        </div>
+
+        <!-- CHARTS ROW -->
+        <div class="chart-row">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <div class="chart-card-title">📈 Doanh thu 30 ngày gần nhất</div>
+                    <div class="chart-card-sub">Từ hóa đơn đã thanh toán</div>
+                </div>
+                <div class="chart-card-body" style="height:260px"><canvas id="dailyChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <div class="chart-card-title">💊 Top 5 thuốc bán chạy</div>
+                    <div class="chart-card-sub">Tháng <%=java.time.LocalDate.now().getMonthValue()%>/<%=java.time.LocalDate.now().getYear()%></div>
+                </div>
+                <div class="chart-card-body" style="height:260px"><canvas id="topMedChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <div class="chart-card-title">🏷️ Tỷ trọng danh mục</div>
+                    <div class="chart-card-sub">Doanh thu theo danh mục tháng này</div>
+                </div>
+                <div class="chart-card-body" style="height:260px"><canvas id="catDonutChart"></canvas></div>
             </div>
         </div>
 
@@ -796,6 +828,72 @@ function filterTable() {
 }
 document.querySelector('#filterForm [name="q"]')
   ?.addEventListener('input', filterTable);
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+(function() {
+    if (typeof Chart === 'undefined') return;
+
+    const daily = <%=request.getAttribute("chartDailyJson")%>;
+    const top5  = <%=request.getAttribute("chartTopJson")%>;
+    const cat   = <%=request.getAttribute("chartCatJson")%>;
+
+    const dCanvas = document.getElementById('dailyChart');
+    if (dCanvas && daily) {
+        new Chart(dCanvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: daily.labels,
+                datasets: [{ label: 'Doanh thu', data: daily.values,
+                    backgroundColor: 'rgba(21,88,168,0.72)', borderRadius: 4 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { ticks: { callback: v => (v/1000000).toFixed(1)+'M' } },
+                    x: { ticks: { autoSkip: true, maxTicksLimit: 10, maxRotation: 45 } }
+                }
+            }
+        });
+    }
+
+    const tCanvas = document.getElementById('topMedChart');
+    if (tCanvas && top5) {
+        new Chart(tCanvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: top5.names,
+                datasets: [{ label: 'Số lượng', data: top5.quantities, borderRadius: 4,
+                    backgroundColor: ['#1558A8','#3ABDE0','#059669','#D97706','#6D28D9'] }]
+            },
+            options: {
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { ticks: { precision: 0 } } }
+            }
+        });
+    }
+
+    const cCanvas = document.getElementById('catDonutChart');
+    if (cCanvas && cat) {
+        new Chart(cCanvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: cat.names,
+                datasets: [{ data: cat.revenues,
+                    backgroundColor: ['#1558A8','#3ABDE0','#059669','#D97706',
+                                      '#6D28D9','#DC2626','#0891B2','#7C3AED'] }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom',
+                    labels: { font: { size: 11 }, boxWidth: 12 } } }
+            }
+        });
+    }
+})();
 </script>
 
 </body>

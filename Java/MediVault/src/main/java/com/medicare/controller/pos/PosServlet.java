@@ -3,6 +3,9 @@ package com.medicare.controller.pos;
 import com.medicare.dao.*;
 import com.medicare.dao.interfaces.*;
 import com.medicare.entity.*;
+import com.medicare.service.SaleService;
+import com.medicare.service.ServiceResult;
+import com.medicare.service.interfaces.ISaleService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -16,43 +19,42 @@ import java.util.Map;
 @WebServlet("/pos")
 public class PosServlet extends HttpServlet {
 
-    private final IMedicineDAO      medicineDAO  = new MedicineDAO();
-    private final IBatchesDAO       batchesDAO   = new BatchesDAO();
-    private final ICustomerDAO      customerDAO  = new CustomerDAO();
-    private final IInvoiceDAO       invoiceDAO   = new InvoiceDAO();
-    private final ICategoryDAO      categoryDAO  = new CategoryDAO();
-    private final IStaffAuditLogDAO staffAuditDAO = new StaffAuditLogDAO();
-    private final IShiftDAO         shiftDAO      = new ShiftDAO();
+    private final IMedicineDAO  medicineDAO  = new MedicineDAO();
+    private final IBatchesDAO   batchesDAO   = new BatchesDAO();
+    private final ICustomerDAO  customerDAO  = new CustomerDAO();
+    private final ICategoryDAO  categoryDAO  = new CategoryDAO();
+    private final ISaleService  saleService  = new SaleService();
 
     private static final int POS_ACCOUNT_ID = 1;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
+        req.setCharacterEncoding("UTF-8");
+        resp.setContentType("text/html; charset=UTF-8");
 
         String action = req.getParameter("action");
 
         if ("search".equals(action)) {
             String q = req.getParameter("q");
+            // searchWithStock / findAllWithStock: 1 JOIN query thay N+1
             List<Medicines> list = (q != null && !q.trim().isEmpty())
-                    ? medicineDAO.search(q.trim()) : medicineDAO.findAll();
+                    ? medicineDAO.searchWithStock(q.trim())
+                    : medicineDAO.findAllWithStock();
             resp.setContentType("application/json;charset=UTF-8");
             PrintWriter out = resp.getWriter();
             out.print("[");
             for (int i = 0; i < list.size(); i++) {
                 Medicines m = list.get(i);
-                int totalQty = batchesDAO.getTotalQuantity(m.getMedicineId());
-                Batches nb   = batchesDAO.findNearestExpiry(m.getMedicineId());
-                String expiry  = nb != null ? nb.getExpiryDate().toString() : "";
-                String batchNo = nb != null ? nb.getBatchNumber() : "";
                 if (i > 0) out.print(",");
                 out.printf("{\"id\":%d,\"code\":\"%s\",\"name\":\"%s\",\"unit\":\"%s\"," +
                                 "\"price\":%s,\"stock\":%d,\"catId\":%d," +
                                 "\"rx\":%b,\"expiry\":\"%s\",\"batchNo\":\"%s\"}",
                         m.getMedicineId(), esc(m.getMedicineCode()),
                         esc(m.getMedicineName()), esc(m.getUnit()),
-                        m.getSellingPrice(), totalQty, m.getCategoryId(),
-                        m.isPrescriptionRequired(), expiry, esc(batchNo));
+                        m.getSellingPrice(), m.getTotalStock(), m.getCategoryId(),
+                        m.isPrescriptionRequired(),
+                        esc(m.getNearestExpiry()), esc(m.getNearestBatchNo()));
             }
             out.print("]");
             return;
@@ -72,58 +74,64 @@ public class PosServlet extends HttpServlet {
             return;
         }
         if ("inventory".equals(action)) {
+            // Single JOIN query: medicine + all batches — thay 1000+ queries
             resp.setContentType("application/json;charset=UTF-8");
             PrintWriter out = resp.getWriter();
-            List<Medicines> meds = medicineDAO.findAll();
             out.print("[");
-            boolean first = true;
-            for (Medicines m : meds) {
-                List<Batches> batches = batchesDAO.findAllByMedicine(m.getMedicineId());
-                int totalQty = batchesDAO.getTotalQuantity(m.getMedicineId());
-                for (Batches b : batches) {
+            String sql =
+                "WITH bs AS (" +
+                "  SELECT MedicineID, ISNULL(SUM(CurrentQuantity),0) AS TotalStock" +
+                "  FROM Batches WHERE ExpiryDate > CAST(GETDATE() AS DATE) GROUP BY MedicineID" +
+                ")" +
+                "SELECT m.MedicineID, m.MedicineName, m.MedicineCode, m.Unit," +
+                "  ISNULL(bs.TotalStock,0) AS TotalStock," +
+                "  b.BatchNumber, CONVERT(VARCHAR(10),b.ExpiryDate,120) AS ExpiryDate," +
+                "  b.CurrentQuantity, b.InitialQuantity, b.ImportPrice" +
+                " FROM Medicines m" +
+                " LEFT JOIN bs ON bs.MedicineID = m.MedicineID" +
+                " LEFT JOIN Batches b ON b.MedicineID = m.MedicineID" +
+                " WHERE m.Status = 1" +
+                " ORDER BY m.MedicineName, b.ExpiryDate DESC";
+            try (java.sql.Connection cn = com.medicare.config.DBContext.getConnection();
+                 java.sql.PreparedStatement ps = cn.prepareStatement(sql);
+                 java.sql.ResultSet rs = ps.executeQuery()) {
+                boolean first = true;
+                while (rs.next()) {
                     if (!first) out.print(",");
                     out.printf("{\"medId\":%d,\"medName\":\"%s\",\"medCode\":\"%s\",\"unit\":\"%s\"," +
                                     "\"totalStock\":%d,\"batchNo\":\"%s\",\"expiryDate\":\"%s\"," +
-                                    "\"currentQty\":%d,\"initialQty\":%d,\"importPrice\":%s}",
-                            m.getMedicineId(), esc(m.getMedicineName()), esc(m.getMedicineCode()),
-                            esc(m.getUnit()), totalQty, esc(b.getBatchNumber()),
-                            b.getExpiryDate().toString(), b.getCurrentQuantity(),
-                            b.getInitialQuantity(), b.getImportPrice());
+                                    "\"currentQty\":%d,\"initialQty\":%d,\"importPrice\":\"%s\"}",
+                            rs.getInt("MedicineID"), esc(rs.getNString("MedicineName")),
+                            esc(rs.getString("MedicineCode")), esc(rs.getNString("Unit")),
+                            rs.getInt("TotalStock"),
+                            esc(rs.getString("BatchNumber") != null ? rs.getString("BatchNumber") : ""),
+                            rs.getString("ExpiryDate") != null ? rs.getString("ExpiryDate") : "",
+                            rs.getInt("CurrentQuantity"), rs.getInt("InitialQuantity"),
+                            rs.getBigDecimal("ImportPrice") != null ? rs.getBigDecimal("ImportPrice").toPlainString() : "0");
                     first = false;
                 }
-                // Thuốc không có lô nào vẫn hiển thị
-                if (batches.isEmpty()) {
-                    if (!first) out.print(",");
-                    out.printf("{\"medId\":%d,\"medName\":\"%s\",\"medCode\":\"%s\",\"unit\":\"%s\"," +
-                                    "\"totalStock\":0,\"batchNo\":\"\",\"expiryDate\":\"\"," +
-                                    "\"currentQty\":0,\"initialQty\":0,\"importPrice\":\"0\"}",
-                            m.getMedicineId(), esc(m.getMedicineName()),
-                            esc(m.getMedicineCode()), esc(m.getUnit()));
-                    first = false;
-                }
-            }
+            } catch (Exception e) { e.printStackTrace(); }
             out.print("]");
             return;
         }
 
-        List<Medicines> medicines = medicineDAO.findAll();
-        // Batch info map: medicineId → stock/batchNo/expiry
-        Map<Integer, Integer> stockMap  = new HashMap<>();
+        // Single CTE query thay N+1 (getTotalQuantity + findNearestExpiry per medicine)
+        List<Medicines> medicines = medicineDAO.findAllWithStock();
+        Map<Integer, Integer> stockMap   = new HashMap<>();
         Map<Integer, String>  batchNoMap = new HashMap<>();
         Map<Integer, String>  expiryMap  = new HashMap<>();
         for (Medicines m : medicines) {
             int mid = m.getMedicineId();
-            int totalQty = batchesDAO.getTotalQuantity(mid);
-            Batches nb   = batchesDAO.findNearestExpiry(mid);
-            stockMap.put(mid,    totalQty);
-            batchNoMap.put(mid,  nb != null ? nb.getBatchNumber()           : "");
-            expiryMap.put(mid,   nb != null ? nb.getExpiryDate().toString() : "");
+            stockMap.put(mid,   m.getTotalStock());
+            batchNoMap.put(mid, m.getNearestBatchNo() != null ? m.getNearestBatchNo() : "");
+            expiryMap.put(mid,  m.getNearestExpiry()  != null ? m.getNearestExpiry()  : "");
         }
         req.setAttribute("categories", categoryDAO.findAll());
         req.setAttribute("medicines",  medicines);
         req.setAttribute("stockMap",   stockMap);
         req.setAttribute("batchNoMap", batchNoMap);
         req.setAttribute("expiryMap",  expiryMap);
+
         req.getRequestDispatcher("/WEB-INF/views/pos.jsp").forward(req, resp);
     }
 
@@ -141,7 +149,6 @@ public class PosServlet extends HttpServlet {
                 HttpSession session = req.getSession(false);
                 Account acc = null;
                 if (session != null) {
-                    // Ưu tiên lấy staffAccount theo uid nếu có
                     String uid = req.getParameter("uid");
                     if (uid != null && !uid.isEmpty())
                         acc = (Account) session.getAttribute("staffAccount_" + uid);
@@ -149,11 +156,6 @@ public class PosServlet extends HttpServlet {
                         acc = (Account) session.getAttribute("adminAccount");
                 }
                 int accountId = acc != null ? acc.getAccountId() : POS_ACCOUNT_ID;
-
-                // Lấy shiftId ca đang mở của nhân viên — dùng để liên kết hóa đơn với ca
-                // Quan trọng: không có ShiftID → doanh thu ca bị tính sai
-                com.medicare.entity.Shift currentShift = shiftDAO.findCurrent(accountId);
-                Integer shiftId = currentShift != null ? currentShift.getShiftId() : null;
 
                 Integer customerId = parseIntOrNull(req.getParameter("customerId"));
                 String  payMethod  = req.getParameter("paymentMethod");
@@ -164,42 +166,31 @@ public class PosServlet extends HttpServlet {
                 String[] medIdStrs = req.getParameterValues("medId[]");
                 String[] qtyStrs   = req.getParameterValues("qty[]");
 
-                if (medIdStrs == null || medIdStrs.length == 0) {
-                    out.print("{\"ok\":false,\"msg\":\"Giỏ hàng trống!\"}");
-                    return;
-                }
-
-                int[] medicineIds = new int[medIdStrs.length];
-                int[] quantities  = new int[qtyStrs.length];
-                for (int i = 0; i < medIdStrs.length; i++) {
+                int[] medicineIds = medIdStrs != null ? new int[medIdStrs.length] : new int[0];
+                int[] quantities  = qtyStrs   != null ? new int[qtyStrs.length]   : new int[0];
+                for (int i = 0; i < medicineIds.length; i++) {
                     medicineIds[i] = Integer.parseInt(medIdStrs[i]);
                     quantities[i]  = Integer.parseInt(qtyStrs[i]);
                 }
 
-                int invoiceId = invoiceDAO.completeSaleTransaction(
-                        accountId, shiftId, customerId, payMethod, discount, medicineIds, quantities);
+                ServiceResult<Invoice> result = saleService.completeSale(
+                        accountId, customerId, payMethod, discount,
+                        medicineIds, quantities, req.getRemoteAddr());
 
-                if (invoiceId > 0) {
-                    // Ghi log giao dịch bán hàng vào StaffAuditLogs
-                    staffAuditDAO.log(new StaffAuditLog(
-                            accountId,
-                            "Thanh toán bán hàng",
-                            "Lập thành công hóa đơn mã ID: " + invoiceId,
-                            req.getRemoteAddr()
-                    ));
-
-                    Invoice inv = invoiceDAO.findById(invoiceId);
+                if (result.isOk()) {
+                    Invoice inv = result.getData();
                     out.printf("{\"ok\":true,\"invoiceId\":%d,\"invoiceCode\":\"%s\",\"total\":%s}",
-                            invoiceId,
+                            inv != null ? inv.getInvoiceId()  : 0,
                             inv != null ? esc(inv.getInvoiceCode()) : "",
                             inv != null ? inv.getFinalAmount() : "0");
                 } else {
-                    out.print("{\"ok\":false,\"msg\":\"Thanh toán thất bại! Kiểm tra lại tồn kho.\"}");
+                    out.printf("{\"ok\":false,\"msg\":\"%s\"}", esc(result.firstError()));
                 }
 
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 e.printStackTrace();
-                out.printf("{\"ok\":false,\"msg\":\"Lỗi hệ thống: %s\"}", esc(e.getMessage()));
+                String errMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                out.printf("{\"ok\":false,\"msg\":\"Lỗi hệ thống: %s\"}", esc(errMsg));
             }
             return;
         }
