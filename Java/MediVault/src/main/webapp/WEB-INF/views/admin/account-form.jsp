@@ -1,4 +1,4 @@
-
+﻿
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ page import="java.lang.String" %>
@@ -61,7 +61,7 @@ body{display:flex;flex-direction:column}
 
 /* ── TOPBAR ── */
 .topbar{
-  height:60px;background:linear-gradient(90deg,#071022,#0F2645);
+  height:62px;background:linear-gradient(90deg,#071022,#0F2645);
   display:flex;align-items:center;padding:0 28px;gap:14px;
   flex-shrink:0;box-shadow:0 2px 16px rgba(0,0,0,.2);
 }

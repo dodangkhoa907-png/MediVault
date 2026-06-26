@@ -3,6 +3,7 @@ package com.medicare.dao;
 import com.medicare.config.DBContext;
 import com.medicare.dao.interfaces.IManufacturerDAO;
 import com.medicare.entity.Manufacturer;
+import com.medicare.util.MojibakeUtil;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,15 +13,15 @@ public class ManufacturerDAO implements IManufacturerDAO {
     private Manufacturer mapRow(ResultSet rs) throws SQLException {
         return new Manufacturer(
                 rs.getInt("ManufacturerID"),
-                rs.getNString("ManufacturerName"),
+                MojibakeUtil.fix(rs.getNString("Name")),
                 rs.getString("Country"),
-                rs.getNString("Address")
+                MojibakeUtil.fix(rs.getNString("Address"))
         );
     }
 
     public List<Manufacturer> findAll() {
         List<Manufacturer> list = new ArrayList<>();
-        String sql = "SELECT * FROM Manufacturers ORDER BY ManufacturerName";
+        String sql = "SELECT * FROM Manufacturers ORDER BY Name";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -42,7 +43,7 @@ public class ManufacturerDAO implements IManufacturerDAO {
     }
 
     public boolean insert(Manufacturer m) {
-        String sql = "INSERT INTO Manufacturers (ManufacturerName, Country, Address) VALUES (?,?,?)";
+        String sql = "INSERT INTO Manufacturers (Name, Country, Address) VALUES (?,?,?)";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setNString(1, m.getName());
@@ -53,7 +54,7 @@ public class ManufacturerDAO implements IManufacturerDAO {
     }
 
     public boolean update(Manufacturer m) {
-        String sql = "UPDATE Manufacturers SET ManufacturerName=?, Country=?, Address=? WHERE ManufacturerID=?";
+        String sql = "UPDATE Manufacturers SET Name=?, Country=?, Address=? WHERE ManufacturerID=?";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setNString(1, m.getName());
@@ -64,9 +65,27 @@ public class ManufacturerDAO implements IManufacturerDAO {
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
 
+    /** Xóa manufacturer. Trả false nếu vẫn còn thuốc đang dùng. */
+    public boolean delete(int id) {
+        String checkSql = "SELECT COUNT(*) FROM Medicines WHERE ManufacturerID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(checkSql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) return false;
+            }
+        } catch (Exception e) { e.printStackTrace(); return false; }
+        String sql = "DELETE FROM Manufacturers WHERE ManufacturerID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
     /** Tạo manufacturer mới và trả về ID mới (0 nếu thất bại) */
     public int insertGetId(Manufacturer m) {
-        String sql = "INSERT INTO Manufacturers (ManufacturerName, Country, Address) VALUES (?,?,?)";
+        String sql = "INSERT INTO Manufacturers (Name, Country, Address) VALUES (?,?,?)";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setNString(1, m.getName());

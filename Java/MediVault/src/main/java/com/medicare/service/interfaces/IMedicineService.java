@@ -26,12 +26,14 @@ public interface IMedicineService {
      * Khi nhập lô mới: bắt buộc liên kết với Đơn đặt hàng (FK).
      * Xử lý 2 mode: "existing" (dùng PO có sẵn) và "new" (tạo PO mới).
      *
-     * @param b           Thông tin lô hàng (đã được set medicineId, batchNumber, expiryDate, importPrice, qty)
-     * @param isNew       true = nhập lô mới | false = sửa lô
-     * @param poMode      "existing" | "new" (chỉ cần khi isNew=true)
-     * @param poIdStr     ID đơn đặt hàng có sẵn (chỉ cần khi poMode="existing")
-     * @param newSupplierId ID nhà cung cấp để tạo PO mới (chỉ cần khi poMode="new")
-     * @param newPoNotes  Ghi chú PO mới (tùy chọn)
+     * @param b              Thông tin lô hàng (đã được set medicineId, batchNumber,
+     *                       expiryDate, importPrice, qty)
+     * @param isNew          true = nhập lô mới | false = sửa lô
+     * @param poMode         "existing" | "new" (chỉ cần khi isNew=true)
+     * @param poIdStr        ID đơn đặt hàng có sẵn (chỉ cần khi poMode="existing")
+     * @param newSupplierId  ID nhà cung cấp để tạo PO mới (chỉ cần khi
+     *                       poMode="new")
+     * @param newPoNotes     Ghi chú PO mới (tùy chọn)
      * @param adminAccountId ID admin đang thực hiện (dùng cho PO mới)
      */
     ServiceResult<Batches> saveBatch(
@@ -40,9 +42,9 @@ public interface IMedicineService {
             String newSupplierId, String newPoNotes,
             int adminAccountId);
 
-    /**
-     * Xóa lô hàng.
-     * Chặn nếu CurrentQuantity > 0.
-     */
+    /** Hủy lô (CANCELLED) — chỉ khi chưa có bán hàng nào */
     ServiceResult<Void> deleteBatch(int batchId);
+
+    /** Tiêu hủy lô (DESTROYED) — hết hạn / hỏng hóc, có thể còn tồn kho */
+    ServiceResult<Void> destroyBatch(int batchId);
 }

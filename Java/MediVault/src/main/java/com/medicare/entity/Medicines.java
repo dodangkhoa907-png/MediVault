@@ -28,6 +28,8 @@ public class Medicines {
     private int minInventory;
     private boolean status;
     private LocalDateTime createdAt;
+    private String packagingSpec;
+    private String imageUrl;
 
     // Transient fields — populated by JOIN queries, not stored in DB
     private int totalStock;
@@ -262,4 +264,10 @@ public class Medicines {
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
+
+    public String getPackagingSpec() { return packagingSpec; }
+    public void setPackagingSpec(String packagingSpec) { this.packagingSpec = packagingSpec; }
+
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 }
