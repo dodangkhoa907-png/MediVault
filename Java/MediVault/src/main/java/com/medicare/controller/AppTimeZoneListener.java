@@ -36,6 +36,18 @@ public class AppTimeZoneListener implements ServletContextListener {
 
         System.out.println("[AppTimeZoneListener] JVM timezone set to "
                 + APP_TIMEZONE + " — current JVM time: " + new java.util.Date());
+                
+        // Khởi tạo Database sớm để tạo sẵn 5 connection trong pool,
+        // tránh lỗi timeout hoặc đăng nhập chậm ở lần đầu tiên.
+        try {
+            java.sql.Connection c = com.medicare.config.DBContext.getConnection();
+            if (c != null) {
+                c.close();
+                System.out.println("[AppTimeZoneListener] Database Pool initialized successfully.");
+            }
+        } catch (Exception e) {
+            System.err.println("[AppTimeZoneListener] Failed to initialize DB Pool: " + e.getMessage());
+        }
     }
 
     @Override

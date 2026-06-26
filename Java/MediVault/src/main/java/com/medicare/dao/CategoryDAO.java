@@ -9,11 +9,22 @@ import java.util.List;
 
 public class CategoryDAO implements ICategoryDAO {
 
+    private static String fixMojibake(String s) {
+        if (s == null) return null;
+        try {
+            byte[] bytes = s.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+            java.nio.charset.CharsetDecoder dec = java.nio.charset.StandardCharsets.UTF_8.newDecoder()
+                .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
+                .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT);
+            return dec.decode(java.nio.ByteBuffer.wrap(bytes)).toString();
+        } catch (Exception ignored) { return s; }
+    }
+
     private Category mapRow(ResultSet rs) throws SQLException {
         return new Category(
                 rs.getInt("CategoryID"),
-                rs.getNString("CategoryName"),
-                rs.getNString("Description")
+                fixMojibake(rs.getNString("CategoryName")),
+                fixMojibake(rs.getNString("Description"))
         );
     }
 

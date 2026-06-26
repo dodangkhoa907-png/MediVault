@@ -6,6 +6,9 @@ import com.medicare.dao.interfaces.IAccountDAO;
 import com.medicare.dao.interfaces.IPasswordResetDAO;
 import com.medicare.entity.PasswordResetRequest;
 import com.medicare.entity.Account;
+import com.medicare.service.AccountService;
+import com.medicare.service.ServiceResult;
+import com.medicare.service.interfaces.IAccountService;
 import com.medicare.util.PasswordUtil;
 import com.medicare.util.ValidationUtil;
 import com.medicare.util.AuditHelper;
@@ -28,8 +31,9 @@ import java.io.PrintWriter;
 @WebServlet("/accounts")
 public class AccountServlet extends HttpServlet {
 
-    private final IAccountDAO dao = new AccountDAO();
-    private final IPasswordResetDAO resetDAO = new PasswordResetDAO();
+    private final IAccountDAO      dao             = new AccountDAO();
+    private final IPasswordResetDAO resetDAO        = new PasswordResetDAO();
+    private final IAccountService  accountService  = new AccountService();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -212,33 +216,15 @@ public class AccountServlet extends HttpServlet {
         String position  = req.getParameter("position");
         String password  = req.getParameter("password");
         String roleStr   = req.getParameter("roleId");
+        int roleId = 2;
+        try { roleId = Integer.parseInt(roleStr); } catch (Exception ignored) {}
 
-        // ── Auto-generate username từ SĐT nếu admin bỏ trống ──
-        // Ưu tiên: username nhập tay → nếu trống → dùng SĐT → nếu SĐT cũng trống → giữ nguyên
-        if ((username == null || username.trim().isEmpty()) && ValidationUtil.notBlank(phone)) {
-            username = phone.trim().replaceAll("[^0-9]", ""); // chỉ giữ số
-        }
+        ServiceResult<Account> result = accountService.createAccount(
+                username, fullName, email, phone, citizenId, position, roleId, password);
 
-        List<String> errors = new java.util.ArrayList<>(ValidationUtil.validateAccount(
-                username, fullName, email, phone, citizenId, position));
-        errors.addAll(ValidationUtil.validatePassword(password));
-        // CitizenId là NOT NULL trong DB — bắt buộc nhập khi tạo mới
-        if (!ValidationUtil.notBlank(citizenId))
-            errors.add("Số CMND/CCCD không được để trống.");
-        // Chặn username reserved (admin, root, system...)
-        if (ValidationUtil.notBlank(username) && ValidationUtil.isReservedUsername(username))
-            errors.add("Tên đăng nhập '" + username + "' là tên hệ thống — không được phép sử dụng.");
-        else if (ValidationUtil.notBlank(username) && dao.isUsernameTaken(username))
-            errors.add("Tên đăng nhập '" + username + "' đã tồn tại.");
-        if (ValidationUtil.notBlank(email) && dao.isEmailTaken(email, -1))
-            errors.add("Email '" + email + "' đã được dùng.");
-        // ── Kiểm tra SĐT trùng ──
-        if (ValidationUtil.notBlank(phone) && dao.isPhoneTaken(phone, -1))
-            errors.add("Số điện thoại '" + phone.trim() + "' đã được dùng bởi tài khoản khác.");
-
-        if (!errors.isEmpty()) {
+        if (result.isFail()) {
             Account draft = new Account();
-            // Nếu username lỗi (trùng/reserved) → clear để admin nhập lại
+            List<String> errors = result.hasErrors() ? result.getErrors() : List.of(result.getMessage());
             boolean usernameErr = errors.stream().anyMatch(e -> e.contains("Tên đăng nhập"));
             draft.setUsername(usernameErr ? "" : (username != null ? username : ""));
             draft.setFullName(fullName != null ? fullName : "");
@@ -246,87 +232,28 @@ public class AccountServlet extends HttpServlet {
             draft.setPhone(phone != null ? phone : "");
             draft.setCitizenId(citizenId != null ? citizenId : "");
             draft.setPosition(position != null ? position : "");
-            draft.setRoleId(roleStr != null && !roleStr.isEmpty() ? Integer.parseInt(roleStr) : 2);
+            draft.setRoleId(roleId);
             req.setAttribute("account", draft);
             req.setAttribute("errors", errors);
             req.setAttribute("errorMsg", ValidationUtil.joinErrors(errors));
             SidebarHelper.load(req);
-
             req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
             return;
         }
 
-        Account a = new Account();
-        a.setUsername(username.trim());
-        a.setFullName(fullName.trim());
-        a.setEmail(email != null ? email.trim() : null);
-        a.setPhone(phone != null ? phone.trim() : null);
-        // CitizenId là NOT NULL trong DB — dùng empty string nếu null (phòng thủ thêm)
-        a.setCitizenId(citizenId != null && !citizenId.trim().isEmpty() ? citizenId.trim() : "");
-        a.setPosition(position != null ? position.trim() : null);
-        a.setRoleId(Integer.parseInt(roleStr));
-        a.setPasswordHash(PasswordUtil.hashPassword(password));
+        Account created = result.getData();
+        AuditHelper.log(req, "Tạo tài khoản", "Account",
+                "Admin tạo tài khoản @" + (created != null ? created.getUsername() : username)
+                + " (" + fullName + ")");
 
-        boolean ok = dao.insert(a);
-        if (ok) {
-            // 1. Ghi log lịch sử hệ thống (Giữ nguyên chức năng cũ)
-            AuditHelper.log(req, "Tạo tài khoản", "Account",
-                    "Admin tạo tài khoản @" + username + " (" + fullName + ")");
-
-            // 2. TỰ ĐỘNG GỬI EMAIL THÔNG BÁO TÀI KHOẢN MỚI CHO NHÂN VIÊN (Thêm mới)
-            if (email != null && !email.trim().isEmpty()) {
-                String staffEmail = email.trim();
-                String emailHtml = "<div style=\"font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px\">"
-                        + "<div style=\"background:linear-gradient(135deg,#1E3A8A,#3B82F6);border-radius:14px;padding:20px 24px;margin-bottom:20px;color:#fff\">"
-                        + "<h2 style=\"margin:0;font-size:18px\">🎉 Tài khoản MediVault của bạn đã được tạo!</h2>"
-                        + "<p style=\"margin:6px 0 0;opacity:.8;font-size:13px\">Hệ thống quản lý kho dược và ca trực MediVault</p>"
-                        + "</div>"
-                        + "<p style=\"font-size:14px;color:#1C0F3F\">Xin chào <strong>" + fullName.trim() + "</strong>,</p>"
-                        + "<p style=\"font-size:13.5px;color:#374151;line-height:1.7\">"
-                        + "Tài khoản của bạn đã được khởi tạo thành công trên hệ thống bởi Ban quản trị. Dưới đây là thông tin đăng nhập chi tiết của bạn:"
-                        + "</p>"
-                        + "<div style=\"background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:18px 20px;margin:18px 0;\">"
-                        + "<p style=\"margin:0 0 6px;font-size:14px;color:#334155\">👤 Tên đăng nhập: <strong style=\"color:#0F172A;\">@" + username.trim() + "</strong></p>"
-                        + "<p style=\"margin:0 0 12px;font-size:14px;color:#334155\">💼 Chức vụ: <strong>" + (position != null ? position.trim() : "Nhân viên") + "</strong></p>"
-                        + "<hr style=\"border:0;border-top:1px solid #E2E8F0;margin:12px 0;\">"
-                        + "<p style=\"margin:0 0 8px;font-size:12px;font-weight:700;color:#1E3A8A;letter-spacing:1px;text-transform:uppercase\">🔑 Mật khẩu</p>"
-                        + "<p style=\"margin:0;font-size:13px;color:#374151;line-height:1.6\">Mật khẩu đăng nhập sẽ được <strong>Admin cung cấp trực tiếp</strong> cho bạn. Vui lòng liên hệ Ban quản trị để nhận mật khẩu.</p>"
-                        + "<p style=\"margin:8px 0 0;font-size:12px;color:#6B7280\">💡 Sau khi nhận mật khẩu, hãy đổi mật khẩu ngay lần đăng nhập đầu tiên.</p>"
-                        + "</div>"
-                        + "<p style=\"font-size:12px;color:#999\">Đây là email tự động từ hệ thống MediVault, vui lòng không phản hồi email này.</p>"
-                        + "</div>";
-
-                // Thực hiện gửi email thông báo tài khoản
-                EmailUtil.sendEmail(staffEmail, "[MediVault] 🎉 Tài khoản của bạn đã được tạo thành công", emailHtml);
-            }
-
-            // 3. Xử lý điều hướng trang (Giữ nguyên chức năng cũ - LUÔN ĐẶT Ở CUỐI KHỐI LỆNH)
-            Account created = dao.findByUsername(username.trim());
-            // Thông báo cho nhân viên mới
-            if (created != null) {
-                StaffNotifHelper.accountCreated(created.getAccountId(),
-                        fullName != null ? fullName.trim() : username.trim());
-                StaffNotifHelper.faceEnrollReminder(created.getAccountId());
-            }
-            String redirect = req.getParameter("redirect");
-            if ("schedule".equals(redirect) && created != null) {
-                // Lưu & Xếp lịch ngay → redirect sang trang xếp lịch pre-fill
-                resp.sendRedirect(req.getContextPath()
-                        + "/shift-schedules?action=new&accountId=" + created.getAccountId()
-                        + "&msg=account-created");
-            } else {
-                // Tạo xong → về danh sách, hiện toast thành công
-                resp.sendRedirect(req.getContextPath() + "/accounts?msg=created");
-            }
+        String redirect = req.getParameter("redirect");
+        if ("schedule".equals(redirect) && created != null) {
+            resp.sendRedirect(req.getContextPath()
+                    + "/shift-schedules?action=new&accountId=" + created.getAccountId()
+                    + "&msg=account-created");
         } else {
-            // Thất bại (Giữ nguyên chức năng cũ)
-            req.setAttribute("error", "Tạo tài khoản thất bại — kiểm tra log Tomcat!");
-            req.setAttribute("account", a);
-            SidebarHelper.load(req);
-
-            req.getRequestDispatcher("/WEB-INF/views/admin/dashboard.jsp").forward(req, resp);
+            resp.sendRedirect(req.getContextPath() + "/accounts?msg=created");
         }
-
     }
 
     @Override
@@ -750,10 +677,8 @@ public class AccountServlet extends HttpServlet {
         req.setCharacterEncoding("UTF-8");
         HttpSession sess = req.getSession(false);
 
-        // Kiểm tra OTP đã verified chưa
         Boolean verified = (Boolean) (sess != null ? sess.getAttribute("adminResetOtpVerified") : null);
         if (!Boolean.TRUE.equals(verified)) {
-            req.setAttribute("errors", java.util.List.of("Phiên xác nhận OTP không hợp lệ. Vui lòng thử lại."));
             resp.sendRedirect(req.getContextPath() + "/accounts");
             return;
         }
@@ -774,74 +699,30 @@ public class AccountServlet extends HttpServlet {
             return;
         }
 
-        // Validate mật khẩu (chữ hoa + thường + số + đặc biệt + ≥8 ký tự)
-        java.util.List<String> pwErrors = ValidationUtil.validatePassword(newPassword);
-        if (!pwErrors.isEmpty()) {
-            req.setAttribute("staffInfo", staff);
-            req.setAttribute("error", String.join(" ", pwErrors));
-            SidebarHelper.load(req);
-
-            req.getRequestDispatcher("/WEB-INF/views/admin/admin-set-password.jsp").forward(req, resp);
-            return;
-        }
+        // Validate confirm match trước khi gọi service
         if (!newPassword.equals(confirmPw)) {
             req.setAttribute("staffInfo", staff);
             req.setAttribute("error", "Mật khẩu xác nhận không khớp!");
             SidebarHelper.load(req);
-
             req.getRequestDispatcher("/WEB-INF/views/admin/admin-set-password.jsp").forward(req, resp);
             return;
         }
 
-        // Đặt mật khẩu mới
-        dao.resetPassword(targetId, PasswordUtil.hashPassword(newPassword));
+        ServiceResult<Void> result = accountService.setPassword(
+                targetId, newPassword, Boolean.TRUE.equals(isResetFlow));
+
+        if (result.isFail()) {
+            req.setAttribute("staffInfo", staff);
+            req.setAttribute("error", result.firstError());
+            SidebarHelper.load(req);
+            req.getRequestDispatcher("/WEB-INF/views/admin/admin-set-password.jsp").forward(req, resp);
+            return;
+        }
+
         AuditHelper.log(req, "Đặt lại mật khẩu", "Account",
                 "Admin đặt mật khẩu mới cho @" + staff.getUsername()
-                        + (Boolean.TRUE.equals(isResetFlow) ? " (theo yêu cầu staff)" : " (chủ động)"));
+                + (Boolean.TRUE.equals(isResetFlow) ? " (theo yêu cầu staff)" : " (chủ động)"));
 
-        // Hoàn tất reset request (nếu có) — xóa khỏi chuông thông báo
-        resetDAO.complete(targetId);
-
-        // Nếu là reset flow: mở khóa tài khoản
-        if (Boolean.TRUE.equals(isResetFlow)) {
-            if (!staff.isActive()) {
-                dao.toggleActive(targetId);
-            }
-        }
-
-        // Gửi email thông báo cho staff — kèm mật khẩu mới
-        String staffEmail = staff.getEmail();
-        if (staffEmail != null && !staffEmail.isEmpty()) {
-            String emailHtml = "<div style=\"font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px\">"
-                    + "<div style=\"background:linear-gradient(135deg,#059669,#047857);border-radius:14px;"
-                    + "padding:20px 24px;margin-bottom:20px;color:#fff\">"
-                    + "<h2 style=\"margin:0;font-size:18px\">✅ Mật khẩu đã được cập nhật!</h2>"
-                    + (Boolean.TRUE.equals(isResetFlow)
-                    ? "<p style=\"margin:6px 0 0;opacity:.8;font-size:13px\">Tài khoản của bạn đã được mở khóa</p>"
-                    : "<p style=\"margin:6px 0 0;opacity:.8;font-size:13px\">Admin vừa đặt lại mật khẩu cho bạn</p>")
-                    + "</div>"
-                    + "<p style=\"font-size:14px;color:#1C0F3F\">Xin chào <strong>" + staff.getFullName() + "</strong>,</p>"
-                    + "<p style=\"font-size:13.5px;color:#374151;line-height:1.7\">"
-                    + "Mật khẩu tài khoản <strong>@" + staff.getUsername() + "</strong> đã được đặt lại thành công."
-                    + (Boolean.TRUE.equals(isResetFlow) ? " Tài khoản của bạn đã được <strong>mở khóa</strong> và bạn có thể đăng nhập lại ngay." : "")
-                    + "</p>"
-                    + "<div style=\"background:#F0FDF4;border:2px solid #86EFAC;border-radius:12px;padding:18px 20px;margin:18px 0;\">"
-                    + "<p style=\"margin:0 0 8px;font-size:12px;font-weight:700;color:#15803D;letter-spacing:1px;text-transform:uppercase\">🔑 Mật khẩu đã được đặt lại</p>"
-                    + "<p style=\"margin:0;font-size:13px;color:#374151;line-height:1.6\">Mật khẩu mới sẽ được <strong>Admin cung cấp trực tiếp</strong> cho bạn. Vui lòng liên hệ Ban quản trị.</p>"
-                    + "<p style=\"margin:8px 0 0;font-size:12px;color:#6B7280\">"
-                    + "💡 Sau khi nhận mật khẩu, hãy đổi ngay khi đăng nhập.</p>"
-                    + "</div>"
-                    + "<p style=\"font-size:12px;color:#999\">Nếu bạn không yêu cầu điều này, hãy liên hệ Admin ngay lập tức.</p>"
-                    + "</div>";
-            EmailUtil.sendEmail(staffEmail,
-                    "[MediVault] ✅ Tài khoản @" + staff.getUsername() + " đã được mở khóa",
-                    emailHtml);
-        }
-
-        // Thông báo cho nhân viên
-        StaffNotifHelper.passwordReset(targetId);
-
-        // Xóa session tạm
         sess.removeAttribute("adminResetOtpVerified");
         sess.removeAttribute("adminResetTargetId");
         sess.removeAttribute("adminResetNewPassword");

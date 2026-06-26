@@ -411,30 +411,40 @@ function setCashChartType(t) {
 }
 
 async function loadAllCharts() {
+  if (typeof Chart === 'undefined') {
+    console.error('Chart.js chưa tải — kiểm tra CSP hoặc kết nối mạng');
+    return;
+  }
   try {
-    const res  = await fetch(ctx_path + '/reports?action=chart-data&month=' + REP_MONTH + '&year=' + REP_YEAR);
+    const res = await fetch(
+      ctx_path + '/reports?action=chart-data&month=' + REP_MONTH + '&year=' + REP_YEAR,
+      {headers:{'X-Requested-With':'XMLHttpRequest'}}
+    );
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    renderCashChart(data);
-    renderFinanceChart(data);
-    renderWaterfallChart(data);
-    renderPeakHourChart(data);
-    renderHorizontalBar('mfgChart', mfgChart, data.mfgLabels, data.mfgValues, c => mfgChart = c);
-    renderDoughnut('catChart', catChart, data.catLabels, data.catValues, c => catChart = c);
-  } catch (e) { console.warn('Report chart error', e); }
+    try { renderCashChart(data);    } catch(e) { console.warn('cashChart lỗi:', e); }
+    try { renderFinanceChart(data); } catch(e) { console.warn('financeChart lỗi:', e); }
+    try { renderWaterfallChart(data); } catch(e) { console.warn('waterfallChart lỗi:', e); }
+    try { renderPeakHourChart(data);  } catch(e) { console.warn('peakHourChart lỗi:', e); }
+    try { renderHorizontalBar('mfgChart', mfgChart, data.mfgLabels, data.mfgValues, c => mfgChart = c); } catch(e) { console.warn('mfgChart lỗi:', e); }
+    try { renderDoughnut('catChart', catChart, data.catLabels, data.catValues, c => catChart = c); } catch(e) { console.warn('catChart lỗi:', e); }
+  } catch (e) {
+    console.warn('Lỗi tải dữ liệu biểu đồ báo cáo:', e);
+  }
 }
 
 function renderCashChart(data) {
   const canvas = document.getElementById('cashChart');
+  if (!canvas) return;
   const sumO = (data.cashOpening||[]).reduce((a,b)=>a+b,0);
   const sumC = (data.cashClosing||[]).reduce((a,b)=>a+b,0);
   const diff = sumC - sumO;
   const days = (data.cashLabels||[]).length;
-  document.getElementById('kpiOpening').textContent = fmt(sumO);
-  document.getElementById('kpiClosing').textContent = fmt(sumC);
-  const kd = document.getElementById('kpiDiff');
-  kd.textContent = (diff>=0?'+':'') + fmt(diff);
-  kd.style.color = diff>=0 ? '#059669' : '#DC2626';
-  document.getElementById('kpiDays').textContent = days + ' ngày';
+  const elO = document.getElementById('kpiOpening'); if (elO) elO.textContent = fmt(sumO);
+  const elC = document.getElementById('kpiClosing'); if (elC) elC.textContent = fmt(sumC);
+  const kd  = document.getElementById('kpiDiff');
+  if (kd) { kd.textContent = (diff>=0?'+':'') + fmt(diff); kd.style.color = diff>=0 ? '#059669' : '#DC2626'; }
+  const elD = document.getElementById('kpiDays'); if (elD) elD.textContent = days + ' ngày';
 
   if (cashChartInstance) cashChartInstance.destroy();
   cashChartInstance = new Chart(canvas.getContext('2d'), {
@@ -453,6 +463,7 @@ function renderCashChart(data) {
 // 📊 Grouped Column Chart — Doanh thu / Giá vốn / Lợi nhuận gộp theo ngày
 function renderFinanceChart(data) {
   const canvas = document.getElementById('financeChart');
+  if (!canvas) return;
   if (financeChart) financeChart.destroy();
   financeChart = new Chart(canvas.getContext('2d'), {
     type: 'bar',
@@ -471,6 +482,7 @@ function renderFinanceChart(data) {
 // 🌊 Waterfall Chart (floating-bar trick) — Doanh thu gộp → Giảm giá → Trả hàng → Doanh thu thuần
 function renderWaterfallChart(data) {
   const canvas = document.getElementById('waterfallChart');
+  if (!canvas) return;
   if (waterfallChart) waterfallChart.destroy();
   const gross = data.wfGross||0, disc = data.wfDiscount||0, ref = data.wfRefund||0, net = data.wfNet||0;
   const labels = ['Doanh thu gộp', 'Giảm giá', 'Trả hàng', 'Doanh thu thuần'];
@@ -508,6 +520,7 @@ function renderWaterfallChart(data) {
 // 🕐 Area Chart — Doanh thu theo khung giờ (peak hours)
 function renderPeakHourChart(data) {
   const canvas = document.getElementById('peakHourChart');
+  if (!canvas) return;
   if (peakHourChart) peakHourChart.destroy();
   const grad = canvas.getContext('2d').createLinearGradient(0,0,0,220);
   grad.addColorStop(0, 'rgba(217,119,6,.35)');
@@ -525,6 +538,7 @@ function renderPeakHourChart(data) {
 // 🏭 Horizontal Bar Chart — Doanh thu theo Hãng sản xuất (tên dài → cột ngang dễ đọc)
 function renderHorizontalBar(canvasId, existing, labels, values, setRef) {
   const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
   if (existing) existing.destroy();
   // Sắp giảm dần để cột cao nhất nằm trên cùng
   const items = (labels||[]).map((l,i)=>({l, v:(values||[])[i]||0})).sort((a,b)=>b.v-a.v);
@@ -553,6 +567,7 @@ function renderHorizontalBar(canvasId, existing, labels, values, setRef) {
 
 function renderDoughnut(canvasId, existing, labels, values, setRef) {
   const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
   if (existing) existing.destroy();
   const chart = new Chart(canvas.getContext('2d'), {
     type: 'doughnut',
