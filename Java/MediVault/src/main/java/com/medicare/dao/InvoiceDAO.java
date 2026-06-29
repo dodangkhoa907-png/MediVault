@@ -34,6 +34,7 @@ public class InvoiceDAO implements IInvoiceDAO {
         inv.setStatus(rs.getString("Status"));
         if (rs.getTimestamp("CreatedAt") != null)
             inv.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
+        try { inv.setPosStation((Integer) rs.getObject("PosStation")); } catch (SQLException ignored) {}
         return inv;
     }
 

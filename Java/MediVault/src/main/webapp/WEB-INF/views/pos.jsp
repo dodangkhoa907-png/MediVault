@@ -1336,7 +1336,7 @@ function searchCustomer() {
         showToast('⚠️ Không tìm thấy khách hàng', 'err');
         row.style.display = 'none';
       }
-    }).catch(() => {});
+    }).catch(() => { showToast('Lỗi kết nối khi tìm khách hàng', 'err'); });
 }
 function removeCustomer() {
   selectedCustomer = null;

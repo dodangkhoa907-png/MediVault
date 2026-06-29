@@ -50,6 +50,7 @@ public class AttendanceDAO implements IAttendanceDAO {
             Timestamp pe = rs.getTimestamp("PlannedEnd");
             if (pe != null) a.setPlannedEnd(pe.toLocalDateTime());
         } catch (SQLException e) {}
+        try { a.setPosStation((Integer) rs.getObject("PosStation")); } catch (SQLException ignored) {}
         return a;
     }
 
