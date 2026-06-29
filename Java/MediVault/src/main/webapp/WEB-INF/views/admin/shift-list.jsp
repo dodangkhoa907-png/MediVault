@@ -305,6 +305,8 @@ tbody tr{cursor:pointer}
 .btn-save-m:hover{opacity:.9}
 .field-hint{font-size:11px;color:var(--muted);margin-top:3px}
 .field-err{font-size:11px;color:var(--red);margin-top:3px;display:none}
+.field-err.show{display:block}
+.sched-fi input.err,.sched-fi select.err{border-color:var(--red)!important}
 
 /* Staff chips in quick-schedule modal */
 .staff-chips-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
@@ -1785,12 +1787,16 @@ tbody tr{cursor:pointer}
           <div class="date-row">
             <div class="sched-fi">
               <label>Từ ngày</label>
-              <input type="date" name="dateFrom" id="fsDateFrom" required onchange="updateFullPreview()" min="${today}">
+              <input type="date" name="dateFrom" id="fsDateFrom"
+                     onchange="clearFsErr('errDateFrom','fsDateFrom');updateFullPreview()" min="${today}">
+              <span class="field-err" id="errDateFrom"></span>
             </div>
             <div class="date-sep">→</div>
             <div class="sched-fi">
               <label>Đến ngày</label>
-              <input type="date" name="dateTo" id="fsDateTo" onchange="updateFullPreview()" min="${today}">
+              <input type="date" name="dateTo" id="fsDateTo"
+                     onchange="clearFsErr('errDateTo','fsDateTo');updateFullPreview()" min="${today}">
+              <span class="field-err" id="errDateTo"></span>
               <span style="font-size:11px;color:var(--muted);margin-top:2px">Để trống = chỉ 1 ngày</span>
             </div>
           </div>
@@ -1798,9 +1804,11 @@ tbody tr{cursor:pointer}
 
         <%-- Quầy POS --%>
         <div class="sched-section">
-          <div class="sched-section-title">🖥️ Quầy POS <span style="color:var(--muted);font-weight:400;font-size:10px">(tùy chọn)</span></div>
+          <div class="sched-section-title">🖥️ Quầy POS <span style="color:var(--red)">*</span></div>
           <div class="sched-fi">
-            <select name="posStation" id="fsPosStation" style="width:100%;max-width:240px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--navy);background:#fff">
+            <select name="posStation" id="fsPosStation"
+                    style="width:100%;max-width:240px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--navy);background:#fff"
+                    onchange="clearFsErr('errPosStation','fsPosStation')">
               <option value="0">— Chưa gán quầy —</option>
               <option value="1">🖥️ Quầy 1</option>
               <option value="2">🖥️ Quầy 2</option>
@@ -1808,6 +1816,7 @@ tbody tr{cursor:pointer}
               <option value="4">🖥️ Quầy 4</option>
               <option value="5">🖥️ Quầy 5</option>
             </select>
+            <span class="field-err" id="errPosStation"></span>
             <span style="font-size:11px;color:var(--muted);margin-top:4px;display:block">Nhân viên sẽ làm tại quầy POS này trong ca</span>
           </div>
         </div>
@@ -2025,7 +2034,7 @@ tbody tr{cursor:pointer}
               <c:forEach var="sc" items="${schedules}">
                 <c:if test="${sc.workDate.equals(dayDate)}">
                   <c:set var="hasSched" value="true"/>
-                  <c:set var="isEditable" value="${(sc.status == 'SCHEDULED' or sc.status == 'LEAVE_PENDING') and !sc.workDate.isBefore(today)}"/>
+                  <c:set var="isEditable" value="${(sc.status == 'SCHEDULED' or sc.status == 'LEAVE_PENDING' or sc.status == 'CONFIRMED') and !sc.workDate.isBefore(today)}"/>
                   <c:set var="smChipClass">sm-chip <c:choose>
                     <c:when test="${sc.startHour < 12}">sm-morning</c:when>
                     <c:when test="${sc.startHour < 20}">sm-afternoon</c:when>
@@ -2251,6 +2260,7 @@ const SCHED_LIST = [
       <div class="sdp-chip" id="sdpChipType"><span class="sdp-chip-icon">📋</span><span class="sdp-chip-val" id="sdpShiftType">—</span></div>
       <div class="sdp-chip" id="sdpChipLate"><span class="sdp-chip-icon">⏱</span><span class="sdp-chip-val" id="sdpLate">—</span></div>
       <div class="sdp-chip" id="sdpChipTotal"><span class="sdp-chip-icon">📊</span><span class="sdp-chip-val" id="sdpTotal">—</span></div>
+      <div class="sdp-chip" id="sdpChipPos"><span class="sdp-chip-icon">🖥️</span><span class="sdp-chip-val" id="sdpPos">—</span></div>
     </div>
 
     <%-- ── Notes ── --%>
@@ -2668,6 +2678,11 @@ function showDetailPanel(cardEl) {
   document.getElementById('sdpShiftType').textContent  = firstShift.type || '—';
   document.getElementById('sdpLate').textContent       = _activeLateTol + 'p trễ';
   document.getElementById('sdpTotal').textContent      = total + ' ca/ngày';
+  const posNum = parseInt(_activePosStation) || 0;
+  const posChip = document.getElementById('sdpChipPos');
+  document.getElementById('sdpPos').textContent = posNum > 0 ? 'Quầy ' + posNum : 'Chưa gán';
+  posChip.style.background = posNum > 0 ? '#eff6ff' : '#f8fafc';
+  posChip.style.color      = posNum > 0 ? '#1d4ed8' : '#94a3b8';
 
   // Notes
   const nw = document.getElementById('sdpNotesWrap');
@@ -2760,7 +2775,8 @@ function editFromPanel() {
       _activeNotes && _activeNotes !== 'null' ? _activeNotes : '',
       _activeStaffName,
       _activeWorkDate,
-      _activePosStation
+      _activePosStation,
+      _activeStatus
     );
   }, 220); // đợi animation đóng xong (transition 0.2s)
 }
@@ -2850,21 +2866,57 @@ function updateFullPreview() {
   if (preview) preview.style.display = 'block';
 }
 
+function showFsErr(errId, inputId, msg) {
+  const errEl = document.getElementById(errId);
+  if (errEl) { errEl.textContent = msg; errEl.classList.add('show'); }
+  const inp = inputId && document.getElementById(inputId);
+  if (inp) inp.classList.add('err');
+}
+function clearFsErr(errId, inputId) {
+  const errEl = document.getElementById(errId);
+  if (errEl) { errEl.textContent = ''; errEl.classList.remove('show'); }
+  const inp = inputId && document.getElementById(inputId);
+  if (inp) inp.classList.remove('err');
+}
+
 function submitFullSched() {
   const staffCount = document.querySelectorAll('#fullStaffChips .sc-chip:not(.hidden) input:checked').length;
   const typeCount  = document.querySelectorAll('#fullStypeCards input:checked').length;
   const fromVal    = document.getElementById('fsDateFrom')?.value;
+  const toVal      = document.getElementById('fsDateTo')?.value;
+  const posVal     = parseInt(document.getElementById('fsPosStation')?.value || '0');
+  const todayFs    = new Date().toISOString().split('T')[0];
+
+  // Clear inline errors
+  ['errDateFrom','errDateTo','errPosStation'].forEach(id => clearFsErr(id));
 
   if (staffCount === 0) { alert('Vui lòng chọn ít nhất 1 nhân viên!'); return; }
   if (typeCount  === 0) { alert('Vui lòng chọn ít nhất 1 loại ca!');    return; }
-  if (!fromVal)         { alert('Vui lòng chọn ngày bắt đầu!');          return; }
 
-  const fsFrom = document.getElementById('fsDateFrom').value;
-  const todayFs = new Date().toISOString().split('T')[0];
-  if (fsFrom && fsFrom < todayFs) {
-    alert('⛔ Không thể xếp ca cho ngày đã qua!');
+  let hasErr = false;
+  if (!fromVal) {
+    showFsErr('errDateFrom','fsDateFrom','Vui lòng chọn ngày bắt đầu');
+    hasErr = true;
+  } else if (fromVal < todayFs) {
+    showFsErr('errDateFrom','fsDateFrom','Không thể xếp ca cho ngày đã qua');
+    hasErr = true;
+  }
+  if (toVal && fromVal && toVal < fromVal) {
+    showFsErr('errDateTo','fsDateTo','Ngày kết thúc phải sau ngày bắt đầu');
+    hasErr = true;
+  }
+  if (posVal === 0) {
+    showFsErr('errPosStation','fsPosStation','Vui lòng chọn quầy POS cho ca làm việc');
+    hasErr = true;
+  }
+
+  if (hasErr) {
+    // Scroll first error into view
+    const firstErr = document.querySelector('#fullSchedModal .field-err.show');
+    if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
+
   document.getElementById('fullSchedForm').submit();
 }
 
@@ -2917,22 +2969,26 @@ closeFullSchedModal = function() {
 // ════════════════════════════════════════════════════════
 //  EDIT MODAL — sửa lịch ca SCHEDULED
 // ════════════════════════════════════════════════════════
-function openEditModal(schedId, shiftTypeId, shiftTypeName, lateTol, notes, staffName, workDate, posStation) {
+function openEditModal(schedId, shiftTypeId, shiftTypeName, lateTol, notes, staffName, workDate, posStation, status) {
+  const isConfirmed = (status === 'CONFIRMED');
   document.getElementById('editSchedId').value      = schedId;
   document.getElementById('editShiftType').value    = shiftTypeId;
+  document.getElementById('editShiftType').disabled = isConfirmed; // ca đang chạy → khóa loại ca
   document.getElementById('editLateTol').value      = lateTol || 10;
   document.getElementById('editNotes').value        = notes && notes !== 'null' ? notes : '';
   document.getElementById('editWorkDate').value     = workDate;
   document.getElementById('editPosStation').value   = posStation || 0;
-  document.getElementById('editModalTitle').textContent = '✏️ Sửa ca ' + staffName + ' — ' + workDate;
+  document.getElementById('editModalTitle').textContent =
+    (isConfirmed ? '🟢 Đang ca — ' : '✏️ ') + 'Sửa ca ' + staffName + ' — ' + workDate;
   document.getElementById('editSchedModal').classList.add('open');
 }
 function closeEditModal() {
   document.getElementById('editSchedModal').classList.remove('open');
 }
 function submitEditSched() {
-  const stId = document.getElementById('editShiftType').value;
-  if (!stId) { alert('Vui lòng chọn loại ca!'); return; }
+  const stSel = document.getElementById('editShiftType');
+  stSel.disabled = false; // re-enable để value được gửi trong POST (disabled inputs bị bỏ qua)
+  if (!stSel.value) { alert('Vui lòng chọn loại ca!'); return; }
   document.getElementById('editSchedForm').submit();
 }
 document.getElementById('editSchedModal').addEventListener('click', function(e) {
@@ -3101,7 +3157,7 @@ function closeEditSelectModal() {
 }
 
 function toggleEditChip(el) {
-  if (el.dataset.editable !== 'true') return; // ca đã check-in → khóa
+  if (el.dataset.editable !== 'true') return;
   const id = el.dataset.schedId;
   if (_editSelIds.has(id)) {
     _editSelIds.delete(id);

@@ -460,6 +460,14 @@ public class ShiftServlet extends HttpServlet {
                     }
             // Cộng pastDaysSkipped vào skipped cho mỗi combo (staff × type)
             skipped += pastDaysSkipped * accIds.length * typeIds.length;
+            // Fallback: SP_ScheduleShift đôi khi trả về ID sai (SCOPE_IDENTITY vấn đề nested scope).
+            // Nếu posStation được chọn, update trực tiếp theo accountId+dateRange cho mọi ca chưa được gán quầy.
+            if (posStation > 0) {
+                for (String aId : accIds) {
+                    ((com.medicare.dao.ShiftScheduleDAO) scheduleDAO)
+                            .updatePosStationInDateRange(Integer.parseInt(aId), from, to, posStation);
+                }
+            }
             AuditHelper.log(req, "Xếp lịch ca", "ShiftSchedule",
                     "Tạo " + created + " ca, bỏ qua " + skipped + " đã tồn tại");
             // Notify từng nhân viên
@@ -496,6 +504,11 @@ public class ShiftServlet extends HttpServlet {
         ShiftScheduleDAO dao = (ShiftScheduleDAO) scheduleDAO;
         boolean ok = dao.update(scheduleId, shiftTypeId, lateTol, notes,
                 admin.getAccountId(), posStation);
+        // Fallback: nếu main update thất bại (status/shiftType issue) nhưng posStation cần lưu,
+        // thử update posStation riêng để ít nhất gán được quầy.
+        if (!ok && posStation >= 0) {
+            ok = dao.updatePosStation(scheduleId, posStation);
+        }
         if (ok) AuditHelper.log(req, "Sửa lịch ca", "ShiftSchedule",
                 "Sửa ca ID " + scheduleId + (posStation > 0 ? " → Quầy " + posStation : ""));
         resp.sendRedirect(req.getContextPath() + "/shifts?msg=" + (ok ? "updated" : "error"));

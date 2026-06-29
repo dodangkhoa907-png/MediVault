@@ -217,6 +217,19 @@ tbody tr:last-child td{border-bottom:none}
                   <div class="sc-meta-val">${fn:substring(activeAtt.plannedEnd.toString(),11,16)}</div>
                 </div>
               </c:if>
+              <c:if test="${not empty todaySchedule}">
+                <div class="sc-meta-item">
+                  <div class="sc-meta-label">Quầy POS</div>
+                  <c:choose>
+                    <c:when test="${todaySchedule.posStation > 0}">
+                      <div class="sc-meta-val" style="color:#3B82F6;font-weight:700">🖥️ Quầy ${todaySchedule.posStation}</div>
+                    </c:when>
+                    <c:otherwise>
+                      <div class="sc-meta-val" style="color:#94A3B8;font-style:italic">Chưa phân công</div>
+                    </c:otherwise>
+                  </c:choose>
+                </div>
+              </c:if>
             </div>
           </div>
         </c:when>
@@ -227,10 +240,18 @@ tbody tr:last-child td{border-bottom:none}
             </div>
             <div style="padding:16px 20px 8px">
               <c:if test="${not empty todaySchedule}">
-                <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">📅 Ca hôm nay: ${todaySchedule.shiftTypeName}</div>
-                <div style="font-size:12px;color:var(--muted)">
-                  ${fn:substring(todaySchedule.plannedStart.toString(),11,16)} – ${fn:substring(todaySchedule.plannedEnd.toString(),11,16)}
+                <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:6px">📅 Ca hôm nay: ${todaySchedule.shiftTypeName}</div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:4px">
+                  🕐 ${fn:substring(todaySchedule.plannedStart.toString(),11,16)} – ${fn:substring(todaySchedule.plannedEnd.toString(),11,16)}
                 </div>
+                <c:choose>
+                  <c:when test="${todaySchedule.posStation > 0}">
+                    <div style="font-size:12px;font-weight:700;color:#3B82F6;margin-bottom:4px">🖥️ Quầy POS ${todaySchedule.posStation}</div>
+                  </c:when>
+                  <c:otherwise>
+                    <div style="font-size:12px;color:#94A3B8;margin-bottom:4px;font-style:italic">🖥️ Quầy POS: Chưa phân công</div>
+                  </c:otherwise>
+                </c:choose>
               </c:if>
               <c:if test="${empty todaySchedule}">
                 <div style="font-size:13px;color:var(--muted)">Không có lịch ca hôm nay.<br>Bạn vẫn có thể mở ca tự do.</div>

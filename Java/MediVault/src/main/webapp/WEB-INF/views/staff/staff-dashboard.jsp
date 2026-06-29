@@ -229,6 +229,44 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .shift-history-item .hi-dur{color:#64748B}
 .shift-history-item .hi-cash{color:#059669;font-weight:700}
 
+/* ── Lịch tuần — full-width 7-col calendar ── */
+.wk-panel{background:var(--white);border:1px solid var(--border);border-radius:18px;margin-bottom:22px;overflow:hidden;animation:fadeUp .35s ease both}
+.wk-panel-head{background:linear-gradient(135deg,#1e3a5f 0%,#1a56db 100%);padding:13px 20px;display:flex;align-items:center;justify-content:space-between}
+.wk-panel-title{font-size:14.5px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px}
+.wk-panel-meta{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.wk-panel-range{font-size:11.5px;color:rgba(255,255,255,.65);font-weight:500}
+.wk-panel-count{font-size:11px;font-weight:700;background:rgba(255,255,255,.18);color:#fff;padding:2px 10px;border-radius:20px}
+/* 7-column grid */
+.wk-cols{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--border)}
+.wk-col{border-right:1px solid #F1F5F9;padding:10px 7px 12px;min-height:130px;position:relative;transition:background .2s}
+.wk-col:last-child{border-right:none}
+/* Column header */
+.wk-col-head{text-align:center;margin-bottom:9px}
+.wk-col-dayname{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#94A3B8;margin-bottom:4px}
+.wk-col-num{font-size:24px;font-weight:900;color:#0F172A;line-height:1}
+/* TODAY highlight */
+.wk-col.wk-today{background:linear-gradient(180deg,#EFF6FF 0%,#F0F9FF 100%)}
+.wk-col.wk-today .wk-col-dayname{color:#1D4ED8}
+.wk-col.wk-today .wk-col-num{color:#1D4ED8}
+.wk-today-dot{display:inline-block;width:5px;height:5px;background:#1D4ED8;border-radius:50%;margin-left:3px;vertical-align:middle;margin-bottom:1px}
+/* ACTIVE (đang ca) */
+.wk-col.wk-active-col{background:linear-gradient(180deg,#ECFDF5 0%,#F0FDF4 100%)}
+.wk-col.wk-active-col .wk-col-dayname{color:#059669}
+.wk-col.wk-active-col .wk-col-num{color:#059669}
+/* Live badge */
+.wk-live{position:absolute;top:7px;right:5px;font-size:8.5px;font-weight:700;background:#10B981;color:#fff;padding:1px 6px;border-radius:8px;letter-spacing:.2px}
+/* Shift chip inside column */
+.wk-chip{background:#fff;border:1.5px solid #E2E8F0;border-radius:8px;padding:6px 7px;margin-bottom:5px}
+.wk-today .wk-chip{border-color:#BFDBFE;background:#F8FBFF}
+.wk-active-col .wk-chip{border-color:#A7F3D0;background:#F0FDF9}
+.wk-chip-name{font-size:10.5px;font-weight:700;color:#1E40AF;line-height:1.3;margin-bottom:3px}
+.wk-active-col .wk-chip-name{color:#065F46}
+.wk-chip-time{font-size:10px;color:#64748B;margin-bottom:4px;line-height:1.3}
+.wk-chip-pos{display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:800;color:#fff;background:#3B82F6;padding:2px 7px;border-radius:5px;white-space:nowrap}
+.wk-active-col .wk-chip-pos{background:#10B981}
+/* No shift */
+.wk-no-shift{text-align:center;padding-top:18px;color:#D1D5DB;font-size:20px}
+
 /* Bottom grid */
 .bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 
@@ -596,6 +634,63 @@ body{display:flex;background:var(--soft);color:var(--ink)}
       </div>
     </div>
 
+    <!-- ── Lịch làm việc tuần này ── -->
+    <div class="wk-panel">
+      <div class="wk-panel-head">
+        <div class="wk-panel-title">📅 Lịch làm việc tuần này</div>
+        <div class="wk-panel-meta">
+          <span class="wk-panel-range" id="wkRange"></span>
+          <span class="wk-panel-count" id="wkCount"></span>
+        </div>
+      </div>
+      <div class="wk-cols" id="wkCols"></div>
+    </div>
+    <script>
+    const _wkSched=[<c:forEach var="sc" items="${upcomingSchedules}" varStatus="lp">{date:'${sc.workDate}',name:'<c:out value="${sc.shiftTypeName}"/>',start:'${not empty sc.plannedStart ? fn:substring(sc.plannedStart.toString(),11,16) : ""}',end:'${not empty sc.plannedEnd ? fn:substring(sc.plannedEnd.toString(),11,16) : ""}',pos:${sc.posStation},status:'${sc.status}'}${!lp.last?',':''}</c:forEach>];
+    (function(){
+      var cols=document.getElementById('wkCols');
+      var rangEl=document.getElementById('wkRange');
+      var cntEl=document.getElementById('wkCount');
+      if(!cols)return;
+      var dn=['CN','T2','T3','T4','T5','T6','T7'];
+      var today=new Date().toISOString().split('T')[0];
+      var base=new Date(); base.setHours(0,0,0,0);
+      var days=[];
+      for(var i=0;i<7;i++){var dd=new Date(base);dd.setDate(base.getDate()+i);days.push({key:dd.toISOString().split('T')[0],d:dd});}
+      var fmt=function(d){return d.getDate()+'/'+(d.getMonth()+1);};
+      if(rangEl)rangEl.textContent=fmt(days[0].d)+' – '+fmt(days[6].d)+'/'+days[6].d.getFullYear();
+      var byDate={};
+      _wkSched.forEach(function(s){if(!byDate[s.date])byDate[s.date]=[];byDate[s.date].push(s);});
+      var total=_wkSched.length;
+      if(cntEl)cntEl.textContent=total>0?total+' ca lịch':'Chưa có ca';
+      days.forEach(function(item){
+        var key=item.key, d=item.d;
+        var isToday=key===today;
+        var shifts=byDate[key]||[];
+        var isActive=shifts.some(function(s){return s.status==='CONFIRMED';});
+        var cls='wk-col'+(isActive?' wk-active-col':isToday?' wk-today':'');
+        var liveBadge=isActive?'<span class="wk-live">● Đang ca</span>':'';
+        var todayDot=isToday?'<span class="wk-today-dot"></span>':'';
+        var shiftsHtml='';
+        if(shifts.length){
+          shifts.forEach(function(s){
+            var posHtml=s.pos>0
+              ?'<div class="wk-chip-pos">🖥️ Quầy '+s.pos+'</div>'
+              :'<div class="wk-chip-pos" style="background:#94A3B8">Chưa có quầy</div>';
+            shiftsHtml+='<div class="wk-chip"><div class="wk-chip-name">'+s.name+'</div>'
+              +'<div class="wk-chip-time">⏰ '+s.start+(s.end?' – '+s.end:'')+'</div>'
+              +posHtml+'</div>';
+          });
+        }else{
+          shiftsHtml='<div class="wk-no-shift">—</div>';
+        }
+        cols.innerHTML+='<div class="'+cls+'">'+liveBadge
+          +'<div class="wk-col-head"><div class="wk-col-dayname">'+dn[d.getDay()]+todayDot+'</div>'
+          +'<div class="wk-col-num">'+d.getDate()+'</div></div>'+shiftsHtml+'</div>';
+      });
+    })();
+    </script>
+
     <!-- Stats -->
     <div class="stats-row">
       <div class="stat-card">
@@ -737,9 +832,15 @@ body{display:flex;background:var(--soft);color:var(--ink)}
                     <c:when test="${not empty todaySchedule}">
                         <div style="background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:10px;padding:12px 16px">
                             <div style="font-size:13px;font-weight:700;color:#065F46;margin-bottom:4px">📋 ${todaySchedule.shiftTypeName}</div>
-                            <div style="font-size:11.5px;color:#059669;margin-bottom:8px">
+                            <div style="font-size:11.5px;color:#059669;margin-bottom:4px">
                                 🕐 <c:if test="${not empty todaySchedule.plannedStart}">${fn:substring(todaySchedule.plannedStart.toString(),11,16)}</c:if>–<c:if test="${not empty todaySchedule.plannedEnd}">${fn:substring(todaySchedule.plannedEnd.toString(),11,16)}</c:if>
                             </div>
+                            <c:if test="${todaySchedule.posStation > 0}">
+                            <div style="font-size:11.5px;font-weight:700;color:#1D4ED8;margin-bottom:8px">🖥️ Quầy POS ${todaySchedule.posStation}</div>
+                            </c:if>
+                            <c:if test="${todaySchedule.posStation == 0}">
+                            <div style="height:8px"></div>
+                            </c:if>
                             <a href="${pageContext.request.contextPath}/staff-checkin?uid=${staffUid}"
                                style="display:block;text-align:center;background:#10B981;color:#fff;padding:8px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none">
                                 ✅ Đến trang Điểm danh

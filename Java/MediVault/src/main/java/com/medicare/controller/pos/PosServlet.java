@@ -98,6 +98,13 @@ public class PosServlet extends HttpServlet {
             }
             return;
         }
+        if ("shift-summary".equals(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            PrintWriter out = resp.getWriter();
+            handleShiftSummary(req, out);
+            return;
+        }
+
         if ("inventory".equals(action)) {
             // Single JOIN query: medicine + all batches — thay 1000+ queries
             resp.setContentType("application/json;charset=UTF-8");
@@ -477,39 +484,111 @@ public class PosServlet extends HttpServlet {
         Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
         if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
 
-        Integer posStation = session != null ? (Integer)     session.getAttribute("posStation")    : null;
-        BigDecimal opening = session != null ? (BigDecimal)  session.getAttribute("posOpeningCash") : BigDecimal.ZERO;
+        // Accept actual cash counted by staff
+        BigDecimal closingCash = BigDecimal.ZERO;
+        String ccStr = req.getParameter("closingCash");
+        if (ccStr != null && !ccStr.isEmpty()) {
+            try { closingCash = new BigDecimal(ccStr); } catch (Exception ignored) {}
+        }
+
+        Integer posStation = session != null ? (Integer)    session.getAttribute("posStation")    : null;
+        BigDecimal opening = session != null ? (BigDecimal) session.getAttribute("posOpeningCash") : BigDecimal.ZERO;
         if (opening == null) opening = BigDecimal.ZERO;
 
         int invoiceCount = 0;
-        BigDecimal totalRevenue = BigDecimal.ZERO;
+        BigDecimal cashTotal = BigDecimal.ZERO, qrTotal = BigDecimal.ZERO, cardTotal = BigDecimal.ZERO;
         boolean hasSt = posStation != null && posStation > 0;
-        String sql = "SELECT COUNT(*) AS Cnt, ISNULL(SUM(FinalAmount),0) AS Total FROM Invoices "
-                   + "WHERE AccountID=? AND CAST(CreatedAt AS DATE)=CAST(GETDATE() AS DATE)"
-                   + (hasSt ? " AND PosStation=?" : "");
+        String sql = "SELECT " +
+            "ISNULL(SUM(CASE WHEN PaymentMethod='CASH' THEN FinalAmount ELSE 0 END),0) AS CashTotal," +
+            "ISNULL(SUM(CASE WHEN PaymentMethod='QR_CODE' THEN FinalAmount ELSE 0 END),0) AS QrTotal," +
+            "ISNULL(SUM(CASE WHEN PaymentMethod='CARD' THEN FinalAmount ELSE 0 END),0) AS CardTotal," +
+            "COUNT(*) AS InvoiceCnt FROM Invoices " +
+            "WHERE AccountID=? AND CAST(CreatedAt AS DATE)=CAST(GETDATE() AS DATE) AND Status='COMPLETED'" +
+            (hasSt ? " AND PosStation=?" : "");
         try (java.sql.Connection cn = com.medicare.config.DBContext.getConnection();
              java.sql.PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, staff.getAccountId());
             if (hasSt) ps.setInt(2, posStation);
             try (java.sql.ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    invoiceCount = rs.getInt("Cnt");
-                    totalRevenue = rs.getBigDecimal("Total");
-                    if (totalRevenue == null) totalRevenue = BigDecimal.ZERO;
+                    cashTotal = rs.getBigDecimal("CashTotal"); if (cashTotal == null) cashTotal = BigDecimal.ZERO;
+                    qrTotal   = rs.getBigDecimal("QrTotal");   if (qrTotal   == null) qrTotal   = BigDecimal.ZERO;
+                    cardTotal = rs.getBigDecimal("CardTotal");  if (cardTotal == null) cardTotal  = BigDecimal.ZERO;
+                    invoiceCount = rs.getInt("InvoiceCnt");
                 }
             }
         } catch (Exception e) { e.printStackTrace(); }
 
-        attendanceDAO.checkOut(staff.getAccountId(), BigDecimal.ZERO, "Đóng ca từ POS", false);
+        // Record actual handover cash in attendance checkout
+        attendanceDAO.checkOut(staff.getAccountId(), closingCash, "Đóng ca từ POS", false);
 
         session.removeAttribute("posState");
         session.removeAttribute("staffAccount");
         session.removeAttribute("staffUid");
         session.removeAttribute("posOpeningCash");
 
+        BigDecimal total = cashTotal.add(qrTotal).add(cardTotal);
         String name = staff.getFullName() != null ? staff.getFullName() : staff.getUsername();
-        out.printf("{\"ok\":true,\"staffName\":\"%s\",\"invoiceCount\":%d,\"totalRevenue\":%s,\"openingCash\":%s}",
-                esc(name), invoiceCount, totalRevenue.toPlainString(), opening.toPlainString());
+        out.printf("{\"ok\":true,\"staffName\":\"%s\",\"invoiceCount\":%d," +
+                   "\"cashTotal\":%s,\"qrTotal\":%s,\"cardTotal\":%s," +
+                   "\"totalRevenue\":%s,\"openingCash\":%s,\"closingCash\":%s}",
+                esc(name), invoiceCount,
+                cashTotal.toPlainString(), qrTotal.toPlainString(), cardTotal.toPlainString(),
+                total.toPlainString(), opening.toPlainString(), closingCash.toPlainString());
+    }
+
+    private void handleShiftSummary(HttpServletRequest req, PrintWriter out) {
+        HttpSession session = req.getSession(false);
+        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
+        if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
+
+        Integer posStation = session != null ? (Integer)    session.getAttribute("posStation")    : null;
+        BigDecimal opening = session != null ? (BigDecimal) session.getAttribute("posOpeningCash") : BigDecimal.ZERO;
+        if (opening == null) opening = BigDecimal.ZERO;
+
+        BigDecimal cashTotal = BigDecimal.ZERO, qrTotal = BigDecimal.ZERO, cardTotal = BigDecimal.ZERO;
+        int invoiceCount = 0;
+        boolean hasSt = posStation != null && posStation > 0;
+        String sql = "SELECT " +
+            "ISNULL(SUM(CASE WHEN PaymentMethod='CASH' THEN FinalAmount ELSE 0 END),0) AS CashTotal," +
+            "ISNULL(SUM(CASE WHEN PaymentMethod='QR_CODE' THEN FinalAmount ELSE 0 END),0) AS QrTotal," +
+            "ISNULL(SUM(CASE WHEN PaymentMethod='CARD' THEN FinalAmount ELSE 0 END),0) AS CardTotal," +
+            "COUNT(*) AS InvoiceCnt FROM Invoices " +
+            "WHERE AccountID=? AND CAST(CreatedAt AS DATE)=CAST(GETDATE() AS DATE) AND Status='COMPLETED'" +
+            (hasSt ? " AND PosStation=?" : "");
+        try (java.sql.Connection cn = com.medicare.config.DBContext.getConnection();
+             java.sql.PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, staff.getAccountId());
+            if (hasSt) ps.setInt(2, posStation);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    cashTotal = rs.getBigDecimal("CashTotal"); if (cashTotal == null) cashTotal = BigDecimal.ZERO;
+                    qrTotal   = rs.getBigDecimal("QrTotal");   if (qrTotal   == null) qrTotal   = BigDecimal.ZERO;
+                    cardTotal = rs.getBigDecimal("CardTotal");  if (cardTotal == null) cardTotal  = BigDecimal.ZERO;
+                    invoiceCount = rs.getInt("InvoiceCnt");
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+
+        // Get check-in time from active attendance record
+        String checkInTime = "";
+        try {
+            com.medicare.entity.Attendance active = attendanceDAO.findActiveByAccount(staff.getAccountId());
+            if (active != null && active.getCheckInTime() != null) {
+                checkInTime = active.getCheckInTime()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+            }
+        } catch (Exception ignored) {}
+
+        BigDecimal expectedCash = opening.add(cashTotal);
+        String name = staff.getFullName() != null ? staff.getFullName() : staff.getUsername();
+        out.printf("{\"ok\":true,\"staffName\":\"%s\",\"invoiceCount\":%d," +
+                   "\"cashTotal\":%s,\"qrTotal\":%s,\"cardTotal\":%s," +
+                   "\"openingCash\":%s,\"expectedCash\":%s,\"posStation\":%d,\"checkInTime\":\"%s\"}",
+                esc(name), invoiceCount,
+                cashTotal.toPlainString(), qrTotal.toPlainString(), cardTotal.toPlainString(),
+                opening.toPlainString(), expectedCash.toPlainString(),
+                posStation != null ? posStation : 0, checkInTime);
     }
 
     // ── Helpers ──────────────────────────────────────────────

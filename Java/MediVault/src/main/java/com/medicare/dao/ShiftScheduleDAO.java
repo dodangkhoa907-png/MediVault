@@ -211,6 +211,24 @@ public class ShiftScheduleDAO implements IShiftScheduleDAO {
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
 
+    /**
+     * Fallback bulk update: gán quầy POS cho tất cả ca trong khoảng ngày của 1 nhân viên.
+     * Chỉ update nếu PosStation = 0 (chưa được gán), tránh ghi đè quầy đã thiết lập trước.
+     */
+    public void updatePosStationInDateRange(int accountId, LocalDate from, LocalDate to, int posStation) {
+        String sql = "UPDATE ShiftSchedules SET PosStation=? "
+                   + "WHERE AccountID=? AND WorkDate BETWEEN ? AND ? "
+                   + "AND (PosStation IS NULL OR PosStation=0) AND Status NOT IN ('CANCELLED')";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, posStation);
+            ps.setInt(2, accountId);
+            ps.setDate(3, Date.valueOf(from));
+            ps.setDate(4, Date.valueOf(to));
+            ps.executeUpdate();
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+
     /** NEW: Admin set OpeningCash cho từng lịch ca (≥ 50,000đ) */
     public boolean updateOpeningCash(int scheduleId, java.math.BigDecimal openingCash) {
         String sql = "UPDATE ShiftSchedules SET OpeningCash=? WHERE ScheduleID=?";
@@ -247,7 +265,7 @@ public class ShiftScheduleDAO implements IShiftScheduleDAO {
                         + "FROM ShiftSchedules ss "
                         + "JOIN ShiftTypes st ON st.ShiftTypeID = ? "
                         + "WHERE ss.ScheduleID = ? "
-                        + "AND ss.Status IN ('SCHEDULED','LEAVE_PENDING')";
+                        + "AND ss.Status IN ('SCHEDULED','LEAVE_PENDING','CONFIRMED')";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, shiftTypeId);

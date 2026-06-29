@@ -104,6 +104,7 @@ public class AuthFilter implements Filter {
                 || uri.startsWith(ctx + "/assets")
                 || uri.startsWith(ctx + "/css")
                 || uri.startsWith(ctx + "/js")
+                || uri.startsWith(ctx + "/models")   // face-api.js model files (manifest + weights)
                 || uri.startsWith(ctx + "/WEB-INF")
                 || uri.equals(ctx + "/otp-verify")
                 || uri.startsWith(ctx + "/staff-shift")
