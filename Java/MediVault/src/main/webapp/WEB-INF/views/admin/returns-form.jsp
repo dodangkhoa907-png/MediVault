@@ -112,7 +112,7 @@ html,body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--surfa
         <c:forEach var="b" items="${expiringBatches}" varStatus="st">
           <c:if test="${st.index < 8}">
             <a href="${pageContext.request.contextPath}/returns?action=new&batchId=${b.batchId}" class="batch-pick">
-              <strong>${medMapChoose[b.medicineId] != null ? medMapChoose[b.medicineId].medicineName : 'Thuốc #'.concat(b.medicineId)}</strong>
+              <strong>${medMapChoose[b.medicineId] != null ? medMapChoose[b.medicineId].medicineName : 'Thuốc #' += b.medicineId}</strong>
               <span class="exp">HSD ${b.expiryDate}</span><br>
               <span style="color:var(--muted)">Lô ${b.batchNumber} · Còn ${b.currentQuantity}</span>
             </a>
@@ -235,3 +235,4 @@ if (document.getElementById('batchSelect')) updateMaxQty();
 </script>
 </body>
 </html>
+

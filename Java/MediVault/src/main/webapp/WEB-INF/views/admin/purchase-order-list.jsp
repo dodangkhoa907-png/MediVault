@@ -129,8 +129,8 @@ tbody tr:hover td{background:#F7FBFF}
             <c:forEach var="po" items="${pos}">
               <tr onclick="location.href='${pageContext.request.contextPath}/purchase-orders?action=detail&id=${po.poId}'">
                 <td><span class="po-code">${po.poCode}</span></td>
-                <td style="font-weight:600">${supplierMap[po.supplierId] != null ? supplierMap[po.supplierId].supplierName : 'NCC #'.concat(po.supplierId)}</td>
-                <td>${accountMap[po.accountId] != null ? accountMap[po.accountId].fullName : 'ID '.concat(po.accountId)}</td>
+                <td style="font-weight:600">${supplierMap[po.supplierId] != null ? supplierMap[po.supplierId].supplierName : 'NCC #' += po.supplierId}</td>
+                <td>${accountMap[po.accountId] != null ? accountMap[po.accountId].fullName : 'ID ' += po.accountId}</td>
                 <td style="color:var(--muted);font-size:12.5px">${fn:substring(po.orderDate.toString(),0,16)}</td>
                 <td>${batchCountMap[po.poId]} lô</td>
                 <td style="font-weight:800"><fmt:formatNumber value="${po.totalValue}" type="number" maxFractionDigits="0"/>đ</td>
@@ -148,3 +148,4 @@ setTimeout(()=>{ const t=document.getElementById('toast'); if(t) t.style.display
 </script>
 </body>
 </html>
+

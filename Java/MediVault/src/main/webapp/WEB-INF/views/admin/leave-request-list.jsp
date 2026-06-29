@@ -108,7 +108,7 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
                   <td><span class="badge badge-${fn:toLowerCase(lr.status)}">${lr.status=='PENDING'?'⏳ Chờ':lr.status=='APPROVED'?'✅ Duyệt':'❌ Từ chối'}</span></td>
                   <td style="font-size:12px;color:var(--muted);max-width:180px">${lr.reason}</td>
                   <td style="font-size:12px">${lr.approvedByName != null ? lr.approvedByName : '—'}</td>
-                  <td style="font-weight:700;color:var(--red)">${lr.deductAmount!=null && lr.deductAmount.compareTo(java.math.BigDecimal.ZERO)>0 ? lr.deductAmount.toPlainString().concat('đ') : '—'}</td>
+                  <td style="font-weight:700;color:var(--red)">${lr.deductAmount!=null && lr.deductAmount.compareTo(java.math.BigDecimal.ZERO)>0 ? lr.deductAmount.toPlainString() += 'đ' : '—'}</td>
                 </tr>
               </c:forEach>
             </tbody>

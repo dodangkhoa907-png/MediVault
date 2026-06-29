@@ -93,7 +93,7 @@ tbody tr:last-child td{border-bottom:none}
           </c:if>
           <c:forEach var="b" items="${batches}">
             <tr>
-              <td style="font-weight:700">${medicineMap[b.medicineId] != null ? medicineMap[b.medicineId].medicineName : 'ID '.concat(b.medicineId)}</td>
+              <td style="font-weight:700">${medicineMap[b.medicineId] != null ? medicineMap[b.medicineId].medicineName : 'ID ' += b.medicineId}</td>
               <td style="font-family:monospace">${b.batchNumber}</td>
               <td style="color:var(--muted)">${b.expiryDate}</td>
               <td><fmt:formatNumber value="${b.importPrice}" type="number" maxFractionDigits="0"/>đ</td>
@@ -109,3 +109,4 @@ tbody tr:last-child td{border-bottom:none}
 </div>
 </body>
 </html>
+

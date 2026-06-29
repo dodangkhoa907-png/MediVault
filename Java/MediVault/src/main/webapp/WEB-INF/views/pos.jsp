@@ -10,6 +10,13 @@
         ? fullName.substring(0,1).toUpperCase() + fullName.substring(1,2).toUpperCase()
         : fullName.toUpperCase();
     String ctx = request.getContextPath();
+    // Multi-POS: đọc station từ session (mặc định 1)
+    Integer posStation = (Integer) session.getAttribute("posStation");
+    if (posStation == null) posStation = 0; // 0 = chưa chọn
+    String stationLabel = posStation > 0 ? "Quầy " + posStation : "Chọn quầy";
+    // Screen state — set bởi PosServlet qua req.setAttribute("screenState", ...)
+    String screenState = (String) request.getAttribute("screenState");
+    if (screenState == null) screenState = "IDLE";
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -82,47 +89,43 @@ body{display:flex}
 .med-count-badge{background:#eff6ff;color:var(--blue);font-size:13px;font-weight:700;padding:5px 12px;border-radius:7px;white-space:nowrap;flex-shrink:0}
 .topbar-date{font-size:12.5px;color:var(--muted);white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:4px}
 
-/* CATEGORY */
-.cat-bar{height:44px;padding:0 14px;display:flex;align-items:center;gap:5px;overflow-x:auto;flex-shrink:0;background:#fff;border-bottom:1px solid var(--border)}
+/* CATEGORY — pill style */
+.cat-bar{height:46px;padding:0 14px;display:flex;align-items:center;gap:6px;overflow-x:auto;flex-shrink:0;background:#fff;border-bottom:1px solid var(--border)}
 .cat-bar::-webkit-scrollbar{display:none}
-.cat-tab{height:30px;padding:0 14px;border-radius:7px;border:none;font-size:13px;font-weight:600;color:var(--muted);background:transparent;cursor:pointer;white-space:nowrap;transition:.15s;flex-shrink:0;font-family:inherit}
-.cat-tab:hover{color:var(--blue);background:#eff6ff}
-.cat-tab.active{color:var(--blue);background:#eff6ff}
+.cat-tab{height:30px;padding:0 15px;border-radius:100px;border:1.5px solid transparent;font-size:12.5px;font-weight:700;color:#64748b;background:#f1f5f9;cursor:pointer;white-space:nowrap;transition:.18s;flex-shrink:0;font-family:inherit;letter-spacing:.1px}
+.cat-tab:hover{color:var(--blue);background:#dbeafe;border-color:#bfdbfe}
+.cat-tab.active{color:#fff;background:var(--blue);border-color:var(--blue);box-shadow:0 2px 8px rgba(37,99,235,.35)}
 
 /* MED GRID */
-.med-grid{flex:1;overflow-y:auto;padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:9px;align-content:start}
+.med-grid{flex:1;overflow-y:auto;padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(152px,1fr));gap:10px;align-content:start}
 .med-grid::-webkit-scrollbar{width:4px}
 .med-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 
-.med-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:12px 13px;cursor:pointer;transition:.18s;display:flex;flex-direction:column;gap:4px;position:relative}
-.med-card:hover{border-color:var(--sky);box-shadow:0 3px 14px rgba(59,130,246,.16);transform:translateY(-1px)}
-.med-card.out-of-stock{opacity:.5;cursor:not-allowed}
+/* Med Card — centered product card layout */
+.med-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:10px 12px 12px;cursor:pointer;transition:.2s;display:flex;flex-direction:column;align-items:center;position:relative;min-height:148px;text-align:center}
+.med-card:hover{border-color:#93c5fd;box-shadow:0 6px 20px rgba(59,130,246,.15);transform:translateY(-2px)}
+.med-card.out-of-stock{opacity:.42;cursor:not-allowed}
 .med-card.out-of-stock:hover{transform:none;border-color:var(--border);box-shadow:none}
-.mc-top{display:flex;align-items:center;justify-content:space-between;gap:4px}
-.mc-code{font-size:10.5px;color:var(--muted);font-weight:600;letter-spacing:.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mc-badge{font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:4px;flex-shrink:0;white-space:nowrap}
-.mb-rx{background:#fee2e2;color:#991b1b}
-.mb-otc{background:#d1fae5;color:#065f46}
-.mc-name{font-size:13.5px;font-weight:800;color:var(--navy);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.mc-unit{font-size:11px;color:var(--muted)}
-.mc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
-.mc-price{font-size:15px;font-weight:900;color:var(--blue)}
-.mc-stock{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:5px;white-space:nowrap}
+/* Top row: stock left, badge right */
+.mc-top{width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:3px}
+.mc-stock{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap}
 .stock-ok{background:#d1fae5;color:#065f46}
 .stock-low{background:#fef3c7;color:#92400e}
 .stock-out{background:#fee2e2;color:#991b1b}
+.mc-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.mb-rx{background:#fee2e2;color:#991b1b}
+.mb-otc{background:#d1fae5;color:#065f46}
+/* Center: icon */
+.mc-icon{font-size:28px;line-height:1;margin-bottom:7px}
+/* Name */
+.mc-name{font-size:14px;font-weight:800;color:#0f172a;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;width:100%;margin-bottom:3px}
+/* Unit */
+.mc-unit{font-size:11px;color:#94a3b8;width:100%;margin-bottom:auto}
+/* Price — bottom, separated */
+.mc-price-row{width:100%;margin-top:9px;padding-top:8px;border-top:1px solid #f1f5f9;text-align:center}
+.mc-price{font-size:17px;font-weight:900;color:var(--blue);letter-spacing:-.4px}
 .empty-state{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted)}
 .empty-state .ei{font-size:44px;margin-bottom:12px}
-/* Qty row on card */
-.mc-qty-row{display:flex;align-items:center;gap:3px;margin-top:5px;padding-top:5px;border-top:1px solid var(--border)}
-.mc-qty-lbl{font-size:10.5px;color:var(--muted);font-weight:600;flex-shrink:0;margin-right:1px}
-.mc-qty-btn{width:22px;height:22px;border:1.5px solid var(--border);background:#f8f9fa;border-radius:5px;font-size:14px;font-weight:700;color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.12s;font-family:inherit;padding:0;line-height:1}
-.mc-qty-btn:hover{border-color:var(--sky);background:#eff6ff;color:var(--blue)}
-.mc-qty-inp{width:42px;height:22px;border:1.5px solid var(--border);border-radius:5px;text-align:center;font-size:12px;font-weight:700;color:var(--navy);font-family:inherit;outline:none;background:#fff}
-.mc-qty-inp:focus{border-color:var(--sky)}
-.mc-qty-inp::-webkit-inner-spin-button,.mc-qty-inp::-webkit-outer-spin-button{-webkit-appearance:none}
-.mc-qty-warn{font-size:10px;color:var(--red);font-weight:700;display:none;margin-top:3px;line-height:1.3;background:#fee2e2;padding:2px 6px;border-radius:4px;text-align:center}
-.med-card.out-of-stock .mc-qty-row{display:none}
 
 /* RIGHT PANEL */
 .invoice-panel{width:var(--rw);height:100vh;background:#fff;border-left:2px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
@@ -178,15 +181,23 @@ body{display:flex}
 .f-input.discount{width:90px;text-align:right}
 .f-input.note{width:100%;height:30px;font-weight:400}
 
-/* Payment tabs — compact horizontal */
-.pay-tabs{display:flex;gap:4px;overflow-x:auto;padding-bottom:2px}
-.pay-tabs::-webkit-scrollbar{display:none}
-.pay-tab{flex-shrink:0;height:30px;padding:0 10px;border-radius:7px;border:1.5px solid var(--border);background:#fff;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit;white-space:nowrap;transition:.15s}
-.pay-tab:hover{border-color:var(--sky)}
-.pay-tab.active{border-color:var(--blue);background:#eff6ff}
-.pay-tab .pi{font-size:12px}
-.pay-tab .pt{font-size:11px;font-weight:700;color:var(--muted)}
-.pay-tab.active .pt{color:var(--blue)}
+/* Payment method — 3 big cards */
+.pay-methods{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.pay-method-card{border:2px solid var(--border);background:#f8fafc;border-radius:13px;padding:12px 6px 10px;cursor:pointer;transition:.2s;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:inherit}
+.pay-method-card:hover{border-color:#93c5fd;background:#eff6ff}
+.pay-method-card.active{border-color:var(--blue);background:#eff6ff;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.pmc-icon{font-size:22px;line-height:1}
+.pmc-label{font-size:11.5px;font-weight:700;color:#64748b;text-align:center;letter-spacing:.1px}
+.pay-method-card.active .pmc-label{color:var(--blue)}
+/* QR / Card detail panels (same weight as cash section) */
+.pay-detail-section{display:none;background:#f8fafc;border:1.5px solid var(--border);border-radius:13px;padding:14px 15px;margin-top:7px}
+.pay-detail-section.show{display:block}
+.pdi-row{display:flex;align-items:center;gap:12px}
+.pdi-icon{font-size:30px;flex-shrink:0;line-height:1}
+.pdi-body{flex:1;min-width:0}
+.pdi-title{font-size:13px;font-weight:800;color:#0f172a;margin-bottom:4px}
+.pdi-sub{font-size:11.5px;color:#64748b;line-height:1.5}
+.pdi-amount{font-size:20px;font-weight:900;color:var(--blue);white-space:nowrap;flex-shrink:0}
 
 /* Medicine info button */
 .mc-info-btn{position:absolute;top:7px;right:7px;width:20px;height:20px;border-radius:50%;background:rgba(59,130,246,.12);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:var(--blue);transition:.15s;z-index:2;line-height:1;font-style:italic}
@@ -240,8 +251,8 @@ body{display:flex}
 
 /* Checkout button */
 .inv-action{padding:9px 16px 13px;flex-shrink:0}
-.btn-checkout{width:100%;height:48px;border-radius:12px;border:none;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:9px;transition:.2s;letter-spacing:-.2px}
-.btn-checkout:hover:not(:disabled){box-shadow:0 6px 20px rgba(249,115,22,.4);transform:translateY(-1px)}
+.btn-checkout{width:100%;height:50px;border-radius:12px;border:none;background:linear-gradient(135deg,#059669,#047857);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:9px;transition:.2s;letter-spacing:-.2px}
+.btn-checkout:hover:not(:disabled){box-shadow:0 6px 22px rgba(5,150,105,.45);transform:translateY(-1px)}
 .btn-checkout:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
 
 /* SUCCESS MODAL */
@@ -269,10 +280,119 @@ body{display:flex}
 /* CHECKIN */
 .sb-checkin-wrap{position:relative}
 
+/* STATION BADGE */
+.station-badge{display:flex;align-items:center;gap:6px;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:9px;padding:4px 12px;cursor:pointer;transition:.15s;flex-shrink:0}
+.station-badge:hover{background:#dbeafe;border-color:var(--sky)}
+.station-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.85)}}
+.station-label{font-size:12px;font-weight:700;color:var(--blue);white-space:nowrap}
+.station-staff{font-size:10.5px;color:var(--muted);font-weight:600}
+
+/* STATION SELECTOR MODAL */
+.station-modal{display:none;position:fixed;inset:0;z-index:9500;align-items:center;justify-content:center}
+.station-modal.show{display:flex}
+.stm-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}
+.stm-panel{position:relative;width:420px;background:#fff;border-radius:20px;padding:28px 26px 24px;box-shadow:0 24px 64px rgba(0,0,0,.28);animation:popIn .25s cubic-bezier(.34,1.56,.64,1)}
+.stm-title{font-size:18px;font-weight:900;color:var(--navy);margin-bottom:4px}
+.stm-sub{font-size:13px;color:var(--muted);margin-bottom:18px}
+.station-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.station-opt{border:2px solid var(--border);border-radius:12px;padding:16px 14px;cursor:pointer;transition:.15s;display:flex;flex-direction:column;gap:4px;background:#fff}
+.station-opt:hover{border-color:var(--sky);background:#eff6ff}
+.station-opt.selected{border-color:var(--blue);background:#eff6ff}
+.so-num{font-size:22px;font-weight:900;color:var(--blue)}
+.so-label{font-size:12px;font-weight:600;color:var(--muted)}
+.btn-confirm-station{width:100%;height:44px;border-radius:11px;border:none;background:linear-gradient(135deg,#059669,#047857);color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
+
+/* FACE CHECK-IN MODAL */
+.face-modal{display:none;position:fixed;inset:0;z-index:9500;align-items:center;justify-content:center}
+.face-modal.show{display:flex}
+.fm-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px)}
+.fm-panel{position:relative;width:460px;background:#0f172a;border-radius:20px;padding:22px 22px 20px;box-shadow:0 24px 64px rgba(0,0,0,.5);animation:popIn .25s cubic-bezier(.34,1.56,.64,1)}
+.fm-close{position:absolute;top:14px;right:16px;background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.6);width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.fm-title{font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:2px}
+.fm-sub{font-size:12px;color:#64748b;margin-bottom:14px}
+.face-video-wrap{position:relative;width:100%;aspect-ratio:4/3;background:#020617;border-radius:12px;overflow:hidden;margin-bottom:12px}
+#faceVideo{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+#faceCanvas{position:absolute;inset:0;width:100%;height:100%;transform:scaleX(-1)}
+.face-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.face-ring{width:160px;height:160px;border:3px solid rgba(255,255,255,.3);border-radius:50%;box-shadow:0 0 0 2000px rgba(0,0,0,.3)}
+.face-ring.scanning{border-color:#3b82f6;animation:ringPulse 1.2s ease-in-out infinite}
+.face-ring.matched{border-color:#10b981}
+@keyframes ringPulse{0%,100%{box-shadow:0 0 0 2000px rgba(0,0,0,.3),0 0 0 0 rgba(59,130,246,.4)}50%{box-shadow:0 0 0 2000px rgba(0,0,0,.3),0 0 0 12px rgba(59,130,246,0)}}
+.fm-status{font-size:13px;font-weight:600;color:#94a3b8;text-align:center;min-height:20px;margin-bottom:10px}
+.fm-status.ok{color:#4ade80}
+.fm-status.err{color:#f87171}
+.fm-actions{display:flex;gap:8px}
+.fm-btn-cancel{flex:1;height:38px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:transparent;color:rgba(255,255,255,.5);font-size:13px;cursor:pointer;font-family:inherit}
+.fm-btn-checkin{flex:2;height:38px;border-radius:9px;border:none;background:linear-gradient(135deg,#059669,#047857);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:none}
+.fm-no-face{font-size:12px;color:#f87171;text-align:center;margin-bottom:8px;display:none}
+.fm-enrolled-count{font-size:11px;color:#475569;text-align:center;margin-bottom:8px}
+.fm-loader{display:flex;align-items:center;justify-content:center;gap:8px;color:#64748b;font-size:12px;padding:20px}
+.fm-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.1);border-top-color:#3b82f6;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
 /* PRINT STYLES */
 @media print {
   body > *:not(#printFrame) { display:none!important; }
 }
+
+/* Staff action menu in topbar */
+.staff-action-wrap{position:relative}
+.staff-action-btn{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:9px;padding:6px 12px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+.staff-action-btn:hover{background:rgba(255,255,255,.22)}
+.sa-arrow{font-size:11px;opacity:.7;transition:transform .2s}
+.staff-action-wrap.open .sa-arrow{transform:rotate(180deg)}
+.staff-action-menu{display:none;position:absolute;top:calc(100% + 8px);right:0;min-width:186px;background:#fff;border:1px solid #e5e7eb;border-radius:13px;box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:600;overflow:hidden}
+.staff-action-menu.open{display:block}
+.staff-action-menu button{display:block;width:100%;padding:10px 16px;background:none;border:none;text-align:left;cursor:pointer;font-family:inherit;font-size:13.5px;color:#374151;font-weight:600;transition:.1s}
+.staff-action-menu button:hover{background:#f3f4f6}
+.sam-divider{height:1px;background:#e5e7eb;margin:2px 0}
+.staff-action-menu button.sam-danger{color:#dc2626}
+.staff-action-menu button.sam-danger:hover{background:#fef2f2}
+
+/* QR PAYMENT MODAL */
+.qr-modal{display:none;position:fixed;inset:0;z-index:9600;align-items:center;justify-content:center}
+.qr-modal.show{display:flex}
+.qr-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.65);backdrop-filter:blur(5px)}
+.qrm-panel{position:relative;background:#fff;border-radius:22px;padding:26px 28px 22px;width:380px;max-width:calc(100vw - 32px);box-shadow:0 24px 64px rgba(0,0,0,.3);display:flex;flex-direction:column;align-items:center;gap:12px;animation:qrmPop .22s cubic-bezier(.34,1.56,.64,1)}
+@keyframes qrmPop{from{transform:scale(.88) translateY(16px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+
+.qrm-header{display:flex;align-items:center;gap:8px;width:100%}
+.qrm-logo-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#0ea5e9,#2563eb);display:flex;align-items:center;justify-content:center;font-size:18px}
+.qrm-logo-txt{font-size:16px;font-weight:800;color:#0f172a;letter-spacing:-.3px}
+.qrm-logo-sub{font-size:11px;color:#94a3b8;font-weight:500}
+.qrm-logo-info{display:flex;flex-direction:column;gap:1px}
+
+.qrm-amount{font-size:34px;font-weight:900;color:#1d4ed8;letter-spacing:-1px;line-height:1}
+.qrm-amount-label{font-size:11.5px;color:#94a3b8;font-weight:500;margin-top:-6px}
+
+.qrm-qr-box{background:#f8fafc;border:2.5px solid #e2e8f0;border-radius:16px;padding:14px;position:relative}
+.qrm-qr-box canvas,.qrm-qr-box img{display:block;border-radius:8px}
+.qrm-qr-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 0 3px #f8fafc}
+
+.qrm-banks{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
+.qrm-bank{background:#f1f5f9;border-radius:6px;padding:3px 9px;font-size:10.5px;font-weight:700;color:#475569}
+
+.qrm-status-row{display:flex;align-items:center;gap:8px}
+.qrm-dot{width:9px;height:9px;border-radius:50%;background:#10b981;flex-shrink:0;box-shadow:0 0 0 0 rgba(16,185,129,.4);animation:qrmDot 1.4s ease infinite}
+@keyframes qrmDot{0%{box-shadow:0 0 0 0 rgba(16,185,129,.5)}70%{box-shadow:0 0 0 9px rgba(16,185,129,0)}100%{box-shadow:0 0 0 0 rgba(16,185,129,0)}}
+.qrm-dot.paid{background:#2563eb;animation:none;box-shadow:none}
+.qrm-dot.expired{background:#ef4444;animation:none;box-shadow:none}
+.qrm-status-txt{font-size:13px;font-weight:600;color:#334155}
+.qrm-timer{font-size:12px;color:#94a3b8}
+.qrm-timer b{color:#f59e0b}
+.qrm-divider{width:100%;height:1px;background:#f1f5f9}
+
+.qrm-success-box{display:none;flex-direction:column;align-items:center;gap:6px;padding:8px 0}
+.qrm-success-box.show{display:flex}
+.qrm-success-icon{font-size:52px;animation:qrmBounce .35s cubic-bezier(.34,1.56,.64,1)}
+@keyframes qrmBounce{from{transform:scale(.4)}to{transform:scale(1)}}
+.qrm-success-txt{font-size:17px;font-weight:800;color:#059669}
+
+.qrm-checkout-link{font-size:11px;color:#94a3b8;text-decoration:none;display:flex;align-items:center;gap:4px}
+.qrm-checkout-link:hover{color:#3b82f6}
+.qrm-cancel-btn{width:100%;padding:12px;border:none;border-radius:11px;background:#f1f5f9;color:#64748b;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;letter-spacing:.1px}
+.qrm-cancel-btn:hover{background:#e2e8f0;color:#334155}
 </style>
 </head>
 <body>
@@ -307,12 +427,6 @@ body{display:flex}
     <span class="sb-label">Khách hàng</span>
     <span class="sb-tip">Khách hàng</span>
   </a>
-  <a href="#" class="sb-btn">
-    <span class="sb-icon">📊</span>
-    <span class="sb-label">Báo cáo</span>
-    <span class="sb-tip">Báo cáo</span>
-  </a>
-
   <div class="sb-bottom">
     <div class="sb-divider" style="margin-bottom:6px"></div>
     <div class="sb-checkin-wrap">
@@ -327,14 +441,18 @@ body{display:flex}
         <% if (isLoggedIn) { %>
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px">
           <div style="width:34px;height:34px;background:linear-gradient(135deg,#3f83f8,#1a56db);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff"><%= initials %></div>
-          <div><div style="font-size:13px;font-weight:700;color:#fff"><%= fullName %></div><div style="font-size:10.5px;color:rgba(255,255,255,.45)">Đã đăng nhập</div></div>
+          <div><div style="font-size:13px;font-weight:700;color:#fff"><%= fullName %></div><div style="font-size:10.5px;color:rgba(255,255,255,.45)">Đang ca làm việc</div></div>
         </div>
-        <a href="<%= ctx %>/staff-dashboard" style="display:block;padding:8px 11px;background:rgba(255,255,255,.1);border-radius:8px;color:#93c5fd;font-size:12.5px;font-weight:600;text-decoration:none;margin-bottom:5px;text-align:center">📅 Xem ca làm việc</a>
+        <a href="<%= ctx %>/staff-dashboard" style="display:block;padding:8px 11px;background:rgba(255,255,255,.1);border-radius:8px;color:#93c5fd;font-size:12.5px;font-weight:600;text-decoration:none;margin-bottom:5px;text-align:center">📅 Xem lịch ca</a>
         <a href="<%= ctx %>/logout?from=staff" style="display:block;padding:8px 11px;background:rgba(239,68,68,.15);border-radius:8px;color:#fca5a5;font-size:12.5px;font-weight:600;text-decoration:none;text-align:center">⏻ Kết thúc ca</a>
         <% } else { %>
-        <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:11px">Đăng nhập để điểm danh và ghi nhận doanh thu theo nhân viên</div>
-        <a href="<%= ctx %>/staff-login" style="display:block;padding:10px 11px;background:linear-gradient(135deg,#1a56db,#1e3a5f);border-radius:8px;color:#fff;font-size:13px;font-weight:700;text-decoration:none;text-align:center">👤 Đăng nhập nhân viên</a>
-        <div style="font-size:10.5px;color:rgba(255,255,255,.25);margin-top:8px;text-align:center">POS vẫn hoạt động không cần đăng nhập</div>
+        <div style="font-size:11.5px;color:rgba(255,255,255,.5);margin-bottom:11px">Điểm danh để ghi nhận doanh số theo nhân viên</div>
+        <!-- Nút điểm danh khuôn mặt -->
+        <button onclick="openFaceModal();toggleCheckinPanel();" style="width:100%;padding:10px;background:linear-gradient(135deg,#059669,#047857);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:6px">
+          📷 Điểm danh khuôn mặt
+        </button>
+        <a href="<%= ctx %>/staff-login" style="display:block;padding:8px 11px;background:rgba(255,255,255,.1);border-radius:8px;color:#93c5fd;font-size:12.5px;font-weight:600;text-decoration:none;text-align:center;margin-bottom:5px">👤 Đăng nhập thủ công</a>
+        <div style="font-size:10.5px;color:rgba(255,255,255,.25);margin-top:6px;text-align:center">POS hoạt động bình thường khi chưa đăng nhập</div>
         <% } %>
       </div>
     </div>
@@ -346,7 +464,15 @@ body{display:flex}
   <!-- Topbar -->
   <div class="topbar">
     <div class="search-wrap">
-      <input type="text" id="searchInput" placeholder="Tìm thuốc theo tên hoặc mã…" autocomplete="off">
+      <input type="text" id="searchInput" placeholder="Tìm thuốc theo tên hoặc mã vạch…" autocomplete="off">
+    </div>
+    <!-- Station badge -->
+    <div class="station-badge" onclick="openStationModal()" id="stationBadge" title="Chọn quầy POS">
+      <span class="station-dot"></span>
+      <div>
+        <div class="station-label" id="stationLabel"><%= stationLabel %></div>
+        <div class="station-staff" id="stationStaff"><%= isLoggedIn ? fullName : "Chưa điểm danh" %></div>
+      </div>
     </div>
     <span class="med-count-badge" id="medCountBadge">0 thuốc</span>
     <span class="topbar-date">📅 <span id="topDate"></span></span>
@@ -399,27 +525,29 @@ body{display:flex}
            data-minstock="${m.minInventory}"
            onclick="addToCart(this)">
         <button class="mc-info-btn" onclick="event.stopPropagation();showMedInfo(${m.medicineId})" title="Xem thông tin thuốc"><i>i</i></button>
+        <%-- Top row: stock badge left, Rx/OTC right --%>
         <div class="mc-top">
-          <span class="mc-code"><c:out value="${m.medicineCode}" /></span>
+          <span class="${stkCls} mc-stock">${stkLbl}</span>
           <c:choose>
             <c:when test="${m.prescriptionRequired}"><span class="mc-badge mb-rx">Rx</span></c:when>
             <c:otherwise><span class="mc-badge mb-otc">OTC</span></c:otherwise>
           </c:choose>
         </div>
+        <%-- Center: medicine type icon --%>
+        <c:choose>
+          <c:when test="${fn:contains(m.unit,'Siro') or fn:contains(m.unit,'siro') or fn:contains(m.unit,'Chai') or fn:contains(m.unit,'chai') or fn:contains(m.unit,'ml') or fn:contains(m.unit,'Dung') or fn:contains(m.unit,'dịch')}"><span class="mc-icon">🍶</span></c:when>
+          <c:when test="${fn:contains(m.unit,'Ống') or fn:contains(m.unit,'ống') or fn:contains(m.unit,'Amp')}"><span class="mc-icon">💉</span></c:when>
+          <c:when test="${fn:contains(m.unit,'Gói') or fn:contains(m.unit,'gói') or fn:contains(m.unit,'Túi')}"><span class="mc-icon">📦</span></c:when>
+          <c:when test="${fn:contains(m.unit,'Tuýp') or fn:contains(m.unit,'tuýp') or fn:contains(m.unit,'Kem') or fn:contains(m.unit,'kem') or fn:contains(m.unit,'Gel') or fn:contains(m.unit,'gel')}"><span class="mc-icon">🧴</span></c:when>
+          <c:otherwise><span class="mc-icon">💊</span></c:otherwise>
+        </c:choose>
+        <%-- Name & unit --%>
         <div class="mc-name"><c:out value="${m.medicineName}" /></div>
         <div class="mc-unit"><c:out value="${m.unit}" /></div>
-        <div class="mc-footer">
+        <%-- Price bottom --%>
+        <div class="mc-price-row">
           <span class="mc-price"><fmt:formatNumber value="${m.sellingPrice}" pattern="#,###"/>đ</span>
-          <span class="${stkCls}">${stkLbl}</span>
         </div>
-        <div class="mc-qty-row" onclick="event.stopPropagation()">
-          <span class="mc-qty-lbl">SL:</span>
-          <button class="mc-qty-btn" onclick="cardQtyChange(this,-1)">−</button>
-          <input class="mc-qty-inp" type="number" value="1" min="1"
-                 oninput="cardQtyValidate(this)" onclick="event.stopPropagation()" onfocus="this.select()">
-          <button class="mc-qty-btn" onclick="cardQtyChange(this,1)">+</button>
-        </div>
-        <div class="mc-qty-warn"></div>
       </div>
     </c:forEach>
   </div>
@@ -460,15 +588,41 @@ body{display:flex}
 
   <!-- Bottom forms -->
   <div class="inv-forms">
-    <!-- Payment methods — compact tabs -->
+    <!-- Payment methods — 3 big cards -->
     <div>
-      <div class="f-label" style="margin-bottom:4px">Phương thức thanh toán</div>
-      <div class="pay-tabs">
-        <button class="pay-tab active" data-method="CASH" onclick="selectPay(this)"><span class="pi">💵</span><span class="pt">Tiền mặt</span></button>
-        <button class="pay-tab" data-method="CARD" onclick="selectPay(this)"><span class="pi">🏦</span><span class="pt">Thẻ</span></button>
-        <button class="pay-tab" data-method="TRANSFER" onclick="selectPay(this)"><span class="pi">🔄</span><span class="pt">Chuyển khoản</span></button>
-        <button class="pay-tab" data-method="EWALLET" onclick="selectPay(this)"><span class="pi">📱</span><span class="pt">Ví điện tử</span></button>
-        <button class="pay-tab" data-method="QR_CODE" onclick="selectPay(this)"><span class="pi">📷</span><span class="pt">QR</span></button>
+      <div class="f-label" style="margin-bottom:7px">Phương thức thanh toán</div>
+      <div class="pay-methods">
+        <button class="pay-method-card active" data-method="CASH" onclick="selectPay(this)">
+          <span class="pmc-icon">💵</span><span class="pmc-label">Tiền mặt</span>
+        </button>
+        <button class="pay-method-card" data-method="QR_CODE" onclick="selectPay(this)">
+          <span class="pmc-icon">📱</span><span class="pmc-label">QR VietQR</span>
+        </button>
+        <button class="pay-method-card" data-method="CARD" onclick="selectPay(this)">
+          <span class="pmc-icon">💳</span><span class="pmc-label">Quẹt thẻ</span>
+        </button>
+      </div>
+      <!-- QR detail panel -->
+      <div class="pay-detail-section" id="qrSection">
+        <div class="pdi-row">
+          <span class="pdi-icon">📱</span>
+          <div class="pdi-body">
+            <div class="pdi-title">Thanh toán QR VietQR</div>
+            <div class="pdi-sub">Nhấn <b>Thanh toán</b> để tạo mã QR — khách quét và chuyển khoản tự động</div>
+          </div>
+          <span class="pdi-amount" id="qrAmount">0đ</span>
+        </div>
+      </div>
+      <!-- Card detail panel -->
+      <div class="pay-detail-section" id="cardSection">
+        <div class="pdi-row">
+          <span class="pdi-icon">💳</span>
+          <div class="pdi-body">
+            <div class="pdi-title">Thanh toán quẹt thẻ</div>
+            <div class="pdi-sub">Cà thẻ trên máy POS vật lý, nhấn <b>Thanh toán</b> sau khi hoàn tất</div>
+          </div>
+          <span class="pdi-amount" id="cardAmount">0đ</span>
+        </div>
       </div>
     </div>
 
@@ -508,6 +662,46 @@ body{display:flex}
   </div>
 </div>
 
+<!-- STATION SELECTOR MODAL -->
+<div class="station-modal" id="stationModal">
+  <div class="stm-backdrop" onclick="closeStationModal()"></div>
+  <div class="stm-panel">
+    <div class="stm-title">🖥️ Chọn quầy POS</div>
+    <div class="stm-sub">Mỗi máy tính = 1 quầy. Chọn quầy tương ứng với máy này.</div>
+    <div class="station-grid" id="stationGrid">
+      <!-- rendered by JS -->
+    </div>
+    <button class="btn-confirm-station" onclick="confirmStation()">✓ Xác nhận quầy</button>
+  </div>
+</div>
+
+<!-- FACE CHECK-IN MODAL -->
+<div class="face-modal" id="faceModal">
+  <div class="fm-backdrop" onclick="closeFaceModal()"></div>
+  <div class="fm-panel">
+    <button class="fm-close" onclick="closeFaceModal()">✕</button>
+    <div class="fm-title">📷 Điểm danh qua khuôn mặt</div>
+    <div class="fm-sub">Nhìn thẳng vào camera — hệ thống tự nhận dạng</div>
+    <div id="fmLoading" class="fm-loader"><div class="fm-spinner"></div>Đang tải mô hình nhận dạng…</div>
+    <div id="fmCameraWrap" style="display:none">
+      <div class="face-video-wrap">
+        <video id="faceVideo" autoplay muted playsinline></video>
+        <canvas id="faceCanvas"></canvas>
+        <div class="face-overlay">
+          <div class="face-ring" id="faceRing"></div>
+        </div>
+      </div>
+      <div class="fm-enrolled-count" id="fmEnrolledCount"></div>
+      <div class="fm-no-face" id="fmNoFace">⚠ Không phát hiện khuôn mặt — hãy nhìn thẳng vào camera</div>
+      <div class="fm-status" id="fmStatus">Đang quét…</div>
+      <div class="fm-actions">
+        <button class="fm-btn-cancel" onclick="closeFaceModal()">Hủy</button>
+        <button class="fm-btn-checkin" id="fmCheckinBtn" onclick="confirmFaceCheckin()">✓ Xác nhận điểm danh</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MEDICINE INFO MODAL -->
 <div class="info-modal" id="infoModal">
   <div class="im-backdrop" onclick="closeInfoModal()"></div>
@@ -541,13 +735,68 @@ body{display:flex}
   </div>
 </div>
 
+<!-- QR PAYMENT MODAL -->
+<div class="qr-modal" id="qrPayModal">
+  <div class="qr-backdrop"></div>
+  <div class="qrm-panel">
+    <div class="qrm-header">
+      <div class="qrm-logo-icon">📱</div>
+      <div class="qrm-logo-info">
+        <div class="qrm-logo-txt">VietQR Payment</div>
+        <div class="qrm-logo-sub">Quét bằng ứng dụng ngân hàng bất kỳ</div>
+      </div>
+    </div>
+    <div class="qrm-amount" id="qrmAmount">0đ</div>
+    <div class="qrm-amount-label">Tổng tiền thanh toán</div>
+
+    <!-- QR code box (ẩn khi đã thanh toán) -->
+    <div class="qrm-qr-box" id="qrmQrBox">
+      <div id="qrmQrCode"></div>
+      <div class="qrm-qr-center">💊</div>
+    </div>
+
+    <!-- Success box (hiện khi đã thanh toán) -->
+    <div class="qrm-success-box" id="qrmSuccessBox">
+      <div class="qrm-success-icon">✅</div>
+      <div class="qrm-success-txt">Thanh toán thành công!</div>
+    </div>
+
+    <div class="qrm-banks">
+      <span class="qrm-bank">VCB</span><span class="qrm-bank">TCB</span>
+      <span class="qrm-bank">VietinBank</span><span class="qrm-bank">MBBank</span>
+      <span class="qrm-bank">BIDV</span><span class="qrm-bank">TPBank</span>
+      <span class="qrm-bank">Momo</span><span class="qrm-bank">ZaloPay</span>
+    </div>
+
+    <div class="qrm-divider"></div>
+
+    <div class="qrm-status-row">
+      <span class="qrm-dot" id="qrmDot"></span>
+      <span class="qrm-status-txt" id="qrmStatusTxt">Đang chờ thanh toán...</span>
+    </div>
+    <div class="qrm-timer" id="qrmTimerRow">Hết hạn sau: <b id="qrmCountdown">05:00</b></div>
+    <a id="qrmCheckoutLink" href="#" target="_blank" class="qrm-checkout-link">
+      🔗 Mở trang thanh toán trên điện thoại
+    </a>
+    <button class="qrm-cancel-btn" id="qrmCancelBtn" onclick="cancelQrPay()">❌ Hủy thanh toán</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
 <script>
 const ctx = '<%= ctx %>';
+const screenState = '${screenState}';
 const sellerName = '<%= fullName %>';
 let cart = [];
 let selectedCustomer = null;
 let selectedPayment = 'CASH';
 let allMedicines = [];
+
+// ── Multi-POS state ──
+let currentStation = <%= posStation %>;  // 0 = belum pilih
+let currentStaffId = null;
+let currentStaffName = '<%= fullName %>';
 let currentInvoice = null; // {id, code, total, discount, cashReceived, change}
 
 // ── Date display ──
@@ -621,30 +870,7 @@ function checkEmpty() {
   } else if (es) es.remove();
 }
 
-// ── Card qty helpers ──
-function cardQtyChange(btn, delta) {
-  event.stopPropagation();
-  const row  = btn.closest('.mc-qty-row');
-  const inp  = row.querySelector('.mc-qty-inp');
-  let v = Math.max(1, (parseInt(inp.value) || 1) + delta);
-  inp.value = v;
-  cardQtyValidate(inp);
-}
-function cardQtyValidate(inp) {
-  const card  = inp.closest('.med-card');
-  const stock = parseInt(card.dataset.stock) || 0;
-  const v     = parseInt(inp.value) || 1;
-  if (v < 1) inp.value = 1;
-  const warn = card.querySelector('.mc-qty-warn');
-  if (warn) {
-    if (stock > 0 && v > stock) {
-      warn.textContent = '⚠ Chỉ còn ' + stock + ' trong kho';
-      warn.style.display = 'block';
-    } else {
-      warn.style.display = 'none';
-    }
-  }
-}
+// ── Card qty helpers removed — thẻ thuốc bây giờ chỉ click = +1 vào giỏ ──
 
 // ── Cart ──
 function addToCart(card) {
@@ -652,26 +878,16 @@ function addToCart(card) {
   const id    = parseInt(card.dataset.id);
   const stock = parseInt(card.dataset.stock) || 0;
 
-  const qtyInp = card.querySelector('.mc-qty-inp');
-  const addQty = qtyInp ? Math.max(1, parseInt(qtyInp.value) || 1) : 1;
+  const existing   = cart.find(i => i.id === id);
+  const inCartQty  = existing ? existing.qty : 0;
 
-  const existing    = cart.find(i => i.id === id);
-  const inCartQty   = existing ? existing.qty : 0;
-  const afterTotal  = inCartQty + addQty;
-
-  if (stock > 0 && afterTotal > stock) {
-    const avail = Math.max(0, stock - inCartQty);
-    if (avail <= 0) {
-      showToast('⚠️ Đã thêm tối đa tồn kho (' + stock + ' ' + (card.dataset.unit||'') + ')', 'err');
-    } else {
-      showToast('⚠️ Chỉ còn ' + avail + ' ' + (card.dataset.unit||'') + ' có thể thêm (kho: ' + stock + ')', 'err');
-      if (qtyInp) qtyInp.value = avail;
-    }
+  if (stock > 0 && inCartQty >= stock) {
+    showToast('⚠️ Đã đạt tối đa tồn kho (' + stock + ' ' + (card.dataset.unit||'') + ')', 'err');
     return;
   }
 
   if (existing) {
-    existing.qty += addQty;
+    existing.qty += 1;
   } else {
     if (stock === 0) { showToast('❌ Thuốc này đã hết hàng!', 'err'); return; }
     cart.push({
@@ -684,14 +900,8 @@ function addToCart(card) {
       dosage:  card.dataset.dosage  || '',
       code:    card.dataset.code    || '',
       rx:      card.dataset.rx === 'true',
-      qty: addQty
+      qty: 1
     });
-  }
-
-  if (qtyInp) {
-    qtyInp.value = 1;
-    const warn = card.querySelector('.mc-qty-warn');
-    if (warn) warn.style.display = 'none';
   }
 
   renderCart();
@@ -801,6 +1011,7 @@ function updateTotal() {
   if (needEl) needEl.textContent = fmtMoney(tot);
   updateQuickButtons(tot);
   calcChange();
+  syncPayPanelAmounts();
 }
 
 function updateQuickButtons(total) {
@@ -833,20 +1044,43 @@ function setCash(amount) {
 
 // ── Payment ──
 function selectPay(btn) {
-  document.querySelectorAll('.pay-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.pay-method-card').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   selectedPayment = btn.dataset.method;
-  const cashSec = document.getElementById('cashSection');
-  const needRow = document.getElementById('cashNeedRow');
+
+  const cashSec   = document.getElementById('cashSection');
+  const qrSec     = document.getElementById('qrSection');
+  const cardSec   = document.getElementById('cardSection');
+  const needRow   = document.getElementById('cashNeedRow');
+  const changeRow = document.getElementById('cashChangeRow');
+
+  cashSec.classList.remove('show');
+  qrSec.classList.remove('show');
+  cardSec.classList.remove('show');
+  if (changeRow) changeRow.style.display = 'none';
+
   if (selectedPayment === 'CASH') {
     cashSec.classList.add('show');
     if (needRow) needRow.style.display = 'none';
-  } else {
-    cashSec.classList.remove('show');
-    document.getElementById('cashChangeRow').style.display = 'none';
+  } else if (selectedPayment === 'QR_CODE') {
+    qrSec.classList.add('show');
     if (needRow) needRow.style.display = 'flex';
+    syncPayPanelAmounts();
+  } else {
+    cardSec.classList.add('show');
+    if (needRow) needRow.style.display = 'flex';
+    syncPayPanelAmounts();
   }
   updateCheckoutBtnState();
+}
+
+function syncPayPanelAmounts() {
+  const tot = calcTotal();
+  const fmt = fmtMoney(tot);
+  const qrEl = document.getElementById('qrAmount');
+  const cdEl = document.getElementById('cardAmount');
+  if (qrEl) qrEl.textContent = fmt;
+  if (cdEl) cdEl.textContent = fmt;
 }
 
 function calcChange() {
@@ -879,27 +1113,30 @@ function calcChange() {
 function updateCheckoutBtnState() {
   const btn = document.getElementById('checkoutBtn');
   if (!btn) return;
-  if (cart.length === 0) { 
-    btn.disabled = true; 
-    btn.innerHTML = '\uD83D\uDED2 THANH TO\u00C1N (Ch\u01B0a c\u00F3 h\u00E0ng)';
-    return; 
+  if (cart.length === 0) {
+    btn.disabled = true;
+    btn.textContent = '\uD83D\uDED2 THANH TO\u00C1N';
+    return;
   }
   if (selectedPayment === 'CASH') {
     const total = calcTotal();
     const cash  = parseFloat(document.getElementById('cashInput').value) || 0;
     if (cash <= 0) {
       btn.disabled = true;
-      btn.innerHTML = '\u23F3 \u0110ang \u0111\u1EE3i nh\u1EADp ti\u1EC1n...';
+      btn.textContent = '\u23F3 Nh\u1EADp ti\u1EC1n kh\u00E1ch \u0111\u01B0a\u2026';
     } else if (cash < total) {
       btn.disabled = true;
-      btn.innerHTML = '\u26A0\uFE0F Ch\u01B0a \u0111\u1EE7 ti\u1EC1n';
+      btn.textContent = '\u26A0\uFE0F Ch\u01B0a \u0111\u1EE7 ti\u1EC1n';
     } else {
       btn.disabled = false;
-      btn.innerHTML = '\uD83D\uDED2 THANH TO\u00C1N (ENTER)';
+      btn.textContent = '\u2713  F9 \u2014 THANH TO\u00C1N';
     }
+  } else if (selectedPayment === 'QR_CODE') {
+    btn.disabled = false;
+    btn.textContent = '\uD83D\uDCF1 T\u1EA1o m\u00E3 QR thanh to\u00E1n';
   } else {
     btn.disabled = false;
-    btn.innerHTML = '\uD83D\uDED2 THANH TO\u00C1N (ENTER)';
+    btn.textContent = '\uD83D\uDCB3 X\u00E1c nh\u1EADn thanh to\u00E1n';
   }
 }
 
@@ -948,6 +1185,10 @@ function doCheckout() {
       return;
     }
   }
+  if (selectedPayment === 'QR_CODE') {
+    openQrModal(total);
+    return;
+  }
   submitSale();
 }
 
@@ -960,6 +1201,8 @@ function submitSale() {
   fd.append('paymentMethod', selectedPayment);
   fd.append('discount', document.getElementById('discountInput').value || '0');
   if (selectedCustomer) fd.append('customerId', selectedCustomer.id);
+  if (currentStaffId)   fd.append('uid', currentStaffId);
+  if (currentStation > 0) fd.append('posStation', currentStation);
   cart.forEach(item => { fd.append('medId[]', item.id); fd.append('qty[]', item.qty); });
   fd.append('_csrf', '${csrfToken}');
   fetch(ctx + '/pos', {
@@ -1220,21 +1463,464 @@ document.addEventListener('click', e => {
   }
 });
 
-// Allow Enter key to trigger checkout when cashInput is focused
-document.addEventListener('DOMContentLoaded', () => {
-  const ci = document.getElementById('cashInput');
-  if (ci) {
-    ci.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        const btn = document.getElementById('checkoutBtn');
-        if (btn && !btn.disabled) {
-          doCheckout();
-        }
-      }
-    });
+// ── Keyboard shortcuts ────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  // F9 → Thanh toán
+  if (e.key === 'F9') {
+    e.preventDefault();
+    const btn = document.getElementById('checkoutBtn');
+    if (btn && !btn.disabled) doCheckout();
+    return;
+  }
+  // Enter khi cashInput được focus
+  if (e.key === 'Enter' && e.target.id === 'cashInput') {
+    e.preventDefault();
+    const btn = document.getElementById('checkoutBtn');
+    if (btn && !btn.disabled) doCheckout();
+    return;
+  }
+  // Escape → đóng modal
+  if (e.key === 'Escape') {
+    closeStationModal();
+    closeFaceModal();
   }
 });
+
+// Show station modal on load if station not set yet
+document.addEventListener('DOMContentLoaded', () => {
+  if (currentStation === 0) {
+    setTimeout(() => openStationModal(), 600);
+  }
+  updateStationUI();
+});
+
+// ── MULTI-POS STATION ─────────────────────────────────────────────────────────
+const MAX_STATIONS = 4;
+
+function openStationModal() {
+  const grid = document.getElementById('stationGrid');
+  grid.innerHTML = '';
+  for (let i = 1; i <= MAX_STATIONS; i++) {
+    const opt = document.createElement('div');
+    opt.className = 'station-opt' + (currentStation === i ? ' selected' : '');
+    opt.dataset.station = i;
+    opt.innerHTML = '<div class="so-num">Q' + i + '</div><div class="so-label">Quầy ' + i + '</div>';
+    opt.onclick = function() {
+      document.querySelectorAll('.station-opt').forEach(o => o.classList.remove('selected'));
+      this.classList.add('selected');
+    };
+    grid.appendChild(opt);
+  }
+  document.getElementById('stationModal').classList.add('show');
+}
+
+function closeStationModal() {
+  document.getElementById('stationModal').classList.remove('show');
+}
+
+function confirmStation() {
+  const sel = document.querySelector('.station-opt.selected');
+  if (!sel) { showToast('⚠️ Vui lòng chọn một quầy!', 'err'); return; }
+  const station = parseInt(sel.dataset.station);
+  currentStation = station;
+
+  fetch(ctx + '/pos', {
+    method: 'POST',
+    body: new URLSearchParams({ action: 'set-station', station }),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+  }).catch(() => {});
+
+  updateStationUI();
+  closeStationModal();
+  showToast('✓ Đã chuyển sang Quầy ' + station, 'ok');
+}
+
+function updateStationUI() {
+  const lbl = document.getElementById('stationLabel');
+  if (lbl) lbl.textContent = currentStation > 0 ? 'Quầy ' + currentStation : 'Chọn quầy';
+}
+
+// ── FACE RECOGNITION CHECK-IN ─────────────────────────────────────────────────
+const FACE_MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model/';
+const FACE_THRESHOLD  = 0.5;  // Euclidean distance threshold
+
+let faceModelsLoaded  = false;
+let faceDescriptors   = []; // [{accountId, name, descriptor: Float32Array}]
+let faceVideoStream   = null;
+let faceDetectTimer   = null;
+let faceMatchedId     = null;
+let faceMatchedName   = null;
+
+async function loadFaceModels() {
+  if (faceModelsLoaded) return;
+  const nets = faceapi.nets;
+  await nets.tinyFaceDetector.loadFromUri(FACE_MODEL_URL);
+  await nets.faceLandmark68TinyNet.loadFromUri(FACE_MODEL_URL);
+  await nets.faceRecognitionNet.loadFromUri(FACE_MODEL_URL);
+  faceModelsLoaded = true;
+}
+
+async function loadFaceDescriptors() {
+  try {
+    const res  = await fetch(ctx + '/pos?action=face-descriptors');
+    const data = await res.json();
+    faceDescriptors = data
+      .filter(d => d.descriptor)
+      .map(d => ({
+        accountId:  d.accountId,
+        name:       d.name,
+        descriptor: new Float32Array(JSON.parse(d.descriptor))
+      }));
+    const el = document.getElementById('fmEnrolledCount');
+    if (el) el.textContent = faceDescriptors.length > 0
+      ? faceDescriptors.length + ' nhân viên đã đăng ký khuôn mặt'
+      : '⚠ Chưa có nhân viên nào đăng ký khuôn mặt';
+  } catch(e) {
+    faceDescriptors = [];
+  }
+}
+
+async function openFaceModal() {
+  document.getElementById('faceModal').classList.add('show');
+  document.getElementById('fmLoading').style.display = 'flex';
+  document.getElementById('fmCameraWrap').style.display = 'none';
+  faceMatchedId   = null;
+  faceMatchedName = null;
+
+  try {
+    await loadFaceModels();
+    await loadFaceDescriptors();
+  } catch(e) {
+    setFmStatus('❌ Lỗi tải mô hình: ' + e.message, 'err');
+    document.getElementById('fmLoading').style.display = 'none';
+    document.getElementById('fmCameraWrap').style.display = 'block';
+    return;
+  }
+
+  document.getElementById('fmLoading').style.display = 'none';
+  document.getElementById('fmCameraWrap').style.display = 'block';
+
+  try {
+    faceVideoStream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 640, height: 480, facingMode: 'user' }
+    });
+    const video = document.getElementById('faceVideo');
+    video.srcObject = faceVideoStream;
+    await video.play();
+    startFaceDetection();
+  } catch(e) {
+    setFmStatus('❌ Không truy cập được camera: ' + e.message, 'err');
+  }
+}
+
+function closeFaceModal() {
+  stopFaceDetection();
+  if (faceVideoStream) {
+    faceVideoStream.getTracks().forEach(t => t.stop());
+    faceVideoStream = null;
+  }
+  document.getElementById('faceModal').classList.remove('show');
+  faceMatchedId   = null;
+  faceMatchedName = null;
+  document.getElementById('fmCheckinBtn').style.display = 'none';
+  document.getElementById('fmNoFace').style.display = 'none';
+  setFmStatus('Đang quét…');
+  document.getElementById('faceRing').className = 'face-ring';
+}
+
+function startFaceDetection() {
+  const video  = document.getElementById('faceVideo');
+  const canvas = document.getElementById('faceCanvas');
+  faceDetectTimer = setInterval(async () => {
+    if (video.readyState < 2) return;
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const detection = await faceapi
+      .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224 }))
+      .withFaceLandmarks(true)
+      .withFaceDescriptor();
+
+    const ctx2 = canvas.getContext('2d');
+    ctx2.clearRect(0, 0, canvas.width, canvas.height);
+    const noFaceEl = document.getElementById('fmNoFace');
+    const ring = document.getElementById('faceRing');
+
+    if (!detection) {
+      noFaceEl.style.display = 'block';
+      ring.className = 'face-ring';
+      return;
+    }
+    noFaceEl.style.display = 'none';
+    ring.className = 'face-ring scanning';
+
+    if (faceDescriptors.length === 0) {
+      setFmStatus('⚠ Không có khuôn mặt nào được đăng ký trong hệ thống', 'err');
+      return;
+    }
+
+    // Tìm khuôn mặt khớp nhất
+    let bestDist = Infinity;
+    let bestMatch = null;
+    for (const ref of faceDescriptors) {
+      const dist = faceapi.euclideanDistance(detection.descriptor, ref.descriptor);
+      if (dist < bestDist) {
+        bestDist  = dist;
+        bestMatch = ref;
+      }
+    }
+
+    if (bestDist <= FACE_THRESHOLD && bestMatch) {
+      ring.className = 'face-ring matched';
+      faceMatchedId   = bestMatch.accountId;
+      faceMatchedName = bestMatch.name;
+      setFmStatus('✓ Nhận ra: ' + bestMatch.name + ' (' + (bestDist * 100).toFixed(0) + '% khớp)', 'ok');
+      document.getElementById('fmCheckinBtn').style.display = 'flex';
+      stopFaceDetection();
+    } else {
+      faceMatchedId   = null;
+      faceMatchedName = null;
+      setFmStatus('Đang quét… khoảng cách: ' + bestDist.toFixed(2));
+      document.getElementById('fmCheckinBtn').style.display = 'none';
+    }
+  }, 500);
+}
+
+function stopFaceDetection() {
+  if (faceDetectTimer) {
+    clearInterval(faceDetectTimer);
+    faceDetectTimer = null;
+  }
+}
+
+function setFmStatus(msg, type) {
+  const el = document.getElementById('fmStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.className   = 'fm-status' + (type ? ' ' + type : '');
+}
+
+async function confirmFaceCheckin() {
+  if (!faceMatchedId) { showToast('⚠️ Chưa nhận dạng được khuôn mặt!', 'err'); return; }
+  const btn = document.getElementById('fmCheckinBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang điểm danh…';
+
+  try {
+    const res  = await fetch(ctx + '/pos', {
+      method: 'POST',
+      body: new URLSearchParams({
+        action:    'pos-face-checkin',
+        accountId: faceMatchedId,
+        station:   currentStation > 0 ? currentStation : 1
+      }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    const data = await res.json();
+    if (data.ok) {
+      currentStaffId   = data.staffId;
+      currentStaffName = data.name;
+      // Cập nhật UI sidebar
+      const staffEl = document.getElementById('stationStaff');
+      if (staffEl) staffEl.textContent = data.name;
+      const checkinIcon = document.getElementById('checkinBtn');
+      if (checkinIcon) {
+        const iconEl = checkinIcon.querySelector('.sb-icon');
+        if (iconEl) iconEl.textContent = '🟢';
+        const lblEl = checkinIcon.querySelector('.sb-label');
+        if (lblEl) lblEl.textContent = data.name;
+      }
+      closeFaceModal();
+      const msg = data.status === 'checked-in'   ? '✅ Điểm danh thành công!' :
+                  data.status === 'already-in' || data.status === 'already-active'
+                                                 ? '✓ Đang trong ca làm việc' :
+                                                   '✓ Đăng nhập thành công';
+      showToast(msg + ' — ' + data.name, 'ok');
+    } else if (data.reason === 'wrong-station') {
+      showToast('⚠️ Ca của ' + (data.name || '') + ' được xếp ở Quầy ' + data.correctStation, 'err');
+      btn.disabled    = false;
+      btn.textContent = '✓ Xác nhận điểm danh';
+    } else {
+      showToast('❌ ' + (data.reason || 'Điểm danh thất bại'), 'err');
+      btn.disabled    = false;
+      btn.textContent = '✓ Xác nhận điểm danh';
+    }
+  } catch(e) {
+    showToast('❌ Lỗi kết nối', 'err');
+    btn.disabled    = false;
+    btn.textContent = '✓ Xác nhận điểm danh';
+  }
+}
+
+// Init: show station modal on load if not set
+(function() {
+  updateStationUI();
+  if (currentStation === 0) {
+    setTimeout(openStationModal, 800);
+  }
+})();
+
+function printXReport() {
+  showToast('🖨 Tính năng in báo cáo đang phát triển…', 'ok');
+}
+
+function toggleStaffMenu() {
+  const wrap = document.getElementById('staffActionWrap');
+  const menu = document.getElementById('staffActionMenu');
+  if (!menu) return;
+  const open = menu.classList.toggle('open');
+  if (wrap) wrap.classList.toggle('open', open);
+}
+
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('staffActionWrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('staffActionMenu')?.classList.remove('open');
+    wrap.classList.remove('open');
+  }
+});
+
+// ── PayOS QR Payment ──────────────────────────────────────────────────────────
+let _qrOrderCode    = null;
+let _qrPollIv       = null;
+let _qrCountdownIv  = null;
+let _qrQrInstance   = null;
+
+async function openQrModal(total) {
+  const btn = document.getElementById('checkoutBtn');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Tạo mã QR…';
+
+  try {
+    const res  = await fetch(ctx + '/pos', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'create-qr', amount: total }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    const data = await res.json();
+
+    if (!data.ok) {
+      showToast('❌ ' + (data.msg || 'Không tạo được mã QR'), 'err');
+      btn.disabled = false; btn.innerHTML = '🛒 THANH TOÁN';
+      return;
+    }
+
+    _qrOrderCode = data.orderCode;
+
+    // Reset modal state
+    document.getElementById('qrmSuccessBox').classList.remove('show');
+    document.getElementById('qrmQrBox').style.display = '';
+    document.getElementById('qrmDot').className = 'qrm-dot';
+    document.getElementById('qrmStatusTxt').textContent = 'Đang chờ thanh toán...';
+    document.getElementById('qrmTimerRow').style.display = '';
+    document.getElementById('qrmCancelBtn').style.display = '';
+    document.getElementById('qrmAmount').textContent = fmtMoney(total);
+
+    // Checkout link fallback
+    const linkEl = document.getElementById('qrmCheckoutLink');
+    linkEl.href = data.checkoutUrl || '#';
+
+    // Render QR code
+    const qrEl = document.getElementById('qrmQrCode');
+    qrEl.innerHTML = '';
+    if (typeof QRCode !== 'undefined') {
+      _qrQrInstance = new QRCode(qrEl, {
+        text: data.qrCode,
+        width: 220, height: 220,
+        colorDark: '#0f172a',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } else {
+      // Fallback: show checkout link prominently
+      qrEl.innerHTML = '<div style="padding:20px;text-align:center;font-size:12px;color:#64748b">Không load được QRCode.js<br><a href="' + (data.checkoutUrl||'#') + '" target="_blank" style="color:#2563eb">Mở link thanh toán</a></div>';
+    }
+
+    // Show modal
+    document.getElementById('qrPayModal').classList.add('show');
+
+    // Countdown 5 phút
+    startQrCountdown(<%=com.medicare.config.PayOSConfig.EXPIRE_SECS%>);
+
+    // Poll mỗi 2.5 giây
+    _qrPollIv = setInterval(() => pollQrStatus(_qrOrderCode, total), 2500);
+
+  } catch (e) {
+    console.error(e);
+    showToast('❌ Lỗi kết nối PayOS — kiểm tra cấu hình', 'err');
+    btn.disabled = false; btn.innerHTML = '🛒 THANH TOÁN';
+  }
+}
+
+async function pollQrStatus(orderCode, total) {
+  try {
+    const res  = await fetch(ctx + '/pos', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'check-qr-status', orderCode }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    const data = await res.json();
+
+    if (data.status === 'PAID') {
+      // Stop polling & countdown
+      clearInterval(_qrPollIv);     _qrPollIv = null;
+      clearInterval(_qrCountdownIv);_qrCountdownIv = null;
+
+      // Show success animation
+      document.getElementById('qrmQrBox').style.display = 'none';
+      document.getElementById('qrmTimerRow').style.display = 'none';
+      document.getElementById('qrmCancelBtn').style.display = 'none';
+      document.getElementById('qrmDot').className = 'qrm-dot paid';
+      document.getElementById('qrmStatusTxt').textContent = 'Đã nhận thanh toán!';
+      document.getElementById('qrmSuccessBox').classList.add('show');
+
+      // Sau 1.5s đóng modal và complete sale
+      setTimeout(() => {
+        document.getElementById('qrPayModal').classList.remove('show');
+        _qrOrderCode = null;
+        submitSale();
+      }, 1500);
+
+    } else if (data.status === 'CANCELLED' || data.status === 'EXPIRED') {
+      clearInterval(_qrPollIv);     _qrPollIv = null;
+      clearInterval(_qrCountdownIv);_qrCountdownIv = null;
+      document.getElementById('qrPayModal').classList.remove('show');
+      _qrOrderCode = null;
+      const btn = document.getElementById('checkoutBtn');
+      btn.disabled = false; btn.innerHTML = '🛒 THANH TOÁN';
+      showToast('❌ Mã QR đã ' + (data.status === 'CANCELLED' ? 'bị hủy' : 'hết hạn') + ' — vui lòng thử lại', 'err');
+    }
+  } catch (e) { /* network hiccup — retry next tick */ }
+}
+
+function startQrCountdown(secs) {
+  const el = document.getElementById('qrmCountdown');
+  let s = secs;
+  function tick() {
+    if (s < 0) { clearInterval(_qrCountdownIv); _qrCountdownIv = null; return; }
+    const m = Math.floor(s / 60), sec = s % 60;
+    el.textContent = m + ':' + sec.toString().padStart(2, '0');
+    s--;
+  }
+  tick();
+  _qrCountdownIv = setInterval(tick, 1000);
+}
+
+async function cancelQrPay() {
+  if (_qrPollIv)     { clearInterval(_qrPollIv);     _qrPollIv = null; }
+  if (_qrCountdownIv){ clearInterval(_qrCountdownIv);_qrCountdownIv = null; }
+  if (_qrOrderCode) {
+    // fire-and-forget cancel
+    fetch(ctx + '/pos', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'cancel-qr', orderCode: _qrOrderCode }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    }).catch(() => {});
+    _qrOrderCode = null;
+  }
+  document.getElementById('qrPayModal').classList.remove('show');
+  const btn = document.getElementById('checkoutBtn');
+  btn.disabled = false; btn.innerHTML = '🛒 THANH TOÁN';
+}
 </script>
 </body>
 </html>

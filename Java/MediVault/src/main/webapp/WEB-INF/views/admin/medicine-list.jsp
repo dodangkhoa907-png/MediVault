@@ -60,6 +60,11 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .tb-chip-gold{background:#FFFBEB;color:#B45309;border:1.5px solid #FDE68A}
 .tb-chip-red{background:#FFF5F5;color:#DC2626;border:1.5px solid #FCA5A5}
 .tb-chip-ok{background:#F0FDF4;color:#059669;border:1.5px solid #A7F3D0}
+.live-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:#F0FDF4;border:1.5px solid #A7F3D0;border-radius:20px;font-size:11px;font-weight:700;color:#059669;cursor:default;transition:all .3s}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#22C55E;flex-shrink:0;animation:livePulse 1.8s ease-in-out infinite}
+@keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.65)}}
+.live-badge.live-offline{background:#FFF5F5;border-color:#FCA5A5;color:#DC2626}
+.live-badge.live-offline .live-dot{background:#EF4444;animation:none}
 .tb-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:default;border:2px solid var(--border)}
 .topbar-title{font-size:16px;font-weight:700;color:var(--ink)}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
@@ -125,8 +130,10 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 /* ── TOOLBAR ── (kept for compat) */
 .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
 .search-wrap{position:relative;flex:1;min-width:220px}
-.search-wrap input{width:100%;height:38px;padding:0 12px 0 38px;border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;font-family:inherit;outline:none;transition:.15s;background:var(--white)}
+.search-wrap input{width:100%;height:38px;padding:0 34px 0 38px;border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;font-family:inherit;outline:none;transition:.15s;background:var(--white)}
 .search-wrap input:focus{border-color:var(--blue)}
+#searchClear{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:2px 4px;border-radius:4px;display:none}
+#searchClear:hover{color:var(--ink);background:var(--surface)}
 .search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--muted)}
 .filter-select{height:38px;padding:0 10px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;background:var(--white);outline:none;cursor:pointer}
 .btn-filter{height:38px;padding:0 16px;border:1.5px solid var(--blue);border-radius:10px;background:var(--white);color:var(--blue);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
@@ -197,10 +204,60 @@ tbody tr:hover td{background:#FAFBFF}
 .po-btn-save:disabled{opacity:.6;cursor:default}
 .po-btn-cancel{height:44px;padding:0 20px;background:#fff;border:1.5px solid var(--border);border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer}
 /* ── EXPAND BUTTON ── */
-.expand-btn{width:26px;height:26px;border-radius:7px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:all .18s;flex-shrink:0;line-height:1}
-.expand-btn:hover{border-color:var(--blue);color:var(--blue);background:#EFF6FF}
-.expand-btn.open{transform:rotate(90deg);border-color:var(--blue);color:var(--blue);background:#EFF6FF}
-.expand-cell{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.expand-cell{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.row-caret{font-size:12px;color:var(--border);display:inline-block;transition:transform .18s,color .18s;line-height:1;margin-top:1px}
+/* ── CLICKABLE ROW ── */
+.med-row{cursor:pointer;transition:background .1s}
+.med-row:hover td{background:#FAFBFF!important}
+.med-row.expanded td{background:#F0F6FF!important}
+.med-row.expanded .row-caret{transform:rotate(90deg);color:var(--blue)}
+.med-row:hover .row-caret{color:var(--muted)}
+.med-row.loading-row td{opacity:.55}
+/* ── DETAIL MODAL ── */
+.dm-overlay{position:fixed;inset:0;background:rgba(11,22,40,.55);z-index:700;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:20px}
+.dm-panel{background:#F8FAFC;border-radius:20px;width:900px;max-width:96vw;height:90vh;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.18)}
+.dm-head{background:linear-gradient(135deg,#0F2645 0%,#1558A8 100%);padding:22px 28px;display:flex;align-items:flex-start;gap:16px;flex-shrink:0}
+.dm-avatar-lg{width:62px;height:62px;border-radius:14px;object-fit:cover;background:rgba(255,255,255,.15);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:28px}
+.dm-title-wrap{flex:1;min-width:0}
+.dm-med-name{font-size:20px;font-weight:800;color:#fff;line-height:1.2;margin-bottom:5px}
+.dm-med-sub{font-size:13px;color:rgba(255,255,255,.7);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dm-head-badges{display:flex;gap:6px;flex-wrap:wrap}
+.dm-head-badge{padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;border:1.5px solid rgba(255,255,255,.3);color:#fff;background:rgba(255,255,255,.12)}
+.dm-head-actions{display:flex;gap:8px;flex-shrink:0;align-items:flex-start}
+.dm-btn-close{width:34px;height:34px;border-radius:9px;border:1.5px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .14s}
+.dm-btn-close:hover{background:rgba(255,255,255,.22)}
+.dm-btn-edit{padding:6px 14px;border-radius:9px;border:1.5px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;cursor:pointer;font-size:12.5px;font-weight:700;font-family:inherit;transition:all .14s;display:flex;align-items:center;gap:5px}
+.dm-btn-edit:hover{background:rgba(255,255,255,.22)}
+.dm-body{flex:1;min-height:0;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:20px;overscroll-behavior:contain}
+.dm-body::-webkit-scrollbar{width:6px}.dm-body::-webkit-scrollbar-track{background:transparent}.dm-body::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:6px}.dm-body::-webkit-scrollbar-thumb:hover{background:#94A3B8}
+.dm-stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.dm-stat{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 16px;text-align:center}
+.dm-stat-val{font-size:24px;font-weight:800;color:var(--ink);line-height:1}
+.dm-stat-lbl{font-size:11.5px;color:var(--muted);margin-top:4px}
+.dm-stat.warn .dm-stat-val{color:var(--gold)}
+.dm-stat.danger .dm-stat-val{color:var(--red)}
+.dm-stat.ok .dm-stat-val{color:var(--green)}
+.dm-section{background:#fff;border-radius:14px;border:1px solid var(--border);overflow:visible}
+.dm-section-title{padding:14px 18px;font-size:13.5px;font-weight:700;color:var(--ink);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px}
+.dm-info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+.dm-info-cell{padding:12px 18px;border-bottom:1px solid #F0F4FB;border-right:1px solid #F0F4FB}
+.dm-info-cell:nth-child(3n){border-right:none}
+.dm-info-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.dm-info-value{font-size:13.5px;font-weight:600;color:var(--ink)}
+/* Batch cards in modal */
+.dm-batch-card{padding:16px 18px;border-bottom:1px solid #F0F4FB;display:flex;flex-direction:column;gap:8px}
+.dm-batch-card:last-child{border-bottom:none}
+.dm-batch-top{display:flex;align-items:center;gap:10px}
+.dm-batch-no{font-size:14px;font-weight:800;color:var(--ink)}
+.dm-batch-fefo{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A;border-radius:4px;font-size:10px;font-weight:700;padding:2px 6px}
+.dm-batch-bar-wrap{flex:1;background:#F1F5FB;border-radius:20px;height:6px;min-width:60px}
+.dm-batch-bar{height:6px;border-radius:20px;background:linear-gradient(90deg,var(--green),#34D399);transition:width .4s}
+.dm-batch-bar.bar-warn{background:linear-gradient(90deg,var(--gold),#FBBF24)}
+.dm-batch-bar.bar-out{background:linear-gradient(90deg,var(--red),#F87171)}
+.dm-batch-qty{font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap}
+.dm-batch-meta{display:flex;gap:16px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.dm-batch-meta span strong{color:var(--ink)}
+.dm-empty-batches{padding:28px;text-align:center;color:var(--muted);font-size:13px}
 /* ── BATCH SUB ROW ── */
 .batch-expand-row>td{padding:0;border-bottom:.5px solid #E8EEF8}
 .batch-sub-wrap{padding:0 16px 16px 60px;background:#F5F8FE}
@@ -359,6 +416,11 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
           <span class="tb-chip tb-chip-ok" title="Tồn kho ổn định">✅ Tồn kho ổn định</span>
         </c:otherwise>
       </c:choose>
+      <%-- Live sync badge --%>
+      <div class="live-badge" id="liveBadge" title="Tự động đồng bộ tồn kho với POS, cập nhật mỗi 2 phút">
+        <span class="live-dot"></span>
+        <span id="liveLbl">Đang kết nối…</span>
+      </div>
       <%-- Clock --%>
       <div class="topbar-clock">
         <span id="tbH">--</span><span class="clock-sep">:</span><span id="tbM">--</span>
@@ -403,13 +465,14 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
     </div>
 
     <div class="data-container">
-      <form method="get" action="${pageContext.request.contextPath}/medicines">
+      <form method="get" action="${pageContext.request.contextPath}/medicines" id="searchForm">
         <div class="action-bar">
           <div class="action-bar-left">
             <div class="search-wrap">
               <span class="search-icon">🔍</span>
               <input type="text" name="q" placeholder="Tìm theo tên, hoạt chất, barcode, mã thuốc..."
-                     value="${keyword}" id="searchInput"/>
+                     value="${keyword}" id="searchInput" autocomplete="off"/>
+              <button type="button" id="searchClear" onclick="clearSearch()" title="Xóa tìm kiếm">✕</button>
             </div>
             <div class="cs-wrap" id="csCatWrap">
               <div class="cs-trigger" onclick="toggleCs()">
@@ -483,6 +546,8 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
                   <c:if test="${sh.shelfId == m.shelfId}"><c:set var="shelfLabel" value="${sh.shelfName}"/></c:if>
                 </c:forEach>
                 <tr data-name="${fn:toLowerCase(m.medicineName)}"
+                    data-code="${fn:toLowerCase(m.medicineCode)}"
+                    data-generic="${fn:toLowerCase(empty m.genericName ? '' : m.genericName)}"
                     data-shelf="${fn:escapeXml(shelfLabel)}"
                     data-cat="${m.categoryId}"
                     data-status="${m.status ? 'active' : 'inactive'}"
@@ -495,12 +560,11 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
                     data-nearest-expiry="${nearestExp}"
                     data-med-name="${m.medicineName}"
                     data-med-id="${m.medicineId}"
-                    class="med-row">
-                  <td style="color:var(--muted);font-size:12px">
+                    class="med-row"
+                    onclick="rowClick(event,this,${m.medicineId})">
+                  <td style="color:var(--muted);font-size:12px;user-select:none">
                     <div class="expand-cell">
-                      <button type="button" class="expand-btn"
-                              onclick="toggleExpand(this,${m.medicineId})"
-                              title="Xem lô hàng">›</button>
+                      <span class="row-caret">›</span>
                       <span>${st.index+1}</span>
                     </div>
                   </td>
@@ -532,8 +596,8 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
                   </td>
                   <td>${m.unit}</td>
                   <td class="price-val" style="text-align:right"><fmt:formatNumber value="${m.sellingPrice}" type="number" maxFractionDigits="0"/>đ</td>
-                  <td style="text-align:right">
-                    <div style="text-align:right">
+                  <td style="text-align:right" class="td-stock">
+                    <div class="stock-num-wrap" style="text-align:right">
                       <c:choose>
                         <c:when test="${stock == 0}">
                           <span class="stock-val stock-out">0</span>
@@ -571,7 +635,7 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
                       <c:otherwise><span class="badge badge-gray">Đã ẩn</span></c:otherwise>
                     </c:choose>
                   </td>
-                  <td>
+                  <td onclick="event.stopPropagation()">
                     <div class="action-btns">
                       <button class="btn-icon i-edit" title="Sửa thông tin"
                               onclick="openEditPanel(${m.medicineId})">✏️</button>
@@ -638,6 +702,31 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
     </div><%-- /data-container --%>
   </div><%-- /content --%>
 </div><%-- /main --%>
+
+<%-- ══ MEDICINE DETAIL MODAL ══ --%>
+<div class="dm-overlay" id="dmOverlay" style="display:none" onclick="if(event.target===this)closeDetailModal()">
+  <div class="dm-panel">
+    <%-- Header (blue gradient) — filled by JS --%>
+    <div class="dm-head" id="dmHead">
+      <div class="dm-avatar-lg" id="dmAvatar">💊</div>
+      <div class="dm-title-wrap">
+        <div class="dm-med-name" id="dmName">Đang tải…</div>
+        <div class="dm-med-sub" id="dmSub"></div>
+        <div class="dm-head-badges" id="dmBadges"></div>
+      </div>
+      <div class="dm-head-actions">
+        <button class="dm-btn-edit" id="dmEditBtn" onclick="">✏️ Sửa thông tin</button>
+        <button class="dm-btn-close" onclick="closeDetailModal()" title="Đóng">✕</button>
+      </div>
+    </div>
+    <%-- Body --%>
+    <div class="dm-body" id="dmBody">
+      <div style="text-align:center;padding:40px;color:var(--muted)">
+        <div style="font-size:28px;margin-bottom:10px">⏳</div>Đang tải thông tin…
+      </div>
+    </div>
+  </div>
+</div>
 
 <%-- ══ DRAWER OVERLAY ══ --%>
 <div class="dw-overlay" id="dwOverlay" onclick="closeDrawer()"></div>
@@ -991,20 +1080,28 @@ function _fmtMoney(n) {
   const v = Math.round(parseFloat(n)||0);
   return v.toLocaleString('vi')+'₫';
 }
+function _daysUntil(d) {
+  if (!d) return null;
+  return Math.round((new Date(d) - new Date(_TODAY)) / 86400000);
+}
 
-async function toggleExpand(btn, medicineId) {
-  const tr = btn.closest('tr');
+// Row click handler — delegate to expand, ignore clicks on interactive elements
+function rowClick(e, tr, medicineId) {
+  if (e.target.closest('button,a,form,input,select,textarea')) return;
+  toggleExpand(tr, medicineId);
+}
+
+async function toggleExpand(tr, medicineId) {
   const existRow = document.getElementById('br-' + medicineId);
 
   if (existRow) {
     const showing = existRow.style.display !== 'none';
     existRow.style.display = showing ? 'none' : '';
-    btn.classList.toggle('open', !showing);
+    tr.classList.toggle('expanded', !showing);
     return;
   }
 
-  btn.disabled = true;
-  btn.textContent = '⏳';
+  tr.classList.add('loading-row');
 
   try {
     const res  = await fetch(CTX + '/medicines?action=api-batches&medicineId=' + medicineId);
@@ -1041,7 +1138,7 @@ async function toggleExpand(btn, medicineId) {
                + '<td style="color:var(--muted)">' + sold + '</td>'
                + '<td>' + _fmtMoney(b.importPrice) + '</td>'
                + '<td><span class="badge ' + stCls + '" style="padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700">' + stLabel + '</span></td>'
-               + '<td><a href="' + CTX + '/medicines?action=detail&id=' + medicineId + '" class="btn-sm btn-detail" style="font-size:11px;padding:3px 10px">Chi tiết</a></td>'
+               + '<td><button class="btn-sm btn-detail" style="font-size:11px;padding:3px 10px;cursor:pointer;border:none;font-family:inherit" onclick="event.stopPropagation();openDetailModal(' + medicineId + ')">Chi tiết</button></td>'
                + '</tr>';
       }
       inner += '</tbody></table>';
@@ -1050,13 +1147,12 @@ async function toggleExpand(btn, medicineId) {
 
     bRow.innerHTML = '<td colspan="9">' + inner + '</td>';
     tr.insertAdjacentElement('afterend', bRow);
-    btn.classList.add('open');
+    tr.classList.add('expanded');
   } catch(e) {
     console.error(e);
     showToast('err', '❌ Không tải được lô hàng');
   } finally {
-    btn.disabled = false;
-    btn.textContent = '›';
+    tr.classList.remove('loading-row');
   }
 }
 
@@ -1230,6 +1326,8 @@ function changePageSize(size) {
 function filterRows() {
   const catFilter    = document.getElementById('catFilter').value;
   const statusFilter = document.getElementById('statusFilter').value;
+  const searchEl     = document.getElementById('searchInput');
+  const searchText   = searchEl ? searchEl.value.toLowerCase().trim() : '';
   let count = 0;
   const allRows = document.querySelectorAll('.med-row');
   allRows.forEach(row => {
@@ -1244,13 +1342,18 @@ function filterRows() {
     else if (activeTabType === 'out')      matchTab = stock === 0;
     else if (activeTabType === 'expiring') matchTab = soonCount > 0;
     else if (activeTabType === 'expired')  matchTab = expCount  > 0;
-    const matchCat    = !catFilter    || rowCatId === catFilter;
-    let matchStatus   = true;
+    const matchCat  = !catFilter || rowCatId === catFilter;
+    let matchStatus = true;
     if      (statusFilter === 'active')   matchStatus = isActive;
     else if (statusFilter === 'inactive') matchStatus = !isActive;
     else if (statusFilter === 'low')      matchStatus = minInv > 0 && stock > 0 && stock <= minInv;
     else if (statusFilter === 'out')      matchStatus = stock === 0;
-    const show = (matchTab && matchCat && matchStatus);
+    // Tìm kiếm theo tên, mã thuốc, hoạt chất
+    const matchSearch = !searchText
+      || (row.dataset.name    || '').includes(searchText)
+      || (row.dataset.code    || '').includes(searchText)
+      || (row.dataset.generic || '').includes(searchText);
+    const show = matchTab && matchCat && matchStatus && matchSearch;
     row.style.display = show ? '' : 'none';
     if (show) count++;
   });
@@ -1440,6 +1543,156 @@ function savePoAjax() {
   .finally(()=>{btn.disabled=false;btn.textContent='📦 Tạo đơn đặt hàng';});
 }
 
+// ── DETAIL MODAL ─────────────────────────────────────────────────────────────
+function closeDetailModal() {
+  document.getElementById('dmOverlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+async function openDetailModal(medicineId) {
+  const overlay = document.getElementById('dmOverlay');
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  // Reset to loading state
+  document.getElementById('dmName').textContent = 'Đang tải…';
+  document.getElementById('dmSub').textContent  = '';
+  document.getElementById('dmBadges').innerHTML = '';
+  document.getElementById('dmAvatar').innerHTML = '💊';
+  document.getElementById('dmBody').innerHTML   =
+    '<div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:28px;margin-bottom:10px">⏳</div>Đang tải thông tin…</div>';
+
+  try {
+    // Fetch medicine + batches in parallel
+    const [mRes, bRes] = await Promise.all([
+      fetch(CTX + '/medicines?action=api-med&id=' + medicineId),
+      fetch(CTX + '/medicines?action=api-batches&medicineId=' + medicineId)
+    ]);
+    const med    = await mRes.json();
+    const batches = await bRes.json();
+    if (med.error) { showToast('err', '❌ ' + med.error); closeDetailModal(); return; }
+
+    // ── Header
+    const imgEl = document.getElementById('dmAvatar');
+    if (med.imageUrl) {
+      imgEl.innerHTML = '<img src="' + CTX + '/' + med.imageUrl + '" style="width:62px;height:62px;border-radius:14px;object-fit:cover">';
+    } else {
+      imgEl.innerHTML = '💊';
+    }
+    document.getElementById('dmName').textContent = med.medicineName;
+    document.getElementById('dmSub').textContent  =
+      [med.medicineCode, med.genericName, med.unit].filter(Boolean).join(' · ');
+
+    const badgeWrap = document.getElementById('dmBadges');
+    const bdgs = [];
+    if (med.isPrescriptionRequired) bdgs.push('🔒 Kê toa');
+    else                             bdgs.push('🟢 OTC');
+    bdgs.push(med.status ? '✅ Đang kinh doanh' : '⛔ Đã ẩn');
+    if (med.categoryName)   bdgs.push('🏷️ ' + med.categoryName);
+    badgeWrap.innerHTML = bdgs.map(t => '<span class="dm-head-badge">' + t + '</span>').join('');
+
+    document.getElementById('dmEditBtn').onclick = () => { closeDetailModal(); openEditPanel(medicineId); };
+
+    // ── Stats
+    const totalStock  = med.totalStock || 0;
+    const stockCls    = totalStock === 0 ? 'danger' : (med.minInventory > 0 && totalStock <= med.minInventory ? 'warn' : 'ok');
+    const activeBatches = batches.filter(b => b.status === 'ACTIVE').length;
+
+    // ── Batch section HTML
+    let batchHtml = '';
+    if (batches.length === 0) {
+      batchHtml = '<div class="dm-empty-batches">📭 Chưa có lô hàng nào.<br><small>Tạo phiếu nhập kho để thêm lô đầu tiên.</small></div>';
+    } else {
+      batchHtml = batches.map(b => {
+        const pct       = b.initialQty > 0 ? Math.round((b.currentQty / b.initialQty) * 100) : 0;
+        const barCls    = b.currentQty === 0 ? 'bar-out' : (pct < 25 ? 'bar-warn' : '');
+        const expCls    = _expCls(b.expiryDate);
+        const daysLeft  = _daysUntil(b.expiryDate);
+        const daysStr   = daysLeft === null ? '' : daysLeft < 0 ? ' · ⛔ Đã hết hạn' : daysLeft <= 90 ? ' · ⚠️ còn ' + daysLeft + ' ngày' : ' · còn ' + daysLeft + ' ngày';
+        const stLabel   = b.status === 'ACTIVE' ? 'Đang dùng' : b.status === 'DESTROYED' ? 'Tiêu hủy' : 'Đã hủy';
+        const stCls     = b.status === 'ACTIVE' ? 'bst-active' : b.status === 'DESTROYED' ? 'bst-destroyed' : 'bst-cancelled';
+        const sold      = (b.initialQty || 0) - (b.currentQty || 0);
+        return `<div class="dm-batch-card">
+          <div class="dm-batch-top">
+            <span class="dm-batch-no">\${b.batchNumber || '—'}</span>
+            <span class="dm-batch-fefo">FEFO ▶</span>
+            <div style="flex:1"></div>
+            <span class="badge \${stCls}" style="padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700">\${stLabel}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="dm-batch-bar-wrap">
+              <div class="dm-batch-bar \${barCls}" style="width:\${pct}%"></div>
+            </div>
+            <span class="dm-batch-qty">\${b.currentQty}/\${b.initialQty} \${med.unit||''}</span>
+            <span class="\${expCls}" style="font-size:13px;font-weight:700">📅 \${_fmtDate(b.expiryDate)}\${daysStr}</span>
+          </div>
+          <div class="dm-batch-meta">
+            <span>📥 Nhập: <strong>\${_fmtDate(b.importDate)}</strong></span>
+            <span>🏭 NSX: <strong>\${_fmtDate(b.manufactureDate)}</strong></span>
+            <span>💰 Giá nhập: <strong>\${_fmtMoney(b.importPrice)}</strong></span>
+            <span>📤 Đã xuất: <strong>\${sold}</strong></span>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // ── Info cells
+    const infoFields = [
+      ['Danh mục',         med.categoryName     || '—'],
+      ['Nhà sản xuất',     med.manufacturerName || '—'],
+      ['Vị trí kệ',        med.shelfName        || '—'],
+      ['Đơn vị',           med.unit             || '—'],
+      ['Giá bán',          _fmtMoney(med.sellingPrice)],
+      ['Tồn tối thiểu',    (med.minInventory || 0) + ' ' + (med.unit || '')],
+      ['Quy cách đóng gói',med.packagingSpec    || '—'],
+      ['Bảo quản',         med.storageConditions|| '—'],
+      ['Cảnh báo HH',      (med.expiryAlertDays || 0) + ' ngày'],
+    ];
+    if (med.dosage)          infoFields.push(['Liều dùng', med.dosage]);
+    if (med.contraindications) infoFields.push(['Chống chỉ định', med.contraindications]);
+    if (med.barcode)         infoFields.push(['Barcode', med.barcode]);
+    if (med.registrationNumber) infoFields.push(['Số đăng ký', med.registrationNumber]);
+
+    const infoHtml = infoFields.map(([l, v]) =>
+      `<div class="dm-info-cell"><div class="dm-info-label">\${l}</div><div class="dm-info-value">\${v}</div></div>`
+    ).join('');
+
+    // ── Render body
+    document.getElementById('dmBody').innerHTML = `
+      <div class="dm-stats-row">
+        <div class="dm-stat \${stockCls}">
+          <div class="dm-stat-val">\${totalStock}</div>
+          <div class="dm-stat-lbl">📦 Tổng tồn kho</div>
+        </div>
+        <div class="dm-stat">
+          <div class="dm-stat-val">\${batches.length}</div>
+          <div class="dm-stat-lbl">📋 Số lô hàng</div>
+        </div>
+        <div class="dm-stat \${med.minInventory > 0 && totalStock <= med.minInventory ? 'warn' : ''}">
+          <div class="dm-stat-val">\${med.minInventory || 0}</div>
+          <div class="dm-stat-lbl">⚠️ Tồn tối thiểu</div>
+        </div>
+        <div class="dm-stat">
+          <div class="dm-stat-val">\${med.expiryAlertDays || 0}</div>
+          <div class="dm-stat-lbl">📅 Cảnh báo HH (ngày)</div>
+        </div>
+      </div>
+      <div class="dm-section">
+        <div class="dm-section-title">📋 Thông tin thuốc</div>
+        <div class="dm-info-grid">\${infoHtml}</div>
+      </div>
+      <div class="dm-section">
+        <div class="dm-section-title">📦 Danh sách lô hàng <span style="font-size:12px;font-weight:500;color:var(--muted)">(\${batches.length} lô · \${activeBatches} đang dùng)</span></div>
+        \${batchHtml}
+      </div>`;
+
+  } catch(err) {
+    console.error(err);
+    document.getElementById('dmBody').innerHTML =
+      '<div style="text-align:center;padding:40px;color:var(--red)">❌ Lỗi tải thông tin thuốc. Vui lòng thử lại.</div>';
+  }
+}
+
 // ── TOPBAR CLOCK ─────────────────────────────────────────────────────────────
 (function tickClock() {
   const now  = new Date();
@@ -1456,6 +1709,122 @@ function savePoAjax() {
   if (d) d.textContent = date;
   setTimeout(tickClock, 1000);
 })();
+
+// ── LIVE SYNC — SSE (Server-Sent Events) ─────────────────────────────────────
+(function() {
+  const _ctx = '${pageContext.request.contextPath}';
+  let es = null;
+  let reconnectDelay = 3000;
+
+  function setBadge(text, offline) {
+    const badge = document.getElementById('liveBadge');
+    const lbl   = document.getElementById('liveLbl');
+    if (badge) badge.classList.toggle('live-offline', !!offline);
+    if (lbl)   lbl.textContent = text;
+  }
+
+  function applyStats(d) {
+    const q = s => document.querySelector(s);
+    if (q('#scAll .stat-val'))      q('#scAll .stat-val').textContent      = d.total;
+    if (q('#scLow .stat-val'))      q('#scLow .stat-val').textContent      = d.lowStock;
+    if (q('#scExpiring .stat-val')) q('#scExpiring .stat-val').textContent = d.expiringSoon;
+    if (q('#scExpired .stat-val'))  q('#scExpired .stat-val').textContent  = d.expired;
+    setBadge('Live ' + (d.ts || ''), false);
+  }
+
+  function applyStockMap(map) {
+    document.querySelectorAll('tr.med-row[data-med-id]').forEach(row => {
+      const mid   = row.getAttribute('data-med-id');
+      const stock = map[mid] !== undefined ? parseInt(map[mid]) : null;
+      if (stock === null) return;
+      const minInv = parseInt(row.getAttribute('data-min-inv')) || 0;
+      row.setAttribute('data-stock', stock);
+      const wrap = row.querySelector('.stock-num-wrap');
+      if (!wrap) return;
+      const cls = stock === 0 ? 'stock-out' : (stock <= minInv ? 'stock-low' : 'stock-ok');
+      const bdg = stock === 0
+        ? '<span class="badge badge-red" style="margin-left:4px">Hết hàng</span>'
+        : (stock <= minInv ? '<span class="badge badge-gold" style="margin-left:4px">Sắp hết</span>' : '');
+      wrap.innerHTML = '<span class="stock-val ' + cls + '">' + stock + '</span>' + bdg;
+    });
+  }
+
+  function connect() {
+    if (es) { try { es.close(); } catch(e) {} }
+
+    setBadge('Đang kết nối…', false);
+    es = new EventSource(_ctx + '/medicines/live');
+
+    es.onopen = function() {
+      setBadge('Live', false);
+      reconnectDelay = 3000; // reset backoff khi kết nối thành công
+    };
+
+    // Server push stats (4 stat cards)
+    es.addEventListener('stats', function(e) {
+      try { applyStats(JSON.parse(e.data)); } catch(ex) {}
+    });
+
+    // Server push stock map (tồn kho từng dòng)
+    es.addEventListener('stock-map', function(e) {
+      try { applyStockMap(JSON.parse(e.data)); } catch(ex) {}
+    });
+
+    // Mất kết nối → tự reconnect với exponential backoff
+    es.onerror = function() {
+      setBadge('Đang kết nối lại…', true);
+      try { es.close(); } catch(ex) {}
+      es = null;
+      setTimeout(connect, reconnectDelay);
+      reconnectDelay = Math.min(reconnectDelay * 2, 30000); // tối đa 30s
+    };
+  }
+
+  connect();
+
+  // Đóng SSE khi rời trang — giải phóng AsyncContext trên server
+  window.addEventListener('beforeunload', function() {
+    if (es) try { es.close(); } catch(e) {}
+  });
+})();
+
+// ── SMART SEARCH ─────────────────────────────────────────────────────────────
+(function() {
+  const inp  = document.getElementById('searchInput');
+  const form = document.getElementById('searchForm');
+  const clr  = document.getElementById('searchClear');
+  if (!inp || !form) return;
+
+  // Hiện X nếu đang có keyword từ server render
+  if (inp.value.trim() && clr) clr.style.display = 'block';
+
+  let serverTimer = null;
+
+  inp.addEventListener('input', function() {
+    const q = this.value;
+    // Cập nhật nút X
+    if (clr) clr.style.display = q ? 'block' : 'none';
+    // Lọc ngay client-side (trang hiện tại)
+    filterRows();
+    // Submit server để tìm toàn bộ DB sau 550ms không gõ thêm
+    clearTimeout(serverTimer);
+    serverTimer = setTimeout(() => form.submit(), 550);
+  });
+
+  // Phím Escape → xóa search
+  inp.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') clearSearch();
+  });
+})();
+
+function clearSearch() {
+  const inp = document.getElementById('searchInput');
+  const clr = document.getElementById('searchClear');
+  if (inp) inp.value = '';
+  if (clr) clr.style.display = 'none';
+  filterRows();                                      // xóa ngay client-side
+  document.getElementById('searchForm').submit();   // reset server về toàn bộ
+}
 
 // ── INIT ───────────────────────────────────────────────────────────────────────
 filterRows();

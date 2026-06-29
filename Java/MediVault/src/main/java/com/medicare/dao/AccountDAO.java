@@ -490,4 +490,32 @@ public class AccountDAO implements IAccountDAO {
         }
         return list;
     }
+
+    // ── Presence tracking ─────────────────────────────────────────────────────
+
+    @Override
+    public void updateLastActive(int accountId) {
+        String sql = "UPDATE Accounts SET LastActiveAt = GETDATE() WHERE AccountID = ?";
+        try (java.sql.Connection cn = com.medicare.config.DBContext.getConnection();
+             java.sql.PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, accountId);
+            ps.executeUpdate();
+        } catch (Exception e) { /* non-critical — silent */ }
+    }
+
+    @Override
+    public List<Integer> findOnlineAccountIds(int minutesThreshold) {
+        String sql = "SELECT AccountID FROM Accounts " +
+                     "WHERE LastActiveAt IS NOT NULL " +
+                     "AND DATEDIFF(MINUTE, LastActiveAt, GETDATE()) < ?";
+        List<Integer> ids = new ArrayList<>();
+        try (java.sql.Connection cn = com.medicare.config.DBContext.getConnection();
+             java.sql.PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, minutesThreshold);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) ids.add(rs.getInt("AccountID"));
+            }
+        } catch (Exception e) { /* silent */ }
+        return ids;
+    }
 }

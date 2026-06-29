@@ -166,7 +166,7 @@ tbody tr{cursor:pointer}
               <tr onclick="location.href='${pageContext.request.contextPath}/invoices?action=detail&id=${inv.invoiceId}'">
                 <td><span class="inv-code">${inv.invoiceCode}</span></td>
                 <td style="color:var(--muted);font-size:12.5px">${fn:substring(inv.createdAt.toString(),0,16)}</td>
-                <td>${accountMap[inv.accountId] != null ? accountMap[inv.accountId].fullName : 'ID '.concat(inv.accountId)}</td>
+                <td>${accountMap[inv.accountId] != null ? accountMap[inv.accountId].fullName : 'ID ' += inv.accountId}</td>
                 <td>
                   <c:choose>
                     <c:when test="${inv.customerId != null && customerMap[inv.customerId] != null}">${customerMap[inv.customerId].customerName}</c:when>
@@ -225,3 +225,4 @@ tbody tr{cursor:pointer}
 </div>
 </body>
 </html>
+

@@ -57,6 +57,7 @@ public class ShiftServlet extends HttpServlet {
             case "detail"      -> showDetail(req, resp);
             case "force-close" -> handleForceClose(req, resp);
             case "delete"      -> handleDelete(req, resp);
+            case "pos-online"  -> handlePosOnline(req, resp);
             default            -> showList(req, resp);
         }
     }
@@ -233,6 +234,11 @@ public class ShiftServlet extends HttpServlet {
         req.setAttribute("pendingLeaves",     pendingLeaves);
         req.setAttribute("pendingLeaveCount", pendingLeaves.size());
 
+        // ── Dữ liệu sơ đồ quầy POS hôm nay ──────────────────────────────────
+        java.util.List<ShiftSchedule> todaySchedules =
+                ((ShiftScheduleDAO) scheduleDAO).findTodayAll();
+        req.setAttribute("todaySchedules", todaySchedules);
+
         SidebarHelper.load(req);
 
 
@@ -358,6 +364,42 @@ public class ShiftServlet extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/shifts?msg=" + (ok ? "closed" : "error"));
     }
 
+    // ── POS Online Status (AJAX) ──────────────────────────────────────────────
+    private void handlePosOnline(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        // Lấy tất cả session trên server → tìm session nào có posStation > 0 và còn active
+        // Cách đơn giản: đọc ShiftSchedules hôm nay có status CONFIRMED → quầy của họ = online
+        java.util.List<ShiftSchedule> todaySchedules =
+                ((ShiftScheduleDAO) scheduleDAO).findTodayAll();
+        java.util.Set<Integer> onlineStations = new java.util.LinkedHashSet<>();
+        for (ShiftSchedule ss : todaySchedules) {
+            if (ss.getPosStation() > 0
+                    && ("CONFIRMED".equals(ss.getStatus()) || "LATE".equals(ss.getStatus()))) {
+                onlineStations.add(ss.getPosStation());
+            }
+        }
+        // Thêm stations đang trong session active (có posStation set)
+        // Lấy session context để kiểm tra sessions đang active
+        try {
+            jakarta.servlet.http.HttpSession curSess = req.getSession(false);
+            Object posStObj = curSess != null ? curSess.getAttribute("posStation") : null;
+            if (posStObj instanceof Integer && (Integer) posStObj > 0) {
+                onlineStations.add((Integer) posStObj);
+            }
+        } catch (Exception ignored) {}
+
+        java.io.PrintWriter out = resp.getWriter();
+        out.print("{\"onlineStations\":[");
+        boolean first = true;
+        for (int st : onlineStations) {
+            if (!first) out.print(",");
+            out.print(st);
+            first = false;
+        }
+        out.print("]}");
+    }
+
     // ── Helper ────────────────────────────────────────────────────────────────
     private int parseIntOr(String s, int def) {
         if (s == null || s.isEmpty()) return def;
@@ -376,6 +418,7 @@ public class ShiftServlet extends HttpServlet {
         String[] typeIds   = req.getParameterValues("shiftTypeId");
         String   dateFrom  = req.getParameter("dateFrom");
         String   dateTo    = req.getParameter("dateTo");
+        int      posStation = parseIntOr(req.getParameter("posStation"), 0);
 
         if (accIds == null || typeIds == null || dateFrom == null || dateFrom.isEmpty()) {
             resp.sendRedirect(req.getContextPath() + "/shifts?msg=invalid"); return;
@@ -409,7 +452,11 @@ public class ShiftServlet extends HttpServlet {
                         int r = scheduleDAO.schedule(
                                 Integer.parseInt(aId), Integer.parseInt(tId),
                                 d, admin.getAccountId());
-                        if (r > 0) created++; else skipped++;
+                        if (r > 0) {
+                            created++;
+                            if (posStation > 0)
+                                ((com.medicare.dao.ShiftScheduleDAO) scheduleDAO).updatePosStation(r, posStation);
+                        } else skipped++;
                     }
             // Cộng pastDaysSkipped vào skipped cho mỗi combo (staff × type)
             skipped += pastDaysSkipped * accIds.length * typeIds.length;
@@ -441,14 +488,16 @@ public class ShiftServlet extends HttpServlet {
         int shiftTypeId = parseIntOr(req.getParameter("shiftTypeId"), 0);
         int lateTol     = parseIntOr(req.getParameter("lateToleranceMinutes"), 10);
         String notes    = req.getParameter("notes");
+        int posStation  = parseIntOr(req.getParameter("posStation"), -1); // -1 = không thay đổi
 
         if (scheduleId == 0) {
             resp.sendRedirect(req.getContextPath() + "/shifts?msg=invalid"); return;
         }
-        boolean ok = scheduleDAO.update(scheduleId, shiftTypeId, lateTol, notes,
-                admin.getAccountId());
+        ShiftScheduleDAO dao = (ShiftScheduleDAO) scheduleDAO;
+        boolean ok = dao.update(scheduleId, shiftTypeId, lateTol, notes,
+                admin.getAccountId(), posStation);
         if (ok) AuditHelper.log(req, "Sửa lịch ca", "ShiftSchedule",
-                "Sửa ca ID " + scheduleId);
+                "Sửa ca ID " + scheduleId + (posStation > 0 ? " → Quầy " + posStation : ""));
         resp.sendRedirect(req.getContextPath() + "/shifts?msg=" + (ok ? "updated" : "error"));
     }
 

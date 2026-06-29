@@ -35,6 +35,7 @@ public class ShiftScheduleDAO implements IShiftScheduleDAO {
         try { s.setShiftTypeName(rs.getNString("ShiftTypeName")); } catch (SQLException ignored) {}
         try { s.setStartHour(rs.getInt("StartHour")); }             catch (SQLException ignored) {}
         try { s.setEndHour(rs.getInt("EndHour")); }                 catch (SQLException ignored) {}
+        try { s.setPosStation(rs.getInt("PosStation")); }           catch (SQLException ignored) {}
         return s;
     }
 
@@ -199,6 +200,17 @@ public class ShiftScheduleDAO implements IShiftScheduleDAO {
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
 
+    /** Gán quầy POS cho lịch ca */
+    public boolean updatePosStation(int scheduleId, int posStation) {
+        String sql = "UPDATE ShiftSchedules SET PosStation=? WHERE ScheduleID=?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, posStation);
+            ps.setInt(2, scheduleId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
     /** NEW: Admin set OpeningCash cho từng lịch ca (≥ 50,000đ) */
     public boolean updateOpeningCash(int scheduleId, java.math.BigDecimal openingCash) {
         String sql = "UPDATE ShiftSchedules SET OpeningCash=? WHERE ScheduleID=?";
@@ -213,11 +225,17 @@ public class ShiftScheduleDAO implements IShiftScheduleDAO {
     @Override
     public boolean update(int scheduleId, int shiftTypeId,
                           int lateToleranceMinutes, String notes, int updatedBy) {
+        return update(scheduleId, shiftTypeId, lateToleranceMinutes, notes, updatedBy, -1);
+    }
+
+    public boolean update(int scheduleId, int shiftTypeId,
+                          int lateToleranceMinutes, String notes, int updatedBy, int posStation) {
         String sql =
                 "UPDATE ss SET "
                         + "  ss.ShiftTypeID = ?, "
                         + "  ss.LateToleranceMinutes = ?, "
                         + "  ss.Notes = ?, "
+                        + "  ss.PosStation = CASE WHEN ? >= 0 THEN ? ELSE ss.PosStation END, "
                         + "  ss.PlannedStart = DATEADD(MINUTE, st.StartMinute, "
                         + "                    DATEADD(HOUR,   st.StartHour,   CAST(ss.WorkDate AS DATETIME))), "
                         + "  ss.PlannedEnd   = CASE "
@@ -235,10 +253,27 @@ public class ShiftScheduleDAO implements IShiftScheduleDAO {
             ps.setInt(1, shiftTypeId);
             ps.setInt(2, lateToleranceMinutes);
             ps.setNString(3, notes);
-            ps.setInt(4, shiftTypeId);
-            ps.setInt(5, scheduleId);
+            ps.setInt(4, posStation);           // sentinel check
+            ps.setInt(5, posStation);           // actual value
+            ps.setInt(6, shiftTypeId);
+            ps.setInt(7, scheduleId);
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    /** Tất cả lịch ca hôm nay — cho sơ đồ quầy POS */
+    public List<ShiftSchedule> findTodayAll() {
+        List<ShiftSchedule> list = new ArrayList<>();
+        String sql = SELECT_FULL
+                + "WHERE ss.WorkDate = CAST(GETDATE() AS DATE) "
+                + "AND ss.Status NOT IN ('CANCELLED') "
+                + "ORDER BY ss.PosStation ASC, ss.PlannedStart ASC";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) list.add(mapRow(rs));
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
     }
 
     // ── DELETE ────────────────────────────────────────────────────────────────

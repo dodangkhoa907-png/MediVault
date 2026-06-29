@@ -356,7 +356,7 @@ tbody tr:hover td{background:#F7FBFF}
               <c:if test="${not empty s.endTime}">
                 <tr>
                   <td style="color:var(--muted);font-size:12px">#${s.shiftId}</td>
-                  <td><div style="font-weight:700">${accountMap[s.accountId] != null ? accountMap[s.accountId].fullName : 'ID '.concat(s.accountId)}</div></td>
+                  <td><div style="font-weight:700">${accountMap[s.accountId] != null ? accountMap[s.accountId].fullName : 'ID ' += s.accountId}</div></td>
                   <td style="font-size:12.5px;color:var(--muted)">${fn:substring(s.startTime.toString(),0,10)}</td>
                   <td style="font-weight:600">${fn:substring(s.startTime.toString(),11,16)}</td>
                   <td style="font-weight:600">${fn:substring(s.endTime.toString(),11,16)}</td>
@@ -609,3 +609,4 @@ loadAllCharts();
 </script>
 </body>
 </html>
+

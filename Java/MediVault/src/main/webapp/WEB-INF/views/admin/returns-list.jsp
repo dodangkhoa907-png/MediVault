@@ -140,7 +140,7 @@ tbody tr:hover td{background:#F7FBFF}
                   </c:choose>
                 </td>
                 <td style="font-weight:700">
-                  ${batch != null && medicineMap[batch.medicineId] != null ? medicineMap[batch.medicineId].medicineName : 'Lô #'.concat(r.batchId)}
+                  ${batch != null && medicineMap[batch.medicineId] != null ? medicineMap[batch.medicineId].medicineName : 'Lô #' += r.batchId}
                   <div style="font-size:11px;color:var(--muted);font-weight:400">Lô ${batch != null ? batch.batchNumber : '—'}</div>
                 </td>
                 <td style="font-weight:800">${r.quantity}</td>
@@ -157,7 +157,7 @@ tbody tr:hover td{background:#F7FBFF}
                   </c:choose>
                 </td>
                 <td class="reason-cell" title="${r.reason}">${r.reason}</td>
-                <td>${accountMap[r.accountId] != null ? accountMap[r.accountId].fullName : 'ID '.concat(r.accountId)}</td>
+                <td>${accountMap[r.accountId] != null ? accountMap[r.accountId].fullName : 'ID ' += r.accountId}</td>
                 <td style="color:var(--muted);font-size:12.5px">${fn:substring(r.createdAt.toString(),0,16)}</td>
               </tr>
             </c:forEach>
@@ -174,3 +174,4 @@ if (t) setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .4s';
 </script>
 </body>
 </html>
+

@@ -98,7 +98,7 @@ tbody tr:last-child td{border-bottom:none}
       </div>
     </div>
     <div class="info-item"><div class="lbl">Thời gian lập</div><div class="val" style="font-size:13px">${fn:substring(inv.createdAt.toString(),0,16)}</div></div>
-    <div class="info-item"><div class="lbl">Nhân viên lập</div><div class="val">${staff != null ? staff.fullName : 'ID '.concat(inv.accountId)}</div></div>
+    <div class="info-item"><div class="lbl">Nhân viên lập</div><div class="val">${staff != null ? staff.fullName : 'ID ' += inv.accountId}</div></div>
     <div class="info-item">
       <div class="lbl">Phương thức TT</div>
       <div class="val" style="font-size:13px">
@@ -166,3 +166,4 @@ tbody tr:last-child td{border-bottom:none}
 </div>
 </body>
 </html>
+

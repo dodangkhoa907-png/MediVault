@@ -149,14 +149,14 @@ public class AccountServlet extends HttpServlet {
             }
             case "online-status" -> {
                 resp.setContentType("application/json;charset=UTF-8");
-                java.util.Set<Integer> idsSet = com.medicare.util.SessionTracker.getOnlineSet();
+                // Presence tracking: dùng LastActiveAt (3 phút) thay vì in-memory set
+                // → loại bỏ Ghost Online 30 phút khi tab crash/mất mạng
+                java.util.List<Integer> onlineList = dao.findOnlineAccountIds(3);
                 java.io.PrintWriter pw = resp.getWriter();
-                pw.print("{\"onlineCount\":" + idsSet.size() + ",\"onlineIds\":[");
-                boolean isFirst = true;
-                for (Integer oid : idsSet) {
-                    if (!isFirst) pw.print(",");
-                    pw.print("\"" + oid + "\"");
-                    isFirst = false;
+                pw.print("{\"onlineCount\":" + onlineList.size() + ",\"onlineIds\":[");
+                for (int i = 0; i < onlineList.size(); i++) {
+                    if (i > 0) pw.print(",");
+                    pw.print("\"" + onlineList.get(i) + "\"");
                 }
                 pw.print("]}");
                 return;
@@ -288,6 +288,11 @@ public class AccountServlet extends HttpServlet {
         // ── AJAX: Xác minh OTP inline ──
         if ("verify-otp".equals(action)) {
             handleVerifyUpdateOtp(req, resp);
+            return;
+        }
+        // ── AJAX: Admin lưu face descriptor cho nhân viên ──
+        if ("save-face".equals(action)) {
+            handleSaveFace(req, resp);
             return;
         }
 
@@ -765,6 +770,49 @@ public class AccountServlet extends HttpServlet {
             EmailUtil.sendEmail(adminEmail, "[MediVault] OTP mới — " + staffName, body);
         }
         out.print(json(true, null));
+    }
+
+    // ── Admin lưu face descriptor cho nhân viên (AJAX POST) ──────────────────
+    private void handleSaveFace(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        java.io.PrintWriter out = resp.getWriter();
+
+        String accIdStr    = req.getParameter("accountId");
+        String descriptorJson = req.getParameter("descriptor");
+
+        if (accIdStr == null || accIdStr.isEmpty() || descriptorJson == null || descriptorJson.isEmpty()) {
+            out.print("{\"ok\":false,\"reason\":\"missing_params\"}");
+            return;
+        }
+
+        int accountId;
+        try { accountId = Integer.parseInt(accIdStr.trim()); }
+        catch (NumberFormatException e) {
+            out.print("{\"ok\":false,\"reason\":\"invalid_accountId\"}");
+            return;
+        }
+
+        // Validate: phải là JSON array 128 phần tử
+        String d = descriptorJson.trim();
+        if (!d.startsWith("[") || !d.endsWith("]")) {
+            out.print("{\"ok\":false,\"reason\":\"bad_format\"}");
+            return;
+        }
+        String[] parts = d.substring(1, d.length() - 1).split(",");
+        if (parts.length != 128) {
+            out.print("{\"ok\":false,\"reason\":\"bad_length:" + parts.length + "\"}");
+            return;
+        }
+
+        Account staff = dao.findById(accountId);
+        if (staff == null) {
+            out.print("{\"ok\":false,\"reason\":\"not_found\"}");
+            return;
+        }
+
+        dao.updateFaceVector(accountId, descriptorJson);
+        out.print("{\"ok\":true}");
     }
 
 

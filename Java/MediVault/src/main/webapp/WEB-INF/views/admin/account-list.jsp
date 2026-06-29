@@ -302,6 +302,14 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                     <td onclick="event.stopPropagation()">
                       <div class="act-group">
                         <a href="${pageContext.request.contextPath}/accounts?action=view&id=${a.accountId}" class="act-btn act-view">👁 Xem</a>
+                        <c:if test="${a.roleId != 1}">
+                          <button onclick="openFaceEnroll(${a.accountId},'${fn:escapeXml(not empty a.fullName ? a.fullName : a.username)}',${a.faceEnrolled})"
+                                  class="act-btn"
+                                  style="background:${a.faceEnrolled ? '#d1fae5' : '#eff6ff'};color:${a.faceEnrolled ? '#065f46' : '#1558A8'};border:1px solid ${a.faceEnrolled ? '#6ee7b7' : '#bfdbfe'}"
+                                  title="${a.faceEnrolled ? 'Đã đăng ký khuôn mặt — bấm để cập nhật' : 'Chưa đăng ký khuôn mặt'}">
+                            ${a.faceEnrolled ? '📷✓' : '📷'}
+                          </button>
+                        </c:if>
                         <a href="${pageContext.request.contextPath}/accounts?action=delete&id=${a.accountId}"
                            onclick="return confirm('Chuyển tài khoản @${a.username} vào thùng rác?')"
                            class="act-btn" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca">🗑️</a>
@@ -454,6 +462,236 @@ async function refreshOnlineStatus() {
 }
 refreshOnlineStatus();
 setInterval(refreshOnlineStatus, 15000);
+</script>
+
+<!-- ═══════════════ FACE ENROLLMENT MODAL (Admin) ═══════════════ -->
+<style>
+.face-enroll-modal{display:none;position:fixed;inset:0;z-index:900;align-items:center;justify-content:center}
+.face-enroll-modal.show{display:flex}
+.fem-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(5px)}
+.fem-panel{position:relative;width:480px;background:#0f172a;border-radius:20px;padding:22px 24px 20px;box-shadow:0 24px 72px rgba(0,0,0,.6);animation:femIn .25s cubic-bezier(.34,1.56,.64,1)}
+@keyframes femIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+.fem-close{position:absolute;top:14px;right:16px;background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.5);width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:14px}
+.fem-title{font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:2px}
+.fem-name{font-size:13px;color:#3abde0;font-weight:600;margin-bottom:14px}
+.fem-video-wrap{position:relative;width:100%;aspect-ratio:4/3;background:#020617;border-radius:12px;overflow:hidden;margin-bottom:10px}
+#femVideo{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+#femCanvas{position:absolute;inset:0;width:100%;height:100%;transform:scaleX(-1)}
+.fem-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.fem-ring{width:170px;height:170px;border:3px solid rgba(255,255,255,.25);border-radius:50%;transition:.3s}
+.fem-ring.scanning{border-color:#3b82f6;box-shadow:0 0 0 8px rgba(59,130,246,.15)}
+.fem-ring.ready{border-color:#10b981;box-shadow:0 0 0 8px rgba(16,185,129,.15)}
+.fem-status{font-size:13px;color:#94a3b8;text-align:center;min-height:20px;margin-bottom:10px;font-weight:600}
+.fem-status.ok{color:#4ade80}
+.fem-status.err{color:#f87171}
+.fem-actions{display:flex;gap:8px}
+.fem-btn-cancel{flex:1;height:38px;border-radius:9px;border:1px solid rgba(255,255,255,.1);background:transparent;color:rgba(255,255,255,.45);font-size:13px;cursor:pointer;font-family:inherit;transition:.15s}
+.fem-btn-cancel:hover{border-color:rgba(255,255,255,.3);color:rgba(255,255,255,.7)}
+.fem-btn-save{flex:2;height:38px;border-radius:9px;border:none;background:linear-gradient(135deg,#059669,#047857);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:.2s}
+.fem-btn-save:disabled{opacity:.4;cursor:not-allowed}
+.fem-loader{display:flex;align-items:center;justify-content:center;gap:8px;color:#64748b;font-size:12px;padding:16px}
+.fem-spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.1);border-top-color:#3abde0;border-radius:50%;animation:femSpin .7s linear infinite}
+@keyframes femSpin{to{transform:rotate(360deg)}}
+.fem-hint{font-size:11px;color:#475569;text-align:center;margin-bottom:8px;line-height:1.4}
+.fem-capture-count{font-size:11.5px;color:#64748b;text-align:center;margin-bottom:6px}
+</style>
+
+<div class="face-enroll-modal" id="faceEnrollModal">
+  <div class="fem-backdrop" onclick="closeFaceEnroll()"></div>
+  <div class="fem-panel">
+    <button class="fem-close" onclick="closeFaceEnroll()">✕</button>
+    <div class="fem-title">📷 Đăng ký khuôn mặt nhân viên</div>
+    <div class="fem-name" id="femStaffName">—</div>
+    <div id="femLoading" class="fem-loader"><div class="fem-spinner"></div>Đang tải mô hình nhận dạng…</div>
+    <div id="femCamWrap" style="display:none">
+      <div class="fem-hint">Nhìn thẳng vào camera, giữ ổn định — hệ thống sẽ chụp 5 góc khác nhau để tăng độ chính xác</div>
+      <div class="fem-video-wrap">
+        <video id="femVideo" autoplay muted playsinline></video>
+        <canvas id="femCanvas"></canvas>
+        <div class="fem-overlay"><div class="fem-ring" id="femRing"></div></div>
+      </div>
+      <div class="fem-capture-count" id="femCaptureCount"></div>
+      <div class="fem-status" id="femStatus">Đang khởi động camera…</div>
+      <div class="fem-actions">
+        <button class="fem-btn-cancel" onclick="closeFaceEnroll()">Hủy</button>
+        <button class="fem-btn-save" id="femSaveBtn" onclick="saveFaceDescriptor()" disabled>💾 Lưu khuôn mặt</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
+<script>
+const _ctx = '${pageContext.request.contextPath}';
+const FEM_MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model/';
+let femModelsLoaded = false;
+let femVideoStream  = null;
+let femDetectTimer  = null;
+let femAccountId    = null;
+let femDescriptors  = [];  // Accumulated descriptors from multiple captures
+const FEM_CAPTURE_TARGET = 5; // Capture 5 frames and average
+
+async function loadFemModels() {
+  if (femModelsLoaded) return;
+  await faceapi.nets.tinyFaceDetector.loadFromUri(FEM_MODEL_URL);
+  await faceapi.nets.faceLandmark68TinyNet.loadFromUri(FEM_MODEL_URL);
+  await faceapi.nets.faceRecognitionNet.loadFromUri(FEM_MODEL_URL);
+  femModelsLoaded = true;
+}
+
+async function openFaceEnroll(accountId, name, hasExisting) {
+  femAccountId   = accountId;
+  femDescriptors = [];
+  document.getElementById('faceEnrollModal').classList.add('show');
+  document.getElementById('femStaffName').textContent = name + (hasExisting ? ' (đang cập nhật)' : '');
+  document.getElementById('femLoading').style.display = 'flex';
+  document.getElementById('femCamWrap').style.display = 'none';
+  document.getElementById('femSaveBtn').disabled = true;
+  setFemStatus('Đang tải mô hình AI…');
+
+  try {
+    await loadFemModels();
+  } catch(e) {
+    setFemStatus('❌ Không tải được mô hình: ' + e.message, 'err');
+    document.getElementById('femLoading').style.display = 'none';
+    document.getElementById('femCamWrap').style.display = 'block';
+    return;
+  }
+
+  document.getElementById('femLoading').style.display = 'none';
+  document.getElementById('femCamWrap').style.display = 'block';
+
+  try {
+    femVideoStream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 640, height: 480, facingMode: 'user' }
+    });
+    document.getElementById('femVideo').srcObject = femVideoStream;
+    await document.getElementById('femVideo').play();
+    startFemDetection();
+  } catch(e) {
+    setFemStatus('❌ Không truy cập được camera: ' + e.message, 'err');
+  }
+}
+
+function closeFaceEnroll() {
+  stopFemDetection();
+  if (femVideoStream) { femVideoStream.getTracks().forEach(t => t.stop()); femVideoStream = null; }
+  document.getElementById('faceEnrollModal').classList.remove('show');
+  femDescriptors = [];
+}
+
+function startFemDetection() {
+  const video = document.getElementById('femVideo');
+  const ring  = document.getElementById('femRing');
+  setFemStatus('Đang quét khuôn mặt…');
+  updateCaptureCount();
+
+  femDetectTimer = setInterval(async () => {
+    if (video.readyState < 2 || femDescriptors.length >= FEM_CAPTURE_TARGET) return;
+    const det = await faceapi
+      .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224 }))
+      .withFaceLandmarks(true)
+      .withFaceDescriptor();
+
+    if (!det) {
+      ring.className = 'fem-ring';
+      setFemStatus('Không phát hiện khuôn mặt — hãy nhìn thẳng vào camera');
+      return;
+    }
+
+    ring.className = 'fem-ring scanning';
+    femDescriptors.push(Array.from(det.descriptor));
+    updateCaptureCount();
+
+    if (femDescriptors.length >= FEM_CAPTURE_TARGET) {
+      stopFemDetection();
+      ring.className = 'fem-ring ready';
+      setFemStatus('✓ Đã thu thập đủ dữ liệu — nhấn Lưu để hoàn tất', 'ok');
+      document.getElementById('femSaveBtn').disabled = false;
+    } else {
+      setFemStatus('Đang thu thập… (' + femDescriptors.length + '/' + FEM_CAPTURE_TARGET + ')');
+    }
+  }, 600);
+}
+
+function stopFemDetection() {
+  if (femDetectTimer) { clearInterval(femDetectTimer); femDetectTimer = null; }
+}
+
+function updateCaptureCount() {
+  const el = document.getElementById('femCaptureCount');
+  if (el) {
+    el.textContent = femDescriptors.length >= FEM_CAPTURE_TARGET
+      ? '✓ Đã thu thập ' + FEM_CAPTURE_TARGET + ' mẫu'
+      : 'Mẫu: ' + femDescriptors.length + ' / ' + FEM_CAPTURE_TARGET;
+  }
+}
+
+// Tính trung bình descriptor từ nhiều mẫu để tăng độ chính xác
+function averageDescriptors(descs) {
+  const len = descs[0].length;
+  const avg = new Array(len).fill(0);
+  for (const d of descs) { for (let i = 0; i < len; i++) avg[i] += d[i]; }
+  return avg.map(v => v / descs.length);
+}
+
+async function saveFaceDescriptor() {
+  if (!femAccountId || femDescriptors.length < FEM_CAPTURE_TARGET) return;
+  const btn = document.getElementById('femSaveBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang lưu…';
+
+  const avgDescriptor = averageDescriptors(femDescriptors);
+  const descriptorJson = '[' + avgDescriptor.map(v => v.toFixed(6)).join(',') + ']';
+
+  try {
+    const res = await fetch(_ctx + '/accounts', {
+      method: 'POST',
+      body: new URLSearchParams({
+        action:     'save-face',
+        accountId:  femAccountId,
+        descriptor: descriptorJson
+      }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    const data = await res.json();
+    if (data.ok) {
+      closeFaceEnroll();
+      // Cập nhật icon trong bảng
+      const btn2 = document.querySelector('button[onclick*="openFaceEnroll(' + femAccountId + ',"]');
+      if (btn2) {
+        btn2.style.background = '#d1fae5';
+        btn2.style.color = '#065f46';
+        btn2.textContent = '📷✓';
+      }
+      showAdminToast('✅ Đã lưu khuôn mặt cho nhân viên!');
+    } else {
+      setFemStatus('❌ ' + (data.reason || 'Lỗi lưu dữ liệu'), 'err');
+      btn.disabled = false;
+      btn.textContent = '💾 Lưu khuôn mặt';
+    }
+  } catch(e) {
+    setFemStatus('❌ Lỗi kết nối', 'err');
+    btn.disabled = false;
+    btn.textContent = '💾 Lưu khuôn mặt';
+  }
+}
+
+function setFemStatus(msg, type) {
+  const el = document.getElementById('femStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.className   = 'fem-status' + (type ? ' ' + type : '');
+}
+
+function showAdminToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast toast-ok';
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;top:auto;left:auto;transform:none;z-index:9999;padding:12px 18px;border-radius:10px;background:#064e3b;color:#fff;font-size:14px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.2)';
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 3500);
+}
 </script>
 </body>
 </html>

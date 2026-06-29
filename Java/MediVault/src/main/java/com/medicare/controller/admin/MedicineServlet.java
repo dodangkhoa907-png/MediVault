@@ -51,8 +51,10 @@ public class MedicineServlet extends HttpServlet {
                 if (found == null) req.setAttribute("editNotFound", true);
                 showMedicineForm(req, resp, found);
             }
-            case "api-med"      -> apiGetMedicine(req, resp);
-            case "api-batches"  -> apiGetBatches(req, resp);
+            case "api-med"       -> apiGetMedicine(req, resp);
+            case "api-batches"   -> apiGetBatches(req, resp);
+            case "api-stats"     -> apiGetStats(resp);
+            case "api-stock-map" -> apiGetStockMap(resp);
             case "detail" -> showDetail(req, resp);
             case "new-batch" -> showBatchForm(req, resp, null);
             case "edit-batch" -> {
@@ -632,21 +634,47 @@ public class MedicineServlet extends HttpServlet {
             int id = Integer.parseInt(req.getParameter("id"));
             Medicines m = medicineDAO.findById(id);
             if (m == null) { out.print("{\"error\":\"not found\"}"); return; }
-            // Build JSON thủ công — tránh dependency thêm
+
+            // Lookup names for display in detail modal
+            String catName = "";
+            String mfrName = "";
+            String shelfName = "";
+            if (m.getCategoryId() != null) {
+                var cat = categoryDAO.findById(m.getCategoryId());
+                if (cat != null) catName = cat.getCategoryName();
+            }
+            if (m.getManufacturerId() != null) {
+                var mfr = manufacturerDAO.findById(m.getManufacturerId());
+                if (mfr != null) mfrName = mfr.getName();
+            }
+            if (m.getShelfId() != null) {
+                var shelf = shelfDAO.findById(m.getShelfId());
+                if (shelf != null) shelfName = shelf.getShelfName();
+            }
+            // Total stock from batches
+            Map<Integer, Integer> stockMap = batchesDAO.getTotalQuantityMap();
+            int totalStock = stockMap.getOrDefault(m.getMedicineId(), 0);
+
             StringBuilder sb = new StringBuilder("{");
             sb.append("\"id\":").append(m.getMedicineId()).append(',');
+            sb.append("\"medicineCode\":").append(jsonStr(m.getMedicineCode())).append(',');
             sb.append("\"medicineName\":").append(jsonStr(m.getMedicineName())).append(',');
             sb.append("\"genericName\":").append(jsonStr(m.getGenericName())).append(',');
             sb.append("\"barcode\":").append(jsonStr(m.getBarcode())).append(',');
             sb.append("\"registrationNumber\":").append(jsonStr(m.getRegistrationNumber())).append(',');
             sb.append("\"unit\":").append(jsonStr(m.getUnit())).append(',');
             sb.append("\"categoryId\":").append(m.getCategoryId() != null ? m.getCategoryId() : 0).append(',');
+            sb.append("\"categoryName\":").append(jsonStr(catName)).append(',');
             sb.append("\"manufacturerId\":").append(m.getManufacturerId() != null ? m.getManufacturerId() : 0).append(',');
+            sb.append("\"manufacturerName\":").append(jsonStr(mfrName)).append(',');
             sb.append("\"shelfId\":").append(m.getShelfId() != null ? m.getShelfId() : 0).append(',');
+            sb.append("\"shelfName\":").append(jsonStr(shelfName)).append(',');
             sb.append("\"sellingPrice\":").append(m.getSellingPrice() != null ? m.getSellingPrice().toPlainString() : "0").append(',');
             sb.append("\"minInventory\":").append(m.getMinInventory()).append(',');
             sb.append("\"expiryAlertDays\":").append(m.getExpiryAlertDays()).append(',');
             sb.append("\"isPrescriptionRequired\":").append(m.isPrescriptionRequired()).append(',');
+            sb.append("\"status\":").append(m.isStatus()).append(',');
+            sb.append("\"totalStock\":").append(totalStock).append(',');
             sb.append("\"dosage\":").append(jsonStr(m.getDosage())).append(',');
             sb.append("\"contraindications\":").append(jsonStr(m.getContraindications())).append(',');
             sb.append("\"storageConditions\":").append(jsonStr(m.getStorageConditions())).append(',');
@@ -690,6 +718,49 @@ public class MedicineServlet extends HttpServlet {
             out.print(sb);
         } catch (Exception e) {
             out.print("[]");
+        }
+    }
+
+    // ── AJAX: Live stats cho polling từ medicine-list ─────────────────────────
+    private void apiGetStats(HttpServletResponse resp) throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        resp.setHeader("Cache-Control", "no-cache");
+        PrintWriter out = resp.getWriter();
+        try {
+            Map<Integer, Integer> stockMap        = batchesDAO.getTotalQuantityMap();
+            Map<Integer, Integer> expiringSoonMap = new HashMap<>();
+            Map<Integer, Integer> expiredMap      = new HashMap<>();
+            batchesDAO.loadBatchSummary(new HashMap<>(), expiringSoonMap, expiredMap, new HashMap<>());
+            int total        = medicineDAO.countAll();
+            int lowStock     = medicineDAO.countLowStock();
+            int expiringSoon = (int) expiringSoonMap.values().stream().filter(v -> v > 0).count();
+            int expired      = (int) expiredMap.values().stream().filter(v -> v > 0).count();
+            String ts = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+            out.printf("{\"total\":%d,\"lowStock\":%d,\"expiringSoon\":%d,\"expired\":%d,\"ts\":\"%s\"}",
+                    total, lowStock, expiringSoon, expired, ts);
+        } catch (Exception e) {
+            out.print("{\"total\":0,\"lowStock\":0,\"expiringSoon\":0,\"expired\":0,\"ts\":\"\"}");
+        }
+    }
+
+    // ── AJAX: Map tồn kho tất cả thuốc {medId: stock} ────────────────────────
+    private void apiGetStockMap(HttpServletResponse resp) throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        resp.setHeader("Cache-Control", "no-cache");
+        PrintWriter out = resp.getWriter();
+        try {
+            Map<Integer, Integer> stockMap = batchesDAO.getTotalQuantityMap();
+            StringBuilder sb = new StringBuilder("{");
+            boolean first = true;
+            for (Map.Entry<Integer, Integer> e : stockMap.entrySet()) {
+                if (!first) sb.append(',');
+                sb.append('"').append(e.getKey()).append("\":").append(e.getValue() != null ? e.getValue() : 0);
+                first = false;
+            }
+            sb.append('}');
+            out.print(sb);
+        } catch (Exception e) {
+            out.print("{}");
         }
     }
 
