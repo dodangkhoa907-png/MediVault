@@ -502,6 +502,7 @@ body{display:flex}
 </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/views/loading.jsp" %>
 
 <!-- SIDEBAR -->
 <<<<<<< HEAD

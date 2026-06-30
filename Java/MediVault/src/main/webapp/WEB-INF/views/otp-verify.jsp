@@ -148,6 +148,8 @@ body::before{
 </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/views/loading.jsp" %>
+
 <div class="grid-bg">
   <svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid slice">
     <defs><pattern id="g" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M60 0H0M0 0V60" stroke="white" stroke-width=".5" fill="none"/></pattern></defs>

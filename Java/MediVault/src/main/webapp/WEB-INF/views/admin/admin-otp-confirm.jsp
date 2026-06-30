@@ -156,6 +156,8 @@ h2{font-family:'DM Serif Display',serif;font-size:26px;color:var(--ink);margin-b
 </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/views/loading.jsp" %>
+
 <div class="grid-bg">
   <svg viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice">
     <defs><pattern id="g" width="60" height="60" patternUnits="userSpaceOnUse">

@@ -364,6 +364,9 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
 </style>
 </head>
 <body>
+<<<<<<< HEAD
+<%@ include file="/WEB-INF/views/loading.jsp" %>
+=======
 
 <%-- Hover card --%>
 <div id="hoverCard" class="hover-card">
@@ -376,6 +379,7 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
   <div class="hc-row"><span class="hc-label">Lô sắp hết hạn ≤90 ngày</span><span class="hc-val warn" id="hc-soon"></span></div>
   <div class="hc-row"><span class="hc-label">Lô đã hết hạn còn tồn</span><span class="hc-val err" id="hc-expired"></span></div>
 </div>
+>>>>>>> main
 
 <%-- Toast --%>
 <% if ("created".equals(msg)) { %><div class="toast toast-ok" id="pageToast">✅ Đã thêm thuốc mới thành công!</div>

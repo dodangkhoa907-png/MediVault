@@ -334,6 +334,7 @@ select.field-input{
 </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/views/loading.jsp" %>
 
 <!-- TOPBAR -->
 <header class="topbar">
