@@ -115,6 +115,24 @@ public class AccountDAO implements IAccountDAO {
         return false;
     }
 
+    /**
+     * Kiểm tra CCCD đã tồn tại chưa.
+     * excludeId: bỏ qua account hiện tại khi update (truyền -1 khi insert)
+     */
+    public boolean isCitizenIdTaken(String citizenId, int excludeId) {
+        if (citizenId == null || citizenId.trim().isEmpty()) return false;
+        String sql = "SELECT 1 FROM Accounts WHERE CitizenId = ? AND AccountID != ? AND IsDeleted = 0";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, citizenId.trim());
+            ps.setInt(2, excludeId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return false;
+    }
+
     // ================================================================
     // QUERIES
     // ================================================================
