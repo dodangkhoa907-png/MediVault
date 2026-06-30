@@ -19,6 +19,7 @@ public class Attendance {
     private String attendanceStatus;
     private java.math.BigDecimal penaltyAmount;  // Số tiền phạt (0 nếu chưa xử lý)
     private java.math.BigDecimal handoverCash;   // Tiền bàn giao két khi check-out // NEW — tổng hợp tình trạng
+    private Integer posStation;                  // Quầy POS check-in (NULL = không qua POS)
 
     // ── Join fields ──
     private String staffName;
@@ -132,4 +133,6 @@ public class Attendance {
     public void setPenaltyAmount(java.math.BigDecimal v)        { this.penaltyAmount = v; }
     public java.math.BigDecimal getHandoverCash()               { return handoverCash; }
     public void setHandoverCash(java.math.BigDecimal v)         { this.handoverCash = v; }
+    public Integer getPosStation()                              { return posStation; }
+    public void setPosStation(Integer v)                        { this.posStation = v; }
 }

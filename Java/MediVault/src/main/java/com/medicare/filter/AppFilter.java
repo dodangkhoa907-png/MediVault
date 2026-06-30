@@ -64,6 +64,7 @@ public class AppFilter implements Filter {
                 + "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; "
                 + "font-src 'self' https://fonts.gstatic.com data:; "
                 + "img-src 'self' data: blob:; "
+                + "media-src 'self' data: blob:; "
                 + "connect-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
                 + "frame-ancestors 'self';");
 
@@ -141,8 +142,10 @@ public class AppFilter implements Filter {
         @Override public void setContentLengthLong(long len) {}
 
         void finish() throws IOException {
-            if (gzipWriter != null) { gzipWriter.flush(); gzipWriter.close(); }
-            if (gzipOut   != null)  { gzipOut.finish();   gzipOut.close();   }
+            // flush writer nhưng KHÔNG close (writer.close() → stream.close() → Deflater.close())
+            // Để GzipOutputStream tự close khi gzipOut.close() được gọi bên dưới
+            if (gzipWriter != null) { gzipWriter.flush(); }
+            if (gzipOut   != null)  { gzipOut.finish(); gzipOut.close(); }
         }
     }
 

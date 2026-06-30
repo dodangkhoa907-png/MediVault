@@ -168,7 +168,8 @@ public class DashboardServlet extends HttpServlet {
         StringBuilder qtys  = new StringBuilder("[");
         String sql = "SELECT TOP 5 m.MedicineName, SUM(id.Quantity) AS TotalQty " +
                 "FROM InvoiceDetails id " +
-                "JOIN Medicines m ON m.MedicineID=id.MedicineID " +
+                "JOIN Batches b ON b.BatchID=id.BatchID " +
+                "JOIN Medicines m ON m.MedicineID=b.MedicineID " +
                 "JOIN Invoices i ON i.InvoiceID=id.InvoiceID " +
                 "WHERE i.Status='COMPLETED' " +
                 "AND YEAR(i.CreatedAt)=YEAR(GETDATE()) AND MONTH(i.CreatedAt)=MONTH(GETDATE()) " +
@@ -195,7 +196,8 @@ public class DashboardServlet extends HttpServlet {
         StringBuilder revs  = new StringBuilder("[");
         String sql = "SELECT TOP 8 c.CategoryName, ISNULL(SUM(id.SubTotal),0) AS Revenue " +
                 "FROM InvoiceDetails id " +
-                "JOIN Medicines m ON m.MedicineID=id.MedicineID " +
+                "JOIN Batches b ON b.BatchID=id.BatchID " +
+                "JOIN Medicines m ON m.MedicineID=b.MedicineID " +
                 "JOIN Categories c ON c.CategoryID=m.CategoryID " +
                 "JOIN Invoices i ON i.InvoiceID=id.InvoiceID " +
                 "WHERE i.Status='COMPLETED' " +

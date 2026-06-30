@@ -17,7 +17,9 @@ public interface IMedicineDAO {
     List<Medicines> findPaged(String keyword, Integer catId, int page, int pageSize);
     int countForList(String keyword, Integer catId);
     boolean insert(Medicines m);
+    int insertGetId(Medicines m);   // insert và trả về MedicineID mới — dùng khi cần tạo lô ban đầu
     boolean update(Medicines m);
+    boolean updateImageUrl(int medicineId, String imageUrl);
     boolean delete(int id);
     boolean toggleStatus(int id);
 }

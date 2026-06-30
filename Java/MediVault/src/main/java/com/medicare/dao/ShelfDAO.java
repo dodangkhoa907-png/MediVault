@@ -3,6 +3,7 @@ package com.medicare.dao;
 import com.medicare.config.DBContext;
 import com.medicare.dao.interfaces.IShelfDAO;
 import com.medicare.entity.Shelf;
+import com.medicare.util.MojibakeUtil;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,10 +13,10 @@ public class ShelfDAO implements IShelfDAO {
     private Shelf mapRow(ResultSet rs) throws SQLException {
         Shelf s = new Shelf();
         s.setShelfId(rs.getInt("ShelfID"));
-        s.setShelfName(rs.getNString("ShelfName"));
+        s.setShelfName(MojibakeUtil.fix(rs.getNString("ShelfName")));
         s.setMachineSlotCode(rs.getString("MachineSlotCode"));
         s.setMotorId(rs.getString("MotorID"));
-        s.setLocationNotes(rs.getNString("LocationNotes"));
+        s.setLocationNotes(MojibakeUtil.fix(rs.getNString("LocationNotes")));
         s.setAutomated(rs.getBoolean("IsAutomated"));
         return s;
     }

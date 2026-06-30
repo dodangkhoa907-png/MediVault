@@ -17,11 +17,14 @@ public class Batches {
     private int initialQuantity;
     private int currentQuantity;
     private LocalDateTime createdAt;
+    private String status = "ACTIVE";
 
     public Batches() {
     }
 
-    public Batches(int batchId, int medicineId, int poId, int supplierId, String batchNumber, LocalDate manufactureDate, LocalDate importDate, LocalDate expiryDate, BigDecimal importPrice, int initialQuantity, int currentQuantity, LocalDateTime createdAt) {
+    public Batches(int batchId, int medicineId, int poId, int supplierId, String batchNumber, LocalDate manufactureDate,
+            LocalDate importDate, LocalDate expiryDate, BigDecimal importPrice, int initialQuantity,
+            int currentQuantity, LocalDateTime createdAt) {
         this.batchId = batchId;
         this.medicineId = medicineId;
         this.poId = poId;
@@ -130,5 +133,13 @@ public class Batches {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }

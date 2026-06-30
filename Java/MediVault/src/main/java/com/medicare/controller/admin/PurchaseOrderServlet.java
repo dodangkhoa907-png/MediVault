@@ -90,7 +90,7 @@ public class PurchaseOrderServlet extends HttpServlet {
         req.setAttribute("batchCountMap", batchCountMap);
         SidebarHelper.load(req);
 
-        req.getRequestDispatcher("/WEB-INF/views/admin/purchase-order-list.jsp.jsp").forward(req, resp);
+        req.getRequestDispatcher("/WEB-INF/views/admin/purchase-order-list.jsp").forward(req, resp);
     }
 
     // ── DETAIL ────────────────────────────────────────────────────────────────

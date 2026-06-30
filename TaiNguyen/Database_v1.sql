@@ -50,10 +50,9 @@ CREATE TABLE Shifts (
     OpeningCash  DECIMAL(18,2) NOT NULL DEFAULT 0,
     ClosingCash  DECIMAL(18,2) NULL,
     Notes        NVARCHAR(255) NULL,
-    LateCloseDeductAmount DECIMAL(12,2) NULL DEFAULT 0,
+    LateCloseDeductAmount DECIMAL(12,2) NULL DEFAULT 0,           -- Tiền trừ nếu đóng ca trễ
     GracePeriodMinutes INT NOT NULL DEFAULT 5,
     Status         VARCHAR(20)    NOT NULL DEFAULT 'OPEN',     -- OPEN|CLOSED|FORCE_CLOSED|ABANDONED
-    LateCloseDeductAmount DECIMAL(12,2) NULL DEFAULT 0,           -- Tiền trừ nếu đóng ca trễ
 CONSTRAINT CK_Shift_Grace CHECK (GracePeriodMinutes >= 0 AND GracePeriodMinutes <= 8),    -- Gioi han thoi gian cho phep cham cong muon
     CONSTRAINT CK_Shift_Time CHECK (EndTime IS NULL OR EndTime >= StartTime),
     CONSTRAINT CK_Shift_Cash CHECK (OpeningCash >= 0 AND (ClosingCash IS NULL OR ClosingCash >= 0))

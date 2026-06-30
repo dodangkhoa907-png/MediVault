@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" %>
 <% String activeNav = "dashboard"; %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
@@ -136,11 +136,13 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 
 /* ── TOPBAR ── */
 .topbar{
+.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--ink)}
   height:62px;background:var(--white);border-bottom:1px solid var(--border);
   display:flex;align-items:center;padding:0 28px;gap:14px;
   position:sticky;top:0;z-index:50;
 }
-.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;color:var(--ink)}
+
+    
 .topbar-search{flex:1;max-width:340px;position:relative}
 .topbar-search input{
   width:100%;padding:8px 14px 8px 36px;

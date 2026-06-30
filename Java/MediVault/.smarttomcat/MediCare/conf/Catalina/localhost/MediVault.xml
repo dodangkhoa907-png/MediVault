@@ -10,5 +10,6 @@
     <PostResources base="C:/Users/KHOA/.m2/repository/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/gson-2.10.1.jar"/>
     <PostResources base="C:/Users/KHOA/.m2/repository/com/sun/mail/jakarta.mail/2.0.1/jakarta.mail-2.0.1.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/jakarta.mail-2.0.1.jar"/>
     <PostResources base="C:/Users/KHOA/.m2/repository/com/sun/activation/jakarta.activation/2.0.1/jakarta.activation-2.0.1.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/jakarta.activation-2.0.1.jar"/>
+    <PostResources base="C:/Users/KHOA/.m2/repository/com/zaxxer/HikariCP/5.1.0/HikariCP-5.1.0.jar" className="org.apache.catalina.webresources.FileResourceSet" webAppMount="/WEB-INF/lib/HikariCP-5.1.0.jar"/>
   </Resources>
 </Context>

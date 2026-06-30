@@ -90,7 +90,7 @@ public class PasswordResetDAO implements IPasswordResetDAO {
              PreparedStatement ps = cn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception ignored) { /* table may not exist yet */ }
         return list;
     }
 
@@ -144,7 +144,7 @@ public class PasswordResetDAO implements IPasswordResetDAO {
              PreparedStatement ps = cn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) ids.add(rs.getInt("AccountID"));
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception ignored) { /* table may not exist yet */ }
         return ids;
     }
 

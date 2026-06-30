@@ -12,6 +12,9 @@ import jakarta.servlet.http.*;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,11 +22,14 @@ import java.util.Map;
 @WebServlet("/pos")
 public class PosServlet extends HttpServlet {
 
-    private final IMedicineDAO  medicineDAO  = new MedicineDAO();
-    private final IBatchesDAO   batchesDAO   = new BatchesDAO();
-    private final ICustomerDAO  customerDAO  = new CustomerDAO();
-    private final ICategoryDAO  categoryDAO  = new CategoryDAO();
-    private final ISaleService  saleService  = new SaleService();
+    private final IMedicineDAO   medicineDAO   = new MedicineDAO();
+    private final IBatchesDAO    batchesDAO    = new BatchesDAO();
+    private final ICustomerDAO   customerDAO   = new CustomerDAO();
+    private final ICategoryDAO   categoryDAO   = new CategoryDAO();
+    private final ISaleService   saleService   = new SaleService();
+    private final IAccountDAO    accountDAO    = new AccountDAO();
+    private final IAttendanceDAO attendanceDAO = new AttendanceDAO();
+    private final IShiftScheduleDAO scheduleDAO = new ShiftScheduleDAO();
 
     private static final int POS_ACCOUNT_ID = 1;
 
@@ -60,6 +66,25 @@ public class PosServlet extends HttpServlet {
             return;
         }
 
+        if ("face-descriptors".equals(action)) {
+            // Trả JSON: [{accountId, name, descriptor}] cho client-side face matching
+            resp.setContentType("application/json;charset=UTF-8");
+            PrintWriter out = resp.getWriter();
+            List<Account> enrolled = accountDAO.findAllWithFaceVector();
+            out.print("[");
+            boolean first = true;
+            for (Account a : enrolled) {
+                if (a.getFaceVector() == null || a.getFaceVector().isEmpty()) continue;
+                if (!first) out.print(",");
+                String name = a.getFullName() != null ? a.getFullName() : a.getUsername();
+                out.printf("{\"accountId\":%d,\"name\":\"%s\",\"descriptor\":%s}",
+                        a.getAccountId(), esc(name), a.getFaceVector());
+                first = false;
+            }
+            out.print("]");
+            return;
+        }
+
         if ("find-customer".equals(action)) {
             String phone = req.getParameter("phone");
             Customer c = customerDAO.findByPhone(phone);
@@ -73,6 +98,13 @@ public class PosServlet extends HttpServlet {
             }
             return;
         }
+        if ("shift-summary".equals(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            PrintWriter out = resp.getWriter();
+            handleShiftSummary(req, out);
+            return;
+        }
+
         if ("inventory".equals(action)) {
             // Single JOIN query: medicine + all batches — thay 1000+ queries
             resp.setContentType("application/json;charset=UTF-8");
@@ -115,7 +147,33 @@ public class PosServlet extends HttpServlet {
             return;
         }
 
-        // Single CTE query thay N+1 (getTotalQuantity + findNearestExpiry per medicine)
+        // Multi-POS: đọc station từ query param (nếu có), lưu vào session
+        String stationParam = req.getParameter("station");
+        if (stationParam != null && !stationParam.isEmpty()) {
+            try {
+                int st = Integer.parseInt(stationParam);
+                if (st >= 1 && st <= 10) req.getSession(true).setAttribute("posStation", st);
+            } catch (NumberFormatException ignored) {}
+        }
+
+        // Tính screen state từ session
+        HttpSession sess = req.getSession(false);
+        Integer posStationObj = sess != null ? (Integer) sess.getAttribute("posStation") : null;
+        int posStation = posStationObj != null ? posStationObj : 0;
+        String posStateS  = sess != null ? (String)  sess.getAttribute("posState")     : null;
+        Account staffAccS = sess != null ? (Account) sess.getAttribute("staffAccount") : null;
+        boolean hasStaff  = staffAccS != null && staffAccS.getRoleId() != 1;
+
+        String screenState;
+        if (posStation == 0)                              screenState = "STATION_SELECT";
+        else if (hasStaff && "ACTIVE".equals(posStateS)) screenState = "ACTIVE";
+        else if (hasStaff && "PAUSED".equals(posStateS)) screenState = "PAUSED";
+        else                                              screenState = "IDLE";
+
+        req.setAttribute("screenState", screenState);
+        req.setAttribute("categories",  categoryDAO.findAll());
+
+        // Luôn tải danh sách thuốc — POS bán hàng bình thường không cần điểm danh
         List<Medicines> medicines = medicineDAO.findAllWithStock();
         Map<Integer, Integer> stockMap   = new HashMap<>();
         Map<Integer, String>  batchNoMap = new HashMap<>();
@@ -126,7 +184,6 @@ public class PosServlet extends HttpServlet {
             batchNoMap.put(mid, m.getNearestBatchNo() != null ? m.getNearestBatchNo() : "");
             expiryMap.put(mid,  m.getNearestExpiry()  != null ? m.getNearestExpiry()  : "");
         }
-        req.setAttribute("categories", categoryDAO.findAll());
         req.setAttribute("medicines",  medicines);
         req.setAttribute("stockMap",   stockMap);
         req.setAttribute("batchNoMap", batchNoMap);
@@ -143,6 +200,40 @@ public class PosServlet extends HttpServlet {
         PrintWriter out = resp.getWriter();
 
         String action = req.getParameter("action");
+
+        if ("set-station".equals(action)) {
+            String stStr = req.getParameter("station");
+            if (stStr != null) {
+                try {
+                    int st = Integer.parseInt(stStr);
+                    if (st >= 1 && st <= 10) {
+                        req.getSession(true).setAttribute("posStation", st);
+                        out.print("{\"ok\":true,\"station\":" + st + "}");
+                    } else {
+                        out.print("{\"ok\":false}");
+                    }
+                } catch (NumberFormatException e) {
+                    out.print("{\"ok\":false}");
+                }
+            } else {
+                out.print("{\"ok\":false}");
+            }
+            return;
+        }
+
+        if ("open-shift".equals(action))  { handleOpenShift(req, out); return; }
+        if ("pos-pause".equals(action))   { req.getSession(true).setAttribute("posState","PAUSED");  out.print("{\"ok\":true}"); return; }
+        if ("pos-resume".equals(action))  { req.getSession(true).setAttribute("posState","ACTIVE");  out.print("{\"ok\":true}"); return; }
+        if ("pos-end-shift".equals(action)) { handleEndShift(req, out); return; }
+
+        if ("pos-face-checkin".equals(action)) {
+            handlePosFaceCheckin(req, resp, out);
+            return;
+        }
+
+        if ("create-qr".equals(action))       { handleCreateQr(req, out);      return; }
+        if ("check-qr-status".equals(action)) { handleCheckQrStatus(req, out); return; }
+        if ("cancel-qr".equals(action))       { handleCancelQr(req, out);      return; }
 
         if ("complete-sale".equals(action)) {
             try {
@@ -173,6 +264,13 @@ public class PosServlet extends HttpServlet {
                     quantities[i]  = Integer.parseInt(qtyStrs[i]);
                 }
 
+                // Đọc posStation từ request hoặc session
+                Integer posStation = parseIntOrNull(req.getParameter("posStation"));
+                if (posStation == null && req.getSession(false) != null) {
+                    posStation = (Integer) req.getSession(false).getAttribute("posStation");
+                }
+                if (posStation == null) posStation = 1;
+
                 ServiceResult<Invoice> result = saleService.completeSale(
                         accountId, customerId, payMethod, discount,
                         medicineIds, quantities, req.getRemoteAddr());
@@ -183,6 +281,8 @@ public class PosServlet extends HttpServlet {
                             inv != null ? inv.getInvoiceId()  : 0,
                             inv != null ? esc(inv.getInvoiceCode()) : "",
                             inv != null ? inv.getFinalAmount() : "0");
+                    // Push tồn kho mới tới tất cả medicine-list tabs qua SSE
+                    com.medicare.controller.admin.InventorySSEServlet.broadcast();
                 } else {
                     out.printf("{\"ok\":false,\"msg\":\"%s\"}", esc(result.firstError()));
                 }
@@ -196,6 +296,299 @@ public class PosServlet extends HttpServlet {
         }
 
         out.print("{\"ok\":false,\"msg\":\"Unknown action\"}");
+    }
+
+    // ── Face check-in từ POS (không cần đăng nhập trước) ──────────────────────
+    private void handlePosFaceCheckin(HttpServletRequest req, HttpServletResponse resp,
+                                      PrintWriter out) throws IOException {
+        String accIdStr   = req.getParameter("accountId");
+        String stationStr = req.getParameter("station");
+
+        if (accIdStr == null || accIdStr.isEmpty()) {
+            out.print("{\"ok\":false,\"reason\":\"missing_accountId\"}");
+            return;
+        }
+
+        int accountId;
+        try { accountId = Integer.parseInt(accIdStr); }
+        catch (NumberFormatException e) {
+            out.print("{\"ok\":false,\"reason\":\"invalid_accountId\"}");
+            return;
+        }
+
+        Account staff = accountDAO.findById(accountId);
+        if (staff == null || !staff.isActive() || staff.getRoleId() == 1) {
+            out.print("{\"ok\":false,\"reason\":\"staff_not_found\"}");
+            return;
+        }
+
+        HttpSession session = req.getSession(true);
+
+        // Kiểm tra sai quầy POS trước khi set session
+        ShiftSchedule schedule = scheduleDAO.findTodaySchedule(accountId);
+        if (schedule != null && schedule.getPosStation() > 0) {
+            Integer sessStation = (Integer) session.getAttribute("posStation");
+            int currentSt = sessStation != null ? sessStation : 0;
+            if (currentSt > 0 && schedule.getPosStation() != currentSt) {
+                String n = staff.getFullName() != null ? staff.getFullName() : staff.getUsername();
+                out.printf("{\"ok\":false,\"reason\":\"wrong-station\",\"correctStation\":%d,\"name\":\"%s\"}",
+                        schedule.getPosStation(), esc(n));
+                return;
+            }
+        }
+
+        // Lưu session
+        session.setAttribute("staffAccount", staff);
+        session.setAttribute("staffAccount_" + accountId, staff);
+        session.setAttribute("staffUid", String.valueOf(accountId));
+
+        // Lưu station vào session
+        if (stationStr != null && !stationStr.isEmpty()) {
+            try {
+                int st = Integer.parseInt(stationStr);
+                if (st >= 1) session.setAttribute("posStation", st);
+            } catch (NumberFormatException ignored) {}
+        }
+
+        accountDAO.updateLastActive(accountId);
+        accountDAO.updateLastLogin(accountId);
+
+        // Kiểm tra đã check-in chưa
+        String posState  = (String) session.getAttribute("posState");
+        Attendance activeAtt = attendanceDAO.findActiveByAccount(accountId);
+        if (activeAtt != null) {
+            String name = staff.getFullName() != null ? staff.getFullName() : staff.getUsername();
+            if ("ACTIVE".equals(posState)) {
+                // Đã active → client chỉ cần reload
+                out.printf("{\"ok\":true,\"staffId\":%d,\"name\":\"%s\",\"status\":\"already-active\"}",
+                        accountId, esc(name));
+            } else {
+                out.printf("{\"ok\":true,\"staffId\":%d,\"name\":\"%s\",\"status\":\"already-in\"}",
+                        accountId, esc(name));
+            }
+            return;
+        }
+
+        // Thử tạo attendance nếu có lịch ca hôm nay
+        String checkInStatus;
+        if (schedule != null) {
+            LocalDateTime now          = LocalDateTime.now();
+            LocalDateTime plannedStart = schedule.getPlannedStart();
+            LocalDateTime plannedEnd   = schedule.getPlannedEnd();
+
+            if (now.isAfter(plannedStart.minusMinutes(15)) &&
+                now.isBefore(plannedEnd.plusMinutes(30))) {
+                long lateMinutes = Math.max(0, ChronoUnit.MINUTES.between(plannedStart, now));
+                String attStatus = lateMinutes <= 5 ? "CONFIRMED" :
+                                   lateMinutes <= schedule.getLateToleranceMinutes() + 5 ? "LATE" : "ABSENT";
+                BigDecimal penalty = BigDecimal.ZERO;
+                if (lateMinutes > 5) {
+                    penalty = schedule.getPenaltyRatePerMinute()
+                            .multiply(BigDecimal.valueOf(Math.max(0, lateMinutes - 5)));
+                }
+                attendanceDAO.checkInWithPenalty(accountId, schedule.getScheduleId(),
+                        "FACE_ID", BigDecimal.ZERO, penalty, (int) lateMinutes, attStatus);
+                checkInStatus = "checked-in";
+            } else {
+                checkInStatus = "out-of-schedule";
+            }
+        } else {
+            checkInStatus = "no-schedule";
+        }
+
+        String name = staff.getFullName() != null ? staff.getFullName() : staff.getUsername();
+        out.printf("{\"ok\":true,\"staffId\":%d,\"name\":\"%s\",\"status\":\"%s\"}",
+                accountId, esc(name), checkInStatus);
+    }
+
+    // ── PayOS QR handlers ────────────────────────────────────────────────────────
+    private void handleCreateQr(HttpServletRequest req, PrintWriter out) {
+        if (!com.medicare.config.PayOSConfig.isConfigured()) {
+            out.print("{\"ok\":false,\"msg\":\"PayOS chưa được cấu hình — điền CLIENT_ID/API_KEY/CHECKSUM_KEY vào PayOSConfig.java\"}");
+            return;
+        }
+        try {
+            long amount = Math.round(Double.parseDouble(req.getParameter("amount")));
+            if (amount < 1000) {
+                out.print("{\"ok\":false,\"msg\":\"Số tiền tối thiểu 1,000đ\"}");
+                return;
+            }
+            long   orderCode = System.currentTimeMillis() % 100_000_000L;
+            String desc      = "MV " + orderCode;   // ASCII, ≤25 chars
+            String baseUrl   = req.getScheme() + "://" + req.getServerName()
+                             + ":" + req.getServerPort() + req.getContextPath();
+
+            java.util.Map<String, Object> result =
+                com.medicare.service.PayOSService.createPayment(orderCode, amount, desc, baseUrl);
+
+            if (Boolean.TRUE.equals(result.get("ok"))) {
+                out.printf("{\"ok\":true,\"qrCode\":\"%s\",\"checkoutUrl\":\"%s\",\"orderCode\":%d,\"amount\":%d}",
+                    esc((String) result.get("qrCode")),
+                    esc((String) result.get("checkoutUrl")),
+                    orderCode, amount);
+            } else {
+                out.printf("{\"ok\":false,\"msg\":\"%s\"}", esc((String) result.get("msg")));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            out.print("{\"ok\":false,\"msg\":\"Lỗi kết nối PayOS\"}");
+        }
+    }
+
+    private void handleCheckQrStatus(HttpServletRequest req, PrintWriter out) {
+        String codeParam = req.getParameter("orderCode");
+        if (codeParam == null || codeParam.isBlank()) { out.print("{\"status\":\"UNKNOWN\"}"); return; }
+        try {
+            long orderCode = Long.parseLong(codeParam);
+            String status  = com.medicare.service.PayOSService.checkStatus(orderCode);
+            out.printf("{\"status\":\"%s\"}", status);
+        } catch (Exception e) {
+            e.printStackTrace();
+            out.print("{\"status\":\"UNKNOWN\"}");
+        }
+    }
+
+    private void handleCancelQr(HttpServletRequest req, PrintWriter out) {
+        String codeParam = req.getParameter("orderCode");
+        if (codeParam == null || codeParam.isBlank()) { out.print("{\"ok\":false}"); return; }
+        try {
+            long orderCode = Long.parseLong(codeParam);
+            boolean ok     = com.medicare.service.PayOSService.cancelPayment(orderCode);
+            out.printf("{\"ok\":%b}", ok);
+        } catch (Exception e) {
+            e.printStackTrace();
+            out.print("{\"ok\":false}");
+        }
+    }
+
+    private void handleOpenShift(HttpServletRequest req, PrintWriter out) {
+        HttpSession session = req.getSession(false);
+        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
+        if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
+        BigDecimal openingCash = BigDecimal.ZERO;
+        String cashStr = req.getParameter("openingCash");
+        if (cashStr != null && !cashStr.isEmpty()) {
+            try { openingCash = new BigDecimal(cashStr); } catch (Exception ignored) {}
+        }
+        ShiftSchedule schedule = scheduleDAO.findTodaySchedule(staff.getAccountId());
+        if (schedule != null && openingCash.compareTo(BigDecimal.ZERO) > 0) {
+            ((ShiftScheduleDAO) scheduleDAO).updateOpeningCash(schedule.getScheduleId(), openingCash);
+        }
+        session.setAttribute("posState", "ACTIVE");
+        session.setAttribute("posOpeningCash", openingCash);
+        out.print("{\"ok\":true}");
+    }
+
+    private void handleEndShift(HttpServletRequest req, PrintWriter out) {
+        HttpSession session = req.getSession(false);
+        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
+        if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
+
+        // Accept actual cash counted by staff
+        BigDecimal closingCash = BigDecimal.ZERO;
+        String ccStr = req.getParameter("closingCash");
+        if (ccStr != null && !ccStr.isEmpty()) {
+            try { closingCash = new BigDecimal(ccStr); } catch (Exception ignored) {}
+        }
+
+        Integer posStation = session != null ? (Integer)    session.getAttribute("posStation")    : null;
+        BigDecimal opening = session != null ? (BigDecimal) session.getAttribute("posOpeningCash") : BigDecimal.ZERO;
+        if (opening == null) opening = BigDecimal.ZERO;
+
+        int invoiceCount = 0;
+        BigDecimal cashTotal = BigDecimal.ZERO, qrTotal = BigDecimal.ZERO, cardTotal = BigDecimal.ZERO;
+        boolean hasSt = posStation != null && posStation > 0;
+        String sql = "SELECT " +
+            "ISNULL(SUM(CASE WHEN PaymentMethod='CASH' THEN FinalAmount ELSE 0 END),0) AS CashTotal," +
+            "ISNULL(SUM(CASE WHEN PaymentMethod='QR_CODE' THEN FinalAmount ELSE 0 END),0) AS QrTotal," +
+            "ISNULL(SUM(CASE WHEN PaymentMethod='CARD' THEN FinalAmount ELSE 0 END),0) AS CardTotal," +
+            "COUNT(*) AS InvoiceCnt FROM Invoices " +
+            "WHERE AccountID=? AND CAST(CreatedAt AS DATE)=CAST(GETDATE() AS DATE) AND Status='COMPLETED'" +
+            (hasSt ? " AND PosStation=?" : "");
+        try (java.sql.Connection cn = com.medicare.config.DBContext.getConnection();
+             java.sql.PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, staff.getAccountId());
+            if (hasSt) ps.setInt(2, posStation);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    cashTotal = rs.getBigDecimal("CashTotal"); if (cashTotal == null) cashTotal = BigDecimal.ZERO;
+                    qrTotal   = rs.getBigDecimal("QrTotal");   if (qrTotal   == null) qrTotal   = BigDecimal.ZERO;
+                    cardTotal = rs.getBigDecimal("CardTotal");  if (cardTotal == null) cardTotal  = BigDecimal.ZERO;
+                    invoiceCount = rs.getInt("InvoiceCnt");
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+
+        // Record actual handover cash in attendance checkout
+        attendanceDAO.checkOut(staff.getAccountId(), closingCash, "Đóng ca từ POS", false);
+
+        session.removeAttribute("posState");
+        session.removeAttribute("staffAccount");
+        session.removeAttribute("staffUid");
+        session.removeAttribute("posOpeningCash");
+
+        BigDecimal total = cashTotal.add(qrTotal).add(cardTotal);
+        String name = staff.getFullName() != null ? staff.getFullName() : staff.getUsername();
+        out.printf("{\"ok\":true,\"staffName\":\"%s\",\"invoiceCount\":%d," +
+                   "\"cashTotal\":%s,\"qrTotal\":%s,\"cardTotal\":%s," +
+                   "\"totalRevenue\":%s,\"openingCash\":%s,\"closingCash\":%s}",
+                esc(name), invoiceCount,
+                cashTotal.toPlainString(), qrTotal.toPlainString(), cardTotal.toPlainString(),
+                total.toPlainString(), opening.toPlainString(), closingCash.toPlainString());
+    }
+
+    private void handleShiftSummary(HttpServletRequest req, PrintWriter out) {
+        HttpSession session = req.getSession(false);
+        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
+        if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
+
+        Integer posStation = session != null ? (Integer)    session.getAttribute("posStation")    : null;
+        BigDecimal opening = session != null ? (BigDecimal) session.getAttribute("posOpeningCash") : BigDecimal.ZERO;
+        if (opening == null) opening = BigDecimal.ZERO;
+
+        BigDecimal cashTotal = BigDecimal.ZERO, qrTotal = BigDecimal.ZERO, cardTotal = BigDecimal.ZERO;
+        int invoiceCount = 0;
+        boolean hasSt = posStation != null && posStation > 0;
+        String sql = "SELECT " +
+            "ISNULL(SUM(CASE WHEN PaymentMethod='CASH' THEN FinalAmount ELSE 0 END),0) AS CashTotal," +
+            "ISNULL(SUM(CASE WHEN PaymentMethod='QR_CODE' THEN FinalAmount ELSE 0 END),0) AS QrTotal," +
+            "ISNULL(SUM(CASE WHEN PaymentMethod='CARD' THEN FinalAmount ELSE 0 END),0) AS CardTotal," +
+            "COUNT(*) AS InvoiceCnt FROM Invoices " +
+            "WHERE AccountID=? AND CAST(CreatedAt AS DATE)=CAST(GETDATE() AS DATE) AND Status='COMPLETED'" +
+            (hasSt ? " AND PosStation=?" : "");
+        try (java.sql.Connection cn = com.medicare.config.DBContext.getConnection();
+             java.sql.PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, staff.getAccountId());
+            if (hasSt) ps.setInt(2, posStation);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    cashTotal = rs.getBigDecimal("CashTotal"); if (cashTotal == null) cashTotal = BigDecimal.ZERO;
+                    qrTotal   = rs.getBigDecimal("QrTotal");   if (qrTotal   == null) qrTotal   = BigDecimal.ZERO;
+                    cardTotal = rs.getBigDecimal("CardTotal");  if (cardTotal == null) cardTotal  = BigDecimal.ZERO;
+                    invoiceCount = rs.getInt("InvoiceCnt");
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+
+        // Get check-in time from active attendance record
+        String checkInTime = "";
+        try {
+            com.medicare.entity.Attendance active = attendanceDAO.findActiveByAccount(staff.getAccountId());
+            if (active != null && active.getCheckInTime() != null) {
+                checkInTime = active.getCheckInTime()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+            }
+        } catch (Exception ignored) {}
+
+        BigDecimal expectedCash = opening.add(cashTotal);
+        String name = staff.getFullName() != null ? staff.getFullName() : staff.getUsername();
+        out.printf("{\"ok\":true,\"staffName\":\"%s\",\"invoiceCount\":%d," +
+                   "\"cashTotal\":%s,\"qrTotal\":%s,\"cardTotal\":%s," +
+                   "\"openingCash\":%s,\"expectedCash\":%s,\"posStation\":%d,\"checkInTime\":\"%s\"}",
+                esc(name), invoiceCount,
+                cashTotal.toPlainString(), qrTotal.toPlainString(), cardTotal.toPlainString(),
+                opening.toPlainString(), expectedCash.toPlainString(),
+                posStation != null ? posStation : 0, checkInTime);
     }
 
     // ── Helpers ──────────────────────────────────────────────

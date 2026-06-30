@@ -3,37 +3,27 @@ package com.medicare.dao;
 import com.medicare.config.DBContext;
 import com.medicare.dao.interfaces.ICustomerDAO;
 import com.medicare.entity.Customer;
+import com.medicare.util.MojibakeUtil;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CustomerDAO implements ICustomerDAO {
 
-    private static String fixMojibake(String s) {
-        if (s == null) return null;
-        try {
-            byte[] bytes = s.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
-            java.nio.charset.CharsetDecoder dec = java.nio.charset.StandardCharsets.UTF_8.newDecoder()
-                .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
-                .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT);
-            return dec.decode(java.nio.ByteBuffer.wrap(bytes)).toString();
-        } catch (Exception ignored) { return s; }
-    }
-
     private Customer mapRow(ResultSet rs) throws SQLException {
         Customer c = new Customer();
         c.setCustomerId(rs.getInt("CustomerID"));
-        c.setCustomerName(fixMojibake(rs.getNString("CustomerName")));
+        c.setCustomerName(MojibakeUtil.fix(rs.getNString("CustomerName")));
         c.setPhone(rs.getString("Phone"));
         c.setEmail(rs.getString("Email"));
-        c.setAddress(fixMojibake(rs.getNString("Address")));
+        c.setAddress(MojibakeUtil.fix(rs.getNString("Address")));
         Date dob = rs.getDate("DateOfBirth");
         if (dob != null) c.setDateOfBirth(dob.toLocalDate());
         c.setGender(rs.getString("Gender"));
         c.setNationalId(rs.getString("NationalId"));
-        c.setOccupation(rs.getNString("Occupation"));
-        c.setAllergyHistory(rs.getNString("AllergyHistory"));
-        c.setChronicDisease(rs.getNString("ChronicDisease"));
+        c.setOccupation(MojibakeUtil.fix(rs.getNString("Occupation")));
+        c.setAllergyHistory(MojibakeUtil.fix(rs.getNString("AllergyHistory")));
+        c.setChronicDisease(MojibakeUtil.fix(rs.getNString("ChronicDisease")));
         if (rs.getTimestamp("CreatedAt") != null)
             c.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
         return c;

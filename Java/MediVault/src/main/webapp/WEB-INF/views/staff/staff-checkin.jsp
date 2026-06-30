@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
@@ -16,40 +16,18 @@
 <title>Điểm danh — MediCare</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="${pageContext.request.contextPath}/js/face-api/face-api.min.js" defer></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff-portal.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --ink:#12082A;--dp:#1C0F3F;--mid:#2D1B69;--main:#6D28D9;
   --light:#A78BFA;--soft:#F5F3FF;--white:#fff;
   --muted:#7C6FAA;--border:#E2DCF5;--surface:#FAFAFA;
-  --green:#059669;--red:#DC2626;--gold:#D97706;--cyan:#5EEAD4;
+  --green:#059669;--red:#DC2626;--gold:#D97706;--cyan:#5EEAD4;--blue:#2563EB;
   --sidebar:228px;--radius:14px;
 }
 html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--soft);color:var(--ink)}body{display:flex}
-.sidebar{width:var(--sidebar);min-height:100vh;background:linear-gradient(175deg,#0E0520 0%,#1C0F3F 45%,#3B1FA0 100%);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;box-shadow:4px 0 24px rgba(0,0,0,.2)}
-.sidebar::after{content:'';position:absolute;top:0;right:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,rgba(167,139,250,.15) 30%,rgba(167,139,250,.15) 70%,transparent)}
-.sidebar-logo{height:66px;padding:0 20px;display:flex;align-items:center;gap:11px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
-.logo-gem{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--light),var(--main));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;box-shadow:0 4px 16px rgba(109,40,217,.4)}
-.logo-name{font-size:16px;font-weight:800;color:#fff;letter-spacing:-.2px;line-height:1.1}
-.logo-name span{color:var(--light)}
-.logo-sub{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1.2px;text-transform:uppercase;margin-top:1px}
-.nav-block{padding:12px 0 4px;flex-shrink:0}
-.nav-label{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:500;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
-.nav-item:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.06)}
-.nav-item.active{color:#fff;background:rgba(167,139,250,.15);font-weight:600}
-.nav-item.active::before{content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:56%;background:var(--light);border-radius:2px}
-.nav-icon{width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;opacity:.85}
-.nav-item.active .nav-icon{opacity:1}
-.sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
-.user-card{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
-.user-av{width:34px;height:34px;flex-shrink:0;border-radius:9px;background:linear-gradient(135deg,var(--light),var(--main));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff}
-.user-name{font-size:12.5px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:108px}
-.user-role{font-size:10px;color:rgba(255,255,255,.35);margin-top:1px}
-.logout-btn-full{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:9px 14px;margin-top:10px;border-radius:10px;background:rgba(220,38,38,.15);border:1.5px solid rgba(220,38,38,.25);color:#FCA5A5;text-decoration:none;font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:700;letter-spacing:.3px;transition:all .2s}
-.logout-btn-full:hover{background:rgba(220,38,38,.32);color:#fff;border-color:#DC2626}
-.main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0}
-.topbar{height:58px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:0;z-index:50}
+.topbar{height:58px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding: 28px;gap:12px;position:sticky;top:0;z-index:50}
 .topbar-title{font-size:15px;font-weight:800;color:var(--ink)}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
 .content{padding:20px 24px;flex:1}
@@ -226,7 +204,7 @@ tbody tr:last-child td{border-bottom:none}
               <div class="sc-meta-item">
                 <div class="sc-meta-label">Trễ</div>
                 <div class="sc-meta-val" style="${activeAtt.lateMinutes>0?'color:var(--red)':''}">
-                  ${activeAtt.lateMinutes>0 ? activeAtt.lateMinutes.concat(' phút') : 'Đúng giờ'}
+                  ${activeAtt.lateMinutes>0 ? activeAtt.lateMinutes : 'Đúng giờ'}${activeAtt.lateMinutes>0 ? ' phút' : ''}
                 </div>
               </div>
               <div class="sc-meta-item">
@@ -239,6 +217,19 @@ tbody tr:last-child td{border-bottom:none}
                   <div class="sc-meta-val">${fn:substring(activeAtt.plannedEnd.toString(),11,16)}</div>
                 </div>
               </c:if>
+              <c:if test="${not empty todaySchedule}">
+                <div class="sc-meta-item">
+                  <div class="sc-meta-label">Quầy POS</div>
+                  <c:choose>
+                    <c:when test="${todaySchedule.posStation > 0}">
+                      <div class="sc-meta-val" style="color:#3B82F6;font-weight:700">🖥️ Quầy ${todaySchedule.posStation}</div>
+                    </c:when>
+                    <c:otherwise>
+                      <div class="sc-meta-val" style="color:#94A3B8;font-style:italic">Chưa phân công</div>
+                    </c:otherwise>
+                  </c:choose>
+                </div>
+              </c:if>
             </div>
           </div>
         </c:when>
@@ -249,10 +240,18 @@ tbody tr:last-child td{border-bottom:none}
             </div>
             <div style="padding:16px 20px 8px">
               <c:if test="${not empty todaySchedule}">
-                <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px">📅 Ca hôm nay: ${todaySchedule.shiftTypeName}</div>
-                <div style="font-size:12px;color:var(--muted)">
-                  ${fn:substring(todaySchedule.plannedStart.toString(),11,16)} – ${fn:substring(todaySchedule.plannedEnd.toString(),11,16)}
+                <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:6px">📅 Ca hôm nay: ${todaySchedule.shiftTypeName}</div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:4px">
+                  🕐 ${fn:substring(todaySchedule.plannedStart.toString(),11,16)} – ${fn:substring(todaySchedule.plannedEnd.toString(),11,16)}
                 </div>
+                <c:choose>
+                  <c:when test="${todaySchedule.posStation > 0}">
+                    <div style="font-size:12px;font-weight:700;color:#3B82F6;margin-bottom:4px">🖥️ Quầy POS ${todaySchedule.posStation}</div>
+                  </c:when>
+                  <c:otherwise>
+                    <div style="font-size:12px;color:#94A3B8;margin-bottom:4px;font-style:italic">🖥️ Quầy POS: Chưa phân công</div>
+                  </c:otherwise>
+                </c:choose>
               </c:if>
               <c:if test="${empty todaySchedule}">
                 <div style="font-size:13px;color:var(--muted)">Không có lịch ca hôm nay.<br>Bạn vẫn có thể mở ca tự do.</div>
@@ -731,3 +730,4 @@ function closeFaceCheckinModal() {
 }
 </script>
 </body></html>
+
