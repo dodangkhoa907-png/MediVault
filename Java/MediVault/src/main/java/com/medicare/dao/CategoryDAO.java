@@ -3,28 +3,18 @@ package com.medicare.dao;
 import com.medicare.config.DBContext;
 import com.medicare.dao.interfaces.ICategoryDAO;
 import com.medicare.entity.Category;
+import com.medicare.util.MojibakeUtil;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CategoryDAO implements ICategoryDAO {
 
-    private static String fixMojibake(String s) {
-        if (s == null) return null;
-        try {
-            byte[] bytes = s.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
-            java.nio.charset.CharsetDecoder dec = java.nio.charset.StandardCharsets.UTF_8.newDecoder()
-                .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
-                .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT);
-            return dec.decode(java.nio.ByteBuffer.wrap(bytes)).toString();
-        } catch (Exception ignored) { return s; }
-    }
-
     private Category mapRow(ResultSet rs) throws SQLException {
         return new Category(
                 rs.getInt("CategoryID"),
-                fixMojibake(rs.getNString("CategoryName")),
-                fixMojibake(rs.getNString("Description"))
+                MojibakeUtil.fix(rs.getNString("CategoryName")),
+                MojibakeUtil.fix(rs.getNString("Description"))
         );
     }
 

@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" %>
 <% String activeNav = "medicines"; %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%
@@ -51,7 +51,9 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .logout-btn:hover{background:rgba(220,38,38,.2);color:#DC2626}
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh}
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50}
-.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;color:var(--ink)}
+.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--ink)}
+
+    
 .btn-back{height:36px;padding:0 14px;background:var(--white);border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px;margin-left:auto;transition:all .15s}
 .btn-back:hover{border-color:var(--blue);color:var(--navy)}
 .content{padding:32px 28px;flex:1;max-width:600px}

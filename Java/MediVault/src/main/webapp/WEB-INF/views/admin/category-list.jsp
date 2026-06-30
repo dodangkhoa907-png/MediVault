@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" %>
 <% String activeNav = "medicines"; %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%
@@ -46,12 +46,12 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .logout-btn:hover{background:rgba(220,38,38,.2);color:#DC2626}
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh}
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50}
-.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;color:var(--ink)}
+.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--ink)}
+
+    
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
 .btn-primary{height:36px;padding:0 16px;background:var(--blue);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-family:inherit;transition:all .15s}
 .btn-primary:hover{background:#0d3d63}
-.btn-back{height:36px;padding:0 14px;background:var(--white);border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
-.btn-back:hover{border-color:var(--blue);color:var(--navy)}
 .content{padding:24px 28px;flex:1}
 .page-header{margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
 .page-title{font-size:26px;font-weight:800;color:var(--ink)}
@@ -76,6 +76,11 @@ td{padding:14px 16px;font-size:13.5px;color:var(--ink);vertical-align:middle}
 .empty{padding:48px;text-align:center;color:var(--muted)}
 .empty-icon{font-size:40px;margin-bottom:12px}
 .badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(21,88,168,.08);color:var(--blue)}
+/* ── SECTION TABS ── */
+.section-tabs{display:flex;gap:6px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content;margin-bottom:20px}
+.section-tab{padding:8px 18px;border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;transition:all .15s}
+.section-tab:hover{background:var(--surface);color:var(--ink)}
+.section-tab.active{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;box-shadow:0 3px 10px rgba(21,88,168,.25)}
 </style>
 </head>
 <body>
@@ -88,7 +93,6 @@ td{padding:14px 16px;font-size:13.5px;color:var(--ink);vertical-align:middle}
   <div class="topbar">
     <span class="topbar-title">🏷️ Danh mục thuốc</span>
     <div class="topbar-right">
-      <a href="${pageContext.request.contextPath}/medicines" class="btn-back">← Kho thuốc</a>
       <a href="${pageContext.request.contextPath}/categories?action=new" class="btn-primary">+ Thêm danh mục</a>
     </div>
   </div>
@@ -99,6 +103,13 @@ td{padding:14px 16px;font-size:13.5px;color:var(--ink);vertical-align:middle}
         <div class="page-title">Danh mục thuốc</div>
         <div class="page-sub">Phân loại thuốc theo nhóm — <c:out value="${categories.size()}"/> danh mục</div>
       </div>
+    </div>
+
+    <%-- Section tabs — navigate giữa Thuốc / Đơn đặt hàng / Danh mục --%>
+    <div class="section-tabs">
+      <a href="${pageContext.request.contextPath}/medicines" class="section-tab">💊 Thuốc &amp; Lô hàng</a>
+      <a href="${pageContext.request.contextPath}/purchase-orders" class="section-tab">📑 Đơn đặt hàng</a>
+      <a href="${pageContext.request.contextPath}/categories" class="section-tab active">🏷️ Danh mục</a>
     </div>
 
     <% if ("created".equals(msg)) { %><div class="toast-bar toast-ok">✅ Đã thêm danh mục mới thành công!</div><% } %>

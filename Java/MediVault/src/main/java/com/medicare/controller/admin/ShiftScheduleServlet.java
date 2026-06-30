@@ -245,14 +245,16 @@ public class ShiftScheduleServlet extends HttpServlet {
         int scheduleId         = parseInt(req.getParameter("scheduleId"), 0);
         int shiftTypeId        = parseInt(req.getParameter("shiftTypeId"), 0);
         int lateTolerance      = parseInt(req.getParameter("lateToleranceMinutes"), 10);
+        int posStation         = parseInt(req.getParameter("posStation"), 0);
         String notes           = req.getParameter("notes");
 
         if (scheduleId == 0 || shiftTypeId == 0) {
             resp.sendRedirect(req.getContextPath() + "/shift-schedules?msg=invalid"); return;
         }
 
-        boolean ok = scheduleDAO.update(scheduleId, shiftTypeId, lateTolerance, notes,
-                admin.getAccountId());
+        boolean ok = ((com.medicare.dao.ShiftScheduleDAO) scheduleDAO)
+                .update(scheduleId, shiftTypeId, lateTolerance, notes,
+                        admin.getAccountId(), posStation);
         if (ok) {
             AuditHelper.log(req, "Sửa lịch ca", "ShiftSchedule",
                     "Sửa lịch ca ID " + scheduleId

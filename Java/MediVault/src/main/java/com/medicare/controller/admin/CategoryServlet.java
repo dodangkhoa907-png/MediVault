@@ -31,12 +31,17 @@ public class CategoryServlet extends HttpServlet {
             case "list" -> showList(req, resp);
             case "new"  -> showForm(req, resp, null);
             case "edit" -> {
-                int id = Integer.parseInt(req.getParameter("id"));
-                showForm(req, resp, dao.findById(id));
+                String rawId = req.getParameter("id");
+                if (rawId == null || rawId.isEmpty()) { showList(req, resp); return; }
+                try { showForm(req, resp, dao.findById(Integer.parseInt(rawId))); }
+                catch (NumberFormatException e) { showList(req, resp); }
             }
             case "delete" -> {
-                int id = Integer.parseInt(req.getParameter("id"));
-                dao.delete(id);
+                String rawId = req.getParameter("id");
+                if (rawId != null && !rawId.isEmpty()) {
+                    try { dao.delete(Integer.parseInt(rawId)); }
+                    catch (NumberFormatException ignored) {}
+                }
                 resp.sendRedirect(req.getContextPath() + "/categories?msg=deleted");
             }
             default -> showList(req, resp);

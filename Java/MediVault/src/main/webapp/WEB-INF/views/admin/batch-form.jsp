@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
@@ -28,9 +28,11 @@
 }
 html,body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--surface);color:var(--ink)}
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50}
+.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--ink)}
 .btn-back{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:9px;border:1.5px solid var(--border);background:var(--white);color:var(--ink);font-size:13px;font-weight:600;text-decoration:none}
 .btn-back:hover{border-color:var(--blue);color:var(--blue)}
-.topbar-title{font-family:'DM Serif Display',serif;font-size:16px}
+
+    
 .topbar-right{margin-left:auto}
 .user-av-sm{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#3ABDE0,#1558A8);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
 .content{max-width:640px;margin:28px auto;padding:0 20px 40px}
@@ -122,8 +124,10 @@ html,body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--surfa
         </div>
         <div class="form-group">
           <label class="form-label">Ngày hết hạn <span>*</span></label>
-          <input type="date" name="expiryDate" class="form-input"
-                 value="${batch != null ? batch.expiryDate : ''}" required/>
+          <input type="date" name="expiryDate" id="expiryDateInp" class="form-input"
+                 value="${batch != null ? batch.expiryDate : ''}" required
+                 oninput="checkHsd(this)"/>
+          <div id="hsdWarn" style="display:none;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:600"></div>
         </div>
         <div class="form-group">
           <label class="form-label">Giá nhập (₫) <span>*</span></label>
@@ -131,6 +135,14 @@ html,body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--surfa
                  placeholder="0" min="0" step="100"
                  value="${batch != null ? batch.importPrice : ''}" required/>
         </div>
+        <c:if test="${not isNew}">
+        <div class="form-group">
+          <label class="form-label">Ngày nhập kho</label>
+          <input type="text" class="form-input" value="${batch.importDate}" disabled
+                 style="background:#F8FAFC;color:var(--muted);cursor:default"/>
+          <span class="form-hint">Ngày nhập được ghi nhận tự động khi tạo lô, không thể thay đổi</span>
+        </div>
+        </c:if>
       </div>
     </div>
 
@@ -190,6 +202,25 @@ html,body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--surfa
       </div>
     </c:if>
 
+    <c:if test="${not isNew}">
+    <div class="card" style="border-color:#E5E7EB;background:#FAFBFD">
+      <div class="card-title" style="color:var(--muted)">📊 Thông tin tồn kho (chỉ đọc)</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Số lượng nhập ban đầu</label>
+          <input type="text" class="form-input" value="${batch.initialQuantity} ${medicine.unit}" disabled
+                 style="background:#F8FAFC;color:var(--muted);cursor:default"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tồn kho hiện tại</label>
+          <input type="text" class="form-input" value="${batch.currentQuantity} ${medicine.unit}" disabled
+                 style="background:#F8FAFC;color:var(--muted);cursor:default"/>
+        </div>
+      </div>
+      <div class="form-hint" style="margin-top:8px">💡 Để nhập thêm hàng vào lô này, dùng nút <strong>＋ Nhập thêm</strong> trên trang danh sách lô.</div>
+    </div>
+    </c:if>
+
     <div class="form-actions">
       <a href="${pageContext.request.contextPath}/medicines?action=detail&id=${medicine.medicineId}"
          class="btn-cancel">Hủy</a>
@@ -200,6 +231,33 @@ html,body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--surfa
   </form>
 </div>
 <script>
+// Bug 1 fix: chỉ block form submission khi isNew (nhập lô mới)
+const IS_NEW_BATCH = <%= isNew %>;
+
+function checkHsd(inp) {
+  const warn = document.getElementById('hsdWarn');
+  if (!inp.value) { warn.style.display = 'none'; inp.setCustomValidity(''); return; }
+  const today = new Date(); today.setHours(0,0,0,0);
+  const hsd = new Date(inp.value);
+  const diffDays = Math.round((hsd - today) / 86400000);
+  if (diffDays < 0) {
+    warn.style.cssText = 'display:block;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:600;background:#FEE2E2;color:#991B1B;border:1px solid #FECACA';
+    warn.textContent = IS_NEW_BATCH ? '❌ Ngày hết hạn đã qua! Không thể nhập lô hết hạn.' : '⚠️ Ngày hết hạn đã qua — lô này đã hết hạn.';
+    inp.setCustomValidity(IS_NEW_BATCH ? 'Ngày hết hạn đã qua' : '');
+  } else if (diffDays < 90) {
+    warn.style.cssText = 'display:block;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:600;background:#FFFBEB;color:#92400E;border:1px solid #FDE68A';
+    warn.textContent = '⚠️ HSD chỉ còn ' + diffDays + ' ngày' + (IS_NEW_BATCH ? ' — GPP yêu cầu ≥ 90 ngày khi nhập kho!' : '');
+    inp.setCustomValidity(IS_NEW_BATCH ? 'HSD phải còn ít nhất 90 ngày' : '');
+  } else {
+    warn.style.display = 'none';
+    inp.setCustomValidity('');
+  }
+}
+document.addEventListener('DOMContentLoaded', function() {
+  const inp = document.getElementById('expiryDateInp');
+  if (inp && inp.value) checkHsd(inp);
+});
+
 function togglePoMode() {
   const existingBlock = document.getElementById('poExistingBlock');
   if (!existingBlock) return; // chế độ sửa lô — không có thẻ chọn đơn đặt hàng

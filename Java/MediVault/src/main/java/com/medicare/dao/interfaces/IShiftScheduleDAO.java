@@ -21,6 +21,9 @@ public interface IShiftScheduleDAO {
     List<ShiftSchedule> findUpcoming(int accountId, int days);
     ShiftSchedule findByAccountAndDate(int accountId, LocalDate date);
 
+    /** Tất cả lịch ca hôm nay kèm PosStation — cho sơ đồ quầy */
+    List<ShiftSchedule> findTodayAll();
+
     // ── UPDATE ────────────────────────────────────────────────────
     boolean updateStatus(int scheduleId, String status);
     boolean update(int scheduleId, int shiftTypeId,

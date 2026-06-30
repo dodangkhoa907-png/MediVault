@@ -81,6 +81,18 @@
             <version>5.1.0</version>
         </dependency>
 
+        <!-- SLF4J — bắt buộc bởi HikariCP 5.x -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.13</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>2.0.13</version>
+        </dependency>
+
 
         <!-- Caffeine — High-performance in-memory cache (thay thế cho EhCache/Redis nội bộ) -->
         <dependency>

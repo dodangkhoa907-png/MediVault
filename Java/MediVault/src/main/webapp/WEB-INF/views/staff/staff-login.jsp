@@ -181,6 +181,14 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
 .form-box>*:nth-child(3){animation-delay:.15s}
 .form-box>*:nth-child(4){animation-delay:.2s}
 .form-box>*:nth-child(5){animation-delay:.3s}
+
+@media(max-width:768px){
+  html,body{height:auto;overflow:auto}
+  body{grid-template-columns:1fr}
+  .left{display:none}
+  .right{padding:40px 28px;min-height:100svh}
+  .form-box{max-width:100%}
+}
 </style>
 </head>
 <body>

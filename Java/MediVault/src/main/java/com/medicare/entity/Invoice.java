@@ -15,6 +15,7 @@ public class Invoice {
     private BigDecimal discountAmount;
     private String paymentMethod; // CASH | CARD | TRANSFER | EWALLET | QR_CODE
     private String status;        // COMPLETED | CANCELLED | PENDING
+    private Integer posStation;   // Quầy POS tạo hóa đơn (NULL = không rõ)
 
     public Invoice() {}
 
@@ -54,4 +55,6 @@ public class Invoice {
     public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public Integer getPosStation() { return posStation; }
+    public void setPosStation(Integer posStation) { this.posStation = posStation; }
 }

@@ -3,45 +3,37 @@ package com.medicare.dao;
 import com.medicare.config.DBContext;
 import com.medicare.dao.interfaces.IMedicineDAO;
 import com.medicare.entity.Medicines;
+import com.medicare.util.MojibakeUtil;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MedicineDAO implements IMedicineDAO {
 
-    private static String fixMojibake(String s) {
-        if (s == null) return null;
-        try {
-            byte[] bytes = s.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
-            java.nio.charset.CharsetDecoder dec = java.nio.charset.StandardCharsets.UTF_8.newDecoder()
-                .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
-                .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT);
-            return dec.decode(java.nio.ByteBuffer.wrap(bytes)).toString();
-        } catch (Exception ignored) { return s; }
-    }
-
     private Medicines mapRow(ResultSet rs) throws SQLException {
         Medicines m = new Medicines();
         m.setMedicineId(rs.getInt("MedicineID"));
         m.setMedicineCode(rs.getString("MedicineCode"));
-        m.setMedicineName(fixMojibake(rs.getNString("MedicineName")));
-        m.setGenericName(fixMojibake(rs.getNString("GenericName")));
+        m.setMedicineName(MojibakeUtil.fix(rs.getNString("MedicineName")));
+        m.setGenericName(MojibakeUtil.fix(rs.getNString("GenericName")));
         m.setBarcode(rs.getString("Barcode"));
         m.setRegistrationNumber(rs.getString("RegistrationNumber"));
         m.setCategoryId(rs.getInt("CategoryID"));
         m.setManufacturerId(rs.getInt("ManufacturerID"));
-        m.setUnit(fixMojibake(rs.getNString("Unit")));
+        m.setUnit(MojibakeUtil.fix(rs.getNString("Unit")));
         m.setShelfId(rs.getInt("ShelfID"));
-        m.setDosage(fixMojibake(rs.getNString("Dosage")));
-        m.setContraindications(fixMojibake(rs.getNString("Contraindications")));
+        m.setDosage(MojibakeUtil.fix(rs.getNString("Dosage")));
+        m.setContraindications(MojibakeUtil.fix(rs.getNString("Contraindications")));
         m.setPrescriptionRequired(rs.getBoolean("IsPrescriptionRequired"));
         m.setSellingPrice(rs.getBigDecimal("SellingPrice"));
         m.setMinInventory(rs.getInt("MinInventory"));
-        m.setStorageConditions(fixMojibake(rs.getNString("StorageConditions")));
+        m.setStorageConditions(MojibakeUtil.fix(rs.getNString("StorageConditions")));
         m.setStatus(rs.getBoolean("Status"));
         m.setExpiryAlertDays(rs.getInt("ExpiryAlertDays"));
         if (rs.getTimestamp("CreatedAt") != null)
             m.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
+        try { m.setPackagingSpec(rs.getString("PackagingSpec")); } catch (Exception ignored) {}
+        try { m.setImageUrl(rs.getString("ImageUrl")); } catch (Exception ignored) {}
         return m;
     }
 
@@ -49,34 +41,43 @@ public class MedicineDAO implements IMedicineDAO {
         List<Medicines> list = new ArrayList<>();
         String sql = "SELECT * FROM Medicines WHERE Status = 1 ORDER BY MedicineName";
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) list.add(mapRow(rs));
-        } catch (Exception e) { e.printStackTrace(); }
+                PreparedStatement ps = cn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next())
+                list.add(mapRow(rs));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return list;
     }
 
     public Medicines findById(int id) {
         String sql = "SELECT * FROM Medicines WHERE MedicineID = ?";
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
+                PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return mapRow(rs);
+                if (rs.next())
+                    return mapRow(rs);
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return null;
     }
 
     public Medicines findByBarcode(String barcode) {
         String sql = "SELECT * FROM Medicines WHERE Barcode = ? AND Status = 1";
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
+                PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, barcode);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return mapRow(rs);
+                if (rs.next())
+                    return mapRow(rs);
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return null;
     }
 
@@ -87,16 +88,19 @@ public class MedicineDAO implements IMedicineDAO {
                 "(MedicineName LIKE ? OR GenericName LIKE ? OR Barcode LIKE ? OR MedicineCode LIKE ?) " +
                 "ORDER BY MedicineName";
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
+                PreparedStatement ps = cn.prepareStatement(sql)) {
             String kw = "%" + keyword + "%";
             ps.setNString(1, kw);
             ps.setNString(2, kw);
             ps.setString(3, kw);
             ps.setString(4, kw);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) list.add(mapRow(rs));
+                while (rs.next())
+                    list.add(mapRow(rs));
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return list;
     }
 
@@ -106,23 +110,30 @@ public class MedicineDAO implements IMedicineDAO {
         String sql = "SELECT m.* FROM Medicines m " +
                 "LEFT JOIN (SELECT MedicineID, SUM(CurrentQuantity) AS TotalQty " +
                 "           FROM Batches GROUP BY MedicineID) b ON m.MedicineID = b.MedicineID " +
-                "WHERE m.Status = 1 AND ISNULL(b.TotalQty, 0) <= m.MinInventory " +
+                "WHERE m.Status = 1 AND ISNULL(b.TotalQty, 0) > 0 " +
+                "  AND ISNULL(b.TotalQty, 0) <= m.MinInventory AND m.MinInventory > 0 " +
                 "ORDER BY ISNULL(b.TotalQty, 0) ASC";
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) list.add(mapRow(rs));
-        } catch (Exception e) { e.printStackTrace(); }
+                PreparedStatement ps = cn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next())
+                list.add(mapRow(rs));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return list;
     }
 
     public int countAll() {
         String sql = "SELECT COUNT(*) FROM Medicines WHERE Status = 1";
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) return rs.getInt(1);
-        } catch (Exception e) { e.printStackTrace(); }
+                PreparedStatement ps = cn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            if (rs.next())
+                return rs.getInt(1);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return 0;
     }
 
@@ -130,22 +141,26 @@ public class MedicineDAO implements IMedicineDAO {
         String sql = "SELECT COUNT(*) FROM Medicines m " +
                 "LEFT JOIN (SELECT MedicineID, SUM(CurrentQuantity) AS TotalQty " +
                 "           FROM Batches GROUP BY MedicineID) b ON m.MedicineID = b.MedicineID " +
-                "WHERE m.Status = 1 AND ISNULL(b.TotalQty, 0) <= m.MinInventory";
+                "WHERE m.Status = 1 AND ISNULL(b.TotalQty, 0) > 0 " +
+                "  AND ISNULL(b.TotalQty, 0) <= m.MinInventory AND m.MinInventory > 0";
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) return rs.getInt(1);
-        } catch (Exception e) { e.printStackTrace(); }
+                PreparedStatement ps = cn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            if (rs.next())
+                return rs.getInt(1);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return 0;
     }
 
     public boolean insert(Medicines m) {
         String sql = "INSERT INTO Medicines (MedicineName, GenericName, Barcode, RegistrationNumber, " +
                 "CategoryID, ManufacturerID, Unit, ShelfID, Dosage, Contraindications, " +
-                "StorageConditions, IsPrescriptionRequired, SellingPrice, MinInventory, ExpiryAlertDays) " +
-                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                "StorageConditions, IsPrescriptionRequired, SellingPrice, MinInventory, ExpiryAlertDays, " +
+                "PackagingSpec) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
+                PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setNString(1, m.getMedicineName());
             ps.setNString(2, m.getGenericName());
             ps.setString(3, m.getBarcode());
@@ -161,17 +176,56 @@ public class MedicineDAO implements IMedicineDAO {
             ps.setBigDecimal(13, m.getSellingPrice());
             ps.setInt(14, m.getMinInventory());
             ps.setInt(15, m.getExpiryAlertDays());
+            ps.setNString(16, m.getPackagingSpec());
             return ps.executeUpdate() > 0;
-        } catch (Exception e) { e.printStackTrace(); return false; }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public int insertGetId(Medicines m) {
+        String sql = "INSERT INTO Medicines (MedicineName, GenericName, Barcode, RegistrationNumber, " +
+                "CategoryID, ManufacturerID, Unit, ShelfID, Dosage, Contraindications, " +
+                "StorageConditions, IsPrescriptionRequired, SellingPrice, MinInventory, ExpiryAlertDays, " +
+                "PackagingSpec) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        try (Connection cn = DBContext.getConnection();
+                PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setNString(1, m.getMedicineName());
+            ps.setNString(2, m.getGenericName());
+            ps.setString(3, m.getBarcode());
+            ps.setString(4, m.getRegistrationNumber());
+            ps.setInt(5, m.getCategoryId());
+            ps.setInt(6, m.getManufacturerId());
+            ps.setNString(7, m.getUnit());
+            ps.setInt(8, m.getShelfId());
+            ps.setNString(9, m.getDosage());
+            ps.setNString(10, m.getContraindications());
+            ps.setNString(11, m.getStorageConditions());
+            ps.setBoolean(12, m.isPrescriptionRequired());
+            ps.setBigDecimal(13, m.getSellingPrice());
+            ps.setInt(14, m.getMinInventory());
+            ps.setInt(15, m.getExpiryAlertDays());
+            ps.setNString(16, m.getPackagingSpec());
+            if (ps.executeUpdate() > 0) {
+                try (ResultSet keys = ps.getGeneratedKeys()) {
+                    if (keys.next()) return keys.getInt(1);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return -1;
     }
 
     public boolean update(Medicines m) {
         String sql = "UPDATE Medicines SET MedicineName=?, GenericName=?, Barcode=?, " +
                 "RegistrationNumber=?, CategoryID=?, ManufacturerID=?, Unit=?, ShelfID=?, " +
                 "Dosage=?, Contraindications=?, StorageConditions=?, IsPrescriptionRequired=?, " +
-                "SellingPrice=?, MinInventory=?, ExpiryAlertDays=? WHERE MedicineID=?";
+                "SellingPrice=?, MinInventory=?, ExpiryAlertDays=?, PackagingSpec=?, ImageUrl=? " +
+                "WHERE MedicineID=?";
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
+                PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setNString(1, m.getMedicineName());
             ps.setNString(2, m.getGenericName());
             ps.setString(3, m.getBarcode());
@@ -187,19 +241,54 @@ public class MedicineDAO implements IMedicineDAO {
             ps.setBigDecimal(13, m.getSellingPrice());
             ps.setInt(14, m.getMinInventory());
             ps.setInt(15, m.getExpiryAlertDays());
-            ps.setInt(16, m.getMedicineId());
+            ps.setNString(16, m.getPackagingSpec());
+            ps.setString(17, m.getImageUrl());
+            ps.setInt(18, m.getMedicineId());
             return ps.executeUpdate() > 0;
-        } catch (Exception e) { e.printStackTrace(); return false; }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean updateImageUrl(int medicineId, String imageUrl) {
+        String sql = "UPDATE Medicines SET ImageUrl = ? WHERE MedicineID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, imageUrl);
+            ps.setInt(2, medicineId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /** Cập nhật chỉ vị trí kệ — dùng khi người dùng thay đổi kệ từ form lô hàng */
+    public boolean updateShelf(int medicineId, int shelfId) {
+        String sql = "UPDATE Medicines SET ShelfID = ? WHERE MedicineID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, shelfId);
+            ps.setInt(2, medicineId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     // Xóa mềm — chỉ set Status = 0, không xóa thật
     public boolean delete(int id) {
         String sql = "UPDATE Medicines SET Status = 0 WHERE MedicineID = ?";
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
+                PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, id);
             return ps.executeUpdate() > 0;
-        } catch (Exception e) { e.printStackTrace(); return false; }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     // Lấy tất cả kể cả đã ẩn — dùng cho trang quản lý kho
@@ -207,10 +296,13 @@ public class MedicineDAO implements IMedicineDAO {
         List<Medicines> list = new ArrayList<>();
         String sql = "SELECT * FROM Medicines ORDER BY Status DESC, MedicineName";
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) list.add(mapRow(rs));
-        } catch (Exception e) { e.printStackTrace(); }
+                PreparedStatement ps = cn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next())
+                list.add(mapRow(rs));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return list;
     }
 
@@ -218,16 +310,18 @@ public class MedicineDAO implements IMedicineDAO {
     public boolean toggleStatus(int id) {
         String sql = "UPDATE Medicines SET Status = 1 - Status WHERE MedicineID = ?";
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
+                PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, id);
             return ps.executeUpdate() > 0;
-        } catch (Exception e) { e.printStackTrace(); return false; }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     // ── Single-query methods replacing N+1 patterns ──────────────────────────
 
-    private static final String STOCK_CTE =
-            "WITH bs AS (" +
+    private static final String STOCK_CTE = "WITH bs AS (" +
             "  SELECT MedicineID, SUM(CurrentQuantity) AS TotalStock" +
             "  FROM Batches WHERE ExpiryDate > CAST(GETDATE() AS DATE)" +
             "  GROUP BY MedicineID" +
@@ -263,14 +357,19 @@ public class MedicineDAO implements IMedicineDAO {
                 "  AND (m.MedicineName LIKE ? OR m.GenericName LIKE ? OR m.Barcode LIKE ? OR m.MedicineCode LIKE ?)" +
                 " ORDER BY m.MedicineName";
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
+                PreparedStatement ps = cn.prepareStatement(sql)) {
             String kw = "%" + keyword + "%";
-            ps.setNString(1, kw); ps.setNString(2, kw);
-            ps.setString(3, kw);  ps.setString(4, kw);
+            ps.setNString(1, kw);
+            ps.setNString(2, kw);
+            ps.setString(3, kw);
+            ps.setString(4, kw);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) list.add(mapRowWithStock(rs));
+                while (rs.next())
+                    list.add(mapRowWithStock(rs));
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return list;
     }
 
@@ -287,18 +386,20 @@ public class MedicineDAO implements IMedicineDAO {
     public List<Medicines> findPaged(String keyword, Integer catId, int page, int pageSize) {
         List<Medicines> list = new ArrayList<>();
         boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
-        boolean hasCat     = catId != null;
+        boolean hasCat = catId != null;
 
         StringBuilder sql = new StringBuilder(
                 "SELECT * FROM Medicines WHERE 1=1");
-        if (hasKeyword) sql.append(
-                " AND (MedicineName LIKE ? OR GenericName LIKE ? OR MedicineCode LIKE ? OR Barcode LIKE ?)");
-        if (hasCat)     sql.append(" AND CategoryID = ?");
+        if (hasKeyword)
+            sql.append(
+                    " AND (MedicineName LIKE ? OR GenericName LIKE ? OR MedicineCode LIKE ? OR Barcode LIKE ?)");
+        if (hasCat)
+            sql.append(" AND CategoryID = ?");
         sql.append(" ORDER BY Status DESC, MedicineName");
         sql.append(" OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
 
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql.toString())) {
+                PreparedStatement ps = cn.prepareStatement(sql.toString())) {
             int idx = 1;
             if (hasKeyword) {
                 String kw = "%" + keyword.trim() + "%";
@@ -307,13 +408,17 @@ public class MedicineDAO implements IMedicineDAO {
                 ps.setString(idx++, kw);
                 ps.setString(idx++, kw);
             }
-            if (hasCat) ps.setInt(idx++, catId);
+            if (hasCat)
+                ps.setInt(idx++, catId);
             ps.setInt(idx++, (page - 1) * pageSize);
-            ps.setInt(idx,   pageSize);
+            ps.setInt(idx, pageSize);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) list.add(mapRow(rs));
+                while (rs.next())
+                    list.add(mapRow(rs));
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return list;
     }
 
@@ -322,15 +427,17 @@ public class MedicineDAO implements IMedicineDAO {
      */
     public int countForList(String keyword, Integer catId) {
         boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
-        boolean hasCat     = catId != null;
+        boolean hasCat = catId != null;
 
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM Medicines WHERE 1=1");
-        if (hasKeyword) sql.append(
-                " AND (MedicineName LIKE ? OR GenericName LIKE ? OR MedicineCode LIKE ? OR Barcode LIKE ?)");
-        if (hasCat) sql.append(" AND CategoryID = ?");
+        if (hasKeyword)
+            sql.append(
+                    " AND (MedicineName LIKE ? OR GenericName LIKE ? OR MedicineCode LIKE ? OR Barcode LIKE ?)");
+        if (hasCat)
+            sql.append(" AND CategoryID = ?");
 
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql.toString())) {
+                PreparedStatement ps = cn.prepareStatement(sql.toString())) {
             int idx = 1;
             if (hasKeyword) {
                 String kw = "%" + keyword.trim() + "%";
@@ -339,11 +446,15 @@ public class MedicineDAO implements IMedicineDAO {
                 ps.setString(idx++, kw);
                 ps.setString(idx++, kw);
             }
-            if (hasCat) ps.setInt(idx, catId);
+            if (hasCat)
+                ps.setInt(idx, catId);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getInt(1);
+                if (rs.next())
+                    return rs.getInt(1);
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return 0;
     }
 
@@ -360,10 +471,13 @@ public class MedicineDAO implements IMedicineDAO {
                 " WHERE m.Status = 1" +
                 " ORDER BY m.MedicineName";
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) list.add(mapRowWithStock(rs));
-        } catch (Exception e) { e.printStackTrace(); }
+                PreparedStatement ps = cn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next())
+                list.add(mapRowWithStock(rs));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return list;
     }
 }

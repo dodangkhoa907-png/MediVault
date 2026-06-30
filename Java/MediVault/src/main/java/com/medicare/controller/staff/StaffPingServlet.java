@@ -1,5 +1,7 @@
 package com.medicare.controller.staff;
 
+import com.medicare.dao.AccountDAO;
+import com.medicare.dao.interfaces.IAccountDAO;
 import com.medicare.util.SessionTracker;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -8,6 +10,8 @@ import java.io.IOException;
 
 @WebServlet("/staff-ping")
 public class StaffPingServlet extends HttpServlet {
+
+    private final IAccountDAO accountDAO = new AccountDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -30,6 +34,7 @@ public class StaffPingServlet extends HttpServlet {
             int uid = Integer.parseInt(uidStr);
             boolean valid = SessionTracker.isValidSession(uid, token, tabId);
             if (valid) {
+                accountDAO.updateLastActive(uid); // ghi timestamp presence vào DB
                 resp.getWriter().print("{\"ok\":true}");
             } else {
                 // Token không khớp = tab mới đã login, tab này bị kick

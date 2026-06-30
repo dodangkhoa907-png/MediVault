@@ -1,4 +1,4 @@
-
+﻿
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ page import="java.lang.String" %>
@@ -61,7 +61,7 @@ body{display:flex;flex-direction:column}
 
 /* ── TOPBAR ── */
 .topbar{
-  height:60px;background:linear-gradient(90deg,#071022,#0F2645);
+  height:62px;background:linear-gradient(90deg,#071022,#0F2645);
   display:flex;align-items:center;padding:0 28px;gap:14px;
   flex-shrink:0;box-shadow:0 2px 16px rgba(0,0,0,.2);
 }
@@ -442,22 +442,11 @@ select.field-input{
                     <div class="form-grid">
                         <div class="field">
                             <label class="field-label" for="username">Tên đăng nhập <span class="req">*</span></label>
-                            <div style="display:flex;gap:8px;align-items:center">
                             <input type="text" id="username" name="username" class="field-input"
-                                   value="<%= vUsername %>" placeholder="vd: nv0901234567"
-                                   <%= isNew ? "required" : "readonly" %> autocomplete="username"
-                                   style="flex:1">
+                                   value="<%= vUsername %>" placeholder="Để trống → tự dùng số điện thoại"
+                                   <%= isNew ? "" : "readonly" %> autocomplete="username">
                             <% if (isNew) { %>
-                            <button type="button" id="btnGenUsername"
-                                    onclick="genUsernameFromPhone()"
-                                    style="height:42px;padding:0 12px;background:rgba(58,189,224,.1);border:1.5px solid rgba(58,189,224,.35);border-radius:11px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:#1558A8;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s"
-                                    title="Tự động tạo username từ số điện thoại">
-                                📱 Sinh từ SĐT
-                            </button>
-                            <% } %>
-                            </div>
-                            <% if (isNew) { %>
-                            <span class="field-note">💡 Nhập SĐT trước rồi bấm "Sinh từ SĐT" để tự tạo username tránh trùng.</span>
+                            <span class="field-note">💡 Có thể để trống — hệ thống tự dùng số điện thoại làm username.</span>
                             <% } else { %>
                             <span class="field-note">ℹ️ Username không thể thay đổi sau khi tạo.</span>
                             <% } %>
@@ -552,13 +541,6 @@ select.field-input{
                             <input type="text" id="fullName" name="fullName" class="field-input"
                                    value="<%= vFullName %>" placeholder="Nguyễn Văn A" required>
                         </div>
-                        <div class="field <%= isNew ? "email-highlight" : "" %>">
-                            <label class="field-label" for="email">Email <%= isNew ? "<span class='req'>*</span>" : "" %></label>
-                            <input type="email" id="email" name="email" class="field-input" oninput="validateField('email')"
-                                   value="<%= vEmail %>" placeholder="example@gmail.com"
-                                   <%= isNew ? "required" : "" %>>
-                            <% if (isNew) { %><span class="field-note">📧 Email liên lạc của nhân viên (dùng để nhận thông báo hệ thống).</span><% } %>
-                        </div>
                         <div class="field">
                             <label class="field-label" for="phone">Số điện thoại <% if (isNew) { %><span class="req">*</span><% } %></label>
                             <input type="tel" id="phone" name="phone" class="field-input"
@@ -573,6 +555,12 @@ select.field-input{
                             <input type="text" id="citizenId" name="citizenId" class="field-input" oninput="validateField('citizenId')"
                                    value="<%= vCitizenId %>" placeholder="9 hoặc 12 chữ số"
                                    maxlength="12" pattern="[0-9]{9}|[0-9]{12}">
+                        </div>
+                        <div class="field span-2">
+                            <label class="field-label" for="email">Email <span style="font-size:11px;color:#94a3b8;font-weight:400">(không bắt buộc)</span></label>
+                            <input type="email" id="email" name="email" class="field-input" oninput="validateField('email')"
+                                   value="<%= vEmail %>" placeholder="example@gmail.com">
+                            <span class="field-note">📧 Email liên lạc nhân viên — để trống nếu chưa có.</span>
                         </div>
                         <%-- Ô Chức vụ/Bộ phận đã bỏ: phân quyền đã xác định qua roleId --%>
                         <input type="hidden" name="position" value="<%= vPosition %>">
@@ -695,22 +683,6 @@ if (usernameEl) {
     });
 }
 
-// ── Nút "Sinh từ SĐT" — sinh lại khi bấm (ghi đè manual input) ──
-function genUsernameFromPhone() {
-    const phoneEl = document.getElementById('phone');
-    const userEl  = document.getElementById('username');
-    if (!phoneEl || !userEl) return;
-    const raw = phoneEl.value.trim();
-    if (!raw) { alert('Vui lòng nhập số điện thoại trước!'); phoneEl.focus(); return; }
-    let digits = raw.replace(/^\+84/, '0').replace(/\D/g, '');
-    if (digits.length < 9) { alert('Số điện thoại không hợp lệ!'); return; }
-    userEl.value = digits;
-    userEl.dataset.manualInput = 'false';
-    userEl.style.borderColor = '#3ABDE0';
-    userEl.style.boxShadow = '0 0 0 3px rgba(58,189,224,.12)';
-    const btn = document.getElementById('btnGenUsername');
-    if (btn) { btn.textContent = '✅ Đã sinh!'; setTimeout(() => btn.textContent = '📱 Sinh từ SĐT', 2000); }
-}
 
 // ── Toggle show/hide password (tạo mới) ──
 const togglePwBtn = document.getElementById('togglePw');

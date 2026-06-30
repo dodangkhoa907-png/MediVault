@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <% String activeNav = "shifts"; %>
 <%@ taglib prefix="c"   uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
@@ -57,10 +57,12 @@ body{display:flex}
 
 /* ── MAIN LAYOUT ── */
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0}
-.topbar{height:60px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50;flex-shrink:0}
+.topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50;flex-shrink:0}
+.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--ink)}
 .topbar-left{display:flex;align-items:center;gap:10px}
 .topbar-icon{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,rgba(21,88,168,.12),rgba(58,189,224,.12));display:flex;align-items:center;justify-content:center;font-size:15px}
-.topbar-title{font-size:16px;font-weight:800;color:var(--ink)}
+
+    
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
 .topbar-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12.5px;font-weight:700}
 .pill-total{background:#EFF6FF;color:var(--blue)}
@@ -68,8 +70,8 @@ body{display:flex}
 .pill-staff{background:#F5F3FF;color:var(--purple)}
 .topbar-user{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 7px;border:1.5px solid var(--border);border-radius:20px;text-decoration:none;color:inherit;transition:all .18s}
 .topbar-user:hover{border-color:var(--cyan)}
-.topbar-av{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff}
-.topbar-name{font-size:12.5px;font-weight:600;color:var(--navy)}
+.topbar-av{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
+.topbar-name{font-size:13px;font-weight:600;color:var(--navy)}
 .content{padding:22px 26px;flex:1;min-width:0}
 
 /* ── KPI STRIP ── */
@@ -291,6 +293,11 @@ tbody tr{cursor:pointer}
 .mfg input,.mfg select,.mfg textarea{border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-family:'Outfit',sans-serif;font-size:13.5px;color:var(--ink);background:var(--surface);outline:none;transition:border .18s;width:100%}
 .mfg input:focus,.mfg select:focus,.mfg textarea:focus{border-color:var(--blue);background:#fff}
 .mfg-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* ── Custom 24h time picker ── */
+.time24-wrap{display:flex;align-items:center;gap:4px}
+.time24-sel{flex:1;border:1.5px solid var(--border);border-radius:9px;padding:9px 8px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;color:var(--ink);background:var(--surface);outline:none;transition:border .18s;text-align:center;cursor:pointer;appearance:none;-webkit-appearance:none}
+.time24-sel:focus{border-color:var(--blue);background:#fff}
+.time24-colon{font-size:20px;font-weight:800;color:var(--ink);flex-shrink:0;line-height:1;padding:0 2px;margin-top:-1px}
 .modal-foot{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
 .btn-cancel-m{padding:8px 18px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s}
 .btn-cancel-m:hover{border-color:var(--muted)}
@@ -298,6 +305,8 @@ tbody tr{cursor:pointer}
 .btn-save-m:hover{opacity:.9}
 .field-hint{font-size:11px;color:var(--muted);margin-top:3px}
 .field-err{font-size:11px;color:var(--red);margin-top:3px;display:none}
+.field-err.show{display:block}
+.sched-fi input.err,.sched-fi select.err{border-color:var(--red)!important}
 
 /* Staff chips in quick-schedule modal */
 .staff-chips-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
@@ -808,6 +817,32 @@ tbody tr{cursor:pointer}
 .btn-bulk-delete:disabled{opacity:.5;cursor:not-allowed}
 .btn-bulk-cancel{background:#fff;color:var(--muted);border:1.5px solid var(--border);padding:8px 18px;
   border-radius:9px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+
+/* ── POS MAP ── */
+.pos-station-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.pos-station-card{border-radius:14px;padding:16px 18px;border:2px solid transparent;transition:.3s;position:relative;overflow:hidden}
+.pos-station-card.online{background:linear-gradient(135deg,#ecfdf5,#d1fae5);border-color:#6ee7b7;box-shadow:0 4px 20px rgba(5,150,105,.15)}
+.pos-station-card.offline{background:linear-gradient(135deg,#f8fafc,#f1f5f9);border-color:#e2e8f0}
+.pos-station-card.offline .pos-st-number{color:#94a3b8}
+.pos-st-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.pos-st-number{font-size:18px;font-weight:900;color:#059669;letter-spacing:-.5px}
+.pos-st-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.pos-st-dot.online{background:linear-gradient(135deg,#059669,#34d399);box-shadow:0 0 0 3px rgba(52,211,153,.25);animation:posGlow 2s ease-in-out infinite}
+.pos-st-dot.offline{background:#cbd5e1}
+@keyframes posGlow{0%,100%{box-shadow:0 0 0 3px rgba(52,211,153,.25)}50%{box-shadow:0 0 0 6px rgba(52,211,153,.1)}}
+.pos-st-badge{font-size:9.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:2px 8px;border-radius:10px}
+.pos-st-badge.online{background:#bbf7d0;color:#065f46}
+.pos-st-badge.offline{background:#f1f5f9;color:#94a3b8}
+.pos-st-staff-list{display:flex;flex-direction:column;gap:6px}
+.pos-st-staff-row{display:flex;align-items:center;gap:8px}
+.pos-st-av{width:28px;height:28px;border-radius:7px;font-size:11px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pos-st-av.online{background:linear-gradient(135deg,#059669,#10b981)}
+.pos-st-av.offline{background:linear-gradient(135deg,#94a3b8,#cbd5e1)}
+.pos-st-staff-name{font-size:12.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pos-st-staff-meta{font-size:11px;color:var(--muted)}
+.pos-st-empty{font-size:12px;color:var(--muted);font-style:italic;padding:4px 0}
+.pos-unassigned-list{display:flex;flex-wrap:wrap;gap:8px}
+.pos-unas-chip{padding:5px 12px;border-radius:8px;background:#fef9c3;border:1px solid #fde68a;font-size:12px;font-weight:600;color:#92400e}
 </style>
 </head>
 <body>
@@ -928,6 +963,7 @@ tbody tr{cursor:pointer}
                        padding:1px 6px;border-radius:10px;margin-left:4px">${pendingLeaveCount}</span>
         </c:if>
       </button>
+      <button class="tab-btn <%= "pos-map".equals(activeTab) ? "active" : "" %>" onclick="switchTab('pos-map',this)">🖥️ Sơ đồ quầy POS</button>
     </div>
 
     <%-- ══════════════════════════════════════════════
@@ -1078,6 +1114,7 @@ tbody tr{cursor:pointer}
                          data-work-date="${firstSc.workDate}" data-is-past="${dayDate.isBefore(today)}"
                          data-late-tol="${firstSc.lateToleranceMinutes}"
                          data-notes="${firstSc.notes}"
+                         data-pos-station="${firstSc.posStation}"
                          data-total="${totalShifts}"
                          data-planned-start="${not empty firstSc.plannedStart ? fn:substring(firstSc.plannedStart.toString(),11,16) : ''}"
                          data-planned-end="${not empty firstSc.plannedEnd ? fn:substring(firstSc.plannedEnd.toString(),11,16) : ''}"
@@ -1251,7 +1288,7 @@ tbody tr{cursor:pointer}
                     <div class="staff-cell">
                       <div class="staff-av">${ini}</div>
                       <div>
-                        <div class="staff-name">${not empty staff ? staff.fullName : 'ID '.concat(s.accountId)}</div>
+                        <div class="staff-name">${not empty staff ? staff.fullName : 'ID ' += s.accountId}</div>
                         <div class="staff-role">${not empty staff ? (staff.roleId == 2 ? 'Dược sĩ' : 'Thủ kho') : ''}</div>
                       </div>
                     </div>
@@ -1500,6 +1537,36 @@ tbody tr{cursor:pointer}
       </div>
     </div><%-- end tab-leave --%>
 
+    <%-- ══════════════════════════════════════════════
+         TAB: SƠ ĐỒ QUẦY POS
+         ══════════════════════════════════════════════ --%>
+    <div id="tab-pos-map" class="tab-pane <%= "pos-map".equals(activeTab) ? "active" : "" %>">
+      <div class="table-card">
+        <div class="table-card-head" style="justify-content:space-between">
+          <div>
+            <h2>🖥️ Sơ đồ quầy POS hôm nay</h2>
+            <div class="table-card-sub" id="posMapDate">—</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">
+              <span style="width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#059669,#10b981);display:inline-block"></span>Online
+              <span style="width:10px;height:10px;border-radius:50%;background:#CBD5E1;display:inline-block;margin-left:8px"></span>Offline
+            </div>
+            <button onclick="refreshPosMap()" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--white);font-size:12px;font-weight:600;cursor:pointer;color:var(--blue)">↻ Làm mới</button>
+          </div>
+        </div>
+        <div style="padding:20px">
+          <div class="pos-station-grid" id="posStationGrid">
+            <%-- render bằng JS --%>
+          </div>
+          <div id="posUnassigned" style="margin-top:18px;display:none">
+            <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Chưa gán quầy hôm nay</div>
+            <div class="pos-unassigned-list" id="posUnassignedList"></div>
+          </div>
+        </div>
+      </div>
+    </div><%-- end tab-pos-map --%>
+
   </div><%-- end content --%>
 </div><%-- end main --%>
 
@@ -1606,11 +1673,21 @@ tbody tr{cursor:pointer}
         <div class="mfg-row">
           <div class="mfg">
             <label>Giờ bắt đầu *</label>
-            <input type="time" name="startTime" id="typeStartTime" required value="06:00">
+            <div class="time24-wrap">
+              <select class="time24-sel" id="typeStartH" onchange="syncTime('start')" title="Giờ (00–23)"></select>
+              <span class="time24-colon">:</span>
+              <select class="time24-sel" id="typeStartM" onchange="syncTime('start')" title="Phút"></select>
+            </div>
+            <input type="hidden" name="startTime" id="typeStartTime" value="06:00">
           </div>
           <div class="mfg">
             <label>Giờ kết thúc *</label>
-            <input type="time" name="endTime" id="typeEndTime" required value="14:00">
+            <div class="time24-wrap">
+              <select class="time24-sel" id="typeEndH" onchange="syncTime('end')" title="Giờ (00–23)"></select>
+              <span class="time24-colon">:</span>
+              <select class="time24-sel" id="typeEndM" onchange="syncTime('end')" title="Phút"></select>
+            </div>
+            <input type="hidden" name="endTime" id="typeEndTime" value="14:00">
           </div>
         </div>
         <div id="durPreview" class="dur-preview"></div>
@@ -1710,14 +1787,37 @@ tbody tr{cursor:pointer}
           <div class="date-row">
             <div class="sched-fi">
               <label>Từ ngày</label>
-              <input type="date" name="dateFrom" id="fsDateFrom" required onchange="updateFullPreview()" min="${today}">
+              <input type="date" name="dateFrom" id="fsDateFrom"
+                     onchange="clearFsErr('errDateFrom','fsDateFrom');updateFullPreview()" min="${today}">
+              <span class="field-err" id="errDateFrom"></span>
             </div>
             <div class="date-sep">→</div>
             <div class="sched-fi">
               <label>Đến ngày</label>
-              <input type="date" name="dateTo" id="fsDateTo" onchange="updateFullPreview()" min="${today}">
+              <input type="date" name="dateTo" id="fsDateTo"
+                     onchange="clearFsErr('errDateTo','fsDateTo');updateFullPreview()" min="${today}">
+              <span class="field-err" id="errDateTo"></span>
               <span style="font-size:11px;color:var(--muted);margin-top:2px">Để trống = chỉ 1 ngày</span>
             </div>
+          </div>
+        </div>
+
+        <%-- Quầy POS --%>
+        <div class="sched-section">
+          <div class="sched-section-title">🖥️ Quầy POS <span style="color:var(--red)">*</span></div>
+          <div class="sched-fi">
+            <select name="posStation" id="fsPosStation"
+                    style="width:100%;max-width:240px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--navy);background:#fff"
+                    onchange="clearFsErr('errPosStation','fsPosStation')">
+              <option value="0">— Chưa gán quầy —</option>
+              <option value="1">🖥️ Quầy 1</option>
+              <option value="2">🖥️ Quầy 2</option>
+              <option value="3">🖥️ Quầy 3</option>
+              <option value="4">🖥️ Quầy 4</option>
+              <option value="5">🖥️ Quầy 5</option>
+            </select>
+            <span class="field-err" id="errPosStation"></span>
+            <span style="font-size:11px;color:var(--muted);margin-top:4px;display:block">Nhân viên sẽ làm tại quầy POS này trong ca</span>
           </div>
         </div>
 
@@ -1796,6 +1896,19 @@ tbody tr{cursor:pointer}
             <input type="text" id="editWorkDate" readonly
                    style="background:#F8FAFC;color:var(--muted);cursor:default">
           </div>
+        </div>
+
+        <%-- Quầy POS --%>
+        <div class="em-fg" style="margin-bottom:12px">
+          <label>🖥️ Làm tại quầy POS</label>
+          <select name="posStation" id="editPosStation">
+            <option value="0">— Chưa gán quầy —</option>
+            <option value="1">Quầy 1</option>
+            <option value="2">Quầy 2</option>
+            <option value="3">Quầy 3</option>
+            <option value="4">Quầy 4</option>
+            <option value="5">Quầy 5</option>
+          </select>
         </div>
 
         <%-- Ghi chú --%>
@@ -1921,7 +2034,7 @@ tbody tr{cursor:pointer}
               <c:forEach var="sc" items="${schedules}">
                 <c:if test="${sc.workDate.equals(dayDate)}">
                   <c:set var="hasSched" value="true"/>
-                  <c:set var="isEditable" value="${(sc.status == 'SCHEDULED' or sc.status == 'LEAVE_PENDING') and !sc.workDate.isBefore(today)}"/>
+                  <c:set var="isEditable" value="${(sc.status == 'SCHEDULED' or sc.status == 'LEAVE_PENDING' or sc.status == 'CONFIRMED') and !sc.workDate.isBefore(today)}"/>
                   <c:set var="smChipClass">sm-chip <c:choose>
                     <c:when test="${sc.startHour < 12}">sm-morning</c:when>
                     <c:when test="${sc.startHour < 20}">sm-afternoon</c:when>
@@ -1934,6 +2047,7 @@ tbody tr{cursor:pointer}
                        data-shift-type-name="${sc.shiftTypeName}"
                        data-late-tol="${sc.lateToleranceMinutes}"
                        data-notes="${sc.notes}"
+                       data-pos-station="${sc.posStation}"
                        data-staff="${sc.staffName}"
                        data-date="${sc.workDate}"
                        data-editable="${isEditable}"
@@ -2146,6 +2260,7 @@ const SCHED_LIST = [
       <div class="sdp-chip" id="sdpChipType"><span class="sdp-chip-icon">📋</span><span class="sdp-chip-val" id="sdpShiftType">—</span></div>
       <div class="sdp-chip" id="sdpChipLate"><span class="sdp-chip-icon">⏱</span><span class="sdp-chip-val" id="sdpLate">—</span></div>
       <div class="sdp-chip" id="sdpChipTotal"><span class="sdp-chip-icon">📊</span><span class="sdp-chip-val" id="sdpTotal">—</span></div>
+      <div class="sdp-chip" id="sdpChipPos"><span class="sdp-chip-icon">🖥️</span><span class="sdp-chip-val" id="sdpPos">—</span></div>
     </div>
 
     <%-- ── Notes ── --%>
@@ -2267,14 +2382,60 @@ document.querySelectorAll('#staffChipsGrid input').forEach(cb => {
 // ══════════════════════════════════════════════════
 //  MODAL: ShiftType CRUD
 // ══════════════════════════════════════════════════
+
+// ── 24h time-picker helpers ──
+(function buildTimeSelects() {
+  ['Start','End'].forEach(which => {
+    const hSel = document.getElementById('type' + which + 'H');
+    const mSel = document.getElementById('type' + which + 'M');
+    if (!hSel || !mSel) return;
+    for (let h = 0; h < 24; h++) {
+      const opt = document.createElement('option');
+      opt.value = String(h).padStart(2,'0');
+      opt.textContent = String(h).padStart(2,'0');
+      hSel.appendChild(opt);
+    }
+    for (let m = 0; m < 60; m += 5) {
+      const opt = document.createElement('option');
+      opt.value = String(m).padStart(2,'0');
+      opt.textContent = String(m).padStart(2,'0');
+      mSel.appendChild(opt);
+    }
+  });
+  setTime24('Start', '06:00');
+  setTime24('End',   '14:00');
+})();
+
+function setTime24(which, hhmm) {
+  const parts = (hhmm || '00:00').split(':');
+  const h = String(parseInt(parts[0]||0)).padStart(2,'0');
+  const rawM = parseInt(parts[1]||0);
+  const m = String(Math.round(rawM / 5) * 5 % 60).padStart(2,'0');
+  const hSel = document.getElementById('type' + which + 'H');
+  const mSel = document.getElementById('type' + which + 'M');
+  if (hSel) hSel.value = h;
+  if (mSel) mSel.value = m;
+  const hidden = document.getElementById('type' + which + 'Time');
+  if (hidden) hidden.value = h + ':' + m;
+}
+
+function syncTime(which) {
+  const cap   = which === 'start' ? 'Start' : 'End';
+  const h     = document.getElementById('type' + cap + 'H').value;
+  const m     = document.getElementById('type' + cap + 'M').value;
+  const hidden = document.getElementById('type' + cap + 'Time');
+  if (hidden) hidden.value = h + ':' + m;
+  updateDurPreview();
+}
+
 function openTypeModal() {
   document.getElementById('modalTitle').textContent = 'Thêm loại ca mới';
   document.getElementById('typeAction').value = 'create';
   document.getElementById('editTypeId').value = '';
   document.getElementById('typeForm').reset();
-  document.getElementById('typeStartTime').value = '06:00';
-  document.getElementById('typeEndTime').value   = '14:00';
-  document.getElementById('typeRate').value      = '60000';
+  setTime24('Start', '06:00');
+  setTime24('End',   '14:00');
+  document.getElementById('typeRate').value = '60000';
   updateDurPreview();
   document.getElementById('typeModal').classList.add('open');
 }
@@ -2283,8 +2444,8 @@ function editType(id, name, sh, sm, eh, em, rate, allow) {
   document.getElementById('typeAction').value = 'update';
   document.getElementById('editTypeId').value = id;
   document.getElementById('typeName').value   = name;
-  document.getElementById('typeStartTime').value = String(sh).padStart(2,'0')+':'+String(sm).padStart(2,'0');
-  document.getElementById('typeEndTime').value   = String(eh).padStart(2,'0')+':'+String(em).padStart(2,'0');
+  setTime24('Start', String(sh).padStart(2,'0')+':'+String(sm).padStart(2,'0'));
+  setTime24('End',   String(eh).padStart(2,'0')+':'+String(em).padStart(2,'0'));
   document.getElementById('typeRate').value      = rate;
   document.getElementById('typeAllowance').value = allow;
   updateDurPreview();
@@ -2328,9 +2489,10 @@ function updateDurPreview() {
     }
   }
 }
-['typeStartTime','typeEndTime','typeRate'].forEach(id => {
+// typeRate still needs the listener; typeStartTime/typeEndTime are now hidden (selects handle syncTime)
+['typeStartH','typeStartM','typeEndH','typeEndM','typeRate'].forEach(id => {
   const el = document.getElementById(id);
-  if (el) el.addEventListener('input', updateDurPreview);
+  if (el) el.addEventListener('change', updateDurPreview);
 });
 function validateRate(el) {
   const err = document.getElementById('rateErr');
@@ -2457,6 +2619,7 @@ let _activeNotes = null;
 let _activeStaffName = null;
 let _activeWorkDate = null;
 let _activeStatus = null;
+let _activePosStation = 0;
 
 function showDetailPanel(cardEl) {
   if (_activeCard) _activeCard.classList.remove('selected');
@@ -2473,6 +2636,7 @@ function showDetailPanel(cardEl) {
   _activeStaffName   = cardEl.dataset.staffName;
   _activeWorkDate    = cardEl.dataset.workDate;
   _activeStatus      = cardEl.dataset.status;
+  _activePosStation  = cardEl.dataset.posStation || 0;
   const total        = cardEl.dataset.total;
 
   // Parse all shifts JSON
@@ -2514,6 +2678,11 @@ function showDetailPanel(cardEl) {
   document.getElementById('sdpShiftType').textContent  = firstShift.type || '—';
   document.getElementById('sdpLate').textContent       = _activeLateTol + 'p trễ';
   document.getElementById('sdpTotal').textContent      = total + ' ca/ngày';
+  const posNum = parseInt(_activePosStation) || 0;
+  const posChip = document.getElementById('sdpChipPos');
+  document.getElementById('sdpPos').textContent = posNum > 0 ? 'Quầy ' + posNum : 'Chưa gán';
+  posChip.style.background = posNum > 0 ? '#eff6ff' : '#f8fafc';
+  posChip.style.color      = posNum > 0 ? '#1d4ed8' : '#94a3b8';
 
   // Notes
   const nw = document.getElementById('sdpNotesWrap');
@@ -2605,7 +2774,9 @@ function editFromPanel() {
       _activeLateTol,
       _activeNotes && _activeNotes !== 'null' ? _activeNotes : '',
       _activeStaffName,
-      _activeWorkDate
+      _activeWorkDate,
+      _activePosStation,
+      _activeStatus
     );
   }, 220); // đợi animation đóng xong (transition 0.2s)
 }
@@ -2695,21 +2866,57 @@ function updateFullPreview() {
   if (preview) preview.style.display = 'block';
 }
 
+function showFsErr(errId, inputId, msg) {
+  const errEl = document.getElementById(errId);
+  if (errEl) { errEl.textContent = msg; errEl.classList.add('show'); }
+  const inp = inputId && document.getElementById(inputId);
+  if (inp) inp.classList.add('err');
+}
+function clearFsErr(errId, inputId) {
+  const errEl = document.getElementById(errId);
+  if (errEl) { errEl.textContent = ''; errEl.classList.remove('show'); }
+  const inp = inputId && document.getElementById(inputId);
+  if (inp) inp.classList.remove('err');
+}
+
 function submitFullSched() {
   const staffCount = document.querySelectorAll('#fullStaffChips .sc-chip:not(.hidden) input:checked').length;
   const typeCount  = document.querySelectorAll('#fullStypeCards input:checked').length;
   const fromVal    = document.getElementById('fsDateFrom')?.value;
+  const toVal      = document.getElementById('fsDateTo')?.value;
+  const posVal     = parseInt(document.getElementById('fsPosStation')?.value || '0');
+  const todayFs    = new Date().toISOString().split('T')[0];
+
+  // Clear inline errors
+  ['errDateFrom','errDateTo','errPosStation'].forEach(id => clearFsErr(id));
 
   if (staffCount === 0) { alert('Vui lòng chọn ít nhất 1 nhân viên!'); return; }
   if (typeCount  === 0) { alert('Vui lòng chọn ít nhất 1 loại ca!');    return; }
-  if (!fromVal)         { alert('Vui lòng chọn ngày bắt đầu!');          return; }
 
-  const fsFrom = document.getElementById('fsDateFrom').value;
-  const todayFs = new Date().toISOString().split('T')[0];
-  if (fsFrom && fsFrom < todayFs) {
-    alert('⛔ Không thể xếp ca cho ngày đã qua!');
+  let hasErr = false;
+  if (!fromVal) {
+    showFsErr('errDateFrom','fsDateFrom','Vui lòng chọn ngày bắt đầu');
+    hasErr = true;
+  } else if (fromVal < todayFs) {
+    showFsErr('errDateFrom','fsDateFrom','Không thể xếp ca cho ngày đã qua');
+    hasErr = true;
+  }
+  if (toVal && fromVal && toVal < fromVal) {
+    showFsErr('errDateTo','fsDateTo','Ngày kết thúc phải sau ngày bắt đầu');
+    hasErr = true;
+  }
+  if (posVal === 0) {
+    showFsErr('errPosStation','fsPosStation','Vui lòng chọn quầy POS cho ca làm việc');
+    hasErr = true;
+  }
+
+  if (hasErr) {
+    // Scroll first error into view
+    const firstErr = document.querySelector('#fullSchedModal .field-err.show');
+    if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
+
   document.getElementById('fullSchedForm').submit();
 }
 
@@ -2762,21 +2969,26 @@ closeFullSchedModal = function() {
 // ════════════════════════════════════════════════════════
 //  EDIT MODAL — sửa lịch ca SCHEDULED
 // ════════════════════════════════════════════════════════
-function openEditModal(schedId, shiftTypeId, shiftTypeName, lateTol, notes, staffName, workDate) {
-  document.getElementById('editSchedId').value   = schedId;
-  document.getElementById('editShiftType').value  = shiftTypeId;
-  document.getElementById('editLateTol').value    = lateTol || 10;
-  document.getElementById('editNotes').value      = notes && notes !== 'null' ? notes : '';
-  document.getElementById('editWorkDate').value   = workDate;
-  document.getElementById('editModalTitle').textContent = '✏️ Sửa ca ' + staffName + ' — ' + workDate;
+function openEditModal(schedId, shiftTypeId, shiftTypeName, lateTol, notes, staffName, workDate, posStation, status) {
+  const isConfirmed = (status === 'CONFIRMED');
+  document.getElementById('editSchedId').value      = schedId;
+  document.getElementById('editShiftType').value    = shiftTypeId;
+  document.getElementById('editShiftType').disabled = isConfirmed; // ca đang chạy → khóa loại ca
+  document.getElementById('editLateTol').value      = lateTol || 10;
+  document.getElementById('editNotes').value        = notes && notes !== 'null' ? notes : '';
+  document.getElementById('editWorkDate').value     = workDate;
+  document.getElementById('editPosStation').value   = posStation || 0;
+  document.getElementById('editModalTitle').textContent =
+    (isConfirmed ? '🟢 Đang ca — ' : '✏️ ') + 'Sửa ca ' + staffName + ' — ' + workDate;
   document.getElementById('editSchedModal').classList.add('open');
 }
 function closeEditModal() {
   document.getElementById('editSchedModal').classList.remove('open');
 }
 function submitEditSched() {
-  const stId = document.getElementById('editShiftType').value;
-  if (!stId) { alert('Vui lòng chọn loại ca!'); return; }
+  const stSel = document.getElementById('editShiftType');
+  stSel.disabled = false; // re-enable để value được gửi trong POST (disabled inputs bị bỏ qua)
+  if (!stSel.value) { alert('Vui lòng chọn loại ca!'); return; }
   document.getElementById('editSchedForm').submit();
 }
 document.getElementById('editSchedModal').addEventListener('click', function(e) {
@@ -2945,7 +3157,7 @@ function closeEditSelectModal() {
 }
 
 function toggleEditChip(el) {
-  if (el.dataset.editable !== 'true') return; // ca đã check-in → khóa
+  if (el.dataset.editable !== 'true') return;
   const id = el.dataset.schedId;
   if (_editSelIds.has(id)) {
     _editSelIds.delete(id);
@@ -3149,6 +3361,145 @@ function openChipEditModal(scheduleId, staffName, workDate, currentTypeId) {
   if (sel) sel.value = currentTypeId;
   modal.classList.add('open');
 }
+
+// ════════════════════════════════════════════════════════════
+//  POS MAP — Sơ đồ quầy POS
+// ════════════════════════════════════════════════════════════
+const _posCtx = '${pageContext.request.contextPath}';
+
+// Dữ liệu lịch ca hôm nay từ server (truyền qua JSP)
+const _todaySchedules = [
+  <c:forEach var="ts" items="${todaySchedules}" varStatus="st">
+    {
+      scheduleId: ${ts.scheduleId},
+      staffName:  '${fn:escapeXml(ts.staffName)}',
+      posStation: ${ts.posStation},
+      status:     '${ts.status}',
+      shiftType:  '${fn:escapeXml(ts.shiftTypeName)}',
+      startHour:  ${ts.startHour},
+      endHour:    ${ts.endHour}
+    }<c:if test="${!st.last}">,</c:if>
+  </c:forEach>
+];
+
+let _posOnlineIds = [];  // accountIds đang online ở POS (từ polling)
+let _posMapInterval = null;
+
+function initPosMap() {
+  const now = new Date();
+  const el  = document.getElementById('posMapDate');
+  if (el) el.textContent = 'Hôm nay: ' + now.getDate() + '/' + (now.getMonth()+1) + '/' + now.getFullYear();
+  renderPosMap();
+  refreshPosOnlineStatus();
+}
+
+async function refreshPosOnlineStatus() {
+  try {
+    const res  = await fetch(_posCtx + '/shifts?action=pos-online', { headers: {'X-Requested-With':'XMLHttpRequest'} });
+    if (!res.ok) return;
+    const data = await res.json();
+    _posOnlineIds = data.onlineStations || [];  // array of station numbers that are online
+    renderPosMap();
+  } catch(e) {}
+}
+
+function renderPosMap() {
+  const grid    = document.getElementById('posStationGrid');
+  const unasList= document.getElementById('posUnassignedList');
+  const unasWrap= document.getElementById('posUnassigned');
+  if (!grid) return;
+
+  // Nhóm theo quầy
+  const stationMap = {};  // station# → [{staffName, status, shiftType}]
+  const unassigned = [];
+
+  _todaySchedules.forEach(s => {
+    if (s.posStation > 0) {
+      if (!stationMap[s.posStation]) stationMap[s.posStation] = [];
+      stationMap[s.posStation].push(s);
+    } else {
+      unassigned.push(s);
+    }
+  });
+
+  // Render tất cả quầy 1-5 (hoặc max từ dữ liệu)
+  const maxStation = Math.max(5, ...Object.keys(stationMap).map(Number));
+  let html = '';
+  for (let st = 1; st <= maxStation; st++) {
+    const staffList  = stationMap[st] || [];
+    const isOnline   = _posOnlineIds.includes(st);
+    const cls        = isOnline ? 'online' : 'offline';
+    const badgeTxt   = isOnline ? '🟢 ĐANG ONLINE' : '⚫ OFFLINE';
+
+    html += '<div class="pos-station-card ' + cls + '">';
+    html += '<div class="pos-st-header">';
+    html +=   '<span class="pos-st-number">Quầy ' + st + '</span>';
+    html +=   '<div style="display:flex;align-items:center;gap:6px">';
+    html +=     '<span class="pos-st-badge ' + cls + '">' + badgeTxt + '</span>';
+    html +=     '<span class="pos-st-dot ' + cls + '"></span>';
+    html +=   '</div>';
+    html += '</div>';
+
+    html += '<div class="pos-st-staff-list">';
+    if (staffList.length === 0) {
+      html += '<div class="pos-st-empty">Chưa có nhân viên được xếp</div>';
+    } else {
+      staffList.forEach(s => {
+        const initials = s.staffName.length >= 2
+          ? (s.staffName.charAt(0) + s.staffName.split(' ').pop().charAt(0)).toUpperCase()
+          : s.staffName.charAt(0).toUpperCase();
+        const staffOnline = isOnline; // nếu quầy online → nhân viên ca đó online
+        const avCls = staffOnline ? 'online' : 'offline';
+        html += '<div class="pos-st-staff-row">';
+        html +=   '<div class="pos-st-av ' + avCls + '">' + initials + '</div>';
+        html +=   '<div style="min-width:0">';
+        html +=     '<div class="pos-st-staff-name">' + escHtml(s.staffName) + '</div>';
+        html +=     '<div class="pos-st-staff-meta">' + escHtml(s.shiftType) + ' · ' + s.startHour + ':00–' + s.endHour + ':00</div>';
+        html +=   '</div>';
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+    html += '</div>';
+  }
+  grid.innerHTML = html;
+
+  // Render unassigned
+  if (unassigned.length > 0) {
+    unasList.innerHTML = unassigned.map(s =>
+      '<div class="pos-unas-chip">⚠️ ' + escHtml(s.staffName) + '</div>'
+    ).join('');
+    unasWrap.style.display = '';
+  } else {
+    unasWrap.style.display = 'none';
+  }
+}
+
+function refreshPosMap() {
+  refreshPosOnlineStatus();
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Poll online status mỗi 15s khi tab pos-map đang mở
+document.addEventListener('DOMContentLoaded', function() {
+  // Ghi đè switchTab để start/stop interval
+  const origSwitch = window.switchTab;
+  window.switchTab = function(tab, btn) {
+    origSwitch && origSwitch(tab, btn);
+    if (tab === 'pos-map') {
+      initPosMap();
+      _posMapInterval = setInterval(refreshPosOnlineStatus, 15000);
+    } else {
+      clearInterval(_posMapInterval);
+    }
+  };
+  // Nếu tab pos-map là active tab khi load
+  if ('<%= activeTab %>'.indexOf('pos-map') >= 0) initPosMap();
+});
 </script>
 </body>
 </html>
+

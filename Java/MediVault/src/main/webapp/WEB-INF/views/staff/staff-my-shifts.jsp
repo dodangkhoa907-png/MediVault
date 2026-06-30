@@ -36,55 +36,18 @@
 <title>Ca làm việc của tôi — MediCare</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff-portal.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --ink:#12082A;--dp:#1C0F3F;--mid:#2D1B69;--main:#6D28D9;
   --light:#A78BFA;--soft:#F5F3FF;--white:#fff;
   --muted:#7C6FAA;--border:#E2DCF5;--surface:#FAFAFA;
-  --green:#059669;--red:#DC2626;--gold:#D97706;--cyan:#5EEAD4;
+  --green:#059669;--red:#DC2626;--gold:#D97706;--cyan:#5EEAD4;--blue:#2563EB;
   --sidebar:228px;--radius:14px;
 }
 html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--soft);color:var(--ink)}
 body{display:flex}
-
-/* ── SIDEBAR ── */
-.sidebar{width:var(--sidebar);min-height:100vh;background:linear-gradient(175deg,#0E0520 0%,#1C0F3F 45%,#3B1FA0 100%);box-shadow:4px 0 24px rgba(0,0,0,.2);
-  display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;
-  box-shadow:4px 0 24px rgba(0,0,0,.18)}
-.sidebar-logo{height:62px;padding:0 18px;display:flex;align-items:center;gap:10px;
-  border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0}
-.logo-gem{width:34px;height:34px;border-radius:9px;
-  background:linear-gradient(135deg,var(--cyan),var(--blue));
-  display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
-.logo-name{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:#fff;letter-spacing:-.2px;line-height:1.1}
-.logo-name span{color:var(--light)}
-.logo-sub{font-size:9px;color:rgba(255,255,255,.28);letter-spacing:1px;text-transform:uppercase;margin-top:1px}
-.nav-block{padding:10px 0 2px;flex-shrink:0}
-.nav-label{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;
-  color:rgba(255,255,255,.2);padding:0 18px 5px}
-.nav-item{display:flex;align-items:center;gap:9px;padding:9px 12px 9px 20px;
-  margin:1px 8px;border-radius:9px;font-size:13px;font-weight:500;
-  color:rgba(255,255,255,.5);text-decoration:none;transition:all .16s;position:relative}
-.nav-item:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.06)}
-.nav-item.active{color:#fff;background:rgba(167,139,250,.15);font-weight:600}
-.nav-item.active::before{content:'';position:absolute;left:-8px;top:50%;transform:translateY(-50%);
-  width:3px;height:54%;background:var(--cyan);border-radius:2px}
-.sidebar-footer{margin-top:auto;padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
-.user-card{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:10px;
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07)}
-.user-av{width:32px;height:32px;flex-shrink:0;border-radius:8px;
-  background:linear-gradient(135deg,var(--cyan),var(--blue));
-  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
-.user-name{font-size:12px;font-weight:700;color:#fff;line-height:1.2}
-.user-role{font-size:10px;color:rgba(255,255,255,.35)}
-.logout-btn-full{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:9px 14px;margin-top:10px;border-radius:10px;
-  background:rgba(220,38,38,.15);border:1.5px solid rgba(220,38,38,.25);color:#FCA5A5;text-decoration:none;
-  font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:700;letter-spacing:.3px;transition:all .2s}
-.logout-btn-full:hover{background:rgba(220,38,38,.32);color:#fff;border-color:#DC2626}
-
-/* ── MAIN ── */
-.main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh}
 .topbar{height:60px;background:var(--white);border-bottom:1px solid var(--border);
   display:flex;align-items:center;padding:0 26px;gap:12px;position:sticky;top:0;z-index:50}
 .topbar-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--ink)}

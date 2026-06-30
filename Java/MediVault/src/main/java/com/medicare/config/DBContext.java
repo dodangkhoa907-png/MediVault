@@ -73,6 +73,10 @@ public class DBContext {
             config.setConnectionTestQuery("SELECT 1");  // test connection còn sống không
             config.setValidationTimeout(2000);          // 2s để validate
 
+            // 0 = không connect khi khởi động, chỉ connect khi có request đầu tiên.
+            // Tránh crash cả app khi DB tạm thời unreachable lúc Tomcat start.
+            config.setInitializationFailTimeout(0);
+
             config.setPoolName("MediVault-Pool-v2");
 
             ds = new HikariDataSource(config);

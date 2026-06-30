@@ -9,4 +9,5 @@ public interface IManufacturerDAO {
     boolean insert(Manufacturer m);
     int insertGetId(Manufacturer m);
     boolean update(Manufacturer m);
+    boolean delete(int id);
 }

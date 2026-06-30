@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <% String activeNav = "attendance"; %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
@@ -35,8 +35,10 @@ html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--surface);
 .logout-btn{margin-left:auto;width:28px;height:28px;border-radius:8px;background:rgba(220,38,38,.12);border:none;display:flex;align-items:center;justify-content:center;color:rgba(220,38,38,.7);font-size:13px;cursor:pointer;text-decoration:none}
 .logout-btn:hover{background:rgba(220,38,38,.2);color:var(--red)}
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh}
-.topbar{height:60px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding: 28px;gap:14px;position:sticky;top:0;z-index:50}
-.topbar-title{font-size:16px;font-weight:800;color:var(--ink)}
+.topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50}
+.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--ink)}
+
+    
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
 .topbar-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12.5px;font-weight:700}
 .pill-green{background:#ECFDF5;color:var(--green)}.pill-blue{background:#EFF6FF;color:var(--blue)}
@@ -117,16 +119,17 @@ tbody tr:last-child td{border-bottom:none}
 
   <div class="content">
     <div class="summary-strip">
-      <div class="sum-card"><div class="sum-icon sum-ic-green">🟢</div><div><div class="sum-num" style="color:var(--green)">${workCount}</div><div class="sum-lbl">Đang làm việc</div></div></div>
-      <div class="sum-card"><div class="sum-icon sum-ic-blue">📋</div><div><div class="sum-num">${fn:length(todaySchedules)}</div><div class="sum-lbl">Ca hôm nay</div></div></div>
+      <div class="sum-card"><div class="sum-icon sum-ic-green">🟢</div><div><div class="sum-num" id="sumWork" style="color:var(--green)">${workCount}</div><div class="sum-lbl">Đang làm việc</div></div></div>
+      <div class="sum-card"><div class="sum-icon sum-ic-blue">📋</div><div><div class="sum-num" id="sumToday">${fn:length(todaySchedules)}</div><div class="sum-lbl">Ca hôm nay</div></div></div>
       <div class="sum-card"><div class="sum-icon sum-ic-amber">⚠️</div><div>
         <c:set var="absent" value="${fn:length(todaySchedules) - workCount}"/>
-        <div class="sum-num" style="color:var(--amber)">${absent > 0 ? absent : 0}</div>
+        <div class="sum-num" id="sumAbsent" style="color:var(--amber)">${absent > 0 ? absent : 0}</div>
         <div class="sum-lbl">Chưa vào ca</div>
       </div></div>
     </div>
 
     <%-- Live cards --%>
+    <div id="liveGrid">
     <c:choose>
       <c:when test="${not empty working}">
         <div class="live-grid">
@@ -145,7 +148,7 @@ tbody tr:last-child td{border-bottom:none}
                 <div class="lc-meta-item">
                   <div class="lc-meta-label">Đến trễ</div>
                   <div class="lc-meta-val" style="${att.lateMinutes>0?'color:var(--red)':''}">
-                    ${att.lateMinutes > 0 ? att.lateMinutes.concat(' phút') : 'Đúng giờ'}
+                    ${att.lateMinutes > 0 ? att.lateMinutes += ' phút' : 'Đúng giờ'}
                   </div>
                 </div>
                 <div class="lc-meta-item">
@@ -172,6 +175,7 @@ tbody tr:last-child td{border-bottom:none}
         <div class="empty-box"><div style="font-size:44px;margin-bottom:12px">🌙</div><p style="font-size:13.5px">Không có nhân viên nào đang làm việc ngay lúc này.</p></div>
       </c:otherwise>
     </c:choose>
+    </div><%-- /liveGrid --%>
 
     <%-- Lịch hôm nay --%>
     <div class="table-card">
@@ -447,11 +451,74 @@ function calcDur(startStr) {
   return [Math.floor(diff/3600),Math.floor((diff%3600)/60),diff%60]
     .map(v=>String(v).padStart(2,'0')).join(':');
 }
-document.querySelectorAll('.lc-timer[data-checkin]').forEach(el => {
-  const tick = () => { el.textContent = calcDur(el.dataset.checkin); };
-  tick(); setInterval(tick, 1000);
-});
-// Auto reload mỗi 60 giây để cập nhật live
-setTimeout(() => location.reload(), 60000);
+function attachTimers() {
+  document.querySelectorAll('.lc-timer[data-checkin]').forEach(el => {
+    if (el.dataset.timerAttached) return;
+    el.dataset.timerAttached = '1';
+    const tick = () => { el.textContent = calcDur(el.dataset.checkin); };
+    tick(); setInterval(tick, 1000);
+  });
+}
+attachTimers();
+
+// ── AJAX partial refresh — thay thế location.reload() mỗi 60s ───────────────
+(function() {
+  const _ctx = '${pageContext.request.contextPath}';
+
+  function renderCards(data) {
+    const el = id => document.getElementById(id);
+    if (el('sumWork'))   el('sumWork').textContent   = data.workCount;
+    if (el('sumToday'))  el('sumToday').textContent  = data.todayCount;
+    if (el('sumAbsent')) el('sumAbsent').textContent = Math.max(0, data.todayCount - data.workCount);
+
+    const grid = el('liveGrid');
+    if (!grid) return;
+
+    if (!data.working || data.working.length === 0) {
+      grid.innerHTML = '<div class="empty-box"><div style="font-size:44px;margin-bottom:12px">🌙</div>' +
+        '<p style="font-size:13.5px">Không có nhân viên nào đang làm việc ngay lúc này.</p></div>';
+      return;
+    }
+
+    let html = '<div class="live-grid">';
+    data.working.forEach(att => {
+      const ci = att.checkInTime.substring(11, 16);
+      const late = att.lateMinutes > 0
+        ? '<span style="color:var(--red)">' + att.lateMinutes + ' phút</span>'
+        : 'Đúng giờ';
+      html += '<div class="live-card">' +
+        '<div class="lc-badge"><span class="lc-dot"></span> Đang làm việc</div>' +
+        '<div class="lc-name">' + att.staffName + '</div>' +
+        '<div class="lc-role">' + att.shiftTypeName + '</div>' +
+        '<div class="lc-timer" data-checkin="' + att.checkInTime + '">--:--:--</div>' +
+        '<div class="lc-since">Từ ' + ci + '</div>' +
+        '<div class="lc-meta">' +
+          '<div class="lc-meta-item"><div class="lc-meta-label">Check-in</div><div class="lc-meta-val">' + ci + '</div></div>' +
+          '<div class="lc-meta-item"><div class="lc-meta-label">Đến trễ</div><div class="lc-meta-val">' + late + '</div></div>' +
+          '<div class="lc-meta-item"><div class="lc-meta-label">Phương thức</div><div class="lc-meta-val">' + att.checkInMethod + '</div></div>' +
+        '</div>' +
+        '<div class="lc-actions"><form method="post" action="' + _ctx + '/attendance" style="flex:1">' +
+          '<input type="hidden" name="action" value="admin-checkout">' +
+          '<input type="hidden" name="accountId" value="' + att.accountId + '">' +
+          '<button type="submit" class="btn-force-out" ' +
+            'onclick="return confirm(\'Force checkout ' + att.staffName + '?\')">🔒 Đóng ca</button>' +
+        '</form></div>' +
+        '</div>';
+    });
+    html += '</div>';
+    grid.innerHTML = html;
+    attachTimers();
+  }
+
+  async function refreshLive() {
+    try {
+      const r = await fetch(_ctx + '/attendance?action=api-live', { cache: 'no-store' });
+      if (r.ok) renderCards(await r.json());
+    } catch(e) { /* silent — giữ nguyên UI hiện tại nếu lỗi mạng */ }
+  }
+
+  setInterval(refreshLive, 30000); // 30s thay vì reload cả trang mỗi 60s
+})();
 </script>
 </body></html>
+

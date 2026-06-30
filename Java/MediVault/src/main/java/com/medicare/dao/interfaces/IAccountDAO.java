@@ -31,4 +31,8 @@ public interface IAccountDAO {
     List<Account> findAllWithFaceVector();
     /** Truy xuất hàng loạt account dựa trên list ID (giải quyết N+1 queries) */
     List<Account> findAccountsByIds(List<Integer> ids);
+    /** Presence tracking: cập nhật thời điểm staff còn active (gọi mỗi ping) */
+    void updateLastActive(int accountId);
+    /** Presence tracking: trả về danh sách accountId đã ping trong N phút gần nhất */
+    List<Integer> findOnlineAccountIds(int minutesThreshold);
 }

@@ -16,10 +16,10 @@ import java.util.List;
  */
 public class MedicineService implements IMedicineService {
 
-    private final MedicineDAO      medicineDAO  = new MedicineDAO();
-    private final BatchesDAO       batchesDAO   = new BatchesDAO();
-    private final PurchaseOrderDAO poDAO        = new PurchaseOrderDAO();
-    private final SupplierDAO      supplierDAO  = new SupplierDAO();
+    private final MedicineDAO medicineDAO = new MedicineDAO();
+    private final BatchesDAO batchesDAO = new BatchesDAO();
+    private final PurchaseOrderDAO poDAO = new PurchaseOrderDAO();
+    private final SupplierDAO supplierDAO = new SupplierDAO();
 
     // ── Thuốc ──────────────────────────────────────────────────────────────
 
@@ -38,10 +38,12 @@ public class MedicineService implements IMedicineService {
         if (m.getManufacturerId() <= 0)
             errors.add("Vui lòng chọn nhà sản xuất!");
 
-        if (!errors.isEmpty()) return ServiceResult.fail(errors);
+        if (!errors.isEmpty())
+            return ServiceResult.fail(errors);
 
         boolean ok = isNew ? medicineDAO.insert(m) : medicineDAO.update(m);
-        if (!ok) return ServiceResult.fail("Lưu thuốc thất bại — kiểm tra log Tomcat!");
+        if (!ok)
+            return ServiceResult.fail("Lưu thuốc thất bại — kiểm tra log Tomcat!");
 
         return ServiceResult.ok(m);
     }
@@ -64,14 +66,28 @@ public class MedicineService implements IMedicineService {
             int adminAccountId) {
 
         if (!isNew) {
-            // Cập nhật lô — không cần xử lý PO
+            // Load lô cũ để lấy SupplierID thật — form edit không gửi SupplierID (Bug 3)
+            Batches existing = batchesDAO.findById(b.getBatchId());
+            if (existing == null)
+                return ServiceResult.fail("Lô hàng không tồn tại hoặc đã bị xóa!");
+
+            if (batchesDAO.existsBatchNumber(b.getBatchNumber(), b.getMedicineId(),
+                    existing.getSupplierId(), b.getBatchId()))
+                return ServiceResult.fail("Số lô '" + b.getBatchNumber() + "' đã tồn tại cho thuốc và nhà cung cấp này!");
+
             boolean ok = batchesDAO.update(b);
             return ok ? ServiceResult.ok(b) : ServiceResult.fail("Cập nhật lô thất bại!");
         }
 
+        // ── Nhập lô mới: kiểm tra HSD (Bug 1 — chỉ chặn khi isNew, không áp dụng cho edit) ──
+        if (b.getExpiryDate() == null || !b.getExpiryDate().isAfter(java.time.LocalDate.now()))
+            return ServiceResult.fail("Ngày hết hạn phải sau ngày hôm nay!");
+        if (!b.getExpiryDate().isAfter(java.time.LocalDate.now().plusDays(90)))
+            return ServiceResult.fail("GPP: Hạn sử dụng phải còn ≥ 90 ngày khi nhập kho mới!");
+
         // ── Nhập lô mới: bắt buộc gắn vào một Đơn đặt hàng ──────────────
         // (FK_Batch_PO NOT NULL trong DB)
-        int poId       = -1;
+        int poId = -1;
         int supplierId = -1;
 
         if ("existing".equals(poMode)) {
@@ -87,7 +103,7 @@ public class MedicineService implements IMedicineService {
             if (po == null)
                 return ServiceResult.fail("Đơn đặt hàng không tồn tại, vui lòng chọn lại!");
 
-            poId       = po.getPoId();
+            poId = po.getPoId();
             supplierId = po.getSupplierId();
 
         } else {
@@ -118,7 +134,8 @@ public class MedicineService implements IMedicineService {
         b.setSupplierId(supplierId);
 
         boolean ok = batchesDAO.insert(b);
-        if (!ok) return ServiceResult.fail("Nhập lô thất bại — kiểm tra log Tomcat!");
+        if (!ok)
+            return ServiceResult.fail("Nhập lô thất bại — kiểm tra log Tomcat!");
 
         // Cập nhật lại tổng giá trị đơn
         poDAO.recalcTotalValue(poId);
@@ -129,9 +146,24 @@ public class MedicineService implements IMedicineService {
     @Override
     public ServiceResult<Void> deleteBatch(int batchId) {
         Batches b = batchesDAO.findById(batchId);
-        if (b != null && b.getCurrentQuantity() > 0)
-            return ServiceResult.fail("Không thể xóa lô còn hàng trong kho!");
+        if (b == null)
+            return ServiceResult.fail("Lô hàng không tồn tại!");
+        if (!"ACTIVE".equals(b.getStatus()))
+            return ServiceResult.fail("Lô này đã bị hủy hoặc tiêu hủy rồi!");
+        if (batchesDAO.hasSalesHistory(batchId))
+            return ServiceResult.fail("Không thể hủy lô đã có lịch sử bán hàng! Dùng tính năng Tiêu hủy nếu lô bị hỏng/hết hạn.");
         boolean ok = batchesDAO.delete(batchId);
-        return ok ? ServiceResult.ok() : ServiceResult.fail("Xóa lô thất bại!");
+        return ok ? ServiceResult.ok() : ServiceResult.fail("Hủy lô thất bại — lô có thể đã được bán một phần!");
+    }
+
+    @Override
+    public ServiceResult<Void> destroyBatch(int batchId) {
+        Batches b = batchesDAO.findById(batchId);
+        if (b == null)
+            return ServiceResult.fail("Lô hàng không tồn tại!");
+        if (!"ACTIVE".equals(b.getStatus()))
+            return ServiceResult.fail("Chỉ có thể tiêu hủy lô đang ở trạng thái ACTIVE!");
+        boolean ok = batchesDAO.destroyBatch(batchId);
+        return ok ? ServiceResult.ok() : ServiceResult.fail("Tiêu hủy lô thất bại — kiểm tra log Tomcat!");
     }
 }

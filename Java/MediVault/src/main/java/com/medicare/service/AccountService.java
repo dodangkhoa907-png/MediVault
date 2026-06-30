@@ -41,9 +41,6 @@ public class AccountService implements IAccountService {
                 ValidationUtil.validateAccount(username, fullName, email, phone, citizenId, position));
         errors.addAll(ValidationUtil.validatePassword(password));
 
-        if (!ValidationUtil.notBlank(citizenId))
-            errors.add("Số CMND/CCCD không được để trống.");
-
         if (ValidationUtil.notBlank(username)) {
             if (ValidationUtil.isReservedUsername(username))
                 errors.add("Tên đăng nhập '" + username + "' là tên hệ thống — không được phép sử dụng.");

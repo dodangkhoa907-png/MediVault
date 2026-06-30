@@ -43,10 +43,11 @@ public class AttendanceServlet extends HttpServlet {
         if (action == null) action = "live";
 
         switch (action) {
-            case "live"    -> showLive(req, resp);
-            case "list"    -> showList(req, resp);
-            case "monthly" -> showMonthly(req, resp);
-            default        -> showLive(req, resp);
+            case "live"     -> showLive(req, resp);
+            case "api-live" -> apiLive(req, resp);
+            case "list"     -> showList(req, resp);
+            case "monthly"  -> showMonthly(req, resp);
+            default         -> showLive(req, resp);
         }
     }
 
@@ -166,6 +167,37 @@ public class AttendanceServlet extends HttpServlet {
         req.setAttribute("year",       year);
         req.getRequestDispatcher("/WEB-INF/views/admin/attendance-monthly.jsp")
                 .forward(req, resp);
+    }
+
+    // ── API: JSON snapshot "đang làm việc" — dùng cho AJAX poll attendance-live
+    private void apiLive(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        resp.setHeader("Cache-Control", "no-cache");
+        List<Attendance> working  = attendanceDAO.findCurrentlyWorking();
+        int todayCount = scheduleDAO.findByDate(LocalDate.now()).size();
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"workCount\":").append(working.size());
+        sb.append(",\"todayCount\":").append(todayCount);
+        sb.append(",\"working\":[");
+        for (int i = 0; i < working.size(); i++) {
+            Attendance att = working.get(i);
+            if (i > 0) sb.append(',');
+            sb.append("{")
+              .append("\"accountId\":").append(att.getAccountId()).append(',')
+              .append("\"staffName\":\"").append(j(att.getStaffName())).append("\",")
+              .append("\"shiftTypeName\":\"").append(j(att.getShiftTypeName() != null ? att.getShiftTypeName() : "Ca không theo lịch")).append("\",")
+              .append("\"checkInTime\":\"").append(att.getCheckInTime()).append("\",")
+              .append("\"lateMinutes\":").append(att.getLateMinutes()).append(',')
+              .append("\"checkInMethod\":\"").append(j(att.getCheckInMethod())).append("\"")
+              .append("}");
+        }
+        sb.append("]}");
+        resp.getWriter().print(sb);
+    }
+
+    private static String j(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     // ── Admin force checkout ──────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" %>
 <% String activeNav = "reports"; %>
 <%@ taglib prefix="c"   uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
@@ -91,18 +91,20 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 
 /* MAIN */
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0}
-.topbar{height:60px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50;flex-shrink:0}
+.topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50;flex-shrink:0}
+.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--ink)}
 .topbar-left{display:flex;align-items:center;gap:10px}
 .topbar-icon{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,rgba(21,88,168,.12),rgba(58,189,224,.12));display:flex;align-items:center;justify-content:center;font-size:15px}
-.topbar-title{font-size:16px;font-weight:800;color:var(--ink)}
+
+    
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
 .topbar-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12.5px;font-weight:700;white-space:nowrap}
 .pill-period{background:#EFF6FF;color:var(--blue)}
 .pill-invoice{background:#ECFDF5;color:var(--green)}
 .topbar-user{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 7px;border:1.5px solid var(--border);border-radius:20px;text-decoration:none;color:inherit;transition:all .18s}
 .topbar-user:hover{border-color:var(--cyan)}
-.topbar-av{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff}
-.topbar-name{font-size:12.5px;font-weight:600;color:var(--navy)}
+.topbar-av{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
+.topbar-name{font-size:13px;font-weight:600;color:var(--navy)}
 .content{padding:22px 26px;flex:1;min-width:0}
 
 /* PAGE HEAD + FILTER */
@@ -354,7 +356,7 @@ tbody tr:hover td{background:#F7FBFF}
               <c:if test="${not empty s.endTime}">
                 <tr>
                   <td style="color:var(--muted);font-size:12px">#${s.shiftId}</td>
-                  <td><div style="font-weight:700">${accountMap[s.accountId] != null ? accountMap[s.accountId].fullName : 'ID '.concat(s.accountId)}</div></td>
+                  <td><div style="font-weight:700">${accountMap[s.accountId] != null ? accountMap[s.accountId].fullName : 'ID ' += s.accountId}</div></td>
                   <td style="font-size:12.5px;color:var(--muted)">${fn:substring(s.startTime.toString(),0,10)}</td>
                   <td style="font-weight:600">${fn:substring(s.startTime.toString(),11,16)}</td>
                   <td style="font-weight:600">${fn:substring(s.endTime.toString(),11,16)}</td>
@@ -607,3 +609,4 @@ loadAllCharts();
 </script>
 </body>
 </html>
+

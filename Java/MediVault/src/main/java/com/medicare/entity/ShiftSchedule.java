@@ -20,6 +20,8 @@ public class ShiftSchedule {
     private int createdBy;
     private LocalDateTime createdAt;
 
+    private int posStation;           // 0 = chưa gán, 1-10 = Quầy POS
+
     // ── Join fields ──
     private String staffName;
     private String shiftTypeName;
@@ -106,4 +108,6 @@ public class ShiftSchedule {
     public void setStartHour(int v)              { this.startHour = v; }
     public int getEndHour()                      { return endHour; }
     public void setEndHour(int v)                { this.endHour = v; }
+    public int getPosStation()                   { return posStation; }
+    public void setPosStation(int v)             { this.posStation = v; }
 }

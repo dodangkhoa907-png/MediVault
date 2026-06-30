@@ -3,6 +3,7 @@ package com.medicare.dao;
 import com.medicare.config.DBContext;
 import com.medicare.dao.interfaces.ISupplierDAO;
 import com.medicare.entity.Supplier;
+import com.medicare.util.MojibakeUtil;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,11 +13,11 @@ public class SupplierDAO implements ISupplierDAO {
     private Supplier mapRow(ResultSet rs) throws SQLException {
         Supplier s = new Supplier();
         s.setSupplierId(rs.getInt("SupplierID"));
-        s.setSupplierName(rs.getNString("SupplierName"));
-        s.setContactName(rs.getNString("ContactName"));
+        s.setSupplierName(MojibakeUtil.fix(rs.getNString("SupplierName")));
+        s.setContactName(MojibakeUtil.fix(rs.getNString("ContactName")));
         s.setPhone(rs.getString("Phone"));
         s.setEmail(rs.getString("Email"));
-        s.setAddress(rs.getNString("Address"));
+        s.setAddress(MojibakeUtil.fix(rs.getNString("Address")));
         s.setLicenseNumber(rs.getString("LicenseNumber"));
         s.setActive(rs.getBoolean("IsActive"));
         return s;
