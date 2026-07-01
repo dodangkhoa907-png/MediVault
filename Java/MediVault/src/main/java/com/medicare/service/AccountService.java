@@ -51,6 +51,8 @@ public class AccountService implements IAccountService {
             errors.add("Email '" + email + "' đã được dùng.");
         if (ValidationUtil.notBlank(phone)    && accountDAO.isPhoneTaken(phone, -1))
             errors.add("Số điện thoại '" + phone.trim() + "' đã được dùng bởi tài khoản khác.");
+        if (ValidationUtil.notBlank(citizenId) && ((com.medicare.dao.AccountDAO) accountDAO).isCitizenIdTaken(citizenId, -1))
+            errors.add("Số CCCD '" + citizenId.trim() + "' đã được dùng bởi tài khoản khác.");
 
         if (!errors.isEmpty()) return ServiceResult.fail(errors);
 

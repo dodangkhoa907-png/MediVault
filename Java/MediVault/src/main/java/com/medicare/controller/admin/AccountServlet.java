@@ -103,21 +103,6 @@ public class AccountServlet extends HttpServlet {
                         "Khôi phục từ thùng rác: @" + (rAcc != null ? rAcc.getUsername() : rid));
                 resp.sendRedirect(req.getContextPath() + "/accounts?action=trash&msg=restored");
             }
-            case "purge" -> {
-                // Bước 1: Lưu target + hiện trang nhập "delete" trước khi gửi OTP
-                int id = Integer.parseInt(req.getParameter("id"));
-                Account del = dao.findById(id);
-                if (del == null) { resp.sendRedirect(req.getContextPath() + "/accounts?action=trash"); return; }
-                // Chỉ lưu target vào session, CHƯA gửi OTP
-                req.getSession().setAttribute("deleteTargetId",   id);
-                req.getSession().setAttribute("deleteTargetName",
-                        del.getFullName() != null ? del.getFullName() : del.getUsername());
-                // Forward sang trang nhập "delete" (Bước 1/2)
-                req.setAttribute("deleteTarget", del);
-                SidebarHelper.load(req);
-
-                req.getRequestDispatcher("/WEB-INF/views/admin/admin-delete-confirm.jsp").forward(req, resp);
-            }
             case "trash" -> {
                 req.setAttribute("deletedAccounts", dao.findDeleted());
                 SidebarHelper.load(req);
@@ -160,44 +145,6 @@ public class AccountServlet extends HttpServlet {
                 }
                 pw.print("]}");
                 return;
-            }
-            case "purge-confirm" -> {
-                // Admin đã gõ "delete" (lowercase chính xác) → xóa vĩnh viễn ngay, không OTP
-                Integer tid = (Integer) req.getSession().getAttribute("deleteTargetId");
-                String cWord = req.getParameter("confirmWord");
-                if (tid == null) {
-                    resp.sendRedirect(req.getContextPath() + "/accounts?action=trash"); return;
-                }
-                if (!"delete".equals(cWord != null ? cWord.trim() : "")) {
-                    resp.sendRedirect(req.getContextPath() + "/accounts?action=trash&msg=invalid-word"); return;
-                }
-                Account delTarget2 = dao.findById(tid);
-                if (delTarget2 == null) {
-                    resp.sendRedirect(req.getContextPath() + "/accounts?action=trash&msg=not-found"); return;
-                }
-                // Bảo vệ: không cho xóa vĩnh viễn admin gốc (ID=1)
-                if (tid == 1) {
-                    resp.sendRedirect(req.getContextPath() + "/accounts?action=trash&msg=protected-admin"); return;
-                }
-                if (delTarget2.getRoleId() == 1 && dao.countActiveAdmins() <= 1) {
-                    resp.sendRedirect(req.getContextPath() + "/accounts?msg=last-admin"); return;
-                }
-                String delName2 = (String) req.getSession().getAttribute("deleteTargetName");
-                try {
-                    boolean deleted2 = dao.forceDelete(tid);
-                    if (!deleted2) {
-                        resp.sendRedirect(req.getContextPath() + "/accounts?action=trash&msg=system-error"); return;
-                    }
-                    AuditHelper.log(req, "Xóa vĩnh viễn tài khoản", "Account",
-                            "Xóa vĩnh viễn (xác nhận delete): " + (delName2 != null ? delName2 : String.valueOf(tid)));
-                    req.getSession().removeAttribute("deleteTargetId");
-                    req.getSession().removeAttribute("deleteTargetName");
-                    resp.sendRedirect(req.getContextPath() + "/accounts?action=trash&msg=purged");
-                } catch (Exception e) {
-                    System.err.println("[AccountServlet] forceDelete failed ID " + tid + ": " + e.getMessage());
-                    resp.sendRedirect(req.getContextPath() + "/accounts?action=trash&msg=system-error&details="
-                            + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
-                }
             }
             default -> showList(req, resp);
         }
@@ -335,26 +282,32 @@ public class AccountServlet extends HttpServlet {
         Account current = null;
         boolean emailChanged = false, phoneChanged = false;
         if (isNew) {
-            // Tạo mới: check username + email + phone
+            // Tạo mới: check username + email + phone + citizenId
             if (ValidationUtil.notBlank(username) && dao.isUsernameTaken(username))
                 errors.add("Tên đăng nhập '" + username + "' đã tồn tại.");
             if (ValidationUtil.notBlank(email) && dao.isEmailTaken(email, -1))
                 errors.add("Email '" + email + "' đã được dùng bởi tài khoản khác.");
             if (ValidationUtil.notBlank(phone) && dao.isPhoneTaken(phone, -1))
                 errors.add("Số điện thoại '" + phone.trim() + "' đã được dùng bởi tài khoản khác.");
+            if (ValidationUtil.notBlank(citizenId) && dao.isCitizenIdTaken(citizenId, -1))
+                errors.add("Số CCCD '" + citizenId.trim() + "' đã được dùng bởi tài khoản khác.");
         } else {
-            // Edit: chỉ query DB nếu email/phone THỰC SỰ thay đổi so với giá trị cũ
+            // Edit: chỉ query DB nếu field THỰC SỰ thay đổi so với giá trị cũ
             current = dao.findById(Integer.parseInt(idStr));
             if (current != null) {
                 emailChanged = ValidationUtil.notBlank(email)
                         && !email.trim().equals(current.getEmail() != null ? current.getEmail() : "");
                 phoneChanged = ValidationUtil.notBlank(phone)
                         && !phone.trim().equals(current.getPhone() != null ? current.getPhone() : "");
+                boolean citizenIdChanged = ValidationUtil.notBlank(citizenId)
+                        && !citizenId.trim().equals(current.getCitizenId() != null ? current.getCitizenId() : "");
 
                 if (emailChanged && dao.isEmailTaken(email, Integer.parseInt(idStr)))
                     errors.add("Email '" + email + "' đã được dùng bởi tài khoản khác.");
                 if (phoneChanged && dao.isPhoneTaken(phone, Integer.parseInt(idStr)))
                     errors.add("Số điện thoại '" + phone.trim() + "' đã được dùng bởi tài khoản khác.");
+                if (citizenIdChanged && dao.isCitizenIdTaken(citizenId, Integer.parseInt(idStr)))
+                    errors.add("Số CCCD '" + citizenId.trim() + "' đã được dùng bởi tài khoản khác.");
             }
         }
         // ── BƯỚC 3: Nếu có lỗi → GỬI LẠI FORM + GIỮ DỮ LIỆU ──
