@@ -1,13 +1,9 @@
-<project xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-<<<<<<< HEAD
-
     <groupId>com.medicare</groupId>
     <artifactId>medicare</artifactId>
-=======
-    <groupId>com.medivault</groupId>
-    <artifactId>MediVault</artifactId>
->>>>>>> Thong
     <version>1.0-SNAPSHOT</version>
     <packaging>war</packaging>
     <properties>
@@ -73,8 +69,6 @@
             <artifactId>HikariCP</artifactId>
             <version>5.1.0</version>
         </dependency>
-<<<<<<< HEAD
-
         <!-- SLF4J — bắt buộc bởi HikariCP 5.x -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -87,16 +81,12 @@
             <version>2.0.13</version>
         </dependency>
 
-
         <!-- Caffeine — High-performance in-memory cache (thay thế cho EhCache/Redis nội bộ) -->
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
             <version>3.1.8</version>
         </dependency>
-
-=======
->>>>>>> Thong
     </dependencies>
     <build>
         <finalName>MediCare</finalName>
