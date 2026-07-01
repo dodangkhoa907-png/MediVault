@@ -98,6 +98,67 @@ public class PosServlet extends HttpServlet {
             }
             return;
         }
+
+        if ("list-customers".equals(action)) {
+            String q = req.getParameter("q");
+            List<Customer> list = customerDAO.findAll();
+            resp.setContentType("application/json;charset=UTF-8");
+            PrintWriter out = resp.getWriter();
+            out.print("[");
+            boolean first = true;
+            for (Customer c : list) {
+                if (q != null && !q.trim().isEmpty()) {
+                    String query = q.trim().toLowerCase();
+                    boolean matchName = c.getCustomerName() != null && c.getCustomerName().toLowerCase().contains(query);
+                    boolean matchPhone = c.getPhone() != null && c.getPhone().contains(query);
+                    if (!matchName && !matchPhone) continue;
+                }
+                if (!first) out.print(",");
+                out.printf("{\"id\":%d,\"name\":\"%s\",\"phone\":\"%s\",\"email\":\"%s\",\"address\":\"%s\"," +
+                           "\"dateOfBirth\":\"%s\",\"gender\":\"%s\",\"nationalId\":\"%s\",\"occupation\":\"%s\"," +
+                           "\"allergyHistory\":\"%s\",\"chronicDisease\":\"%s\"}",
+                        c.getCustomerId(),
+                        esc(c.getCustomerName()),
+                        esc(c.getPhone()),
+                        esc(c.getEmail()),
+                        esc(c.getAddress()),
+                        c.getDateOfBirth() != null ? c.getDateOfBirth().toString() : "",
+                        esc(c.getGender()),
+                        esc(c.getNationalId()),
+                        esc(c.getOccupation()),
+                        esc(c.getAllergyHistory()),
+                        esc(c.getChronicDisease()));
+                first = false;
+            }
+            out.print("]");
+            return;
+        }
+
+        if ("customer-detail".equals(action)) {
+            int id = parseIntOrNull(req.getParameter("id")) != null ? parseIntOrNull(req.getParameter("id")) : 0;
+            Customer c = customerDAO.findById(id);
+            resp.setContentType("application/json;charset=UTF-8");
+            PrintWriter out = resp.getWriter();
+            if (c == null) {
+                out.print("{\"ok\":false}");
+            } else {
+                out.printf("{\"ok\":true,\"id\":%d,\"name\":\"%s\",\"phone\":\"%s\",\"email\":\"%s\",\"address\":\"%s\"," +
+                           "\"dateOfBirth\":\"%s\",\"gender\":\"%s\",\"nationalId\":\"%s\",\"occupation\":\"%s\"," +
+                           "\"allergyHistory\":\"%s\",\"chronicDisease\":\"%s\"}",
+                        c.getCustomerId(),
+                        esc(c.getCustomerName()),
+                        esc(c.getPhone()),
+                        esc(c.getEmail()),
+                        esc(c.getAddress()),
+                        c.getDateOfBirth() != null ? c.getDateOfBirth().toString() : "",
+                        esc(c.getGender()),
+                        esc(c.getNationalId()),
+                        esc(c.getOccupation()),
+                        esc(c.getAllergyHistory()),
+                        esc(c.getChronicDisease()));
+            }
+            return;
+        }
         if ("shift-summary".equals(action)) {
             resp.setContentType("application/json;charset=UTF-8");
             PrintWriter out = resp.getWriter();
@@ -234,6 +295,104 @@ public class PosServlet extends HttpServlet {
         if ("create-qr".equals(action))       { handleCreateQr(req, out);      return; }
         if ("check-qr-status".equals(action)) { handleCheckQrStatus(req, out); return; }
         if ("cancel-qr".equals(action))       { handleCancelQr(req, out);      return; }
+
+        if ("save-customer".equals(action)) {
+            try {
+                String idStr = req.getParameter("customerId");
+                boolean isNew = idStr == null || idStr.trim().isEmpty() || "0".equals(idStr.trim());
+
+                String name    = req.getParameter("customerName");
+                String phone   = req.getParameter("phone");
+                String email   = req.getParameter("email");
+                String address = req.getParameter("address");
+                String dobStr  = req.getParameter("dateOfBirth");
+                String gender  = req.getParameter("gender");
+                String natId   = req.getParameter("nationalId");
+                String occup   = req.getParameter("occupation");
+                String allergy = req.getParameter("allergyHistory");
+                String chronic = req.getParameter("chronicDisease");
+
+                if (name == null || name.trim().isEmpty()) {
+                    out.print("{\"ok\":false,\"msg\":\"Vui lòng nhập họ tên khách hàng!\"}");
+                    return;
+                }
+
+                LocalDate dob = null;
+                if (dobStr != null && !dobStr.trim().isEmpty()) {
+                    try {
+                        dob = LocalDate.parse(dobStr.trim());
+                        if (!dob.isBefore(LocalDate.now())) {
+                            out.print("{\"ok\":false,\"msg\":\"Ngày sinh không hợp lệ!\"}");
+                            return;
+                        }
+                    } catch (Exception e) {
+                        out.print("{\"ok\":false,\"msg\":\"Ngày sinh không đúng định dạng!\"}");
+                        return;
+                    }
+                }
+
+                if (phone != null && !phone.trim().isEmpty()) {
+                    Customer existing = customerDAO.findByPhone(phone.trim());
+                    boolean phoneTaken = existing != null &&
+                            (isNew || existing.getCustomerId() != Integer.parseInt(idStr.trim()));
+                    if (phoneTaken) {
+                        out.print("{\"ok\":false,\"msg\":\"Số điện thoại này đã thuộc về khách hàng khác!\"}");
+                        return;
+                    }
+                }
+
+                Customer c = new Customer();
+                c.setCustomerName(name.trim());
+                c.setPhone(phone == null || phone.trim().isEmpty() ? null : phone.trim());
+                c.setEmail(email == null || email.trim().isEmpty() ? null : email.trim());
+                c.setAddress(address == null || address.trim().isEmpty() ? null : address.trim());
+                c.setDateOfBirth(dob);
+                c.setGender(gender == null || gender.trim().isEmpty() ? null : gender.trim());
+                c.setNationalId(natId == null || natId.trim().isEmpty() ? null : natId.trim());
+                c.setOccupation(occup == null || occup.trim().isEmpty() ? null : occup.trim());
+                c.setAllergyHistory(allergy == null || allergy.trim().isEmpty() ? null : allergy.trim());
+                c.setChronicDisease(chronic == null || chronic.trim().isEmpty() ? null : chronic.trim());
+
+                boolean ok;
+                if (isNew) {
+                    ok = customerDAO.insert(c);
+                    if (ok) {
+                        Customer created = null;
+                        if (c.getPhone() != null && !c.getPhone().isEmpty()) {
+                            created = customerDAO.findByPhone(c.getPhone());
+                        }
+                        if (created == null) {
+                            // fallback tìm theo ID lớn nhất của tên này
+                            List<Customer> all = customerDAO.findAll();
+                            if (!all.isEmpty()) {
+                                created = all.stream()
+                                    .filter(x -> x.getCustomerName().equals(c.getCustomerName()))
+                                    .max((x, y) -> Integer.compare(x.getCustomerId(), y.getCustomerId()))
+                                    .orElse(null);
+                            }
+                        }
+                        int newId = created != null ? created.getCustomerId() : 0;
+                        out.printf("{\"ok\":true,\"msg\":\"Thêm khách hàng thành công!\",\"id\":%d,\"name\":\"%s\",\"phone\":\"%s\"}",
+                                newId, esc(c.getCustomerName()), esc(c.getPhone() != null ? c.getPhone() : ""));
+                    } else {
+                        out.print("{\"ok\":false,\"msg\":\"Lỗi khi lưu vào cơ sở dữ liệu!\"}");
+                    }
+                } else {
+                    c.setCustomerId(Integer.parseInt(idStr.trim()));
+                    ok = customerDAO.update(c);
+                    if (ok) {
+                        out.printf("{\"ok\":true,\"msg\":\"Cập nhật khách hàng thành công!\",\"id\":%d,\"name\":\"%s\",\"phone\":\"%s\"}",
+                                c.getCustomerId(), esc(c.getCustomerName()), esc(c.getPhone() != null ? c.getPhone() : ""));
+                    } else {
+                        out.print("{\"ok\":false,\"msg\":\"Lỗi khi cập nhật vào cơ sở dữ liệu!\"}");
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                out.printf("{\"ok\":false,\"msg\":\"Lỗi hệ thống: %s\"}", esc(e.getMessage()));
+            }
+            return;
+        }
 
         if ("complete-sale".equals(action)) {
             try {
