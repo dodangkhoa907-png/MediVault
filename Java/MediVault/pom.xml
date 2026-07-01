@@ -1,21 +1,16 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
     <groupId>com.medicare</groupId>
     <artifactId>medicare</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>war</packaging>
-
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-
     <dependencies>
         <!-- Servlet API - Tomcat 10 dùng jakarta.* -->
         <dependency>
@@ -24,7 +19,6 @@
             <version>6.0.0</version>
             <scope>provided</scope>
         </dependency>
-
         <!-- JSP API -->
         <dependency>
             <groupId>jakarta.servlet.jsp</groupId>
@@ -32,7 +26,6 @@
             <version>3.1.1</version>
             <scope>provided</scope>
         </dependency>
-
         <!-- JSTL (dùng trong JSP: c:forEach, c:if...) -->
         <dependency>
             <groupId>jakarta.servlet.jsp.jstl</groupId>
@@ -44,43 +37,38 @@
             <artifactId>jakarta.servlet.jsp.jstl</artifactId>
             <version>3.0.1</version>
         </dependency>
-
         <!-- SQL Server JDBC -->
         <dependency>
             <groupId>com.microsoft.sqlserver</groupId>
             <artifactId>mssql-jdbc</artifactId>
             <version>12.6.1.jre11</version>
         </dependency>
-
         <!-- BCrypt - mã hóa mật khẩu -->
         <dependency>
             <groupId>org.mindrot</groupId>
             <artifactId>jbcrypt</artifactId>
             <version>0.4</version>
         </dependency>
-
         <!-- Gson - parse JSON (dùng cho machine command) -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.10.1</version>
         </dependency>
-
         <!-- Jakarta Mail (gửi email OTP) -->
-
         <dependency>
             <groupId>com.sun.mail</groupId>
             <artifactId>jakarta.mail</artifactId>
             <version>2.0.1</version>
         </dependency>
-
-        <!-- HikariCP — Connection Pool giảm thời gian kết nối DB -->
+        <!--
+         HikariCP — Connection Pool giảm thời gian kết nối DB
+        -->
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <version>5.1.0</version>
         </dependency>
-
         <!-- SLF4J — bắt buộc bởi HikariCP 5.x -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -93,16 +81,13 @@
             <version>2.0.13</version>
         </dependency>
 
-
         <!-- Caffeine — High-performance in-memory cache (thay thế cho EhCache/Redis nội bộ) -->
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
             <version>3.1.8</version>
         </dependency>
-
     </dependencies>
-
     <build>
         <finalName>MediCare</finalName>
         <plugins>
@@ -115,8 +100,4 @@
             </plugin>
         </plugins>
     </build>
-
-
-
-
 </project>
