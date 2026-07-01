@@ -78,6 +78,11 @@
         <mime-type>font/woff</mime-type>
     </mime-mapping>
 
+    <!-- Root URL redirect -->
+    <welcome-file-list>
+        <welcome-file>index.jsp</welcome-file>
+    </welcome-file-list>
+
     <!-- Error pages -->
     <error-page>
         <error-code>404</error-code>
