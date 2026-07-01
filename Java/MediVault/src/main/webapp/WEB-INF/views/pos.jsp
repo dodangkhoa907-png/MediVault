@@ -3080,8 +3080,7 @@
                 <div class="sb-bottom">
                   <div class="sb-divider" style="margin-bottom:6px"></div>
                   <div class="sb-checkin-wrap">
-                    <button class="sb-btn" id="checkinBtn" onclick="<%= isLoggedIn ? " toggleCheckinPanel()"
-                      : "openFaceModal()" %>">
+                    <button class="sb-btn" id="checkinBtn" onclick="<%= isLoggedIn ? "toggleCheckinPanel()" : "openFaceModal()" %>">
                       <span class="sb-icon">
                         <%= isLoggedIn ? "🟢" : "👤" %>
                       </span>
