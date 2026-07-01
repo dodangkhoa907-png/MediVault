@@ -1,10 +1,6 @@
-<<<<<<< HEAD
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-=======
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
->>>>>>> Khoa
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.medicare</groupId>
     <artifactId>medicare</artifactId>
@@ -65,9 +61,7 @@
             <artifactId>jakarta.mail</artifactId>
             <version>2.0.1</version>
         </dependency>
-        <!--
-         HikariCP — Connection Pool giảm thời gian kết nối DB
-        -->
+        <!-- HikariCP — Connection Pool giảm thời gian kết nối DB -->
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
@@ -84,14 +78,7 @@
             <artifactId>slf4j-simple</artifactId>
             <version>2.0.13</version>
         </dependency>
-<<<<<<< HEAD
-        <!--
-         Caffeine — High-performance in-memory cache (thay thế cho EhCache/Redis nội bộ)
-        -->
-=======
-
-        <!-- Caffeine — High-performance in-memory cache (thay thế cho EhCache/Redis nội bộ) -->
->>>>>>> Khoa
+        <!-- Caffeine — High-performance in-memory cache -->
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
