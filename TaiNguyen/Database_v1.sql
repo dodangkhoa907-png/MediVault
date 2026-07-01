@@ -1629,7 +1629,7 @@ INSERT INTO Roles (RoleName) VALUES (N'Admin'), (N'Manager'), (N'Staff');
 
 INSERT INTO Accounts (Username, PasswordHash, FullName, Email, Phone, RoleID,
     CitizenId, ProfessionalCertNo, ProfessionalCertExp, Position) VALUES
-('admin',   '$2a$10$vk6YUYLb4LByJLSQX5LoEOAOXtxFSVDE1m.4OyTeEohHHgm8AFN7.', N'Đỗ Đăng Khoa',
+('admin',   '$2a$10$tMD/BNGd73td.ZPz7XUVleSPycUqGfwUbyzw5UvFxM8HDQlhrOofm', N'Đỗ Đăng Khoa',
  'dodangkhoa907@gmail.com',   '0835352009', 1, '012345678901', NULL, NULL, N'Quan tri vien'),
 ('manager', '$2a$10$vk6YUYLb4LByJLSQX5LoEOAOXtxFSVDE1m.4OyTeEohHHgm8AFN7.', N'Tran Quan Ly',
  'manager@pharmacy.vn', '0900000002', 2, '012345678902', 'DS-0001-2020', '2025-12-31', N'Duoc si phu trach'),
