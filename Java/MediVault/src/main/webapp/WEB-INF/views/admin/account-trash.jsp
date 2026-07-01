@@ -111,8 +111,6 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .act-btn{padding:5px 11px;border-radius:7px;font-size:12px;font-weight:600;text-decoration:none;cursor:pointer;border:none;font-family:'Outfit',sans-serif;transition:all .15s}
 .act-edit{background:rgba(21,88,168,.08);color:var(--blue)}.act-edit:hover{background:rgba(21,88,168,.16)}
 .act-restore{background:rgba(5,150,105,.08);color:var(--green)}.act-restore:hover{background:rgba(5,150,105,.16)}
-.act-purge{background:rgba(220,38,38,.08);color:var(--red)}.act-purge:hover{background:rgba(220,38,38,.16)}
-.act-force{background:var(--red);color:#fff;font-weight:700}.act-force:hover{background:#B91C1C}
 .pagination{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-top:1px solid var(--border)}
 .pagination-info{font-size:12.5px;color:var(--muted)}
 .pagination-btns{display:flex;gap:5px}
@@ -190,7 +188,7 @@ select.field-input{cursor:pointer}
     </div>
 
     <div class="info-banner">
-      ⚠️ Tài khoản trong thùng rác sẽ bị <strong>xóa vĩnh viễn sau 30 ngày</strong> kể từ ngày xóa. Có thể khôi phục trước khi hết hạn.
+      ℹ️ Tài khoản trong thùng rác có thể được <strong>khôi phục</strong> bất cứ lúc nào. Chỉ quản trị viên mới xóa được tài khoản khỏi hệ thống.
     </div>
 
     <div class="card">
@@ -210,13 +208,12 @@ select.field-input{cursor:pointer}
               <th>Email</th>
               <th>Chức vụ</th>
               <th>Ngày xóa</th>
-              <th>Còn lại</th>
               <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
             <% if (deletedList.isEmpty()) { %>
-            <tr><td colspan="7">
+            <tr><td colspan="6">
               <div class="empty">
                 <div class="ei">✅</div>
                 <div style="font-weight:600;margin-bottom:6px">Thùng rác trống</div>
@@ -229,17 +226,7 @@ select.field-input{cursor:pointer}
                     ? a.getFullName().substring(0,1).toUpperCase()+a.getFullName().substring(1,2).toUpperCase()
                     : (a.getUsername() != null ? a.getUsername().substring(0,1).toUpperCase() : "?");
                 String roleName = a.getRoleId()==1?"Admin":a.getRoleId()==2?"Dược sĩ":"Thủ kho";
-                // Tính số ngày đã xóa
-                long daysDeleted = 0;
-                boolean canPurge = false;
-                String deletedAtStr = "—";
-                if (a.getDeletedAt() != null) {
-                    daysDeleted = java.time.temporal.ChronoUnit.DAYS.between(
-                        a.getDeletedAt().toLocalDate(), java.time.LocalDate.now());
-                    canPurge = daysDeleted >= 30;
-                    deletedAtStr = a.getDeletedAt().toLocalDate().toString();
-                }
-                long daysLeft = Math.max(0, 30 - daysDeleted);
+                String deletedAtStr = a.getDeletedAt() != null ? a.getDeletedAt().toLocalDate().toString() : "—";
             %>
             <tr>
               <td style="color:var(--muted);font-size:12px"><%= idx %></td>
@@ -255,24 +242,12 @@ select.field-input{cursor:pointer}
               <td style="color:var(--muted);font-size:13px"><%= a.getEmail() != null ? a.getEmail() : "—" %></td>
               <td><span style="font-size:12px;font-weight:600;color:var(--muted)"><%= roleName %></span></td>
               <td style="font-size:12.5px;color:var(--muted)"><%= deletedAtStr %></td>
-              <td>
-                <% if (canPurge) { %>
-                <span class="days-left days-ready">Có thể xóa vĩnh viễn</span>
-                <% } else { %>
-                <span class="days-left days-ok"><%= daysLeft %> ngày</span>
-                <% } %>
-              </td>
               <td onclick="event.stopPropagation()">
                 <div class="act-group">
                   <a href="${pageContext.request.contextPath}/accounts?action=restore&id=<%= a.getAccountId() %>"
                      class="act-btn act-restore"
                      onclick="return confirm('Khôi phục tài khoản @<%= a.getUsername() %>?')">
                     ↩️ Khôi phục
-                  </a>
-                  <%-- Cả 2 trường hợp (đủ/chưa đủ 30 ngày) đều vào cùng 1 flow: nhập "delete" → OTP --%>
-                  <a href="${pageContext.request.contextPath}/accounts?action=purge&id=<%= a.getAccountId() %>"
-                     class="act-btn act-purge">
-                    🗑️ Xóa ngay
                   </a>
                 </div>
               </td>
@@ -286,13 +261,7 @@ select.field-input{cursor:pointer}
 </div>
 
 <% if ("restored".equals(msg)) { %><div class="toast toast-ok">↩️ Đã khôi phục tài khoản thành công!</div>
-<% } else if ("purged".equals(msg)) { %><div class="toast toast-ok">🗑️ Đã xóa vĩnh viễn!</div>
-<% } else if ("force-purged".equals(msg)) { %><div class="toast toast-ok" style="background:#c0392b">⚠️ Đã xóa vĩnh viễn ngay lập tức!</div>
-<% } else if ("not-ready".equals(msg)) { %><div class="toast toast-warn">⏱️ Chưa đủ 30 ngày, chưa thể xóa vĩnh viễn!</div>
-<% } else if ("not-found".equals(msg)) { %><div class="toast toast-warn">❌ Không tìm thấy tài khoản để xóa!</div>
-<% } else if ("invalid-word".equals(msg)) { %><div class="toast toast-warn">❌ Xác nhận sai — phải gõ đúng chữ "delete" (chữ thường)!</div>
-<% } else if ("protected-admin".equals(msg)) { %><div class="toast toast-warn">🛡️ Tài khoản Admin gốc được bảo vệ — không thể xóa vĩnh viễn!</div>
-<% } else if ("system-error".equals(msg)) { %><div class="toast toast-warn">❌ Lỗi hệ thống khi xóa — kiểm tra log Tomcat!</div>
+<% } else if ("not-found".equals(msg)) { %><div class="toast toast-warn">❌ Không tìm thấy tài khoản!</div>
 <% } %>
 
 <script>
