@@ -1,0 +1,22 @@
+@startuml
+class com.medivault.entity.LoyaltyTier {
+- int tierId
+- String tierName
+- int minPoints
+- BigDecimal discountPct
+- String description
+
++ int getTierId()
++ void setTierId(int)
++ String getTierName()
++ void setTierName(String)
++ int getMinPoints()
++ void setMinPoints(int)
++ BigDecimal getDiscountPct()
++ void setDiscountPct(BigDecimal)
++ String getDescription()
++ void setDescription(String)
+}
+
+
+@enduml

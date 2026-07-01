@@ -1,0 +1,31 @@
+@startuml
+class com.medivault.entity.OrderLog {
+- long logId
+- int invoiceId
+- String oldStatus
+- String newStatus
+- LocalDateTime changedAt
+- Integer accountId
+- String source
+- String note
+
++ long getLogId()
++ void setLogId(long)
++ int getInvoiceId()
++ void setInvoiceId(int)
++ String getOldStatus()
++ void setOldStatus(String)
++ String getNewStatus()
++ void setNewStatus(String)
++ LocalDateTime getChangedAt()
++ void setChangedAt(LocalDateTime)
++ Integer getAccountId()
++ void setAccountId(Integer)
++ String getSource()
++ void setSource(String)
++ String getNote()
++ void setNote(String)
+}
+
+
+@enduml
