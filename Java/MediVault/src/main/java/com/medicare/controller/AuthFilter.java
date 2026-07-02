@@ -8,7 +8,7 @@ import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.*;
 import java.io.IOException;
 
-@WebFilter("/*")
+@WebFilter(urlPatterns = "/*", asyncSupported = true)
 public class AuthFilter implements Filter {
 
     // ── Tên cookie lưu nhận dạng đăng nhập ──

@@ -322,6 +322,22 @@ public class PosServlet extends HttpServlet {
             return;
         }
 
+        // Đang chờ duyệt đổi khuôn mặt → chặn điểm danh bằng khuôn mặt cũ
+        if (staff.isFaceReenrollPending()) {
+            out.print("{\"ok\":false,\"reason\":\"reenroll_pending\"}");
+            return;
+        }
+
+        // Verify khuôn mặt PHÍA SERVER — không tin kết quả so khớp từ client.
+        // Client phải gửi kèm descriptor; server đối chiếu 1-vs-N với ngưỡng chặt.
+        String descriptorJson = req.getParameter("descriptor");
+        String verifyResult = com.medicare.util.FaceVerifier.verify(
+                accountId, descriptorJson, accountDAO.findAllWithFaceVector());
+        if (!"MATCH".equals(verifyResult)) {
+            out.print("{\"ok\":false,\"reason\":\"" + verifyResult + "\"}");
+            return;
+        }
+
         HttpSession session = req.getSession(true);
 
         // Kiểm tra sai quầy POS trước khi set session

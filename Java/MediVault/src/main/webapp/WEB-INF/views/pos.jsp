@@ -59,39 +59,6 @@ body{display:flex}
 .med-count-badge{background:#eff6ff;color:var(--blue);font-size:12px;font-weight:700;padding:4px 10px;border-radius:6px;white-space:nowrap;flex-shrink:0}
 .topbar-date{font-size:11.5px;color:var(--muted);white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:4px}
 
-<<<<<<< HEAD
-/* CATEGORY */
-.cat-bar{height:40px;padding:0 12px;display:flex;align-items:center;gap:4px;overflow-x:auto;flex-shrink:0;background:#fff;border-bottom:1px solid var(--border)}
-.cat-bar::-webkit-scrollbar{display:none}
-.cat-tab{height:27px;padding:0 12px;border-radius:6px;border:none;font-size:12px;font-weight:600;color:var(--muted);background:transparent;cursor:pointer;white-space:nowrap;transition:.15s;flex-shrink:0;font-family:inherit}
-.cat-tab:hover{color:var(--blue);background:#eff6ff}
-.cat-tab.active{color:var(--blue);background:#eff6ff}
-
-/* MED GRID */
-.med-grid{flex:1;overflow-y:auto;padding:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px;align-content:start}
-.med-grid::-webkit-scrollbar{width:4px}
-.med-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
-
-.med-card{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:10px 11px;cursor:pointer;transition:.18s;display:flex;flex-direction:column;gap:3px}
-.med-card:hover{border-color:var(--sky);box-shadow:0 2px 12px rgba(59,130,246,.15);transform:translateY(-1px)}
-.med-card.out-of-stock{opacity:.5;cursor:not-allowed}
-.med-card.out-of-stock:hover{transform:none;border-color:var(--border);box-shadow:none}
-
-.mc-top{display:flex;align-items:center;justify-content:space-between;gap:4px}
-.mc-code{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mc-badge{font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;flex-shrink:0;white-space:nowrap}
-.mb-rx{background:#fee2e2;color:#991b1b}
-.mb-otc{background:#d1fae5;color:#065f46}
-.mc-name{font-size:12.5px;font-weight:800;color:var(--navy);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.mc-unit{font-size:10.5px;color:var(--muted)}
-.mc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:3px}
-.mc-price{font-size:14px;font-weight:900;color:var(--blue);font-family:'Outfit',sans-serif}
-.mc-stock{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;white-space:nowrap}
-.stock-ok{background:#d1fae5;color:#065f46}
-.stock-low{background:#fef3c7;color:#92400e}
-.stock-out{background:#fee2e2;color:#991b1b}
-
-=======
 /* CATEGORY — pill style */
 .cat-bar{height:46px;padding:0 14px;display:flex;align-items:center;gap:6px;overflow-x:auto;flex-shrink:0;background:#fff;border-bottom:1px solid var(--border)}
 .cat-bar::-webkit-scrollbar{display:none}
@@ -127,7 +94,6 @@ body{display:flex}
 /* Price — bottom, separated */
 .mc-price-row{width:100%;margin-top:9px;padding-top:8px;border-top:1px solid #f1f5f9;text-align:center}
 .mc-price{font-size:17px;font-weight:900;color:var(--blue);letter-spacing:-.4px}
->>>>>>> Khoa
 .empty-state{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted)}
 .empty-state .ei{font-size:40px;margin-bottom:10px}
 
@@ -167,17 +133,11 @@ body{display:flex}
 .qty-btn{width:22px;height:22px;border-radius:5px;border:1.5px solid var(--border);background:#fff;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;color:var(--navy);transition:.15s}
 .qty-btn:hover{border-color:var(--sky);color:var(--blue)}
 .qty-btn.minus:hover{border-color:var(--red);color:var(--red)}
-<<<<<<< HEAD
-.qty-val{width:22px;text-align:center;font-size:12px;font-weight:700}
-.inv-i-sub{font-size:12px;font-weight:800;color:var(--navy);white-space:nowrap;flex-shrink:0}
-.inv-i-rm{color:#d1d5db;cursor:pointer;background:none;border:none;font-size:14px;line-height:1;transition:.15s}
-=======
 .qty-val{width:38px;height:25px;text-align:center;font-size:13px;font-weight:700;border:1.5px solid var(--border);border-radius:6px;outline:none;font-family:inherit;color:var(--navy);background:#fff;padding:0}
 .qty-val:focus{border-color:var(--sky)}
 .qty-val::-webkit-inner-spin-button,.qty-val::-webkit-outer-spin-button{-webkit-appearance:none}
 .inv-i-sub{font-size:13px;font-weight:800;color:var(--navy);white-space:nowrap;flex-shrink:0}
 .inv-i-rm{color:#d1d5db;cursor:pointer;background:none;border:none;font-size:15px;line-height:1;transition:.15s;flex-shrink:0}
->>>>>>> Khoa
 .inv-i-rm:hover{color:var(--red)}
 
 /* BOTTOM FORMS */
@@ -190,23 +150,6 @@ body{display:flex}
 .f-input.cash{width:100%;text-align:right}
 .f-input.note{width:100%;height:28px;font-weight:400}
 
-<<<<<<< HEAD
-.pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
-.pay-btn{height:32px;border-radius:7px;border:1.5px solid var(--border);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;transition:.15s;font-family:inherit}
-.pay-btn:hover{border-color:var(--sky)}
-.pay-btn.active{border-color:var(--blue);background:#eff6ff}
-.pay-btn .pi{font-size:13px}
-.pay-btn .pt{font-size:10px;font-weight:700;color:var(--muted)}
-.pay-btn.active .pt{color:var(--blue)}
-.pay-btn-wide{grid-column:1/-1}
-
-.cash-row{display:none;flex-direction:column;gap:3px}
-.cash-row.show{display:flex}
-.cash-change{display:flex;align-items:center;justify-content:space-between;padding:5px 9px;border-radius:7px;background:var(--surface);font-size:12px}
-.cash-change-lbl{color:var(--muted)}
-.cash-change-val{font-weight:800;font-size:13px}
-.change-ok{color:var(--green)}.change-err{color:var(--red)}
-=======
 /* Payment method — 3 big cards */
 .pay-methods{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
 .pay-method-card{border:2px solid var(--border);background:#f8fafc;border-radius:13px;padding:12px 6px 10px;cursor:pointer;transition:.2s;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:inherit}
@@ -287,7 +230,6 @@ body{display:flex}
 .cash-change-val{font-weight:900;font-size:15px}
 .change-ok{color:var(--green)}
 .change-err{color:var(--red)}
->>>>>>> Khoa
 
 /* TOTALS */
 .inv-totals{padding:7px 14px 4px;border-top:1px solid var(--border);flex-shrink:0}
@@ -295,16 +237,10 @@ body{display:flex}
 .total-row.grand{font-size:14px;font-weight:800;color:var(--navy);margin-top:5px;padding-top:5px;border-top:1.5px solid var(--border)}
 .total-row.grand .tv{font-size:16px;font-weight:900;color:var(--blue)}
 
-<<<<<<< HEAD
-.inv-action{padding:8px 14px 12px;flex-shrink:0}
-.btn-checkout{width:100%;height:44px;border-radius:10px;border:none;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;transition:.2s;letter-spacing:-.2px}
-.btn-checkout:hover:not(:disabled){box-shadow:0 6px 20px rgba(249,115,22,.4);transform:translateY(-1px)}
-=======
 /* Checkout button */
 .inv-action{padding:9px 16px 13px;flex-shrink:0}
 .btn-checkout{width:100%;height:50px;border-radius:12px;border:none;background:linear-gradient(135deg,#059669,#047857);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:9px;transition:.2s;letter-spacing:-.2px}
 .btn-checkout:hover:not(:disabled){box-shadow:0 6px 22px rgba(5,150,105,.45);transform:translateY(-1px)}
->>>>>>> Khoa
 .btn-checkout:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
 
 /* SUCCESS MODAL */
@@ -329,8 +265,6 @@ body{display:flex}
 
 /* CHECKIN PANEL */
 .sb-checkin-wrap{position:relative}
-<<<<<<< HEAD
-=======
 
 /* STATION BADGE */
 .station-badge{display:flex;align-items:center;gap:6px;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:9px;padding:4px 12px;cursor:pointer;transition:.15s;flex-shrink:0}
@@ -498,21 +432,12 @@ body{display:flex}
 .esr-confirm{height:42px;padding:0 22px;border-radius:10px;border:none;background:linear-gradient(135deg,#DC2626,#B91C1C);color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;gap:7px}
 .esr-confirm:hover:not(:disabled){background:linear-gradient(135deg,#B91C1C,#991B1B)}
 .esr-confirm:disabled{background:#CBD5E1;cursor:not-allowed}
->>>>>>> Khoa
 </style>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>
 
 <!-- SIDEBAR -->
-<<<<<<< HEAD
-<aside class="sidebar">
-  <a href="<%= ctx %>/pos" class="sb-logo" title="POS">MV</a>
-  <a href="<%= ctx %>/pos" class="sb-btn active">🛒<span class="sb-tip">Bán hàng POS</span></a>
-  <a href="#" class="sb-btn">🧾<span class="sb-tip">Hóa đơn của tôi</span></a>
-  <a href="#" class="sb-btn">📦<span class="sb-tip">Tồn kho</span></a>
-  <a href="#" class="sb-btn">👥<span class="sb-tip">Khách hàng</span></a>
-=======
 <aside class="sidebar" id="mainSidebar">
   <a href="<%= ctx %>/pos" class="sb-logo">
     <span class="sb-logo-icon">MV</span>
@@ -542,36 +467,18 @@ body{display:flex}
     <span class="sb-label">Khách hàng</span>
     <span class="sb-tip">Khách hàng</span>
   </a>
->>>>>>> Khoa
   <div class="sb-bottom">
     <div class="sb-checkin-wrap">
-<<<<<<< HEAD
-      <button class="sb-btn" id="checkinBtn" onclick="toggleCheckinPanel()" style="width:40px;height:40px">
-        <span><%= isLoggedIn ? "🟢" : "👤" %></span>
-        <span class="sb-tip"><%= isLoggedIn ? "Điểm danh / " + fullName : "Nhân viên đăng nhập" %></span>
-=======
-      <button class="sb-btn" id="checkinBtn" onclick="<%= isLoggedIn ? "toggleCheckinPanel()" : "openFaceModal()" %>">
+      <% String checkinAction = isLoggedIn ? "toggleCheckinPanel()" : "openFaceModal()"; %>
+      <button class="sb-btn" id="checkinBtn" onclick="<%= checkinAction %>">
         <span class="sb-icon"><%= isLoggedIn ? "🟢" : "👤" %></span>
         <span class="sb-label"><%= isLoggedIn ? fullName : "Điểm danh" %></span>
         <span class="sb-tip"><%= isLoggedIn ? "Ca làm / " + fullName : "Điểm danh nhân viên" %></span>
->>>>>>> Khoa
       </button>
       <div id="checkinPanel" style="display:none;position:absolute;left:52px;bottom:0;width:220px;
            background:#1e3a5f;border:1px solid rgba(255,255,255,.2);border-radius:12px;
            padding:14px;box-shadow:0 8px 32px rgba(0,0,0,.4);z-index:9999">
         <% if (isLoggedIn) { %>
-<<<<<<< HEAD
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <div style="width:32px;height:32px;background:linear-gradient(135deg,#3f83f8,#1a56db);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff"><%= initials %></div>
-          <div><div style="font-size:12px;font-weight:700;color:#fff"><%= fullName %></div><div style="font-size:10px;color:rgba(255,255,255,.4)">Đã đăng nhập</div></div>
-        </div>
-        <a href="<%= ctx %>/staff-dashboard" style="display:block;padding:7px 10px;background:rgba(255,255,255,.1);border-radius:7px;color:#93c5fd;font-size:12px;font-weight:600;text-decoration:none;margin-bottom:5px;text-align:center">📅 Xem ca làm việc</a>
-        <a href="<%= ctx %>/logout?from=staff" style="display:block;padding:7px 10px;background:rgba(239,68,68,.15);border-radius:7px;color:#fca5a5;font-size:12px;font-weight:600;text-decoration:none;text-align:center">⏻ Kết thúc ca</a>
-        <% } else { %>
-        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:10px">Nhân viên đăng nhập để điểm danh ca làm</div>
-        <a href="<%= ctx %>/staff-login" style="display:block;padding:9px 10px;background:linear-gradient(135deg,#1a56db,#1e3a5f);border-radius:7px;color:#fff;font-size:12px;font-weight:700;text-decoration:none;text-align:center">👤 Đăng nhập nhân viên</a>
-        <div style="font-size:10px;color:rgba(255,255,255,.2);margin-top:7px;text-align:center">POS vẫn hoạt động không cần đăng nhập</div>
-=======
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px">
           <div style="width:34px;height:34px;background:linear-gradient(135deg,#3f83f8,#1a56db);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff"><%= initials %></div>
           <div><div style="font-size:13px;font-weight:700;color:#fff"><%= fullName %></div><div style="font-size:10.5px;color:rgba(255,255,255,.45)">Đang ca làm việc</div></div>
@@ -585,7 +492,6 @@ body{display:flex}
           📷 Điểm danh khuôn mặt
         </button>
         <div style="font-size:10.5px;color:rgba(255,255,255,.25);margin-top:6px;text-align:center">POS hoạt động bình thường khi chưa đăng nhập</div>
->>>>>>> Khoa
         <% } %>
       </div>
     </div>
@@ -675,10 +581,7 @@ body{display:flex}
            data-warning="<c:out value='${m.dosageWarning}' />"
            data-storage="<c:out value='${m.storageConditions}' />"
            onclick="addToCart(this)">
-<<<<<<< HEAD
-=======
         <%-- Top row: stock badge left, Rx/OTC right --%>
->>>>>>> Khoa
         <div class="mc-top">
           <span class="${stkCls} mc-stock">${stkLbl}</span>
           <c:choose>
@@ -749,23 +652,6 @@ body{display:flex}
 
   <!-- Bottom forms -->
   <div class="inv-forms">
-<<<<<<< HEAD
-    <!-- Discount -->
-    <div class="form-row">
-      <span class="f-label">Giảm giá (₫)</span>
-      <input type="number" class="f-input discount" id="discountInput" value="0" min="0" oninput="updateTotal()">
-    </div>
-
-    <!-- Payment methods -->
-    <div>
-      <div class="f-label" style="margin-bottom:5px">Phương thức</div>
-      <div class="pay-grid">
-        <button class="pay-btn active" data-method="CASH" onclick="selectPay(this)"><span class="pi">💵</span><span class="pt">Tiền mặt</span></button>
-        <button class="pay-btn" data-method="CARD" onclick="selectPay(this)"><span class="pi">🏦</span><span class="pt">Thẻ ngân hàng</span></button>
-        <button class="pay-btn" data-method="TRANSFER" onclick="selectPay(this)"><span class="pi">🔄</span><span class="pt">Chuyển khoản</span></button>
-        <button class="pay-btn" data-method="EWALLET" onclick="selectPay(this)"><span class="pi">📱</span><span class="pt">Ví điện tử</span></button>
-        <button class="pay-btn pay-btn-wide" data-method="QR_CODE" onclick="selectPay(this)"><span class="pi">📷</span><span class="pt">QR Code</span></button>
-=======
     <!-- Payment methods — 3 big cards -->
     <div>
       <div class="f-label" style="margin-bottom:7px">Phương thức thanh toán</div>
@@ -801,7 +687,6 @@ body{display:flex}
           </div>
           <span class="pdi-amount" id="cardAmount">0đ</span>
         </div>
->>>>>>> Khoa
       </div>
     </div>
 
@@ -837,8 +722,6 @@ body{display:flex}
   </div>
 </div>
 
-<<<<<<< HEAD
-=======
 <!-- STATION SELECTOR MODAL -->
 <div class="station-modal" id="stationModal">
   <div class="stm-backdrop" onclick="closeStationModal()"></div>
@@ -897,7 +780,6 @@ body{display:flex}
   </div>
 </div>
 
->>>>>>> Khoa
 <!-- SUCCESS MODAL -->
 <div class="success-modal" id="successModal">
   <div class="sm-backdrop" onclick="closeSuccess()"></div>
@@ -1040,25 +922,18 @@ body{display:flex}
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
 <script>
 const ctx = '<%= ctx %>';
-<<<<<<< HEAD
-=======
 const screenState = '${screenState}';
 const sellerName = '<%= fullName %>';
->>>>>>> Khoa
 let cart = [];
 let selectedCustomer = null;
 let selectedPayment = 'CASH';
 let allMedicines = [];
-<<<<<<< HEAD
-let currentInvoiceId = 0;
-=======
 
 // ── Multi-POS state ──
 let currentStation = <%= posStation %>;  // 0 = belum pilih
 let currentStaffId = null;
 let currentStaffName = '<%= fullName %>';
 let currentInvoice = null; // {id, code, total, discount, cashReceived, change}
->>>>>>> Khoa
 
 // ── Date display ──
 (function() {
@@ -1233,13 +1108,8 @@ function renderCart() {
       const rxBadge = item.rx ? '<span class="mc-badge mb-rx" style="font-size:9px;padding:1px 4px;margin-right:6px;border-radius:3px;">Rx</span>' : '<span class="mc-badge mb-otc" style="font-size:9px;padding:1px 4px;margin-right:6px;border-radius:3px;">OTC</span>';
       return '<div class="inv-item">'
         + '<div class="inv-i-info">'
-<<<<<<< HEAD
-          + '<div class="inv-i-name">' + item.name + '</div>'
-          + '<div class="inv-i-price">' + fmtMoney(item.price) + ' / ' + item.unit + '</div>'
-=======
           + '<div class="inv-i-name" style="display:flex;align-items:center;">' + rxBadge + escHtml(item.name) + '</div>'
           + '<div class="inv-i-price" style="margin-top:3px;color:#475569;">M\u00E3: <span style="font-weight:700;color:#0F172A;">' + escHtml(item.code) + '</span> \u00B7 ' + fmtMoney(item.price) + ' / ' + escHtml(item.unit) + '</div>'
->>>>>>> Khoa
           + metaHtml
         + '</div>'
         + '<div class="qty-ctrl">'
@@ -1272,8 +1142,6 @@ function updateTotal() {
   document.getElementById('sumDiscount').textContent = '-' + fmtMoney(disc);
   document.getElementById('sumTotal').textContent    = fmtMoney(tot);
   document.getElementById('invSubtitle').textContent = qty + ' sản phẩm · ' + fmtMoney(tot);
-<<<<<<< HEAD
-=======
   const needEl = document.getElementById('cashNeedVal');
   if (needEl) needEl.textContent = fmtMoney(tot);
   updateQuickButtons(tot);
@@ -1306,20 +1174,11 @@ function buildQuickAmounts(total) {
 
 function setCash(amount) {
   document.getElementById('cashInput').value = amount;
->>>>>>> Khoa
   calcChange();
 }
 
 // ── Payment ──
 function selectPay(btn) {
-<<<<<<< HEAD
-  document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  selectedPayment = btn.dataset.method;
-  const cashRow = document.getElementById('cashRow');
-  if (selectedPayment === 'CASH') cashRow.classList.add('show');
-  else { cashRow.classList.remove('show'); document.getElementById('cashChangeRow').style.display='none'; }
-=======
   document.querySelectorAll('.pay-method-card').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   selectedPayment = btn.dataset.method;
@@ -1348,7 +1207,6 @@ function selectPay(btn) {
     syncPayPanelAmounts();
   }
   updateCheckoutBtnState();
->>>>>>> Khoa
 }
 
 function syncPayPanelAmounts() {
@@ -1369,10 +1227,6 @@ function calcChange() {
   if (received <= 0) { changeRow.style.display='none'; return; }
   changeRow.style.display = 'flex';
   const change = received - total;
-<<<<<<< HEAD
-  valEl.className = 'cash-change-val ' + (change >= 0 ? 'change-ok' : 'change-err');
-  valEl.textContent = change >= 0 ? fmtMoney(change) : '⚠ Thiếu ' + fmtMoney(Math.abs(change));
-=======
   if (change >= 0) {
     changeRow.className = 'cash-change-row cash-change-ok';
     lblEl.textContent = 'Tiền thừa trả khách';
@@ -1417,7 +1271,6 @@ function updateCheckoutBtnState() {
     btn.disabled = false;
     btn.textContent = '\uD83D\uDCB3 X\u00E1c nh\u1EADn thanh to\u00E1n';
   }
->>>>>>> Khoa
 }
 
 // ── Customer ──
@@ -1450,8 +1303,6 @@ function removeCustomer() {
 // ── Checkout ──
 function doCheckout() {
   if (cart.length === 0) return;
-<<<<<<< HEAD
-=======
   const total = calcTotal();
   if (selectedPayment === 'CASH') {
     const cashEl = document.getElementById('cashInput');
@@ -1471,7 +1322,6 @@ function doCheckout() {
     openQrModal(total);
     return;
   }
->>>>>>> Khoa
   submitSale();
 }
 
@@ -1506,10 +1356,6 @@ function submitSale() {
     });
 }
 
-<<<<<<< HEAD
-function newInvoice() { closeSuccess(); clearCart(); document.getElementById('checkoutBtn').disabled = true; document.getElementById('checkoutBtn').innerHTML = '🛒 THANH TOÁN'; }
-function closeSuccess() { document.getElementById('successModal').classList.remove('show'); }
-=======
 function formatDateTime(d) {
   const h = d.getHours().toString().padStart(2,'0');
   const m = d.getMinutes().toString().padStart(2,'0');
@@ -1606,7 +1452,6 @@ function addFromDrawer() {
 }
 
 // ── Receipt printing ──
->>>>>>> Khoa
 function printReceipt() {
   if (currentInvoiceId > 0) window.open(ctx + '/invoices?action=detail&id=' + currentInvoiceId, '_blank');
   else showToast('⚠️ Không tìm thấy hóa đơn để in!', 'err');
@@ -1667,7 +1512,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── MULTI-POS STATION ─────────────────────────────────────────────────────────
-const MAX_STATIONS = 4;
+const MAX_STATIONS = 5; // PHẢI khớp với số quầy trong admin (shift-list.jsp: Quầy 1-5)
 
 function openStationModal() {
   const grid = document.getElementById('stationGrid');
@@ -1714,7 +1559,9 @@ function updateStationUI() {
 
 // ── FACE RECOGNITION CHECK-IN ─────────────────────────────────────────────────
 const FACE_MODEL_URL = ctx + '/models';  // local — same as staff-checkin.jsp
-const FACE_THRESHOLD  = 0.5;
+const FACE_THRESHOLD  = 0.45;   // chặt hơn chuẩn 0.6 — chống nhận nhầm người
+const FACE_MARGIN     = 0.08;   // người gần nhì phải xa hơn ít nhất chừng này
+const FACE_STABLE_FRAMES = 3;   // cần 3 khung liên tiếp khớp cùng một người
 
 let faceModelsLoaded  = false;
 let faceDescriptors   = [];
@@ -1722,6 +1569,10 @@ let faceVideoStream   = null;
 let faceDetectLoopId  = null;
 let faceMatchedId     = null;
 let faceMatchedName   = null;
+let faceMatchedDescriptor = null;
+let faceStreakId      = null;
+let faceStreakCount   = 0;
+let faceStreakSamples = [];
 
 async function loadFaceModels() {
   if (faceModelsLoaded) return;
@@ -1818,7 +1669,7 @@ function startFaceDetection() {
 
       busy = true;
       const detection = await faceapi
-        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
         .withFaceLandmarks()        // full faceLandmark68Net (no arg = false = full)
         .withFaceDescriptor();
       busy = false;
@@ -1831,6 +1682,7 @@ function startFaceDetection() {
       if (!detection) {
         noFaceEl.style.display = 'block';
         ring.className = 'face-ring';
+        faceStreakId = null; faceStreakCount = 0; faceStreakSamples = [];
         faceDetectLoopId = requestAnimationFrame(loop);
         return;
       }
@@ -1844,22 +1696,45 @@ function startFaceDetection() {
         return;
       }
 
-      let bestDist = Infinity, bestMatch = null;
+      let bestDist = Infinity, bestMatch = null, secondDist = Infinity;
       for (const ref of faceDescriptors) {
         const dist = faceapi.euclideanDistance(detection.descriptor, ref.descriptor);
-        if (dist < bestDist) { bestDist = dist; bestMatch = ref; }
+        if (dist < bestDist) { secondDist = bestDist; bestDist = dist; bestMatch = ref; }
+        else if (dist < secondDist) { secondDist = dist; }
       }
 
-      if (bestDist <= FACE_THRESHOLD && bestMatch) {
-        ring.className = 'face-ring matched';
-        faceMatchedId   = bestMatch.accountId;
-        faceMatchedName = bestMatch.name;
-        setFmStatus('✓ Nhận ra: ' + bestMatch.name, 'ok');
-        document.getElementById('fmCheckinBtn').style.display = 'flex';
-        return; // dừng loop sau khi nhận ra
+      const clearMatch = bestMatch
+        && bestDist <= FACE_THRESHOLD
+        && (secondDist - bestDist >= FACE_MARGIN || secondDist > FACE_THRESHOLD);
+
+      if (clearMatch) {
+        if (faceStreakId === bestMatch.accountId) { faceStreakCount++; }
+        else { faceStreakId = bestMatch.accountId; faceStreakCount = 1; faceStreakSamples = []; }
+        faceStreakSamples.push(Array.from(detection.descriptor));
+
+        if (faceStreakCount >= FACE_STABLE_FRAMES) {
+          ring.className = 'face-ring matched';
+          faceMatchedId   = bestMatch.accountId;
+          faceMatchedName = bestMatch.name;
+          const dim = faceStreakSamples[0].length;
+          const avg = new Array(dim).fill(0);
+          for (const s of faceStreakSamples) for (let i = 0; i < dim; i++) avg[i] += s[i];
+          for (let i = 0; i < dim; i++) avg[i] /= faceStreakSamples.length;
+          faceMatchedDescriptor = avg;
+          setFmStatus('✓ Nhận ra: ' + bestMatch.name, 'ok');
+          document.getElementById('fmCheckinBtn').style.display = 'flex';
+          return; // dừng loop sau khi nhận ra
+        }
+        ring.className = 'face-ring scanning';
+        setFmStatus('Đang xác nhận ' + bestMatch.name + '… (' + faceStreakCount + '/' + FACE_STABLE_FRAMES + ')');
       } else {
-        faceMatchedId = null; faceMatchedName = null;
-        setFmStatus('Đang quét… (' + bestDist.toFixed(2) + ')');
+        faceStreakId = null; faceStreakCount = 0; faceStreakSamples = [];
+        faceMatchedId = null; faceMatchedName = null; faceMatchedDescriptor = null;
+        if (bestMatch && bestDist <= FACE_THRESHOLD) {
+          setFmStatus('⚠ Khuôn mặt chưa đủ rõ để phân biệt — nhìn thẳng camera', 'err');
+        } else {
+          setFmStatus('Đang quét… (' + (bestDist === Infinity ? '—' : bestDist.toFixed(2)) + ')');
+        }
         document.getElementById('fmCheckinBtn').style.display = 'none';
       }
     }
@@ -1894,6 +1769,7 @@ async function confirmFaceCheckin() {
       body: new URLSearchParams({
         action:    'pos-face-checkin',
         accountId: faceMatchedId,
+        descriptor: JSON.stringify(faceMatchedDescriptor || []),
         station:   currentStation > 0 ? currentStation : 1
       }),
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
@@ -1929,9 +1805,22 @@ async function confirmFaceCheckin() {
       btn.disabled    = false;
       btn.textContent = '✓ Xác nhận điểm danh';
     } else {
-      showToast('❌ ' + (data.reason || 'Điểm danh thất bại'), 'err');
+      const reasonMap = {
+        'no_match':        '⚠️ Server không xác nhận được khuôn mặt. Vui lòng quét lại.',
+        'reenroll_pending':'⏳ Nhân viên đang có yêu cầu đổi khuôn mặt chờ duyệt — chưa thể điểm danh.',
+        'impersonation':   '🚫 Khuôn mặt không phải của nhân viên này!',
+        'ambiguous':       '⚠️ Khuôn mặt quá giống người khác — nhìn thẳng camera và thử lại.',
+        'no_face_enrolled':'❌ Nhân viên chưa đăng ký khuôn mặt.',
+        'missing_descriptor':'⚠️ Thiếu dữ liệu khuôn mặt. Vui lòng quét lại.',
+        'invalid_descriptor':'❌ Dữ liệu khuôn mặt lỗi. Vui lòng quét lại.'
+      };
+      showToast(reasonMap[data.reason] || ('❌ ' + (data.reason || 'Điểm danh thất bại')), 'err');
+      faceStreakId = null; faceStreakCount = 0; faceStreakSamples = [];
+      faceMatchedId = null; faceMatchedDescriptor = null;
+      document.getElementById('fmCheckinBtn').style.display = 'none';
       btn.disabled    = false;
       btn.textContent = '✓ Xác nhận điểm danh';
+      startFaceDetection();
     }
   } catch(e) {
     showToast('❌ Lỗi kết nối', 'err');
