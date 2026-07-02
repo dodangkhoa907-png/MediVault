@@ -15,6 +15,9 @@ import com.medicare.dao.interfaces.IShiftTypeDAO;
 import com.medicare.entity.Account;
 import com.medicare.entity.Shift;
 import com.medicare.entity.ShiftSchedule;
+import com.medicare.entity.PosStation;
+import com.medicare.dao.PosStationDAO;
+import com.medicare.dao.interfaces.IPosStationDAO;
 import com.medicare.util.AuditHelper;
 import com.medicare.util.StaffNotifHelper;
 import com.medicare.util.SidebarHelper;
@@ -36,6 +39,7 @@ public class ShiftServlet extends HttpServlet {
     private final IShiftScheduleDAO scheduleDAO = new ShiftScheduleDAO();
     private final IShiftTypeDAO     shiftTypeDAO = new ShiftTypeDAO();
     private final ILeaveRequestDAO  leaveDAO    = new LeaveRequestDAO();
+    private final IPosStationDAO    posStationDAO = new PosStationDAO();
 
     // ── GET ───────────────────────────────────────────────────────────────────
     @Override
@@ -92,6 +96,9 @@ public class ShiftServlet extends HttpServlet {
             // ── POS Map custom actions ──
             case "pos-assign"            -> handlePosAssign(req, resp);
             case "pos-unassign"          -> handlePosUnassign(req, resp);
+            case "pos-counter-add"       -> handlePosCounterAdd(req, resp);
+            case "pos-counter-update"    -> handlePosCounterUpdate(req, resp);
+            case "pos-counter-delete"    -> handlePosCounterDelete(req, resp);
             default            -> resp.sendRedirect(req.getContextPath() + "/shifts");
         }
     }
@@ -241,6 +248,7 @@ public class ShiftServlet extends HttpServlet {
         java.util.List<ShiftSchedule> todaySchedules =
                 ((ShiftScheduleDAO) scheduleDAO).findTodayAll();
         req.setAttribute("todaySchedules", todaySchedules);
+        req.setAttribute("posStations",   posStationDAO.findAllActive());
 
         SidebarHelper.load(req);
 
@@ -677,6 +685,50 @@ public class ShiftServlet extends HttpServlet {
             AuditHelper.log(req, "Gỡ quầy POS", "ShiftSchedule", "Gỡ ca ID " + scheduleId + " khỏi quầy");
         }
         resp.sendRedirect(req.getContextPath() + "/shifts?tab=pos-map&msg=" + (ok ? "updated" : "error"));
+    }
+
+    private void handlePosCounterAdd(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String name = req.getParameter("stationName");
+        if (name != null && !name.trim().isEmpty()) {
+            PosStation ps = new PosStation();
+            ps.setStationName(name.trim());
+            ps.setActive(true);
+            boolean ok = posStationDAO.insert(ps);
+            if (ok) {
+                AuditHelper.log(req, "Thêm quầy POS", "PosStation", "Thêm quầy: " + name);
+            }
+        }
+        resp.sendRedirect(req.getContextPath() + "/shifts?tab=pos-map&msg=counter-added");
+    }
+
+    private void handlePosCounterUpdate(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        int id = parseIntOr(req.getParameter("posStationId"), 0);
+        String name = req.getParameter("stationName");
+        if (id > 0 && name != null && !name.trim().isEmpty()) {
+            PosStation ps = posStationDAO.findById(id);
+            if (ps != null) {
+                ps.setStationName(name.trim());
+                boolean ok = posStationDAO.update(ps);
+                if (ok) {
+                    AuditHelper.log(req, "Sửa quầy POS", "PosStation", "Sửa quầy ID " + id + " thành: " + name);
+                }
+            }
+        }
+        resp.sendRedirect(req.getContextPath() + "/shifts?tab=pos-map&msg=counter-updated");
+    }
+
+    private void handlePosCounterDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        int id = parseIntOr(req.getParameter("posStationId"), 0);
+        if (id > 0) {
+            PosStation ps = posStationDAO.findById(id);
+            if (ps != null) {
+                boolean ok = posStationDAO.delete(id);
+                if (ok) {
+                    AuditHelper.log(req, "Xóa quầy POS", "PosStation", "Xóa quầy ID " + id + " — " + ps.getStationName());
+                }
+            }
+        }
+        resp.sendRedirect(req.getContextPath() + "/shifts?tab=pos-map&msg=counter-deleted");
     }
 
 }

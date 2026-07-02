@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" language="java" %>
 <% String activeNav = "shifts"; %>
 <%@ taglib prefix="c"   uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
@@ -276,7 +276,7 @@ tbody tr{cursor:pointer}
 
 /* ── MODAL (dùng cho cả ShiftType + Quick-schedule) ── */
 .modal-overlay{
-  position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:400;
+  position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:3000;
   display:flex;align-items:center;justify-content:center;
   opacity:0;pointer-events:none;transition:opacity .2s;
 }
@@ -536,7 +536,7 @@ tbody tr{cursor:pointer}
 /* ════════════════════════════════════════════════════
    DETAIL MODAL — overlay giống modal sửa/xóa
    ════════════════════════════════════════════════════ */
-.detail-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:700;
+.detail-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:3000;
   display:flex;align-items:center;justify-content:center;
   opacity:0;pointer-events:none;transition:opacity .2s}
 .detail-overlay.open{opacity:1;pointer-events:auto}
@@ -655,7 +655,7 @@ tbody tr{cursor:pointer}
 /* Chip đang active (CONFIRMED) — không edit được */
 .chip-active-note{font-size:10px;color:#059669;font-weight:600;margin-top:4px;padding:2px 6px;background:#ECFDF5;border-radius:5px;display:inline-block}
 /* Edit modal */
-.edit-modal-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:700;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.edit-modal-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:3000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
 .edit-modal-overlay.open{opacity:1;pointer-events:auto}
 .edit-modal{background:var(--white);border-radius:16px;width:480px;max-width:94vw;box-shadow:0 24px 70px rgba(0,0,0,.22);transform:translateY(16px);transition:transform .22s}
 .edit-modal-overlay.open .edit-modal{transform:translateY(0)}
@@ -674,7 +674,7 @@ tbody tr{cursor:pointer}
 .em-cancel{padding:7px 16px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
 .em-submit{padding:7px 20px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
 /* Delete modal */
-.del-modal-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:700;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.del-modal-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:3000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
 .del-modal-overlay.open{opacity:1;pointer-events:auto}
 .del-modal{background:var(--white);border-radius:16px;width:560px;max-width:94vw;max-height:85vh;overflow-y:auto;box-shadow:0 24px 70px rgba(0,0,0,.22);transform:translateY(16px);transition:transform .22s}
 .del-modal-overlay.open .del-modal{transform:translateY(0)}
@@ -713,7 +713,7 @@ tbody tr{cursor:pointer}
 .shift-chip.chip-selected{outline:2.5px solid var(--blue);outline-offset:1px}
 .shift-chip.chip-selected-del{outline:2.5px solid #DC2626;outline-offset:1px}
 /* Modal chọn ca (edit/delete) — dùng lại sched-overlay CSS */
-.selmode-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:700;
+.selmode-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:3000;
   display:flex;align-items:center;justify-content:center;
   opacity:0;pointer-events:none;transition:opacity .2s}
 .selmode-overlay.open{opacity:1;pointer-events:auto}
@@ -819,30 +819,75 @@ tbody tr{cursor:pointer}
   border-radius:9px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
 
 /* ── POS MAP ── */
-.pos-station-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
-.pos-station-card{border-radius:14px;padding:16px 18px;border:2px solid transparent;transition:.3s;position:relative;overflow:hidden}
-.pos-station-card.online{background:linear-gradient(135deg,#ecfdf5,#d1fae5);border-color:#6ee7b7;box-shadow:0 4px 20px rgba(5,150,105,.15)}
-.pos-station-card.offline{background:linear-gradient(135deg,#f8fafc,#f1f5f9);border-color:#e2e8f0}
-.pos-station-card.offline .pos-st-number{color:#94a3b8}
-.pos-st-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.pos-st-number{font-size:18px;font-weight:900;color:#059669;letter-spacing:-.5px}
-.pos-st-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.pos-st-dot.online{background:linear-gradient(135deg,#059669,#34d399);box-shadow:0 0 0 3px rgba(52,211,153,.25);animation:posGlow 2s ease-in-out infinite}
+.pos-station-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
+.pos-station-card{border-radius:18px;padding:20px;border:1.5px solid var(--border);transition:all .25s cubic-bezier(0.4, 0, 0.2, 1);position:relative;overflow:hidden;background:#fff;box-shadow:0 10px 30px rgba(21,88,168,0.02)}
+.pos-station-card:hover{transform:translateY(-2px);box-shadow:0 12px 36px rgba(21,88,168,0.06)}
+.pos-station-card.online{border-color:rgba(5,150,105,0.25);background:linear-gradient(180deg, #ffffff 0%, #f6fdfa 100%)}
+.pos-station-card.offline{border-color:var(--border);background:linear-gradient(180deg, #ffffff 0%, #fafbfc 100%)}
+.pos-station-card.offline .pos-st-number{color:var(--muted)}
+.pos-st-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;border-bottom:1.5px solid rgba(21,88,168,0.04);padding-bottom:12px}
+.pos-station-card.online .pos-st-header{border-bottom-color:rgba(5,150,105,0.08)}
+.pos-st-number{font-size:16px;font-weight:800;color:var(--navy);letter-spacing:-.3px}
+.pos-station-card.online .pos-st-number{color:var(--green)}
+.pos-st-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.pos-st-dot.online{background:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,0.25);animation:posGlow 2s ease-in-out infinite}
 .pos-st-dot.offline{background:#cbd5e1}
-@keyframes posGlow{0%,100%{box-shadow:0 0 0 3px rgba(52,211,153,.25)}50%{box-shadow:0 0 0 6px rgba(52,211,153,.1)}}
-.pos-st-badge{font-size:9.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:2px 8px;border-radius:10px}
-.pos-st-badge.online{background:#bbf7d0;color:#065f46}
-.pos-st-badge.offline{background:#f1f5f9;color:#94a3b8}
-.pos-st-staff-list{display:flex;flex-direction:column;gap:6px}
-.pos-st-staff-row{display:flex;align-items:center;gap:8px}
-.pos-st-av{width:28px;height:28px;border-radius:7px;font-size:11px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.pos-st-av.online{background:linear-gradient(135deg,#059669,#10b981)}
-.pos-st-av.offline{background:linear-gradient(135deg,#94a3b8,#cbd5e1)}
-.pos-st-staff-name{font-size:12.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pos-st-staff-meta{font-size:11px;color:var(--muted)}
-.pos-st-empty{font-size:12px;color:var(--muted);font-style:italic;padding:4px 0}
+@keyframes posGlow{0%,100%{box-shadow:0 0 0 3px rgba(16,185,129,0.25)}50%{box-shadow:0 0 0 6px rgba(16,185,129,0.1)}}
+.pos-st-badge{font-size:9px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;padding:3px 8px;border-radius:20px}
+.pos-st-badge.online{background:#ecfdf5;color:#047857;border:1px solid rgba(16,185,129,0.2)}
+.pos-st-badge.offline{background:#f1f5f9;color:#64748b;border:1px solid rgba(100,116,139,0.1)}
+.pos-st-staff-list{display:flex;flex-direction:column;gap:8px}
+.pos-st-staff-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,0.6);border:1.5px solid rgba(21,88,168,0.02);transition:all 0.2s;margin:0 -4px}
+.pos-st-staff-row:hover{background:#fff;border-color:rgba(21,88,168,0.1);box-shadow:0 4px 12px rgba(21,88,168,0.04);transform:translateX(2px)}
+.pos-st-av{width:32px;height:32px;border-radius:10px;font-size:11px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pos-st-av.online{background:linear-gradient(135deg,var(--blue),var(--cyan))}
+.pos-st-av.offline{background:linear-gradient(135deg,var(--muted),#cbd5e1)}
+.pos-st-staff-name{font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pos-st-staff-meta{font-size:10.5px;color:var(--muted);margin-top:1px}
+.pos-st-empty{font-size:12px;color:var(--muted);font-style:italic;padding:12px 0;text-align:center;background:rgba(21,88,168,0.01);border:1.5px dashed rgba(21,88,168,0.06);border-radius:10px}
 .pos-unassigned-list{display:flex;flex-wrap:wrap;gap:8px}
-.pos-unas-chip{padding:5px 12px;border-radius:8px;background:#fef9c3;border:1px solid #fde68a;font-size:12px;font-weight:600;color:#92400e}
+.pos-unas-chip{padding:6px 12px;border-radius:8px;background:#fff;border:1.5px solid #fde68a;font-size:12px;font-weight:600;color:#92400e;box-shadow:0 2px 6px rgba(146,64,14,0.04)}
+.btn-pos-add-staff {
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 3px 8px rgba(21, 88, 168, 0.15);
+  transition: all 0.2s ease;
+}
+.btn-pos-add-staff:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(21, 88, 168, 0.25);
+}
+.pos-st-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 6px;
+  border-radius: 8px;
+  transition: all 0.18s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.pos-st-btn.edit:hover {
+  background: rgba(217, 119, 6, 0.12);
+  color: var(--gold);
+}
+.pos-st-btn.delete:hover {
+  background: rgba(220, 38, 38, 0.12);
+  color: var(--red);
+}
 </style>
 </head>
 <body>
@@ -855,6 +900,9 @@ tbody tr{cursor:pointer}
   <%-- Toast --%>
   <c:if test="${not empty param.msg}">
     <c:choose>
+      <c:when test="${param.msg == 'counter-added'}">   <div class="toast toast-ok"   id="toast">✅ Thêm quầy thành công!</div></c:when>
+      <c:when test="${param.msg == 'counter-updated'}"> <div class="toast toast-ok"   id="toast">✅ Cập nhật quầy thành công!</div></c:when>
+      <c:when test="${param.msg == 'counter-deleted'}"> <div class="toast toast-ok"   id="toast">🗑️ Xóa quầy thành công!</div></c:when>
       <c:when test="${param.msg == 'opened'}">       <div class="toast toast-ok"   id="toast">✅ Mở ca thành công!</div></c:when>
       <c:when test="${param.msg == 'closed'}">       <div class="toast toast-ok"   id="toast">✅ Đóng ca thành công!</div></c:when>
       <c:when test="${param.msg == 'force-closed'}"> <div class="toast toast-info" id="toast">🔒 Admin đã đóng ca.</div></c:when>
@@ -1599,6 +1647,7 @@ tbody tr{cursor:pointer}
               <span style="width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#059669,#10b981);display:inline-block"></span>Online
               <span style="width:10px;height:10px;border-radius:50%;background:#CBD5E1;display:inline-block;margin-left:8px"></span>Offline
             </div>
+            <button onclick="openPosManagerModal()" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--white);font-size:12px;font-weight:600;cursor:pointer;color:var(--blue);display:inline-flex;align-items:center;gap:4px">🖥️ Quản lý quầy</button>
             <button onclick="refreshPosMap()" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--white);font-size:12px;font-weight:600;cursor:pointer;color:var(--blue)">↻ Làm mới</button>
           </div>
         </div>
@@ -1616,6 +1665,82 @@ tbody tr{cursor:pointer}
 
   </div><%-- end content --%>
 </div><%-- end main --%>
+
+<%-- ══════════════════════════════════════
+     MODAL POS 4: Quản lý Quầy POS (CRUD)
+     ══════════════════════════════════════ --%>
+<div class="modal-overlay" id="posManagerModal">
+  <div class="modal" style="max-width: 600px;">
+    <div class="modal-head">
+      <span class="modal-title">🖥️ Quản lý danh sách quầy POS</span>
+      <button class="modal-close" onclick="closePosManagerModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Form thêm quầy mới -->
+      <form id="posCounterAddForm" method="post" action="${pageContext.request.contextPath}/shifts" style="margin-bottom: 20px; background: var(--surface); padding: 14px; border-radius: 10px; border: 1.5px solid var(--border);">
+        <input type="hidden" name="action" value="pos-counter-add">
+        <div style="display: flex; gap: 10px; align-items: flex-end;">
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px;">Tên quầy mới</label>
+            <input type="text" name="stationName" placeholder="Ví dụ: Quầy số 6" required style="border: 1.5px solid var(--border); border-radius: 8px; padding: 7px 10px; font-family: inherit; font-size: 13px; background: #fff; outline: none; height: 36px; width: 100%; box-sizing: border-box;">
+          </div>
+          <button type="submit" class="btn-save-m" style="height: 36px; padding: 0 16px; border-radius: 8px;">➕ Thêm quầy</button>
+        </div>
+      </form>
+
+      <!-- Danh sách quầy hiện tại -->
+      <div style="max-height: 300px; overflow-y: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr>
+              <th style="padding: 8px; text-align: left; background: var(--surface); font-weight: 700; border-bottom: 1.5px solid var(--border);">Mã</th>
+              <th style="padding: 8px; text-align: left; background: var(--surface); font-weight: 700; border-bottom: 1.5px solid var(--border);">Tên Quầy</th>
+              <th style="padding: 8px; text-align: center; background: var(--surface); font-weight: 700; border-bottom: 1.5px solid var(--border); width: 120px;">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <c:forEach var="ps" items="${posStations}">
+              <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 10px 8px; font-weight: 600; color: var(--muted);">#${ps.posStationId}</td>
+                <td style="padding: 10px 8px;">
+                  <span id="lblStation-${ps.posStationId}" style="font-weight: 700; color: var(--navy);">${fn:escapeXml(ps.stationName)}</span>
+                  <form id="editForm-${ps.posStationId}" method="post" action="${pageContext.request.contextPath}/shifts" style="display: none; margin: 0;">
+                    <input type="hidden" name="action" value="pos-counter-update">
+                    <input type="hidden" name="posStationId" value="${ps.posStationId}">
+                    <input type="text" name="stationName" value="${fn:escapeXml(ps.stationName)}" required style="border: 1.5px solid var(--blue); border-radius: 6px; padding: 4px 8px; font-size: 13px; font-family: inherit; width: 100%; box-sizing: border-box;">
+                  </form>
+                </td>
+                <td style="padding: 10px 8px; text-align: center;">
+                  <div style="display: flex; gap: 4px; justify-content: center; align-items: center;">
+                    <!-- Edit Button -->
+                    <button id="btnEdit-${ps.posStationId}" onclick="showEditCounterRow(${ps.posStationId})" style="border: none; background: transparent; cursor: pointer; font-size: 13px; padding: 4px 8px; border-radius: 6px; color: var(--gold);" title="Sửa tên">✏️</button>
+                    <button id="btnSave-${ps.posStationId}" onclick="submitEditCounterRow(${ps.posStationId})" style="display: none; border: none; background: var(--green); color: #fff; cursor: pointer; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px;" title="Lưu">Lưu</button>
+                    <button id="btnCancel-${ps.posStationId}" onclick="hideEditCounterRow(${ps.posStationId})" style="display: none; border: 1px solid var(--border); background: #fff; cursor: pointer; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; color: var(--muted);" title="Hủy">Hủy</button>
+
+                    <!-- Delete Form -->
+                    <form method="post" action="${pageContext.request.contextPath}/shifts" style="margin:0;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa ${fn:escapeXml(ps.stationName)}?\nLưu ý: Các ca làm việc đang gán vào quầy này sẽ trở thành Chưa gán quầy.')">
+                      <input type="hidden" name="action" value="pos-counter-delete">
+                      <input type="hidden" name="posStationId" value="${ps.posStationId}">
+                      <button type="submit" style="border: none; background: transparent; cursor: pointer; font-size: 13px; padding: 4px 8px; border-radius: 6px; color: var(--red);" title="Xóa quầy">🗑️</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            </c:forEach>
+            <c:if test="${empty posStations}">
+              <tr>
+                <td colspan="3" style="padding: 20px; text-align: center; color: var(--muted);">Chưa có quầy POS nào.</td>
+              </tr>
+            </c:if>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel-m" onclick="closePosManagerModal()" style="width: 100%;">Đóng</button>
+    </div>
+  </div>
+</div>
 
 <%-- ══════════════════════════════════════════════════════
      MODAL 1: Xếp ca mới (Quick Schedule — KHÔNG redirect)
@@ -1857,13 +1982,9 @@ tbody tr{cursor:pointer}
           <label>Quầy làm việc</label>
           <select name="posStation" id="posEditStationSelect" style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:'Outfit',sans-serif; font-size:13px; margin-top:6px;">
             <option value="0">-- Chưa gán quầy --</option>
-            <option value="1">Quầy 1</option>
-            <option value="2">Quầy 2</option>
-            <option value="3">Quầy 3</option>
-            <option value="4">Quầy 4</option>
-            <option value="5">Quầy 5</option>
-            <option value="6">Quầy 6</option>
-            <option value="7">Quầy 7</option>
+            <c:forEach var="ps" items="${posStations}">
+              <option value="${ps.posStationId}">${fn:escapeXml(ps.stationName)}</option>
+            </c:forEach>
           </select>
         </div>
 
@@ -2059,11 +2180,9 @@ tbody tr{cursor:pointer}
                     style="width:100%;max-width:240px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--navy);background:#fff"
                     onchange="clearFsErr('errPosStation','fsPosStation')">
               <option value="0">— Chưa gán quầy —</option>
-              <option value="1">🖥️ Quầy 1</option>
-              <option value="2">🖥️ Quầy 2</option>
-              <option value="3">🖥️ Quầy 3</option>
-              <option value="4">🖥️ Quầy 4</option>
-              <option value="5">🖥️ Quầy 5</option>
+              <c:forEach var="ps" items="${posStations}">
+                <option value="${ps.posStationId}">🖥️ ${fn:escapeXml(ps.stationName)}</option>
+              </c:forEach>
             </select>
             <span class="field-err" id="errPosStation"></span>
             <span style="font-size:11px;color:var(--muted);margin-top:4px;display:block">Nhân viên sẽ làm tại quầy POS này trong ca</span>
@@ -2152,11 +2271,9 @@ tbody tr{cursor:pointer}
           <label>🖥️ Làm tại quầy POS</label>
           <select name="posStation" id="editPosStation">
             <option value="0">— Chưa gán quầy —</option>
-            <option value="1">Quầy 1</option>
-            <option value="2">Quầy 2</option>
-            <option value="3">Quầy 3</option>
-            <option value="4">Quầy 4</option>
-            <option value="5">Quầy 5</option>
+            <c:forEach var="ps" items="${posStations}">
+              <option value="${ps.posStationId}">${fn:escapeXml(ps.stationName)}</option>
+            </c:forEach>
           </select>
         </div>
 
@@ -3634,6 +3751,16 @@ const _todaySchedules = [
   </c:forEach>
 ];
 
+// Danh sách quầy POS từ database
+const _posStations = [
+  <c:forEach var="ps" items="${posStations}" varStatus="st">
+    {
+      id: ${ps.posStationId},
+      name: '${fn:escapeXml(ps.stationName)}'
+    }<c:if test="${!st.last}">,</c:if>
+  </c:forEach>
+];
+
 let _posOnlineIds = [];  // accountIds đang online ở POS (từ polling)
 let _posMapInterval = null;
 
@@ -3674,70 +3801,91 @@ function renderPosMap() {
     }
   });
 
-  // Render tất cả quầy 1-5 (hoặc max từ dữ liệu)
-  const maxStation = Math.max(5, ...Object.keys(stationMap).map(Number));
+  // Render các quầy từ database
   let html = '';
-  for (let st = 1; st <= maxStation; st++) {
-    const staffList  = stationMap[st] || [];
-    const isOnline   = _posOnlineIds.includes(st);
-    const cls        = isOnline ? 'online' : 'offline';
-    const badgeTxt   = isOnline ? '🟢 ĐANG ONLINE' : '⚫ OFFLINE';
+  if (_posStations.length === 0) {
+    html = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--muted); font-size: 14.5px; font-weight: 500; background: rgba(21,88,168,0.01); border: 2px dashed rgba(21,88,168,0.08); border-radius: 14px;">⚠️ Chưa có quầy POS nào được thiết lập. Hãy nhấn nút "Quản lý quầy" để thêm.</div>';
+  } else {
+    _posStations.forEach(station => {
+      const st = station.id;
+      const stationName = station.name;
+      const staffList  = stationMap[st] || [];
+      const isOnline   = _posOnlineIds.includes(st);
+      const cls        = isOnline ? 'online' : 'offline';
+      const badgeTxt   = isOnline ? '🟢 ĐANG ONLINE' : '⚫ OFFLINE';
 
-    html += '<div class="pos-station-card ' + cls + '">';
-    html += '<div class="pos-st-header">';
-    html +=   '<span class="pos-st-number">Quầy ' + st + '</span>';
-    html +=   '<div style="display:flex;align-items:center;gap:8px">';
-    html +=     '<button onclick="openPosAddModal(' + st + ')" style="padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--white);font-size:11.5px;font-weight:700;cursor:pointer;color:var(--blue);display:inline-flex;align-items:center;gap:3px;box-shadow:0 1px 3px rgba(0,0,0,0.05);transition:all 0.18s" onmouseover="this.style.background=\'var(--surface)\'" onmouseout="this.style.background=\'var(--white)\'">➕ Thêm NV</button>';
-    html +=     '<span class="pos-st-badge ' + cls + '">' + badgeTxt + '</span>';
-    html +=     '<span class="pos-st-dot ' + cls + '"></span>';
-    html +=   '</div>';
-    html += '</div>';
+      html += '<div class="pos-station-card ' + cls + '">';
+      html += '<div class="pos-st-header">';
+      html +=   '<span class="pos-st-number">' + escHtml(stationName) + '</span>';
+      html +=   '<div style="display:flex;align-items:center;gap:6px">';
+      html +=     '<button onclick="openPosAddModal(' + st + ')" class="btn-pos-add-staff">➕ Thêm NV</button>';
+      html +=     '<span class="pos-st-badge ' + cls + '" style="display:none">' + badgeTxt + '</span>';
+      html +=     '<span class="pos-st-dot ' + cls + '" title="' + badgeTxt + '"></span>';
+      html +=   '</div>';
+      html += '</div>';
 
-    html += '<div class="pos-st-staff-list" style="margin-top:10px;">';
-    if (staffList.length === 0) {
-      html += '<div class="pos-st-empty">Chưa có nhân viên được xếp</div>';
-    } else {
-      staffList.forEach(s => {
-        const initials = s.staffName.length >= 2
-          ? (s.staffName.charAt(0) + s.staffName.split(' ').pop().charAt(0)).toUpperCase()
-          : s.staffName.charAt(0).toUpperCase();
-        const staffOnline = isOnline; // nếu quầy online → nhân viên ca đó online
-        const avCls = staffOnline ? 'online' : 'offline';
-        
-        // Map status to visual styles
-        let statusLabel = s.status || '';
-        let statusCls = 'pos-st-badge offline';
-        if (s.status === 'CONFIRMED') { statusLabel = 'Đang làm'; statusCls = 'pos-st-badge online'; }
-        else if (s.status === 'SCHEDULED') { statusLabel = 'Chưa vào'; statusCls = 'pos-st-badge offline'; }
-        else if (s.status === 'LATE') { statusLabel = 'Đến trễ'; statusCls = 'pos-st-badge offline'; }
-        
-        html += '<div class="pos-st-staff-row" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--border);">';
-        html +=   '<div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;">';
-        html +=     '<div class="pos-st-av ' + avCls + '">' + initials + '</div>';
-        html +=     '<div style="min-width:0">';
-        html +=       '<div class="pos-st-staff-name" style="font-weight:700;">' + escHtml(s.staffName) + '</div>';
-        html +=       '<div class="pos-st-staff-meta">' + escHtml(s.shiftType) + ' · ' + s.startHour + ':00–' + s.endHour + ':00</div>';
-        html +=     '</div>';
-        html +=   '</div>';
-        html +=   '<div style="display:flex;align-items:center;gap:6px;">';
-        html +=     '<span class="' + statusCls + '" style="font-size:8.5px;padding:2px 6px;">' + statusLabel + '</span>';
-        html +=     '<div class="pos-st-actions" style="display:flex;gap:2px;">';
-        html +=       '<button onclick="openPosEditModal(' + s.scheduleId + ')" title="Sửa phân công" style="border:none;background:transparent;cursor:pointer;font-size:12px;padding:4px;border-radius:6px;transition:all 0.18s" onmouseover="this.style.background=\'rgba(217,119,6,0.1)\'" onmouseout="this.style.background=\'transparent\'">✏️</button>';
-        html +=       '<button onclick="handlePosDeleteClick(' + s.scheduleId + ', \'' + escHtml(s.staffName) + '\')" title="Gỡ / Xóa nhân viên" style="border:none;background:transparent;cursor:pointer;font-size:12px;padding:4px;border-radius:6px;transition:all 0.18s" onmouseover="this.style.background=\'rgba(220,38,38,0.1)\'" onmouseout="this.style.background=\'transparent\'">🗑️</button>';
-        html +=     '</div>';
-        html +=   '</div>';
-        html += '</div>';
-      });
-    }
-    html += '</div>';
-    html += '</div>';
+      html += '<div class="pos-st-staff-list">';
+      if (staffList.length === 0) {
+        html += '<div class="pos-st-empty">Chưa có nhân viên được xếp</div>';
+      } else {
+        staffList.forEach(s => {
+          const initials = s.staffName.length >= 2
+            ? (s.staffName.charAt(0) + s.staffName.split(' ').pop().charAt(0)).toUpperCase()
+            : s.staffName.charAt(0).toUpperCase();
+          const staffOnline = isOnline; // nếu quầy online → nhân viên ca đó online
+          const avCls = staffOnline ? 'online' : 'offline';
+          
+          // Map status to visual styles
+          let statusLabel = s.status || '';
+          let statusColor = '#64748b';
+          let statusBg = '#f1f5f9';
+          let statusBorder = 'rgba(100,116,139,0.1)';
+          
+          if (s.status === 'CONFIRMED') {
+            statusLabel = 'Đang làm';
+            statusColor = '#047857';
+            statusBg = '#ecfdf5';
+            statusBorder = 'rgba(16,185,129,0.2)';
+          } else if (s.status === 'SCHEDULED') {
+            statusLabel = 'Chưa vào';
+            statusColor = '#1d4ed8';
+            statusBg = '#eff6ff';
+            statusBorder = 'rgba(37,99,235,0.2)';
+          } else if (s.status === 'LATE') {
+            statusLabel = 'Đến trễ';
+            statusColor = '#b45309';
+            statusBg = '#fffbeb';
+            statusBorder = 'rgba(217,119,6,0.2)';
+          }
+          
+          html += '<div class="pos-st-staff-row">';
+          html +=   '<div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;">';
+          html +=     '<div class="pos-st-av ' + avCls + '">' + initials + '</div>';
+          html +=     '<div style="min-width:0">';
+          html +=       '<div class="pos-st-staff-name">' + escHtml(s.staffName) + '</div>';
+          html +=       '<div class="pos-st-staff-meta">' + escHtml(s.shiftType) + ' · ' + s.startHour + ':00–' + s.endHour + ':00</div>';
+          html +=     '</div>';
+          html +=   '</div>';
+          html +=   '<div style="display:flex;align-items:center;gap:6px;">';
+          html +=     '<span style="font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:20px;color:' + statusColor + ';background:' + statusBg + ';border:1px solid ' + statusBorder + ';">' + statusLabel + '</span>';
+          html +=     '<div class="pos-st-actions">';
+          html +=       '<button onclick="openPosEditModal(' + s.scheduleId + ')" class="pos-st-btn edit" title="Sửa phân công">✏️</button>';
+          html +=       '<button onclick="handlePosDeleteClick(' + s.scheduleId + ', \'' + escHtml(s.staffName) + '\')" class="pos-st-btn delete" title="Gỡ / Xóa nhân viên">🗑️</button>';
+          html +=     '</div>';
+          html +=   '</div>';
+          html += '</div>';
+        });
+      }
+      html += '</div>';
+      html += '</div>';
+    });
   }
   grid.innerHTML = html;
 
   // Render unassigned
   if (unassigned.length > 0) {
     unasList.innerHTML = unassigned.map(s => {
-      return '<div class="pos-unas-chip" onclick="openQuickAssignModal(' + s.scheduleId + ', \'' + escHtml(s.staffName) + '\', \'' + escHtml(s.shiftType) + '\')" style="cursor:pointer; transition:all 0.2s; border:1px solid #fde68a; display:inline-flex; align-items:center; gap:4px; padding:6px 12px; border-radius:8px;" onmouseover="this.style.background=\'#fef08a\'; this.style.transform=\'translateY(-1px)\'" onmouseout="this.style.background=\'#fef9c3\'; this.style.transform=\'translateY(0)\'">⚠️ ' + escHtml(s.staffName) + ' (' + escHtml(s.shiftType) + ') <span style="font-size:9.5px;color:var(--blue);font-weight:700;">Gán nhanh ➔</span></div>';
+      return '<div class="pos-unas-chip" onclick="openQuickAssignModal(' + s.scheduleId + ', \'' + escHtml(s.staffName) + '\', \'' + escHtml(s.shiftType) + '\')" style="cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background=\'#fef08a\'; this.style.transform=\'translateY(-1px)\'" onmouseout="this.style.background=\'#fff\'; this.style.transform=\'translateY(0)\'">⚠️ ' + escHtml(s.staffName) + ' (' + escHtml(s.shiftType) + ') <span style="font-size:9.5px;color:var(--blue);font-weight:700;margin-left:4px;">Gán nhanh ➔</span></div>';
     }).join('');
     unasWrap.style.display = '';
   } else {
@@ -3785,14 +3933,18 @@ function toggleAddOption(opt) {
 // Open modal to assign/schedule staff to a specific counter today
 function openPosAddModal(stationNum) {
   document.getElementById('posAddStationNum').value = stationNum;
-  document.getElementById('posAddTitle').textContent = '➕ Phân công nhân viên vào Quầy ' + stationNum;
+  const stObj = _posStations.find(item => item.id === stationNum);
+  const stName = stObj ? stObj.name : 'Quầy ' + stationNum;
+  document.getElementById('posAddTitle').textContent = '➕ Phân công nhân viên vào ' + stName;
   
   const select = document.getElementById('posAddScheduleSelect');
   const emptyDiv = document.getElementById('posAddUnassignedEmpty');
   select.innerHTML = '';
   
-  const unassigned = _todaySchedules.filter(s => s.posStation === 0);
-  if (unassigned.length === 0) {
+  const unassigned = _todaySchedules.filter(s => s.posStation === stationNum || (s.posStation === 0));
+  const availableUnassigned = unassigned.filter(s => s.posStation === 0);
+  
+  if (availableUnassigned.length === 0) {
     select.style.display = 'none';
     emptyDiv.style.display = 'block';
     toggleAddOption('create');
@@ -3800,7 +3952,7 @@ function openPosAddModal(stationNum) {
   } else {
     select.style.display = 'block';
     emptyDiv.style.display = 'none';
-    unassigned.forEach(s => {
+    availableUnassigned.forEach(s => {
       const opt = document.createElement('option');
       opt.value = s.scheduleId;
       opt.textContent = s.staffName + ' (' + s.shiftType + ' · ' + s.startHour + ':00 - ' + s.endHour + ':00)';
@@ -3827,8 +3979,15 @@ function submitPosAddForm() {
       alert('Vui lòng chọn một ca làm việc!');
       return;
     }
+    // Vô hiệu hóa dropdown Xếp ca mới để không gửi lên server
+    form.querySelector('select[name="accountId"]').disabled = true;
+    form.querySelector('select[name="shiftTypeId"]').disabled = true;
   } else {
     form.querySelector('input[name="action"]').value = 'pos-assign';
+    // Vô hiệu hóa dropdown Gán ca có sẵn để không gửi lên server
+    const select = document.getElementById('posAddScheduleSelect');
+    if (select) select.disabled = true;
+    
     const acc = form.querySelector('select[name="accountId"]').value;
     const type = form.querySelector('select[name="shiftTypeId"]').value;
     if (!acc || !type) {
@@ -3883,6 +4042,34 @@ function openQuickAssignModal(scheduleId, staffName, shiftType) {
 
 function refreshPosMap() {
   refreshPosOnlineStatus();
+}
+
+function openPosManagerModal() {
+  document.getElementById('posManagerModal').classList.add('open');
+}
+
+function closePosManagerModal() {
+  document.getElementById('posManagerModal').classList.remove('open');
+}
+
+function showEditCounterRow(id) {
+  document.getElementById('lblStation-' + id).style.display = 'none';
+  document.getElementById('editForm-' + id).style.display = 'block';
+  document.getElementById('btnEdit-' + id).style.display = 'none';
+  document.getElementById('btnSave-' + id).style.display = 'inline-block';
+  document.getElementById('btnCancel-' + id).style.display = 'inline-block';
+}
+
+function hideEditCounterRow(id) {
+  document.getElementById('lblStation-' + id).style.display = 'block';
+  document.getElementById('editForm-' + id).style.display = 'none';
+  document.getElementById('btnEdit-' + id).style.display = 'inline-block';
+  document.getElementById('btnSave-' + id).style.display = 'none';
+  document.getElementById('btnCancel-' + id).style.display = 'none';
+}
+
+function submitEditCounterRow(id) {
+  document.getElementById('editForm-' + id).submit();
 }
 
 function escHtml(s) {

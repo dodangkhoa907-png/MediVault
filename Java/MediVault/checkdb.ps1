@@ -6,3 +6,7 @@ $reader = $cmd.ExecuteReader()
 $reader.Read() | Out-Null
 Write-Output "Category: $($reader.GetString(0))"
 $conn.Close()
+
+
+
+
