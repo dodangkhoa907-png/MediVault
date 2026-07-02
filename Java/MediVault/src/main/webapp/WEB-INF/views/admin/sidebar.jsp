@@ -117,8 +117,31 @@
     </a>
   </div>
 </aside>
+<%-- ══ CSS SIDEBAR CHUẨN — đặt trong body nên GHI ĐÈ style riêng của từng trang
+     (thắng theo thứ tự nguồn), đảm bảo sidebar ĐỒNG NHẤT trên MỌI tab. ══ --%>
 <style>
-.sidebar-footer{margin-top:13px;padding:20px 14px 16px;border-top:1px solid rgba(255,255,255,.07);flex-shrink:0}
+:root{--sidebar:232px}
+.sidebar{width:232px;min-height:100vh;background:linear-gradient(175deg,#071022 0%,#0F2645 45%,#1558A8 100%);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;box-shadow:4px 0 32px rgba(0,0,0,.18);overflow-y:auto}
+.sidebar-logo{height:66px;padding:0 20px;display:flex;align-items:center;gap:11px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
+.logo-text{font-size:16px;font-weight:800;color:#fff;letter-spacing:-.2px;line-height:1.1}
+.logo-text span{color:#3ABDE0}
+.logo-sub{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1.2px;text-transform:uppercase;margin-top:1px}
+.nav-section{padding:12px 0 4px;flex-shrink:0}
+.nav-label{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:500;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
+.nav-item:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.06)}
+.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:600}
+.nav-item.active::before{content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:56%;background:#3ABDE0;border-radius:2px}
+.nav-icon{width:18px;text-align:center;font-size:14px;flex-shrink:0;opacity:.8}
+.nav-item.active .nav-icon{opacity:1}
+.nav-badge{margin-left:auto;background:#DC2626;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;min-width:20px;text-align:center}
+.main{margin-left:232px;flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0}
+.sidebar-footer{margin-top:auto;padding:20px 14px 16px;border-top:1px solid rgba(255,255,255,.07);flex-shrink:0}
 .logout-btn-full{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:10px 14px;border-radius:10px;background:rgba(220,38,38,.35);border:1.5px solid rgba(220,38,38,.3);color:#FF6B6B;text-decoration:none;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;letter-spacing:.3px;transition:all .2s}
 .logout-btn-full:hover{background:rgba(220,38,38,.58);color:#fff;border-color:#DC2626}
+@media(max-width:820px){
+  .sidebar{transform:translateX(-100%);transition:transform .25s ease}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+}
 </style>

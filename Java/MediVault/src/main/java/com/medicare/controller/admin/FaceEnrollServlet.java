@@ -87,6 +87,16 @@ public class FaceEnrollServlet extends HttpServlet {
             return;
         }
 
+        // Chặn 1 khuôn mặt đăng ký cho 2 tài khoản khác nhau
+        Account dup = com.medicare.util.FaceVerifier.findDuplicateFace(
+                trimmed, accountId, dao.findAllWithFaceVector());
+        if (dup != null) {
+            String dupName = dup.getFullName() != null ? dup.getFullName() : dup.getUsername();
+            writeJson(resp, "{\"ok\":false,\"reason\":\"face_already_used\",\"usedBy\":\""
+                    + dupName.replace("\"", "") + "\"}");
+            return;
+        }
+
         boolean success = dao.updateFaceVector(accountId, trimmed);
         if (success) {
             AppCache.invalidateStaff();

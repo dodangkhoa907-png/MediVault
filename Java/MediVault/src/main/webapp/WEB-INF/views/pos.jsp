@@ -502,7 +502,8 @@ body{display:flex}
   <div class="sb-bottom">
     <div class="sb-divider" style="margin-bottom:6px"></div>
     <div class="sb-checkin-wrap">
-      <button class="sb-btn" id="checkinBtn" onclick="<%= isLoggedIn ? "toggleCheckinPanel()" : "openFaceModal()" %>">
+<% String checkinAction = isLoggedIn ? "toggleCheckinPanel()" : "openFaceModal()"; %>
+      <button class="sb-btn" id="checkinBtn" onclick="<%= checkinAction %>">
         <span class="sb-icon"><%= isLoggedIn ? "🟢" : "👤" %></span>
         <span class="sb-label"><%= isLoggedIn ? fullName : "Điểm danh" %></span>
         <span class="sb-tip"><%= isLoggedIn ? "Ca làm / " + fullName : "Điểm danh nhân viên" %></span>
@@ -1708,7 +1709,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── MULTI-POS STATION ─────────────────────────────────────────────────────────
-const MAX_STATIONS = 4;
+const MAX_STATIONS = 5; // PHẢI khớp với số quầy trong admin (shift-list.jsp: Quầy 1-5)
 
 function openStationModal() {
   const grid = document.getElementById('stationGrid');
@@ -1755,7 +1756,9 @@ function updateStationUI() {
 
 // ── FACE RECOGNITION CHECK-IN ─────────────────────────────────────────────────
 const FACE_MODEL_URL = ctx + '/models';  // local — same as staff-checkin.jsp
-const FACE_THRESHOLD  = 0.5;
+const FACE_THRESHOLD  = 0.45;   // chặt hơn chuẩn 0.6 — chống nhận nhầm người
+const FACE_MARGIN     = 0.08;   // người gần nhì phải xa hơn ít nhất chừng này
+const FACE_STABLE_FRAMES = 3;   // cần 3 khung liên tiếp khớp cùng một người
 
 let faceModelsLoaded  = false;
 let faceDescriptors   = [];
@@ -1763,6 +1766,10 @@ let faceVideoStream   = null;
 let faceDetectLoopId  = null;
 let faceMatchedId     = null;
 let faceMatchedName   = null;
+let faceMatchedDescriptor = null;
+let faceStreakId      = null;
+let faceStreakCount   = 0;
+let faceStreakSamples = [];
 
 async function loadFaceModels() {
   if (faceModelsLoaded) return;
@@ -1859,7 +1866,7 @@ function startFaceDetection() {
 
       busy = true;
       const detection = await faceapi
-        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
         .withFaceLandmarks()        // full faceLandmark68Net (no arg = false = full)
         .withFaceDescriptor();
       busy = false;
@@ -1872,6 +1879,7 @@ function startFaceDetection() {
       if (!detection) {
         noFaceEl.style.display = 'block';
         ring.className = 'face-ring';
+        faceStreakId = null; faceStreakCount = 0; faceStreakSamples = [];
         faceDetectLoopId = requestAnimationFrame(loop);
         return;
       }
@@ -1885,22 +1893,45 @@ function startFaceDetection() {
         return;
       }
 
-      let bestDist = Infinity, bestMatch = null;
+      let bestDist = Infinity, bestMatch = null, secondDist = Infinity;
       for (const ref of faceDescriptors) {
         const dist = faceapi.euclideanDistance(detection.descriptor, ref.descriptor);
-        if (dist < bestDist) { bestDist = dist; bestMatch = ref; }
+        if (dist < bestDist) { secondDist = bestDist; bestDist = dist; bestMatch = ref; }
+        else if (dist < secondDist) { secondDist = dist; }
       }
 
-      if (bestDist <= FACE_THRESHOLD && bestMatch) {
-        ring.className = 'face-ring matched';
-        faceMatchedId   = bestMatch.accountId;
-        faceMatchedName = bestMatch.name;
-        setFmStatus('✓ Nhận ra: ' + bestMatch.name, 'ok');
-        document.getElementById('fmCheckinBtn').style.display = 'flex';
-        return; // dừng loop sau khi nhận ra
+      const clearMatch = bestMatch
+        && bestDist <= FACE_THRESHOLD
+        && (secondDist - bestDist >= FACE_MARGIN || secondDist > FACE_THRESHOLD);
+
+      if (clearMatch) {
+        if (faceStreakId === bestMatch.accountId) { faceStreakCount++; }
+        else { faceStreakId = bestMatch.accountId; faceStreakCount = 1; faceStreakSamples = []; }
+        faceStreakSamples.push(Array.from(detection.descriptor));
+
+        if (faceStreakCount >= FACE_STABLE_FRAMES) {
+          ring.className = 'face-ring matched';
+          faceMatchedId   = bestMatch.accountId;
+          faceMatchedName = bestMatch.name;
+          const dim = faceStreakSamples[0].length;
+          const avg = new Array(dim).fill(0);
+          for (const s of faceStreakSamples) for (let i = 0; i < dim; i++) avg[i] += s[i];
+          for (let i = 0; i < dim; i++) avg[i] /= faceStreakSamples.length;
+          faceMatchedDescriptor = avg;
+          setFmStatus('✓ Nhận ra: ' + bestMatch.name, 'ok');
+          document.getElementById('fmCheckinBtn').style.display = 'flex';
+          return; // dừng loop sau khi nhận ra
+        }
+        ring.className = 'face-ring scanning';
+        setFmStatus('Đang xác nhận ' + bestMatch.name + '… (' + faceStreakCount + '/' + FACE_STABLE_FRAMES + ')');
       } else {
-        faceMatchedId = null; faceMatchedName = null;
-        setFmStatus('Đang quét… (' + bestDist.toFixed(2) + ')');
+        faceStreakId = null; faceStreakCount = 0; faceStreakSamples = [];
+        faceMatchedId = null; faceMatchedName = null; faceMatchedDescriptor = null;
+        if (bestMatch && bestDist <= FACE_THRESHOLD) {
+          setFmStatus('⚠ Khuôn mặt chưa đủ rõ để phân biệt — nhìn thẳng camera', 'err');
+        } else {
+          setFmStatus('Đang quét… (' + (bestDist === Infinity ? '—' : bestDist.toFixed(2)) + ')');
+        }
         document.getElementById('fmCheckinBtn').style.display = 'none';
       }
     }
@@ -1935,6 +1966,7 @@ async function confirmFaceCheckin() {
       body: new URLSearchParams({
         action:    'pos-face-checkin',
         accountId: faceMatchedId,
+        descriptor: JSON.stringify(faceMatchedDescriptor || []),
         station:   currentStation > 0 ? currentStation : 1
       }),
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
@@ -1970,9 +2002,22 @@ async function confirmFaceCheckin() {
       btn.disabled    = false;
       btn.textContent = '✓ Xác nhận điểm danh';
     } else {
-      showToast('❌ ' + (data.reason || 'Điểm danh thất bại'), 'err');
+      const reasonMap = {
+        'no_match':        '⚠️ Server không xác nhận được khuôn mặt. Vui lòng quét lại.',
+        'reenroll_pending':'⏳ Nhân viên đang có yêu cầu đổi khuôn mặt chờ duyệt — chưa thể điểm danh.',
+        'impersonation':   '🚫 Khuôn mặt không phải của nhân viên này!',
+        'ambiguous':       '⚠️ Khuôn mặt quá giống người khác — nhìn thẳng camera và thử lại.',
+        'no_face_enrolled':'❌ Nhân viên chưa đăng ký khuôn mặt.',
+        'missing_descriptor':'⚠️ Thiếu dữ liệu khuôn mặt. Vui lòng quét lại.',
+        'invalid_descriptor':'❌ Dữ liệu khuôn mặt lỗi. Vui lòng quét lại.'
+      };
+      showToast(reasonMap[data.reason] || ('❌ ' + (data.reason || 'Điểm danh thất bại')), 'err');
+      faceStreakId = null; faceStreakCount = 0; faceStreakSamples = [];
+      faceMatchedId = null; faceMatchedDescriptor = null;
+      document.getElementById('fmCheckinBtn').style.display = 'none';
       btn.disabled    = false;
       btn.textContent = '✓ Xác nhận điểm danh';
+      startFaceDetection();
     }
   } catch(e) {
     showToast('❌ Lỗi kết nối', 'err');

@@ -38,8 +38,7 @@ public class StaffAttendanceServlet extends HttpServlet {
     private final IShiftDAO         shiftDAO      = new ShiftDAO();
     private final IAccountDAO       accountDAO    = new AccountDAO();
 
-    // ── Face recognition ─────────────────────────────────────────────────────
-    private static final double FACE_MATCH_THRESHOLD = 0.6; // Euclidean distance, chuẩn face-api.js
+    // ── Face recognition: logic verify chặt nằm trong com.medicare.util.FaceVerifier
 
     // ── Grace periods (phút) ─────────────────────────────────────────────────
     private static final int CHECKIN_GRACE_MINUTES  = 5;   // 5p sau PlannedStart vẫn OK
@@ -289,53 +288,21 @@ public class StaffAttendanceServlet extends HttpServlet {
     }
 
     /**
-     * So khớp descriptor gửi từ client với FaceVector của CHÍNH staff đang đăng nhập (1-vs-1).
-     * Luôn đọc lại FaceVector mới nhất từ DB (không tin session cũ).
-     * @return "MATCH" nếu khớp, hoặc mã lỗi:
-     *         "no_face_enrolled" | "missing_descriptor" | "invalid_descriptor" | "no_match"
+     * So khớp descriptor gửi từ client với FaceVector — verify CHẶT qua FaceVerifier:
+     * ngưỡng 0.45 + đối chiếu 1-vs-N toàn bộ nhân viên đã đăng ký mặt
+     * (mặt phải khớp đúng chính chủ VÀ không gần mặt người khác).
+     * @return "MATCH" hoặc mã lỗi: "no_face_enrolled" | "missing_descriptor"
+     *         | "invalid_descriptor" | "no_match" | "impersonation" | "ambiguous"
      */
     private String verifyFace(Account staff, String descriptorJson) {
-        if (descriptorJson == null || descriptorJson.trim().isEmpty()) {
-            return "missing_descriptor";
-        }
+        // Đang chờ duyệt đổi khuôn mặt → chặn điểm danh bằng khuôn mặt cũ
         Account fresh = accountDAO.findById(staff.getAccountId());
-        if (fresh == null || !fresh.isFaceEnrolled()) {
-            return "no_face_enrolled";
+        if (fresh != null && fresh.isFaceReenrollPending()) {
+            return "reenroll_pending";
         }
-        double[] stored = parseDescriptor(fresh.getFaceVector());
-        double[] incoming = parseDescriptor(descriptorJson);
-        if (stored == null || incoming == null || stored.length != incoming.length) {
-            return "invalid_descriptor";
-        }
-        double distance = euclideanDistance(stored, incoming);
-        return distance <= FACE_MATCH_THRESHOLD ? "MATCH" : "no_match";
-    }
-
-    /** Parse JSON array string "[0.1,-0.2,...]" thành double[]. Trả null nếu lỗi format. */
-    private double[] parseDescriptor(String json) {
-        try {
-            String trimmed = json.trim();
-            if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) return null;
-            String inner = trimmed.substring(1, trimmed.length() - 1).trim();
-            if (inner.isEmpty()) return new double[0];
-            String[] parts = inner.split(",");
-            double[] result = new double[parts.length];
-            for (int i = 0; i < parts.length; i++) {
-                result[i] = Double.parseDouble(parts[i].trim());
-            }
-            return result;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private double euclideanDistance(double[] a, double[] b) {
-        double sum = 0;
-        for (int i = 0; i < a.length; i++) {
-            double diff = a[i] - b[i];
-            sum += diff * diff;
-        }
-        return Math.sqrt(sum);
+        java.util.List<Account> allEnrolled = accountDAO.findAllWithFaceVector();
+        return com.medicare.util.FaceVerifier.verify(
+                staff.getAccountId(), descriptorJson, allEnrolled);
     }
 
     private void writeJson(HttpServletResponse resp, String json) throws IOException {
