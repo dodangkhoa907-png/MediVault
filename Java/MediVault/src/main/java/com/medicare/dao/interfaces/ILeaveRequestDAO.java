@@ -24,6 +24,10 @@ public interface ILeaveRequestDAO {
     boolean approve(int leaveId, int approvedBy, String notes, java.math.BigDecimal deductAmount);
     boolean reject(int leaveId, int approvedBy, String notes);
 
+    /** Duyệt đơn nghỉ đột xuất + gán người làm thay */
+    boolean approveWithSubstitute(int leaveId, int approvedBy, String notes,
+                                  java.math.BigDecimal deductAmount, Integer substituteAccountId);
+
     /** Tất cả đơn trong tháng (admin xem) */
     List<LeaveRequest> findByMonth(int month, int year);
 

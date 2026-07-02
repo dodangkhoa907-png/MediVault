@@ -196,6 +196,7 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
 </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/views/loading.jsp" %>
 
 <!-- ══ LEFT PANEL ══ -->
 <div class="left">

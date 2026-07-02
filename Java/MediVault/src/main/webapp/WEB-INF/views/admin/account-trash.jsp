@@ -162,6 +162,7 @@ select.field-input{cursor:pointer}
 </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/views/loading.jsp" %>
 
 <%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
 

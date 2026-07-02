@@ -20,6 +20,12 @@ public class Account {
     private String faceEnrollmentPath;
     private String faceVector;
     private LocalDateTime faceEnrolledAt;
+    // ── Yêu cầu đăng ký lại khuôn mặt ──
+    private String faceReenrollStatus;                 // null | "PENDING"
+    private String faceReenrollReason;
+    private LocalDateTime faceReenrollRequestedAt;
+    private Integer faceReenrollHandledBy;
+    private LocalDateTime faceReenrollHandledAt;
     private LocalDateTime createdAt;
     private LocalDateTime lastLoginAt;
     private boolean deleted;
@@ -179,6 +185,27 @@ public class Account {
 
     public boolean isFaceEnrolled() {
         return faceVector != null && !faceVector.trim().isEmpty();
+    }
+
+    // ── Face re-enroll request ──
+    public String getFaceReenrollStatus() { return faceReenrollStatus; }
+    public void setFaceReenrollStatus(String s) { this.faceReenrollStatus = s; }
+
+    public String getFaceReenrollReason() { return faceReenrollReason; }
+    public void setFaceReenrollReason(String r) { this.faceReenrollReason = r; }
+
+    public LocalDateTime getFaceReenrollRequestedAt() { return faceReenrollRequestedAt; }
+    public void setFaceReenrollRequestedAt(LocalDateTime t) { this.faceReenrollRequestedAt = t; }
+
+    public Integer getFaceReenrollHandledBy() { return faceReenrollHandledBy; }
+    public void setFaceReenrollHandledBy(Integer id) { this.faceReenrollHandledBy = id; }
+
+    public LocalDateTime getFaceReenrollHandledAt() { return faceReenrollHandledAt; }
+    public void setFaceReenrollHandledAt(LocalDateTime t) { this.faceReenrollHandledAt = t; }
+
+    /** Đang có yêu cầu đăng ký lại khuôn mặt chờ admin duyệt → chặn quét mặt điểm danh */
+    public boolean isFaceReenrollPending() {
+        return "PENDING".equalsIgnoreCase(faceReenrollStatus);
     }
 
     public LocalDateTime getCreatedAt() {

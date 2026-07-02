@@ -29,28 +29,57 @@ public class LeaveRequestDAO implements ILeaveRequestDAO {
         if (rs.getTimestamp("RequestedAt") != null)
             lr.setRequestedAt(rs.getTimestamp("RequestedAt").toLocalDateTime());
         lr.setNotes(rs.getNString("Notes"));
+        try { lr.setEvidencePath(rs.getNString("EvidencePath")); } catch (SQLException ignored) {}
+        try {
+            int sub = rs.getInt("SubstituteAccountID");
+            lr.setSubstituteAccountId(rs.wasNull() ? null : sub);
+        } catch (SQLException ignored) {}
         try { lr.setStaffName(rs.getNString("StaffName")); }       catch (SQLException ignored) {}
         try { lr.setApprovedByName(rs.getNString("ApprovedByName")); } catch (SQLException ignored) {}
+        try { lr.setSubstituteName(rs.getNString("SubstituteName")); } catch (SQLException ignored) {}
         return lr;
     }
 
     private static final String SELECT_FULL =
             "SELECT lr.*, a.FullName AS StaffName, "
-                    + "ab.FullName AS ApprovedByName "
+                    + "ab.FullName AS ApprovedByName, "
+                    + "sub.FullName AS SubstituteName "
                     + "FROM LeaveRequests lr "
                     + "JOIN Accounts a ON a.AccountID = lr.AccountID "
-                    + "LEFT JOIN Accounts ab ON ab.AccountID = lr.ApprovedBy ";
+                    + "LEFT JOIN Accounts ab ON ab.AccountID = lr.ApprovedBy "
+                    + "LEFT JOIN Accounts sub ON sub.AccountID = lr.SubstituteAccountID ";
 
     @Override
     public boolean insert(LeaveRequest lr) {
-        String sql = "INSERT INTO LeaveRequests (AccountID, LeaveDate, LeaveType, Reason) "
-                + "VALUES (?,?,?,?)";
+        String sql = "INSERT INTO LeaveRequests (AccountID, LeaveDate, LeaveType, Reason, EvidencePath) "
+                + "VALUES (?,?,?,?,?)";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, lr.getAccountId());
             ps.setDate(2, Date.valueOf(lr.getLeaveDate()));
             ps.setString(3, lr.getLeaveType());
             ps.setNString(4, lr.getReason());
+            if (lr.getEvidencePath() == null || lr.getEvidencePath().isEmpty())
+                ps.setNull(5, Types.NVARCHAR);
+            else ps.setNString(5, lr.getEvidencePath());
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    /** Duyệt đơn + gán người làm thay (nghỉ đột xuất). */
+    public boolean approveWithSubstitute(int leaveId, int approvedBy, String notes,
+                                         BigDecimal deductAmount, Integer substituteAccountId) {
+        String sql = "UPDATE LeaveRequests SET Status='APPROVED', "
+                + "ApprovedBy=?, ApprovedAt=GETDATE(), Notes=?, DeductAmount=?, SubstituteAccountID=? "
+                + "WHERE LeaveID=? AND Status='PENDING'";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, approvedBy);
+            ps.setNString(2, notes);
+            ps.setBigDecimal(3, deductAmount != null ? deductAmount : BigDecimal.ZERO);
+            if (substituteAccountId == null) ps.setNull(4, Types.INTEGER);
+            else ps.setInt(4, substituteAccountId);
+            ps.setInt(5, leaveId);
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }

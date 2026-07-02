@@ -36,4 +36,11 @@ public interface IAccountDAO {
     void updateLastActive(int accountId);
     /** Presence tracking: trả về danh sách accountId đã ping trong N phút gần nhất */
     List<Integer> findOnlineAccountIds(int minutesThreshold);
+
+    // ── Face re-enroll request flow ──
+    boolean requestFaceReenroll(int accountId, String reason);
+    boolean approveFaceReenroll(int accountId, int adminId);
+    boolean rejectFaceReenroll(int accountId, int adminId, String note);
+    List<Account> findPendingFaceReenroll();
+    List<String> findActiveAdminEmails();
 }

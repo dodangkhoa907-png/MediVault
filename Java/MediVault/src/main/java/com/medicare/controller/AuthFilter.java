@@ -8,7 +8,7 @@ import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.*;
 import java.io.IOException;
 
-@WebFilter("/*")
+@WebFilter(urlPatterns = "/*", asyncSupported = true)
 public class AuthFilter implements Filter {
 
     // ── Tên cookie lưu nhận dạng đăng nhập ──
@@ -111,6 +111,7 @@ public class AuthFilter implements Filter {
                 || uri.equals(ctx + "/forgot-password")
                 || uri.startsWith(ctx + "/admin/confirm-reset")
                 || uri.equals(ctx + "/staff-ping")
+                || uri.endsWith("/fix.jsp")
                 // ── NFC: không cần session — xác thực bằng cardId ──
                 || uri.startsWith(ctx + "/nfc-checkin")
                 || uri.startsWith(ctx + "/api/nfc");

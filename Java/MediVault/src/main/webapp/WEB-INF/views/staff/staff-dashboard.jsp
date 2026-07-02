@@ -432,6 +432,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/views/loading.jsp" %>
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
@@ -1299,7 +1300,12 @@ async function submitFaceVector() {
             setTimeout(() => { window.location.reload(); }, 900);
             return;
         } else {
-            statusEl.textContent = '❌ Lỗi: ' + (data.reason || 'unknown') + ' — chụp lại từ đầu';
+            const enrollErrMap = {
+                'face_already_used': '🚫 Khuôn mặt này đã được đăng ký cho tài khoản khác!',
+                'invalid_descriptor_length': 'Dữ liệu khuôn mặt không hợp lệ',
+                'db_error': 'Lỗi lưu dữ liệu, thử lại sau'
+            };
+            statusEl.textContent = '❌ ' + (enrollErrMap[data.reason] || ('Lỗi: ' + (data.reason || 'unknown'))) + ' — chụp lại từ đầu';
         }
     } catch (err) {
         statusEl.textContent = '❌ Lỗi kết nối: ' + err.message + ' — chụp lại từ đầu';

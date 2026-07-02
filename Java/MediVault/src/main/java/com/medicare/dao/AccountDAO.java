@@ -37,6 +37,18 @@ public class AccountDAO implements IAccountDAO {
             Timestamp fe = rs.getTimestamp("FaceEnrolledAt");
             if (fe != null) a.setFaceEnrolledAt(fe.toLocalDateTime());
         } catch (SQLException ignored) {}
+        // ── Face re-enroll (cột optional — bọc try/catch để không vỡ khi query cũ) ──
+        try { a.setFaceReenrollStatus(rs.getString("FaceReenrollStatus")); } catch (SQLException ignored) {}
+        try { a.setFaceReenrollReason(rs.getNString("FaceReenrollReason")); } catch (SQLException ignored) {}
+        try {
+            Timestamp rr = rs.getTimestamp("FaceReenrollRequestedAt");
+            if (rr != null) a.setFaceReenrollRequestedAt(rr.toLocalDateTime());
+        } catch (SQLException ignored) {}
+        try { a.setFaceReenrollHandledBy((Integer) rs.getObject("FaceReenrollHandledBy")); } catch (SQLException ignored) {}
+        try {
+            Timestamp rh = rs.getTimestamp("FaceReenrollHandledAt");
+            if (rh != null) a.setFaceReenrollHandledAt(rh.toLocalDateTime());
+        } catch (SQLException ignored) {}
         if (rs.getTimestamp("CreatedAt") != null)
             a.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
         if (rs.getTimestamp("LastLoginAt") != null)
@@ -466,6 +478,80 @@ public class AccountDAO implements IAccountDAO {
             ps.setInt(2, accountId);
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    // ── Face re-enroll request flow ──────────────────────────────────────────
+
+    /** Nhân viên gửi yêu cầu đăng ký lại khuôn mặt → set PENDING + lý do. */
+    public boolean requestFaceReenroll(int accountId, String reason) {
+        String sql = "UPDATE Accounts SET FaceReenrollStatus = 'PENDING', " +
+                "FaceReenrollReason = ?, FaceReenrollRequestedAt = GETDATE(), " +
+                "FaceReenrollHandledBy = NULL, FaceReenrollHandledAt = NULL " +
+                "WHERE AccountID = ? AND (FaceReenrollStatus IS NULL OR FaceReenrollStatus <> 'PENDING')";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            if (reason == null || reason.trim().isEmpty()) ps.setNull(1, Types.NVARCHAR);
+            else ps.setNString(1, reason.trim());
+            ps.setInt(2, accountId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    /**
+     * Admin DUYỆT yêu cầu → xóa FaceVector (buộc đăng ký lại từ đầu),
+     * xóa trạng thái PENDING, ghi người/lúc xử lý.
+     */
+    public boolean approveFaceReenroll(int accountId, int adminId) {
+        String sql = "UPDATE Accounts SET FaceVector = NULL, FaceEnrolledAt = NULL, " +
+                "FaceReenrollStatus = NULL, FaceReenrollHandledBy = ?, FaceReenrollHandledAt = GETDATE() " +
+                "WHERE AccountID = ? AND FaceReenrollStatus = 'PENDING'";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, adminId);
+            ps.setInt(2, accountId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    /** Admin TỪ CHỐI yêu cầu → xóa PENDING, giữ nguyên khuôn mặt cũ. */
+    public boolean rejectFaceReenroll(int accountId, int adminId, String note) {
+        String sql = "UPDATE Accounts SET FaceReenrollStatus = NULL, " +
+                "FaceReenrollReason = ?, FaceReenrollHandledBy = ?, FaceReenrollHandledAt = GETDATE() " +
+                "WHERE AccountID = ? AND FaceReenrollStatus = 'PENDING'";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            if (note == null || note.trim().isEmpty()) ps.setNull(1, Types.NVARCHAR);
+            else ps.setNString(1, note.trim());
+            ps.setInt(2, adminId);
+            ps.setInt(3, accountId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    /** Danh sách yêu cầu đăng ký lại khuôn mặt đang chờ duyệt (cho admin). */
+    public List<Account> findPendingFaceReenroll() {
+        List<Account> list = new ArrayList<>();
+        String sql = "SELECT * FROM Accounts WHERE FaceReenrollStatus = 'PENDING' " +
+                "AND IsDeleted = 0 ORDER BY FaceReenrollRequestedAt ASC";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) list.add(mapRow(rs));
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
+    }
+
+    /** Email toàn bộ admin đang active — để gửi thông báo yêu cầu đổi khuôn mặt. */
+    public List<String> findActiveAdminEmails() {
+        List<String> emails = new ArrayList<>();
+        String sql = "SELECT Email FROM Accounts WHERE RoleID = 1 AND IsActive = 1 " +
+                "AND IsDeleted = 0 AND Email IS NOT NULL AND Email <> ''";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) emails.add(rs.getString("Email"));
+        } catch (Exception e) { e.printStackTrace(); }
+        return emails;
     }
 
     @Override

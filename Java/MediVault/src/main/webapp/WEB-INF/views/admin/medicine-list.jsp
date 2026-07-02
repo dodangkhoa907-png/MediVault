@@ -364,6 +364,7 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
 </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/views/loading.jsp" %>
 
 <%-- Hover card --%>
 <div id="hoverCard" class="hover-card">

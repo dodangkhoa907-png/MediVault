@@ -20,7 +20,7 @@ a:hover{background:#0F3D80}
 <div class="card">
   <div class="code">500</div>
   <h1>L?i h? th?ng</h1>
-  <p>Đã xảy ra lỗi trong quá trình x? l� y�u c?u. Vui l�ng th? l?i.</p>
+  <p>Đã xảy ra lỗi trong quá trình xử lý yêu cầu, vui lòng thử lại</p>
   <% if (exception != null && Boolean.parseBoolean(application.getInitParameter("devMode"))) { %>
   <pre style="text-align:left;background:#fee2e2;padding:12px;border-radius:8px;font-size:11px;overflow:auto;margin-bottom:20px;color:#991b1b"><%= exception.getMessage() %></pre>
   <% } %>

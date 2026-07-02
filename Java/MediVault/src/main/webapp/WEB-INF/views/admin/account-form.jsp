@@ -334,6 +334,7 @@ select.field-input{
 </style>
 </head>
 <body>
+<%@ include file="/WEB-INF/views/loading.jsp" %>
 
 <!-- TOPBAR -->
 <header class="topbar">
@@ -1052,7 +1053,12 @@ async function submitFaceVector() {
             statusEl.textContent = '✅ Đăng ký khuôn mặt thành công!';
             setTimeout(() => { window.location.reload(); }, 900);
         } else {
-            statusEl.textContent = '❌ Lỗi: ' + (data.reason || 'unknown');
+            if (data.reason === 'face_already_used') {
+                statusEl.textContent = '🚫 Khuôn mặt này đã được đăng ký cho: '
+                    + (data.usedBy || 'tài khoản khác') + '!';
+            } else {
+                statusEl.textContent = '❌ Lỗi: ' + (data.reason || 'unknown');
+            }
             document.getElementById('faceCaptureBtn').disabled = false;
         }
     } catch (err) {

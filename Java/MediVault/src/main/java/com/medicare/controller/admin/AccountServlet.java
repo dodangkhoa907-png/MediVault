@@ -581,6 +581,7 @@ public class AccountServlet extends HttpServlet {
             throws ServletException, IOException {
         req.setAttribute("accounts", dao.findAllStaff());
         req.setAttribute("onlineStaff", com.medicare.util.SessionTracker.getOnlineSet());
+        req.setAttribute("pendingReenroll", dao.findPendingFaceReenroll());
         SidebarHelper.load(req);
 
         req.getRequestDispatcher("/WEB-INF/views/admin/account-list.jsp").forward(req, resp);
