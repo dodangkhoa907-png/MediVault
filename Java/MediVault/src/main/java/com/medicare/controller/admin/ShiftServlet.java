@@ -89,6 +89,9 @@ public class ShiftServlet extends HttpServlet {
             case "schedule-update"       -> handleScheduleUpdate(req, resp);
             case "schedule-delete-staff" -> handleScheduleDeleteStaff(req, resp);
             case "cancel-schedule"       -> handleCancelSchedule(req, resp);
+            // ── POS Map custom actions ──
+            case "pos-assign"            -> handlePosAssign(req, resp);
+            case "pos-unassign"          -> handlePosUnassign(req, resp);
             default            -> resp.sendRedirect(req.getContextPath() + "/shifts");
         }
     }
@@ -511,7 +514,9 @@ public class ShiftServlet extends HttpServlet {
         }
         if (ok) AuditHelper.log(req, "Sửa lịch ca", "ShiftSchedule",
                 "Sửa ca ID " + scheduleId + (posStation > 0 ? " → Quầy " + posStation : ""));
-        resp.sendRedirect(req.getContextPath() + "/shifts?msg=" + (ok ? "updated" : "error"));
+        String tab = req.getParameter("tab");
+        String suffix = (tab != null && !tab.isEmpty()) ? "&tab=" + tab : "";
+        resp.sendRedirect(req.getContextPath() + "/shifts?msg=" + (ok ? "updated" : "error") + suffix);
     }
 
     /** Sửa nhiều ca đã chọn (bulk update) */
@@ -558,13 +563,26 @@ public class ShiftServlet extends HttpServlet {
     private void handleScheduleDeleteStaff(HttpServletRequest req, HttpServletResponse resp)
             throws IOException {
         int scheduleId = parseIntOr(req.getParameter("scheduleId"), 0);
+        String mode = req.getParameter("mode"); // "delete" or "cancel"
         ShiftSchedule sc = scheduleDAO.findById(scheduleId);
-        boolean ok = scheduleDAO.cancel(scheduleId);
-        if (ok && sc != null)
-            AuditHelper.log(req, "Hủy ca nhân viên", "ShiftSchedule",
-                    "Hủy ca " + sc.getShiftTypeName() + " ngày " + sc.getWorkDate()
-                            + " của " + sc.getStaffName());
-        resp.sendRedirect(req.getContextPath() + "/shifts?msg=" + (ok ? "cancelled" : "error"));
+        boolean ok = false;
+        if ("delete".equals(mode)) {
+            ok = scheduleDAO.delete(scheduleId);
+            if (ok && sc != null)
+                AuditHelper.log(req, "Xóa lịch ca", "ShiftSchedule",
+                        "Xóa vĩnh viễn ca " + sc.getShiftTypeName() + " ngày " + sc.getWorkDate()
+                                + " của " + sc.getStaffName());
+        } else {
+            ok = scheduleDAO.cancel(scheduleId);
+            if (ok && sc != null)
+                AuditHelper.log(req, "Hủy ca nhân viên", "ShiftSchedule",
+                        "Hủy ca " + sc.getShiftTypeName() + " ngày " + sc.getWorkDate()
+                                + " của " + sc.getStaffName());
+        }
+        String tab = req.getParameter("tab");
+        String suffix = (tab != null && !tab.isEmpty()) ? "&tab=" + tab : "";
+        String msg = ok ? ("delete".equals(mode) ? "deleted" : "cancelled") : "error";
+        resp.sendRedirect(req.getContextPath() + "/shifts?msg=" + msg + suffix);
     }
 
     /** Xóa nhiều ca đã chọn (bulk delete — hard delete, không chỉ set CANCELLED) */
@@ -598,7 +616,67 @@ public class ShiftServlet extends HttpServlet {
         if (ok && sc != null)
             AuditHelper.log(req, "Hủy lịch ca", "ShiftSchedule",
                     "Hủy ca " + sc.getShiftTypeName() + " ngày " + sc.getWorkDate());
-        resp.sendRedirect(req.getContextPath() + "/shifts?msg=" + (ok ? "cancelled" : "error"));
+        String tab = req.getParameter("tab");
+        String suffix = (tab != null && !tab.isEmpty()) ? "&tab=" + tab : "";
+        resp.sendRedirect(req.getContextPath() + "/shifts?msg=" + (ok ? "cancelled" : "error") + suffix);
+    }
+
+    /** Gán quầy POS hoặc tạo ca mới gán quầy */
+    private void handlePosAssign(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        Account admin = (Account) req.getSession(false).getAttribute("adminAccount");
+        int posStation = parseIntOr(req.getParameter("posStation"), 0);
+        int scheduleId = parseIntOr(req.getParameter("scheduleId"), 0);
+
+        if (posStation <= 0) {
+            resp.sendRedirect(req.getContextPath() + "/shifts?tab=pos-map&msg=error");
+            return;
+        }
+
+        ShiftScheduleDAO dao = (ShiftScheduleDAO) scheduleDAO;
+        boolean ok = false;
+
+        if (scheduleId > 0) {
+            // Trường hợp 1: Gán quầy cho ca làm việc đã có sẵn hôm nay
+            ok = dao.updatePosStation(scheduleId, posStation);
+            if (ok) {
+                AuditHelper.log(req, "Gán quầy POS", "ShiftSchedule", "Gán ca ID " + scheduleId + " vào Quầy " + posStation);
+            }
+        } else {
+            // Trường hợp 2: Tạo ca mới hôm nay và gán vào quầy
+            int accountId = parseIntOr(req.getParameter("accountId"), 0);
+            int shiftTypeId = parseIntOr(req.getParameter("shiftTypeId"), 0);
+            if (accountId > 0 && shiftTypeId > 0) {
+                java.time.LocalDate today = java.time.LocalDate.now();
+                int newId = dao.schedule(accountId, shiftTypeId, today, admin.getAccountId());
+                if (newId > 0) {
+                    ok = dao.updatePosStation(newId, posStation);
+                    if (ok) {
+                        AuditHelper.log(req, "Xếp ca & Gán quầy POS", "ShiftSchedule",
+                                "Tạo ca mới cho NV " + accountId + " và gán vào Quầy " + posStation);
+                    }
+                }
+            }
+        }
+
+        resp.sendRedirect(req.getContextPath() + "/shifts?tab=pos-map&msg=" + (ok ? "updated" : "error"));
+    }
+
+    /** Gỡ nhân viên khỏi quầy POS (unassign) */
+    private void handlePosUnassign(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        int scheduleId = parseIntOr(req.getParameter("scheduleId"), 0);
+        if (scheduleId <= 0) {
+            resp.sendRedirect(req.getContextPath() + "/shifts?tab=pos-map&msg=error");
+            return;
+        }
+
+        ShiftScheduleDAO dao = (ShiftScheduleDAO) scheduleDAO;
+        boolean ok = dao.updatePosStation(scheduleId, 0); // Đặt posStation = 0 là gỡ quầy
+        if (ok) {
+            AuditHelper.log(req, "Gỡ quầy POS", "ShiftSchedule", "Gỡ ca ID " + scheduleId + " khỏi quầy");
+        }
+        resp.sendRedirect(req.getContextPath() + "/shifts?tab=pos-map&msg=" + (ok ? "updated" : "error"));
     }
 
 }

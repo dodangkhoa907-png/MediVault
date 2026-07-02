@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <% String activeNav = "shifts"; %>
 <%@ taglib prefix="c"   uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
@@ -1541,6 +1541,53 @@ tbody tr{cursor:pointer}
          TAB: SƠ ĐỒ QUẦY POS
          ══════════════════════════════════════════════ --%>
     <div id="tab-pos-map" class="tab-pane <%= "pos-map".equals(activeTab) ? "active" : "" %>">
+      
+      <!-- Hướng dẫn CRUD Sơ đồ quầy POS -->
+      <div class="pos-guide-card" style="margin-bottom:20px; background:var(--white); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; box-shadow:0 4px 16px rgba(21,88,168,0.03);">
+        <div class="pos-guide-header" onclick="togglePosGuide()" style="padding:14px 20px; background:linear-gradient(135deg,rgba(21,88,168,0.05),rgba(58,189,224,0.05)); display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:18px;">💡</span>
+            <span style="font-weight:700; color:var(--navy); font-size:14px; font-family:'Outfit',sans-serif;">Hướng Dẫn Thao Tác Ca & Quầy POS (C-R-U-D)</span>
+          </div>
+          <span id="posGuideIcon" style="font-size:12px; color:var(--muted); transition:transform 0.2s;">▼</span>
+        </div>
+        <div id="posGuideBody" style="padding:18px 20px; border-top:1px solid var(--border); display:none; flex-direction:column; gap:14px;">
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px;">
+            <div style="background:rgba(21,88,168,0.02); border:1px solid var(--border); border-radius:10px; padding:12px 14px;">
+              <div style="font-weight:800; color:var(--blue); font-size:12px; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                <span style="width:20px; height:20px; border-radius:50%; background:var(--blue); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:10px;">C</span>
+                CREATE (Thêm ca / quầy)
+              </div>
+              <p style="font-size:11.5px; color:var(--muted); line-height:1.4;">Nhấn nút <strong style="color:var(--blue);">➕ Thêm NV</strong> ở mỗi thẻ Quầy. Bạn có thể xếp ca mới hoặc chọn nhanh từ danh sách ca chưa chia quầy hôm nay.</p>
+            </div>
+            
+            <div style="background:rgba(5,150,105,0.02); border:1px solid var(--border); border-radius:10px; padding:12px 14px;">
+              <div style="font-weight:800; color:var(--green); font-size:12px; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                <span style="width:20px; height:20px; border-radius:50%; background:var(--green); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:10px;">R</span>
+                READ (Xem thông tin)
+              </div>
+              <p style="font-size:11.5px; color:var(--muted); line-height:1.4;">Theo dõi thời gian thực kết nối mạng (<b>Online/Offline</b>) của từng quầy. Xem danh sách nhân viên, loại ca, giờ làm và trạng thái check-in.</p>
+            </div>
+            
+            <div style="background:rgba(217,119,6,0.02); border:1px solid var(--border); border-radius:10px; padding:12px 14px;">
+              <div style="font-weight:800; color:var(--gold); font-size:12px; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                <span style="width:20px; height:20px; border-radius:50%; background:var(--gold); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:10px;">U</span>
+                UPDATE (Sửa phân công)
+              </div>
+              <p style="font-size:11.5px; color:var(--muted); line-height:1.4;">Nhấn biểu tượng bút chì <strong style="color:var(--gold);">✏️</strong> ở dòng nhân viên để đổi Quầy làm việc, đổi Loại ca, chỉnh giờ trễ cho phép hoặc viết ghi chú.</p>
+            </div>
+            
+            <div style="background:rgba(220,38,38,0.02); border:1px solid var(--border); border-radius:10px; padding:12px 14px;">
+              <div style="font-weight:800; color:var(--red); font-size:12px; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                <span style="width:20px; height:20px; border-radius:50%; background:var(--red); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:10px;">D</span>
+                DELETE (Gỡ / Hủy ca)
+              </div>
+              <p style="font-size:11.5px; color:var(--muted); line-height:1.4;">Nhấn nút thùng rác <strong style="color:var(--red);">🗑️</strong> bên cạnh nhân viên để gỡ khỏi quầy hoặc hủy lịch ca/xóa vĩnh viễn lịch làm việc.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="table-card">
         <div class="table-card-head" style="justify-content:space-between">
           <div>
@@ -1710,6 +1757,208 @@ tbody tr{cursor:pointer}
     <div class="modal-foot">
       <button class="btn-cancel-m" onclick="closeTypeModal()">Hủy</button>
       <button class="btn-save-m" onclick="submitTypeForm()">💾 Lưu loại ca</button>
+    </div>
+</div>
+
+<!-- ==========================================
+     MODAL POS 1: Xếp lịch & Gán quầy POS (Create)
+     ========================================== -->
+<div class="modal-overlay" id="posAddStaffModal">
+  <div class="modal" style="max-width: 500px;">
+    <div class="modal-head">
+      <span class="modal-title" id="posAddTitle">➕ Xếp nhân viên vào Quầy</span>
+      <button class="modal-close" onclick="closePosAddModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="posAddForm" method="post" action="${pageContext.request.contextPath}/shifts">
+        <input type="hidden" name="action" value="pos-assign">
+        <input type="hidden" name="posStation" id="posAddStationNum">
+        <input type="hidden" name="tab" value="pos-map">
+
+        <!-- Lựa chọn phương thức -->
+        <div class="mfg">
+          <label style="font-weight:700;">Phương thức thêm</label>
+          <div style="display:flex; gap:10px; margin-top:6px;">
+            <label style="flex:1; display:flex; align-items:center; gap:8px; padding:10px; border:1.5px solid var(--border); border-radius:8px; cursor:pointer;" id="lblOptAssign">
+              <input type="radio" name="addOption" value="assign" checked onclick="toggleAddOption('assign')">
+              <div style="font-size:12px; font-weight:600;">Gán ca có sẵn</div>
+            </label>
+            <label style="flex:1; display:flex; align-items:center; gap:8px; padding:10px; border:1.5px solid var(--border); border-radius:8px; cursor:pointer;" id="lblOptCreate">
+              <input type="radio" name="addOption" value="create" onclick="toggleAddOption('create')">
+              <div style="font-size:12px; font-weight:600;">Xếp ca mới</div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Option 1: Gán từ ca chưa chia quầy hôm nay -->
+        <div id="secOptAssign" class="mfg">
+          <label>Chọn ca làm việc hôm nay <span style="color:var(--red)">*</span></label>
+          <select name="scheduleId" id="posAddScheduleSelect" style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:'Outfit',sans-serif; font-size:13px; margin-top:6px;">
+            <!-- populate bằng JS -->
+          </select>
+          <div id="posAddUnassignedEmpty" style="font-size:12.5px; color:var(--gold); display:none; margin-top:6px; background:#FFFBEB; padding:8px 12px; border-radius:8px; border:1px solid #FDE68A;">
+            ⚠️ Hôm nay không có ca làm việc nào chưa gán quầy. Vui lòng chuyển sang tab "Xếp ca mới" bên cạnh để tạo ca.
+          </div>
+        </div>
+
+        <!-- Option 2: Tạo ca mới hôm nay & gán quầy -->
+        <div id="secOptCreate" class="mfg" style="display:none;">
+          <div class="mfg" style="margin-bottom:12px;">
+            <label>Chọn nhân viên <span style="color:var(--red)">*</span></label>
+            <select name="accountId" style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:'Outfit',sans-serif; font-size:13px; margin-top:6px;">
+              <option value="">-- Chọn nhân viên --</option>
+              <c:forEach var="s" items="${allStaff}">
+                <option value="${s.accountId}">${not empty s.fullName ? s.fullName : s.username} (#${s.accountId} - ${s.roleId==2?'Dược sĩ':'Thủ kho'})</option>
+              </c:forEach>
+            </select>
+          </div>
+          <div class="mfg">
+            <label>Chọn loại ca <span style="color:var(--red)">*</span></label>
+            <select name="shiftTypeId" style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:'Outfit',sans-serif; font-size:13px; margin-top:6px;">
+              <option value="">-- Chọn loại ca --</option>
+              <c:forEach var="st" items="${shiftTypes}">
+                <c:if test="${st.active}">
+                  <option value="${st.shiftTypeId}">${st.name} (${st.startHour}:${st.startMinute<10?'0':''}${st.startMinute} - ${st.endHour}:${st.endMinute<10?'0':''}${st.endMinute})</option>
+                </c:if>
+              </c:forEach>
+            </select>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel-m" onclick="closePosAddModal()">Hủy</button>
+      <button class="btn-save-m" onclick="submitPosAddForm()" style="background:var(--blue); color:#fff; border:none;">💾 Lưu phân công</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL POS 2: Sửa phân công (Update)
+     ========================================== -->
+<div class="modal-overlay" id="posEditStaffModal">
+  <div class="modal" style="max-width: 500px;">
+    <div class="modal-head">
+      <span class="modal-title">✏️ Sửa phân công Quầy POS</span>
+      <button class="modal-close" onclick="closePosEditModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="posEditForm" method="post" action="${pageContext.request.contextPath}/shifts">
+        <input type="hidden" name="action" value="schedule-update">
+        <input type="hidden" name="scheduleId" id="posEditScheduleId">
+        <input type="hidden" name="tab" value="pos-map">
+
+        <div class="mfg" style="margin-bottom:12px;">
+          <label>Nhân viên</label>
+          <input type="text" id="posEditStaffName" readonly style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; background:var(--surface); font-family:'Outfit',sans-serif; font-size:13px; color:var(--ink); font-weight:600; margin-top:6px;">
+        </div>
+
+        <div class="mfg" style="margin-bottom:12px;">
+          <label>Quầy làm việc</label>
+          <select name="posStation" id="posEditStationSelect" style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:'Outfit',sans-serif; font-size:13px; margin-top:6px;">
+            <option value="0">-- Chưa gán quầy --</option>
+            <option value="1">Quầy 1</option>
+            <option value="2">Quầy 2</option>
+            <option value="3">Quầy 3</option>
+            <option value="4">Quầy 4</option>
+            <option value="5">Quầy 5</option>
+            <option value="6">Quầy 6</option>
+            <option value="7">Quầy 7</option>
+          </select>
+        </div>
+
+        <div class="mfg" style="margin-bottom:12px;">
+          <label>Loại ca</label>
+          <select name="shiftTypeId" id="posEditShiftTypeSelect" style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:'Outfit',sans-serif; font-size:13px; margin-top:6px;">
+            <c:forEach var="st" items="${shiftTypes}">
+              <c:if test="${st.active}">
+                <option value="${st.shiftTypeId}">${st.name} (${st.startHour}:${st.startMinute<10?'0':''}${st.startMinute} - ${st.endHour}:${st.endMinute<10?'0':''}${st.endMinute})</option>
+              </c:if>
+            </c:forEach>
+          </select>
+        </div>
+
+        <div class="mfg-row" style="margin-bottom:12px;">
+          <div class="mfg" style="flex:1;">
+            <label>Phút trễ cho phép</label>
+            <input type="number" name="lateToleranceMinutes" id="posEditLateTol" min="0" max="60" style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:'Outfit',sans-serif; font-size:13px; margin-top:6px;">
+          </div>
+        </div>
+
+        <div class="mfg">
+          <label>Ghi chú</label>
+          <textarea name="notes" id="posEditNotes" rows="2" style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:'Outfit',sans-serif; font-size:13px; margin-top:6px; resize:vertical;"></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel-m" onclick="closePosEditModal()">Hủy</button>
+      <button class="btn-save-m" onclick="submitPosEditForm()" style="background:var(--blue); color:#fff; border:none;">💾 Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL POS 3: Gỡ / Hủy / Xóa ca (Delete Options)
+     ========================================== -->
+<div class="modal-overlay" id="posDeleteModal">
+  <div class="modal" style="max-width: 460px;">
+    <div class="modal-head" style="border-bottom:none; padding-bottom:0;">
+      <span class="modal-title" style="color:var(--red); font-size:16px;">⚠️ Chọn thao tác gỡ/xóa nhân viên</span>
+      <button class="modal-close" onclick="closePosDeleteModal()">✕</button>
+    </div>
+    <div class="modal-body" style="padding-top:10px;">
+      <div style="font-size:13px; color:var(--ink); font-weight:600; margin-bottom:16px;">
+        Hệ thống hỗ trợ các hình thức gỡ bỏ nhân viên <span id="posDeleteStaffName" style="color:var(--blue);"></span> khỏi quầy làm việc hôm nay:
+      </div>
+      
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <!-- Option 1: Unassign -->
+        <form method="post" action="${pageContext.request.contextPath}/shifts" style="margin:0;">
+          <input type="hidden" name="action" value="pos-unassign">
+          <input type="hidden" name="scheduleId" class="posDeleteScheduleId">
+          <button type="submit" style="width:100%; display:flex; align-items:flex-start; gap:10px; padding:12px; border:1.5px solid var(--border); border-radius:10px; background:#fff; text-align:left; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.borderColor='var(--blue)'; this.style.background='rgba(21,88,168,0.02)'" onmouseout="this.style.borderColor='var(--border)'; this.style.background='#fff'">
+            <span style="font-size:18px; line-height:1;">🔄</span>
+            <div>
+              <div style="font-weight:700; color:var(--blue); font-size:13px;">Gỡ nhân viên khỏi quầy</div>
+              <div style="font-size:11px; color:var(--muted); margin-top:2px;">Vẫn giữ ca làm việc hôm nay của nhân viên nhưng đưa về trạng thái "Chưa gán quầy".</div>
+            </div>
+          </button>
+        </form>
+
+        <!-- Option 2: Cancel -->
+        <form method="post" action="${pageContext.request.contextPath}/shifts" style="margin:0;">
+          <input type="hidden" name="action" value="schedule-delete-staff">
+          <input type="hidden" name="mode" value="cancel">
+          <input type="hidden" name="tab" value="pos-map">
+          <input type="hidden" name="scheduleId" class="posDeleteScheduleId">
+          <button type="submit" style="width:100%; display:flex; align-items:flex-start; gap:10px; padding:12px; border:1.5px solid var(--border); border-radius:10px; background:#fff; text-align:left; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.borderColor='var(--gold)'; this.style.background='rgba(217,119,6,0.02)'" onmouseout="this.style.borderColor='var(--border)'; this.style.background='#fff'">
+            <span style="font-size:18px; line-height:1;">🚫</span>
+            <div>
+              <div style="font-weight:700; color:var(--gold); font-size:13px;">Hủy lịch ca (Cancel)</div>
+              <div style="font-size:11px; color:var(--muted); margin-top:2px;">Chuyển ca làm việc của nhân viên thành trạng thái "Đã hủy" (vẫn lưu vết lịch sử).</div>
+            </div>
+          </button>
+        </form>
+
+        <!-- Option 3: Delete -->
+        <form method="post" action="${pageContext.request.contextPath}/shifts" style="margin:0;">
+          <input type="hidden" name="action" value="schedule-delete-staff">
+          <input type="hidden" name="mode" value="delete">
+          <input type="hidden" name="tab" value="pos-map">
+          <input type="hidden" name="scheduleId" class="posDeleteScheduleId">
+          <button type="submit" style="width:100%; display:flex; align-items:flex-start; gap:10px; padding:12px; border:1.5px solid var(--border); border-radius:10px; background:#fff; text-align:left; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.borderColor='var(--red)'; this.style.background='rgba(220,38,38,0.02)'" onmouseout="this.style.borderColor='var(--border)'; this.style.background='#fff'">
+            <span style="font-size:18px; line-height:1;">🗑️</span>
+            <div>
+              <div style="font-weight:700; color:var(--red); font-size:13px;">Xóa vĩnh viễn ca</div>
+              <div style="font-size:11px; color:var(--muted); margin-top:2px;">Xóa hoàn toàn lịch ca khỏi cơ sở dữ liệu. Lưu ý: Chỉ thực hiện được nếu nhân viên chưa check-in.</div>
+            </div>
+          </button>
+        </form>
+      </div>
+    </div>
+    <div class="modal-foot" style="border-top:none; padding-top:0;">
+      <button class="btn-cancel-m" onclick="closePosDeleteModal()" style="width:100%;">Quay lại</button>
     </div>
   </div>
 </div>
@@ -3377,7 +3626,10 @@ const _todaySchedules = [
       status:     '${ts.status}',
       shiftType:  '${fn:escapeXml(ts.shiftTypeName)}',
       startHour:  ${ts.startHour},
-      endHour:    ${ts.endHour}
+      endHour:    ${ts.endHour},
+      shiftTypeId: ${ts.shiftTypeId},
+      lateToleranceMinutes: ${ts.lateToleranceMinutes},
+      notes:      '${fn:escapeXml(ts.notes != null ? ts.notes : "")}'
     }<c:if test="${!st.last}">,</c:if>
   </c:forEach>
 ];
@@ -3434,13 +3686,14 @@ function renderPosMap() {
     html += '<div class="pos-station-card ' + cls + '">';
     html += '<div class="pos-st-header">';
     html +=   '<span class="pos-st-number">Quầy ' + st + '</span>';
-    html +=   '<div style="display:flex;align-items:center;gap:6px">';
+    html +=   '<div style="display:flex;align-items:center;gap:8px">';
+    html +=     '<button onclick="openPosAddModal(' + st + ')" style="padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--white);font-size:11.5px;font-weight:700;cursor:pointer;color:var(--blue);display:inline-flex;align-items:center;gap:3px;box-shadow:0 1px 3px rgba(0,0,0,0.05);transition:all 0.18s" onmouseover="this.style.background=\'var(--surface)\'" onmouseout="this.style.background=\'var(--white)\'">➕ Thêm NV</button>';
     html +=     '<span class="pos-st-badge ' + cls + '">' + badgeTxt + '</span>';
     html +=     '<span class="pos-st-dot ' + cls + '"></span>';
     html +=   '</div>';
     html += '</div>';
 
-    html += '<div class="pos-st-staff-list">';
+    html += '<div class="pos-st-staff-list" style="margin-top:10px;">';
     if (staffList.length === 0) {
       html += '<div class="pos-st-empty">Chưa có nhân viên được xếp</div>';
     } else {
@@ -3450,11 +3703,28 @@ function renderPosMap() {
           : s.staffName.charAt(0).toUpperCase();
         const staffOnline = isOnline; // nếu quầy online → nhân viên ca đó online
         const avCls = staffOnline ? 'online' : 'offline';
-        html += '<div class="pos-st-staff-row">';
-        html +=   '<div class="pos-st-av ' + avCls + '">' + initials + '</div>';
-        html +=   '<div style="min-width:0">';
-        html +=     '<div class="pos-st-staff-name">' + escHtml(s.staffName) + '</div>';
-        html +=     '<div class="pos-st-staff-meta">' + escHtml(s.shiftType) + ' · ' + s.startHour + ':00–' + s.endHour + ':00</div>';
+        
+        // Map status to visual styles
+        let statusLabel = s.status || '';
+        let statusCls = 'pos-st-badge offline';
+        if (s.status === 'CONFIRMED') { statusLabel = 'Đang làm'; statusCls = 'pos-st-badge online'; }
+        else if (s.status === 'SCHEDULED') { statusLabel = 'Chưa vào'; statusCls = 'pos-st-badge offline'; }
+        else if (s.status === 'LATE') { statusLabel = 'Đến trễ'; statusCls = 'pos-st-badge offline'; }
+        
+        html += '<div class="pos-st-staff-row" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--border);">';
+        html +=   '<div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;">';
+        html +=     '<div class="pos-st-av ' + avCls + '">' + initials + '</div>';
+        html +=     '<div style="min-width:0">';
+        html +=       '<div class="pos-st-staff-name" style="font-weight:700;">' + escHtml(s.staffName) + '</div>';
+        html +=       '<div class="pos-st-staff-meta">' + escHtml(s.shiftType) + ' · ' + s.startHour + ':00–' + s.endHour + ':00</div>';
+        html +=     '</div>';
+        html +=   '</div>';
+        html +=   '<div style="display:flex;align-items:center;gap:6px;">';
+        html +=     '<span class="' + statusCls + '" style="font-size:8.5px;padding:2px 6px;">' + statusLabel + '</span>';
+        html +=     '<div class="pos-st-actions" style="display:flex;gap:2px;">';
+        html +=       '<button onclick="openPosEditModal(' + s.scheduleId + ')" title="Sửa phân công" style="border:none;background:transparent;cursor:pointer;font-size:12px;padding:4px;border-radius:6px;transition:all 0.18s" onmouseover="this.style.background=\'rgba(217,119,6,0.1)\'" onmouseout="this.style.background=\'transparent\'">✏️</button>';
+        html +=       '<button onclick="handlePosDeleteClick(' + s.scheduleId + ', \'' + escHtml(s.staffName) + '\')" title="Gỡ / Xóa nhân viên" style="border:none;background:transparent;cursor:pointer;font-size:12px;padding:4px;border-radius:6px;transition:all 0.18s" onmouseover="this.style.background=\'rgba(220,38,38,0.1)\'" onmouseout="this.style.background=\'transparent\'">🗑️</button>';
+        html +=     '</div>';
         html +=   '</div>';
         html += '</div>';
       });
@@ -3466,13 +3736,149 @@ function renderPosMap() {
 
   // Render unassigned
   if (unassigned.length > 0) {
-    unasList.innerHTML = unassigned.map(s =>
-      '<div class="pos-unas-chip">⚠️ ' + escHtml(s.staffName) + '</div>'
-    ).join('');
+    unasList.innerHTML = unassigned.map(s => {
+      return '<div class="pos-unas-chip" onclick="openQuickAssignModal(' + s.scheduleId + ', \'' + escHtml(s.staffName) + '\', \'' + escHtml(s.shiftType) + '\')" style="cursor:pointer; transition:all 0.2s; border:1px solid #fde68a; display:inline-flex; align-items:center; gap:4px; padding:6px 12px; border-radius:8px;" onmouseover="this.style.background=\'#fef08a\'; this.style.transform=\'translateY(-1px)\'" onmouseout="this.style.background=\'#fef9c3\'; this.style.transform=\'translateY(0)\'">⚠️ ' + escHtml(s.staffName) + ' (' + escHtml(s.shiftType) + ') <span style="font-size:9.5px;color:var(--blue);font-weight:700;">Gán nhanh ➔</span></div>';
+    }).join('');
     unasWrap.style.display = '';
   } else {
     unasWrap.style.display = 'none';
   }
+}
+
+// Collapsible instructions guide toggle
+function togglePosGuide() {
+  const body = document.getElementById('posGuideBody');
+  const icon = document.getElementById('posGuideIcon');
+  if (body.style.display === 'none' || !body.style.display) {
+    body.style.display = 'flex';
+    icon.style.transform = 'rotate(180deg)';
+  } else {
+    body.style.display = 'none';
+    icon.style.transform = 'rotate(0deg)';
+  }
+}
+
+// Add Options logic in Create/Add Staff Modal
+function toggleAddOption(opt) {
+  const secAssign = document.getElementById('secOptAssign');
+  const secCreate = document.getElementById('secOptCreate');
+  const lblAssign = document.getElementById('lblOptAssign');
+  const lblCreate = document.getElementById('lblOptCreate');
+  
+  if (opt === 'assign') {
+    secAssign.style.display = 'block';
+    secCreate.style.display = 'none';
+    lblAssign.style.borderColor = 'var(--blue)';
+    lblAssign.style.background = 'rgba(21,88,168,0.04)';
+    lblCreate.style.borderColor = 'var(--border)';
+    lblCreate.style.background = 'transparent';
+  } else {
+    secAssign.style.display = 'none';
+    secCreate.style.display = 'block';
+    lblAssign.style.borderColor = 'var(--border)';
+    lblAssign.style.background = 'transparent';
+    lblCreate.style.borderColor = 'var(--blue)';
+    lblCreate.style.background = 'rgba(21,88,168,0.04)';
+  }
+}
+
+// Open modal to assign/schedule staff to a specific counter today
+function openPosAddModal(stationNum) {
+  document.getElementById('posAddStationNum').value = stationNum;
+  document.getElementById('posAddTitle').textContent = '➕ Phân công nhân viên vào Quầy ' + stationNum;
+  
+  const select = document.getElementById('posAddScheduleSelect');
+  const emptyDiv = document.getElementById('posAddUnassignedEmpty');
+  select.innerHTML = '';
+  
+  const unassigned = _todaySchedules.filter(s => s.posStation === 0);
+  if (unassigned.length === 0) {
+    select.style.display = 'none';
+    emptyDiv.style.display = 'block';
+    toggleAddOption('create');
+    document.querySelector('input[name="addOption"][value="create"]').checked = true;
+  } else {
+    select.style.display = 'block';
+    emptyDiv.style.display = 'none';
+    unassigned.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.scheduleId;
+      opt.textContent = s.staffName + ' (' + s.shiftType + ' · ' + s.startHour + ':00 - ' + s.endHour + ':00)';
+      select.appendChild(opt);
+    });
+    toggleAddOption('assign');
+    document.querySelector('input[name="addOption"][value="assign"]').checked = true;
+  }
+  
+  document.getElementById('posAddStaffModal').classList.add('open');
+}
+
+function closePosAddModal() {
+  document.getElementById('posAddStaffModal').classList.remove('open');
+}
+
+function submitPosAddForm() {
+  const form = document.getElementById('posAddForm');
+  const opt = form.querySelector('input[name="addOption"]:checked').value;
+  
+  if (opt === 'assign') {
+    const select = document.getElementById('posAddScheduleSelect');
+    if (!select.value) {
+      alert('Vui lòng chọn một ca làm việc!');
+      return;
+    }
+  } else {
+    form.querySelector('input[name="action"]').value = 'pos-assign';
+    const acc = form.querySelector('select[name="accountId"]').value;
+    const type = form.querySelector('select[name="shiftTypeId"]').value;
+    if (!acc || !type) {
+      alert('Vui lòng chọn đầy đủ Nhân viên và Loại ca!');
+      return;
+    }
+  }
+  form.submit();
+}
+
+// Open modal to edit an existing shift schedule details and its POS station today
+function openPosEditModal(scheduleId) {
+  const s = _todaySchedules.find(item => item.scheduleId === scheduleId);
+  if (!s) return;
+  
+  document.getElementById('posEditScheduleId').value = s.scheduleId;
+  document.getElementById('posEditStaffName').value = s.staffName;
+  document.getElementById('posEditStationSelect').value = s.posStation;
+  document.getElementById('posEditShiftTypeSelect').value = s.shiftTypeId;
+  document.getElementById('posEditLateTol').value = s.lateToleranceMinutes || 10;
+  document.getElementById('posEditNotes').value = s.notes || '';
+  
+  document.getElementById('posEditStaffModal').classList.add('open');
+}
+
+function closePosEditModal() {
+  document.getElementById('posEditStaffModal').classList.remove('open');
+}
+
+function submitPosEditForm() {
+  document.getElementById('posEditForm').submit();
+}
+
+// Open delete confirmation overlay
+function handlePosDeleteClick(scheduleId, staffName) {
+  document.getElementById('posDeleteStaffName').textContent = ' ' + staffName;
+  document.querySelectorAll('.posDeleteScheduleId').forEach(input => {
+    input.value = scheduleId;
+  });
+  
+  document.getElementById('posDeleteModal').classList.add('open');
+}
+
+function closePosDeleteModal() {
+  document.getElementById('posDeleteModal').classList.remove('open');
+}
+
+// Quick assign function from unassigned chips
+function openQuickAssignModal(scheduleId, staffName, shiftType) {
+  openPosEditModal(scheduleId);
 }
 
 function refreshPosMap() {
