@@ -956,6 +956,7 @@ tbody tr{cursor:pointer}
       <c:when test="${param.msg == 'type-has-schedules'}"><div class="toast toast-err" id="toast">⚠️ Không thể xóa — loại ca này còn lịch ca đang dùng!</div></c:when>
       <c:when test="${param.msg == 'sched-bulk-ok'}"><div class="toast toast-ok" id="toast">✅ Đã xếp ${param.count} lịch ca! <c:if test="${param.skip > 0}">(bỏ qua ${param.skip} trùng)</c:if></div></c:when>
       <c:when test="${param.msg == 'sched-bulk-err'}"><div class="toast toast-err" id="toast">❌ Lỗi khi xếp ca!</div></c:when>
+      <c:when test="${param.msg == 'err-counter-has-staff'}"><div class="toast toast-err" id="toast">❌ Không thể xóa quầy vì đang có nhân viên làm việc!</div></c:when>
       <c:otherwise>                                  <div class="toast toast-warn" id="toast">⚠️ Có lỗi xảy ra.</div></c:otherwise>
     </c:choose>
   </c:if>
@@ -1699,9 +1700,15 @@ tbody tr{cursor:pointer}
             </tr>
           </thead>
           <tbody>
-            <c:forEach var="ps" items="${posStations}">
+            <c:forEach var="ps" items="${posStations}" varStatus="lp">
+              <c:set var="hasStaff" value="false" />
+              <c:forEach var="ts" items="${todaySchedules}">
+                <c:if test="${ts.posStation == ps.posStationId}">
+                  <c:set var="hasStaff" value="true" />
+                </c:if>
+              </c:forEach>
               <tr style="border-bottom: 1px solid var(--border);">
-                <td style="padding: 10px 8px; font-weight: 600; color: var(--muted);">#${ps.posStationId}</td>
+                <td style="padding: 10px 8px; font-weight: 600; color: var(--muted);">#${lp.index + 1}</td>
                 <td style="padding: 10px 8px;">
                   <span id="lblStation-${ps.posStationId}" style="font-weight: 700; color: var(--navy);">${fn:escapeXml(ps.stationName)}</span>
                   <form id="editForm-${ps.posStationId}" method="post" action="${pageContext.request.contextPath}/shifts" style="display: none; margin: 0;">
@@ -1718,11 +1725,22 @@ tbody tr{cursor:pointer}
                     <button id="btnCancel-${ps.posStationId}" onclick="hideEditCounterRow(${ps.posStationId})" style="display: none; border: 1px solid var(--border); background: #fff; cursor: pointer; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; color: var(--muted);" title="Hủy">Hủy</button>
 
                     <!-- Delete Form -->
-                    <form method="post" action="${pageContext.request.contextPath}/shifts" style="margin:0;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa ${fn:escapeXml(ps.stationName)}?\nLưu ý: Các ca làm việc đang gán vào quầy này sẽ trở thành Chưa gán quầy.')">
-                      <input type="hidden" name="action" value="pos-counter-delete">
-                      <input type="hidden" name="posStationId" value="${ps.posStationId}">
-                      <button type="submit" style="border: none; background: transparent; cursor: pointer; font-size: 13px; padding: 4px 8px; border-radius: 6px; color: var(--red);" title="Xóa quầy">🗑️</button>
-                    </form>
+                    <c:choose>
+                      <c:when test="${hasStaff}">
+                        <form method="post" action="${pageContext.request.contextPath}/shifts" style="margin:0;" onsubmit="showSecureDeleteModal(event, ${ps.posStationId}); return false;">
+                          <input type="hidden" name="action" value="pos-counter-delete">
+                          <input type="hidden" name="posStationId" value="${ps.posStationId}">
+                          <button type="submit" style="border: none; background: transparent; cursor: pointer; font-size: 13px; padding: 4px 8px; border-radius: 6px; color: var(--red);" title="Xóa quầy (Có nhân viên hôm nay)">🗑️</button>
+                        </form>
+                      </c:when>
+                      <c:otherwise>
+                        <form method="post" action="${pageContext.request.contextPath}/shifts" style="margin:0;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa ${fn:escapeXml(ps.stationName)}?\nLưu ý: Các ca làm việc đang gán vào quầy này sẽ trở thành Chưa gán quầy.')">
+                          <input type="hidden" name="action" value="pos-counter-delete">
+                          <input type="hidden" name="posStationId" value="${ps.posStationId}">
+                          <button type="submit" style="border: none; background: transparent; cursor: pointer; font-size: 13px; padding: 4px 8px; border-radius: 6px; color: var(--red);" title="Xóa quầy">🗑️</button>
+                        </form>
+                      </c:otherwise>
+                    </c:choose>
                   </div>
                 </td>
               </tr>
@@ -1883,63 +1901,49 @@ tbody tr{cursor:pointer}
       <button class="btn-cancel-m" onclick="closeTypeModal()">Hủy</button>
       <button class="btn-save-m" onclick="submitTypeForm()">💾 Lưu loại ca</button>
     </div>
+  </div>
 </div>
 
 <!-- ==========================================
      MODAL POS 1: Xếp lịch & Gán quầy POS (Create)
      ========================================== -->
 <div class="modal-overlay" id="posAddStaffModal">
-  <div class="modal" style="max-width: 500px;">
+  <div class="modal" style="max-width: 600px;">
     <div class="modal-head">
-      <span class="modal-title" id="posAddTitle">➕ Xếp nhân viên vào Quầy</span>
+      <span class="modal-title" id="posAddTitle">🖥️ Quản lý nhân viên - Quầy</span>
       <button class="modal-close" onclick="closePosAddModal()">✕</button>
     </div>
     <div class="modal-body">
-      <form id="posAddForm" method="post" action="${pageContext.request.contextPath}/shifts">
-        <input type="hidden" name="action" value="pos-assign">
+      <!-- Form quản lý/thêm nhân viên -->
+      <form id="posAddForm" method="post" action="${pageContext.request.contextPath}/shifts" style="margin-bottom: 20px; background: var(--surface); padding: 14px; border-radius: 10px; border: 1.5px solid var(--border);">
+        <input type="hidden" name="action" id="posFormAction" value="pos-assign">
         <input type="hidden" name="posStation" id="posAddStationNum">
+        <input type="hidden" name="scheduleId" id="posFormScheduleId" value="">
         <input type="hidden" name="tab" value="pos-map">
+        <input type="hidden" name="addOption" value="create">
 
-        <!-- Lựa chọn phương thức -->
-        <div class="mfg">
-          <label style="font-weight:700;">Phương thức thêm</label>
-          <div style="display:flex; gap:10px; margin-top:6px;">
-            <label style="flex:1; display:flex; align-items:center; gap:8px; padding:10px; border:1.5px solid var(--border); border-radius:8px; cursor:pointer;" id="lblOptAssign">
-              <input type="radio" name="addOption" value="assign" checked onclick="toggleAddOption('assign')">
-              <div style="font-size:12px; font-weight:600;">Gán ca có sẵn</div>
-            </label>
-            <label style="flex:1; display:flex; align-items:center; gap:8px; padding:10px; border:1.5px solid var(--border); border-radius:8px; cursor:pointer;" id="lblOptCreate">
-              <input type="radio" name="addOption" value="create" onclick="toggleAddOption('create')">
-              <div style="font-size:12px; font-weight:600;">Xếp ca mới</div>
-            </label>
-          </div>
-        </div>
-
-        <!-- Option 1: Gán từ ca chưa chia quầy hôm nay -->
-        <div id="secOptAssign" class="mfg">
-          <label>Chọn ca làm việc hôm nay <span style="color:var(--red)">*</span></label>
-          <select name="scheduleId" id="posAddScheduleSelect" style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:'Outfit',sans-serif; font-size:13px; margin-top:6px;">
-            <!-- populate bằng JS -->
-          </select>
-          <div id="posAddUnassignedEmpty" style="font-size:12.5px; color:var(--gold); display:none; margin-top:6px; background:#FFFBEB; padding:8px 12px; border-radius:8px; border:1px solid #FDE68A;">
-            ⚠️ Hôm nay không có ca làm việc nào chưa gán quầy. Vui lòng chuyển sang tab "Xếp ca mới" bên cạnh để tạo ca.
-          </div>
-        </div>
-
-        <!-- Option 2: Tạo ca mới hôm nay & gán quầy -->
-        <div id="secOptCreate" class="mfg" style="display:none;">
-          <div class="mfg" style="margin-bottom:12px;">
-            <label>Chọn nhân viên <span style="color:var(--red)">*</span></label>
-            <select name="accountId" style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:'Outfit',sans-serif; font-size:13px; margin-top:6px;">
+        <div style="font-weight: 800; font-size: 12px; color: var(--blue); margin-bottom: 8px;" id="posFormTitle">➕ Thêm nhân viên vào quầy</div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+          <!-- Dropdown chọn nhân viên (ẩn khi sửa) -->
+          <div style="display: flex; flex-direction: column; gap: 4px;" id="posFormAccGroup">
+            <label style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Chọn nhân viên <span style="color:var(--red)">*</span></label>
+            <select name="accountId" id="posFormAccountId" style="border: 1.5px solid var(--border); border-radius: 8px; padding: 7px 10px; font-family: inherit; font-size: 13px; background: #fff; outline: none; height: 36px; box-sizing: border-box; width: 100%;">
               <option value="">-- Chọn nhân viên --</option>
               <c:forEach var="s" items="${allStaff}">
                 <option value="${s.accountId}">${not empty s.fullName ? s.fullName : s.username} (#${s.accountId} - ${s.roleId==2?'Dược sĩ':'Thủ kho'})</option>
               </c:forEach>
             </select>
           </div>
-          <div class="mfg">
-            <label>Chọn loại ca <span style="color:var(--red)">*</span></label>
-            <select name="shiftTypeId" style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:'Outfit',sans-serif; font-size:13px; margin-top:6px;">
+          <!-- Tên nhân viên ở dạng text (chỉ hiển thị khi sửa) -->
+          <div style="display: none; flex-direction: column; gap: 4px;" id="posFormStaffNameGroup">
+            <label style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Nhân viên</label>
+            <input type="text" id="posFormStaffName" readonly style="border: 1.5px solid var(--border); border-radius: 8px; padding: 7px 10px; font-family: inherit; font-size: 13px; background: #f1f5f9; outline: none; height: 36px; box-sizing: border-box; width: 100%; font-weight:700; color:var(--navy);">
+          </div>
+          
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Chọn loại ca <span style="color:var(--red)">*</span></label>
+            <select name="shiftTypeId" id="posFormShiftTypeId" style="border: 1.5px solid var(--border); border-radius: 8px; padding: 7px 10px; font-family: inherit; font-size: 13px; background: #fff; outline: none; height: 36px; box-sizing: border-box; width: 100%;">
               <option value="">-- Chọn loại ca --</option>
               <c:forEach var="st" items="${shiftTypes}">
                 <c:if test="${st.active}">
@@ -1949,11 +1953,47 @@ tbody tr{cursor:pointer}
             </select>
           </div>
         </div>
+
+        <!-- Các trường tùy chọn (Đi trễ, Ghi chú) -->
+        <div style="display: none; grid-template-columns: 1fr 2fr; gap: 10px; margin-bottom: 10px;" id="posFormOptionalFields">
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Đi trễ tối đa (phút)</label>
+            <input type="number" name="lateToleranceMinutes" id="posFormLateTol" value="10" min="0" max="60" style="border: 1.5px solid var(--border); border-radius: 8px; padding: 7px 10px; font-family: inherit; font-size: 13px; background: #fff; outline: none; height: 36px; box-sizing: border-box; width: 100%;">
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Ghi chú ca làm</label>
+            <input type="text" name="notes" id="posFormNotes" placeholder="Ví dụ: Đóng quầy lúc 17:00" style="border: 1.5px solid var(--border); border-radius: 8px; padding: 7px 10px; font-family: inherit; font-size: 13px; background: #fff; outline: none; height: 36px; box-sizing: border-box; width: 100%;">
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+          <a href="javascript:void(0)" id="btnToggleOptions" onclick="toggleFormOptions()" style="font-size: 11.5px; font-weight: 700; color: var(--blue); text-decoration: none;">⚙️ Hiện tùy chọn nâng cao</a>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" id="btnCancelEdit" onclick="cancelEditMode()" style="display: none; height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--border); background: #fff; color: var(--muted); cursor: pointer; font-size: 12.5px; font-weight: 700;">Hủy</button>
+            <button type="submit" class="btn-save-m" id="btnSubmitForm" style="height: 36px; padding: 0 16px; border-radius: 8px;">➕ Thêm NV</button>
+          </div>
+        </div>
       </form>
+
+      <!-- Danh sách nhân viên đang làm việc hôm nay tại quầy này -->
+      <label style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 8px;">Nhân viên tại quầy hôm nay</label>
+      <div style="max-height: 250px; overflow-y: auto; background: #fff; border: 1px solid var(--border); border-radius: 8px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr>
+              <th style="padding: 8px; text-align: left; background: var(--surface); font-weight: 700; border-bottom: 1.5px solid var(--border);">Nhân viên</th>
+              <th style="padding: 8px; text-align: left; background: var(--surface); font-weight: 700; border-bottom: 1.5px solid var(--border);">Ca làm</th>
+              <th style="padding: 8px; text-align: center; background: var(--surface); font-weight: 700; border-bottom: 1.5px solid var(--border); width: 120px;">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="posAddCurrentStaffTableBody">
+            <!-- Render động bằng JS -->
+          </tbody>
+        </table>
+      </div>
     </div>
     <div class="modal-foot">
-      <button class="btn-cancel-m" onclick="closePosAddModal()">Hủy</button>
-      <button class="btn-save-m" onclick="submitPosAddForm()" style="background:var(--blue); color:#fff; border:none;">💾 Lưu phân công</button>
+      <button class="btn-cancel-m" onclick="closePosAddModal()" style="width: 100%;">Đóng</button>
     </div>
   </div>
 </div>
@@ -1964,7 +2004,7 @@ tbody tr{cursor:pointer}
 <div class="modal-overlay" id="posEditStaffModal">
   <div class="modal" style="max-width: 500px;">
     <div class="modal-head">
-      <span class="modal-title">✏️ Sửa phân công Quầy POS</span>
+      <span class="modal-title" id="posEditModalTitle">✏️ Sửa phân công Quầy POS</span>
       <button class="modal-close" onclick="closePosEditModal()">✕</button>
     </div>
     <div class="modal-body">
@@ -2080,6 +2120,36 @@ tbody tr{cursor:pointer}
     </div>
     <div class="modal-foot" style="border-top:none; padding-top:0;">
       <button class="btn-cancel-m" onclick="closePosDeleteModal()" style="width:100%;">Quay lại</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL POS 4: Xác nhận xóa quầy bảo mật (Custom Prompt Modal)
+     ========================================== -->
+<div class="modal-overlay" id="posSecureDeleteModal">
+  <div class="modal" style="max-width: 440px; border-top: 4px solid var(--red);">
+    <div class="modal-head" style="border-bottom:none; padding-bottom:0;">
+      <span class="modal-title" style="color:var(--red); font-size:16px; display:flex; align-items:center; gap:8px;">
+        ⚠️ Xác nhận xóa bảo mật
+      </span>
+      <button class="modal-close" onclick="closeSecureDeleteModal()">✕</button>
+    </div>
+    <div class="modal-body" style="padding-top:10px;">
+      <div style="font-size:13.5px; color:var(--ink); font-weight:600; line-height:1.5; margin-bottom:12px;">
+        Quầy <span id="secDeleteStationName" style="color:var(--red); font-weight:800;"></span> đang có nhân viên phân công làm việc hôm nay!
+      </div>
+      <div style="font-size:12.5px; color:var(--muted); line-height:1.5; margin-bottom:16px;">
+        Hành động này sẽ gỡ bỏ tất cả ca làm việc hôm nay khỏi quầy này và đưa về trạng thái "Chưa gán quầy". Nếu bạn chắc chắn muốn thực hiện, hãy nhập từ <strong style="color:var(--red); font-weight:700;">delete</strong> vào ô dưới đây để xác nhận:
+      </div>
+      
+      <div class="mfg" style="margin-bottom:16px;">
+        <input type="text" id="secDeleteInput" placeholder="Nhập chữ delete..." oninput="checkSecDeleteInput()" onfocus="this.style.borderColor='var(--red)'; this.style.boxShadow='0 0 0 3px rgba(220,38,38,0.15)'" onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none'" style="width:100%; padding:10px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:inherit; font-size:13px; outline:none; transition:all 0.2s; box-sizing:border-box;">
+      </div>
+    </div>
+    <div class="modal-foot" style="border-top:none; padding-top:0; display:flex; gap:10px;">
+      <button type="button" class="btn-cancel-m" onclick="closeSecureDeleteModal()" style="flex:1; height:38px; border-radius:8px;">Hủy bỏ</button>
+      <button type="button" id="btnConfirmSecureDelete" onclick="submitSecureDelete()" disabled style="flex:1; height:38px; border-radius:8px; background:#cbd5e1; color:#fff; border:none; font-weight:700; cursor:not-allowed; transition:all 0.2s;">Xác nhận xóa</button>
     </div>
   </div>
 </div>
@@ -3914,94 +3984,240 @@ function toggleAddOption(opt) {
   const lblCreate = document.getElementById('lblOptCreate');
   
   if (opt === 'assign') {
-    secAssign.style.display = 'block';
-    secCreate.style.display = 'none';
-    lblAssign.style.borderColor = 'var(--blue)';
-    lblAssign.style.background = 'rgba(21,88,168,0.04)';
-    lblCreate.style.borderColor = 'var(--border)';
-    lblCreate.style.background = 'transparent';
+    if (secAssign) secAssign.style.display = 'block';
+    if (secCreate) secCreate.style.display = 'none';
+    if (lblAssign) {
+      lblAssign.style.borderColor = 'var(--blue)';
+      lblAssign.style.background = 'rgba(21,88,168,0.04)';
+    }
+    if (lblCreate) {
+      lblCreate.style.borderColor = 'var(--border)';
+      lblCreate.style.background = 'transparent';
+    }
   } else {
-    secAssign.style.display = 'none';
-    secCreate.style.display = 'block';
-    lblAssign.style.borderColor = 'var(--border)';
-    lblAssign.style.background = 'transparent';
-    lblCreate.style.borderColor = 'var(--blue)';
-    lblCreate.style.background = 'rgba(21,88,168,0.04)';
+    if (secAssign) secAssign.style.display = 'none';
+    if (secCreate) secCreate.style.display = 'block';
+    if (lblAssign) {
+      lblAssign.style.borderColor = 'var(--border)';
+      lblAssign.style.background = 'transparent';
+    }
+    if (lblCreate) {
+      lblCreate.style.borderColor = 'var(--blue)';
+      lblCreate.style.background = 'rgba(21,88,168,0.04)';
+    }
   }
 }
 
 // Open modal to assign/schedule staff to a specific counter today
 function openPosAddModal(stationNum) {
-  document.getElementById('posAddStationNum').value = stationNum;
-  const stObj = _posStations.find(item => item.id === stationNum);
-  const stName = stObj ? stObj.name : 'Quầy ' + stationNum;
-  document.getElementById('posAddTitle').textContent = '➕ Phân công nhân viên vào ' + stName;
-  
-  const select = document.getElementById('posAddScheduleSelect');
-  const emptyDiv = document.getElementById('posAddUnassignedEmpty');
-  select.innerHTML = '';
-  
-  const unassigned = _todaySchedules.filter(s => s.posStation === stationNum || (s.posStation === 0));
-  const availableUnassigned = unassigned.filter(s => s.posStation === 0);
-  
-  if (availableUnassigned.length === 0) {
-    select.style.display = 'none';
-    emptyDiv.style.display = 'block';
-    toggleAddOption('create');
-    document.querySelector('input[name="addOption"][value="create"]').checked = true;
-  } else {
-    select.style.display = 'block';
-    emptyDiv.style.display = 'none';
-    availableUnassigned.forEach(s => {
-      const opt = document.createElement('option');
-      opt.value = s.scheduleId;
-      opt.textContent = s.staffName + ' (' + s.shiftType + ' · ' + s.startHour + ':00 - ' + s.endHour + ':00)';
-      select.appendChild(opt);
-    });
-    toggleAddOption('assign');
-    document.querySelector('input[name="addOption"][value="assign"]').checked = true;
+  try {
+    const inputStationNum = document.getElementById('posAddStationNum');
+    if (inputStationNum) inputStationNum.value = stationNum;
+    
+    const stObj = _posStations ? _posStations.find(item => item.id === stationNum) : null;
+    const stName = stObj ? stObj.name : 'Quầy ' + stationNum;
+    
+    const titleEl = document.getElementById('posAddTitle');
+    if (titleEl) titleEl.textContent = '🖥️ Quản lý nhân viên - ' + stName;
+    
+    // Tìm các nhân viên đã được gán vào quầy này hôm nay
+    const assigned = (_todaySchedules || []).filter(s => s.posStation === stationNum);
+    const tbody = document.getElementById('posAddCurrentStaffTableBody');
+    if (tbody) {
+      if (assigned.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="padding:15px; text-align:center; color:var(--muted);">Chưa có nhân viên nào tại quầy này hôm nay.</td></tr>';
+      } else {
+        tbody.innerHTML = assigned.map(s => {
+          return '<tr style="border-bottom: 1px solid var(--border);">' +
+            '<td style="padding:10px 8px; font-weight:600; color:var(--navy);">' + escHtml(s.staffName) + '</td>' +
+            '<td style="padding:10px 8px; color:var(--muted);">' + escHtml(s.shiftType) + ' (' + s.startHour + ':00 - ' + s.endHour + ':00)</td>' +
+            '<td style="padding:10px 8px; text-align:center;">' +
+              '<div style="display:flex; gap:6px; justify-content:center; align-items:center;">' +
+                '<button type="button" onclick="showStaffInfo(' + s.scheduleId + ')" style="border:none; background:transparent; cursor:pointer; font-size:12.5px; color:var(--blue);" title="Xem chi tiết">🔍</button>' +
+                '<button type="button" onclick="startEditMode(' + s.scheduleId + ')" style="border:none; background:transparent; cursor:pointer; font-size:12.5px; color:var(--gold);" title="Sửa phân công">✏️</button>' +
+                '<form method="post" action="${pageContext.request.contextPath}/shifts" style="margin:0;" onsubmit="return confirm(\'Bạn có chắc chắn muốn gỡ nhân viên ' + escHtml(s.staffName) + ' khỏi quầy?\')">' +
+                  '<input type="hidden" name="action" value="pos-unassign">' +
+                  '<input type="hidden" name="scheduleId" value="' + s.scheduleId + '">' +
+                  '<button type="submit" style="border:none; background:transparent; cursor:pointer; font-size:12.5px; color:var(--red);" title="Gỡ khỏi quầy">🗑️</button>' +
+                '</form>' +
+              '</div>' +
+            '</td>' +
+          '</tr>';
+        }).join('');
+      }
+    }
+    
+    const modalEl = document.getElementById('posAddStaffModal');
+    if (modalEl) modalEl.classList.add('open');
+  } catch (err) {
+    console.error("Lỗi khi mở modal quản lý nhân viên quầy:", err);
+    // Fallback: Vẫn cố gắng mở modal nếu phần tử modal tồn tại
+    const modalEl = document.getElementById('posAddStaffModal');
+    if (modalEl) modalEl.classList.add('open');
   }
-  
-  document.getElementById('posAddStaffModal').classList.add('open');
 }
 
 function closePosAddModal() {
+  cancelEditMode();
   document.getElementById('posAddStaffModal').classList.remove('open');
 }
 
-function submitPosAddForm() {
-  const form = document.getElementById('posAddForm');
-  const opt = form.querySelector('input[name="addOption"]:checked').value;
-  
-  if (opt === 'assign') {
-    const select = document.getElementById('posAddScheduleSelect');
-    if (!select.value) {
-      alert('Vui lòng chọn một ca làm việc!');
-      return;
-    }
-    // Vô hiệu hóa dropdown Xếp ca mới để không gửi lên server
-    form.querySelector('select[name="accountId"]').disabled = true;
-    form.querySelector('select[name="shiftTypeId"]').disabled = true;
+// Hàm toggle các tùy chọn đi trễ & ghi chú
+function toggleFormOptions() {
+  const fields = document.getElementById('posFormOptionalFields');
+  const btn = document.getElementById('btnToggleOptions');
+  if (fields.style.display === 'none' || !fields.style.display) {
+    fields.style.display = 'grid';
+    btn.textContent = '⚙️ Ẩn tùy chọn nâng cao';
   } else {
-    form.querySelector('input[name="action"]').value = 'pos-assign';
-    // Vô hiệu hóa dropdown Gán ca có sẵn để không gửi lên server
-    const select = document.getElementById('posAddScheduleSelect');
-    if (select) select.disabled = true;
-    
-    const acc = form.querySelector('select[name="accountId"]').value;
-    const type = form.querySelector('select[name="shiftTypeId"]').value;
-    if (!acc || !type) {
-      alert('Vui lòng chọn đầy đủ Nhân viên và Loại ca!');
-      return;
-    }
+    fields.style.display = 'none';
+    btn.textContent = '⚙️ Hiện tùy chọn nâng cao';
   }
-  form.submit();
+}
+
+// Chuyển form sang chế độ Sửa ca
+function startEditMode(scheduleId) {
+  const s = _todaySchedules.find(item => item.scheduleId === scheduleId);
+  if (!s) return;
+  
+  document.getElementById('posFormAction').value = 'schedule-update';
+  document.getElementById('posFormScheduleId').value = s.scheduleId;
+  document.getElementById('posFormTitle').textContent = '✏️ Cập nhật phân công ca';
+  document.getElementById('posFormTitle').style.color = 'var(--gold)';
+  
+  document.getElementById('posFormAccGroup').style.display = 'none';
+  const selectAcc = document.getElementById('posFormAccountId');
+  if (selectAcc) selectAcc.required = false;
+  
+  document.getElementById('posFormStaffNameGroup').style.display = 'flex';
+  document.getElementById('posFormStaffName').value = s.staffName;
+  
+  document.getElementById('posFormShiftTypeId').value = s.shiftTypeId;
+  document.getElementById('posFormLateTol').value = s.lateToleranceMinutes || 10;
+  document.getElementById('posFormNotes').value = s.notes || '';
+  
+  document.getElementById('posFormOptionalFields').style.display = 'grid';
+  document.getElementById('btnToggleOptions').style.display = 'none';
+  
+  document.getElementById('btnCancelEdit').style.display = 'inline-block';
+  document.getElementById('btnSubmitForm').textContent = '💾 Cập nhật';
+  document.getElementById('btnSubmitForm').style.background = 'var(--gold)';
+}
+
+// Quay lại chế độ Thêm mới
+function cancelEditMode() {
+  document.getElementById('posFormAction').value = 'pos-assign';
+  document.getElementById('posFormScheduleId').value = '';
+  document.getElementById('posFormTitle').textContent = '➕ Thêm nhân viên vào quầy';
+  document.getElementById('posFormTitle').style.color = 'var(--blue)';
+  
+  document.getElementById('posFormAccGroup').style.display = 'flex';
+  const selectAcc = document.getElementById('posFormAccountId');
+  if (selectAcc) {
+    selectAcc.required = true;
+    selectAcc.value = '';
+  }
+  
+  document.getElementById('posFormStaffNameGroup').style.display = 'none';
+  document.getElementById('posFormStaffName').value = '';
+  
+  document.getElementById('posFormShiftTypeId').value = '';
+  document.getElementById('posFormLateTol').value = '10';
+  document.getElementById('posFormNotes').value = '';
+  
+  document.getElementById('posFormOptionalFields').style.display = 'none';
+  document.getElementById('btnToggleOptions').style.display = 'block';
+  document.getElementById('btnToggleOptions').textContent = '⚙️ Hiện tùy chọn nâng cao';
+  
+  document.getElementById('btnCancelEdit').style.display = 'none';
+  document.getElementById('btnSubmitForm').textContent = '➕ Thêm NV';
+  document.getElementById('btnSubmitForm').style.background = 'var(--blue)';
+}
+
+// Xem chi tiết thông tin ca làm việc
+function showStaffInfo(scheduleId) {
+  const s = _todaySchedules.find(item => item.scheduleId === scheduleId);
+  if (!s) return;
+  alert(
+    'ℹ️ CHI TIẾT CA LÀM VIỆC CỦA NHÂN VIÊN\n\n' +
+    '• Họ và tên: ' + s.staffName + '\n' +
+    '• Ca làm việc: ' + s.shiftType + ' (' + s.startHour + ':00 - ' + s.endHour + ':00)\n' +
+    '• Phút đi trễ cho phép: ' + (s.lateToleranceMinutes || 10) + ' phút\n' +
+    '• Trạng thái điểm danh: ' + getStatusLabelText(s.status) + '\n' +
+    '• Ghi chú ca: ' + (s.notes || '(Trống)')
+  );
+}
+
+function getStatusLabelText(status) {
+  switch (status) {
+    case 'SCHEDULED': return 'Chưa vào ca (Chờ check-in)';
+    case 'CONFIRMED': return 'Đang làm việc (Đã điểm danh)';
+    case 'LATE': return 'Đến trễ';
+    case 'ABSENT': return 'Vắng mặt';
+    case 'ON_LEAVE': return 'Nghỉ phép';
+    case 'LEAVE_PENDING': return 'Đang chờ duyệt nghỉ';
+    case 'CANCELLED': return 'Đã hủy ca';
+    default: return status || 'Chưa rõ';
+  }
+}
+
+// Secure Custom Prompt Delete Modal for POS Counter with staff
+let _secureDeleteStationId = null;
+
+function showSecureDeleteModal(event, stationId) {
+  if (event) event.preventDefault();
+  _secureDeleteStationId = stationId;
+  
+  const stationNameEl = document.getElementById('lblStation-' + stationId);
+  const stationName = stationNameEl ? stationNameEl.textContent : 'Quầy ' + stationId;
+  
+  document.getElementById('secDeleteStationName').textContent = stationName;
+  document.getElementById('secDeleteInput').value = '';
+  checkSecDeleteInput();
+  
+  document.getElementById('posSecureDeleteModal').classList.add('open');
+  
+  setTimeout(() => {
+    const input = document.getElementById('secDeleteInput');
+    if (input) input.focus();
+  }, 150);
+}
+
+function closeSecureDeleteModal() {
+  _secureDeleteStationId = null;
+  document.getElementById('posSecureDeleteModal').classList.remove('open');
+}
+
+function checkSecDeleteInput() {
+  const val = document.getElementById('secDeleteInput').value;
+  const btn = document.getElementById('btnConfirmSecureDelete');
+  if (val === 'delete') {
+    btn.disabled = false;
+    btn.style.background = 'var(--red)';
+    btn.style.cursor = 'pointer';
+  } else {
+    btn.disabled = true;
+    btn.style.background = '#cbd5e1';
+    btn.style.cursor = 'not-allowed';
+  }
+}
+
+function submitSecureDelete() {
+  if (!_secureDeleteStationId) return;
+  const form = document.querySelector('form input[name="posStationId"][value="' + _secureDeleteStationId + '"]').form;
+  if (form) {
+    closeSecureDeleteModal();
+    form.submit();
+  }
 }
 
 // Open modal to edit an existing shift schedule details and its POS station today
 function openPosEditModal(scheduleId) {
   const s = _todaySchedules.find(item => item.scheduleId === scheduleId);
   if (!s) return;
+  
+  const titleEl = document.getElementById('posEditModalTitle');
+  if (titleEl) titleEl.innerHTML = '✏️ Sửa phân công Quầy POS';
   
   document.getElementById('posEditScheduleId').value = s.scheduleId;
   document.getElementById('posEditStaffName').value = s.staffName;
@@ -4038,6 +4254,8 @@ function closePosDeleteModal() {
 // Quick assign function from unassigned chips
 function openQuickAssignModal(scheduleId, staffName, shiftType) {
   openPosEditModal(scheduleId);
+  const titleEl = document.getElementById('posEditModalTitle');
+  if (titleEl) titleEl.innerHTML = '➕ Gán nhân viên vào quầy POS';
 }
 
 function refreshPosMap() {
@@ -4082,11 +4300,14 @@ document.addEventListener('DOMContentLoaded', function() {
   const origSwitch = window.switchTab;
   window.switchTab = function(tab, btn) {
     origSwitch && origSwitch(tab, btn);
+    // Xóa interval cũ nếu đang chạy để tránh rò rỉ tài nguyên, chạy đa luồng làm đơ trình duyệt
+    if (_posMapInterval) {
+      clearInterval(_posMapInterval);
+      _posMapInterval = null;
+    }
     if (tab === 'pos-map') {
       initPosMap();
       _posMapInterval = setInterval(refreshPosOnlineStatus, 15000);
-    } else {
-      clearInterval(_posMapInterval);
     }
   };
   // Nếu tab pos-map là active tab khi load
