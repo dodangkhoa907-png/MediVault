@@ -2,9 +2,11 @@ package com.medicare.dao;
 
 import com.medicare.config.DBContext;
 import com.medicare.dao.interfaces.IPurchaseOrderDAO;
+import com.medicare.entity.Batches;
 import com.medicare.entity.PurchaseOrders;
 import java.math.BigDecimal;
 import java.sql.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,7 +22,69 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
             po.setOrderDate(rs.getTimestamp("OrderDate").toLocalDateTime());
         po.setTotalValue(rs.getBigDecimal("TotalValue"));
         po.setNotes(rs.getNString("Notes"));
+        try { po.setStatus(rs.getString("Status")); } catch (SQLException ignored) {}
+        try { po.setPaymentMethod(rs.getString("PaymentMethod")); } catch (SQLException ignored) {}
+        try { po.setDiscountAmount(rs.getBigDecimal("DiscountAmount")); } catch (SQLException ignored) {}
         return po;
+    }
+
+    /**
+     * Tạo phiếu nhập nhiều dòng trong 1 TRANSACTION: insert 1 PurchaseOrder rồi
+     * insert N Batches (mỗi dòng = 1 lô). Toàn bộ thành công hoặc rollback hết.
+     * POCode là computed ('PN'+POID) nên KHÔNG set. Trả về POID mới, -1 nếu lỗi.
+     */
+    public int createWithBatches(PurchaseOrders po, List<Batches> lines) {
+        String poSql = "INSERT INTO PurchaseOrders " +
+                "(SupplierID, AccountID, OrderDate, TotalValue, Notes, Status, PaymentMethod, DiscountAmount) " +
+                "VALUES (?,?,GETDATE(),?,?,?,?,?); SELECT SCOPE_IDENTITY();";
+        String bSql = "INSERT INTO Batches (MedicineID, POID, SupplierID, BatchNumber, " +
+                "ManufactureDate, ImportDate, ExpiryDate, ImportPrice, InitialQuantity, CurrentQuantity) " +
+                "VALUES (?,?,?,?,?,?,?,?,?,?)";
+        Connection cn = null;
+        try {
+            cn = DBContext.getConnection();
+            cn.setAutoCommit(false);
+            int poId;
+            try (PreparedStatement ps = cn.prepareStatement(poSql)) {
+                ps.setInt(1, po.getSupplierId());
+                ps.setInt(2, po.getAccountId());
+                ps.setBigDecimal(3, po.getTotalValue() != null ? po.getTotalValue() : BigDecimal.ZERO);
+                ps.setNString(4, po.getNotes());
+                ps.setString(5, po.getStatus() != null ? po.getStatus() : "COMPLETED");
+                if (po.getPaymentMethod() != null && !po.getPaymentMethod().isEmpty())
+                    ps.setString(6, po.getPaymentMethod());
+                else ps.setNull(6, Types.VARCHAR);
+                ps.setBigDecimal(7, po.getDiscountAmount() != null ? po.getDiscountAmount() : BigDecimal.ZERO);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next() || rs.getBigDecimal(1) == null) { cn.rollback(); return -1; }
+                    poId = rs.getBigDecimal(1).intValue();
+                }
+            }
+            try (PreparedStatement ps = cn.prepareStatement(bSql)) {
+                for (Batches b : lines) {
+                    ps.setInt(1, b.getMedicineId());
+                    ps.setInt(2, poId);
+                    ps.setInt(3, po.getSupplierId());
+                    ps.setString(4, b.getBatchNumber());
+                    ps.setObject(5, b.getManufactureDate() != null ? Date.valueOf(b.getManufactureDate()) : null);
+                    ps.setDate(6, b.getImportDate() != null ? Date.valueOf(b.getImportDate()) : Date.valueOf(LocalDate.now()));
+                    ps.setDate(7, Date.valueOf(b.getExpiryDate()));
+                    ps.setBigDecimal(8, b.getImportPrice());
+                    ps.setInt(9, b.getInitialQuantity());
+                    ps.setInt(10, b.getInitialQuantity());
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+            }
+            cn.commit();
+            return poId;
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (cn != null) try { cn.rollback(); } catch (Exception ignored) {}
+            return -1;
+        } finally {
+            if (cn != null) try { cn.setAutoCommit(true); cn.close(); } catch (Exception ignored) {}
+        }
     }
 
     @Override

@@ -17,6 +17,7 @@ public class ShelfDAO implements IShelfDAO {
         s.setMachineSlotCode(rs.getString("MachineSlotCode"));
         s.setMotorId(rs.getString("MotorID"));
         s.setLocationNotes(MojibakeUtil.fix(rs.getNString("LocationNotes")));
+        try { s.setShelfType(rs.getString("ShelfType")); } catch (SQLException ignored) {}
         s.setAutomated(rs.getBoolean("IsAutomated"));
         return s;
     }
@@ -57,26 +58,29 @@ public class ShelfDAO implements IShelfDAO {
     }
 
     public boolean insert(Shelf s) {
-        String sql = "INSERT INTO Shelves (ShelfName, MachineSlotCode, MotorID, LocationNotes) VALUES (?,?,?,?)";
+        // IsAutomated là CỘT TÍNH TOÁN (MachineSlotCode IS NOT NULL) → KHÔNG insert.
+        String sql = "INSERT INTO Shelves (ShelfName, ShelfType, MachineSlotCode, MotorID, LocationNotes) VALUES (?,?,?,?,?)";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setNString(1, s.getShelfName());
-            ps.setString(2, s.getMachineSlotCode());
-            ps.setString(3, s.getMotorId());
-            ps.setNString(4, s.getLocationNotes());
+            ps.setString(2, s.getShelfType() != null ? s.getShelfType() : "RETAIL"); // NOT NULL
+            ps.setString(3, s.getMachineSlotCode());
+            ps.setString(4, s.getMotorId());
+            ps.setNString(5, s.getLocationNotes());
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
 
     public boolean update(Shelf s) {
-        String sql = "UPDATE Shelves SET ShelfName=?, MachineSlotCode=?, MotorID=?, LocationNotes=? WHERE ShelfID=?";
+        String sql = "UPDATE Shelves SET ShelfName=?, ShelfType=?, MachineSlotCode=?, MotorID=?, LocationNotes=? WHERE ShelfID=?";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setNString(1, s.getShelfName());
-            ps.setString(2, s.getMachineSlotCode());
-            ps.setString(3, s.getMotorId());
-            ps.setNString(4, s.getLocationNotes());
-            ps.setInt(5, s.getShelfId());
+            ps.setString(2, s.getShelfType() != null ? s.getShelfType() : "RETAIL");
+            ps.setString(3, s.getMachineSlotCode());
+            ps.setString(4, s.getMotorId());
+            ps.setNString(5, s.getLocationNotes());
+            ps.setInt(6, s.getShelfId());
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }

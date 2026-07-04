@@ -466,7 +466,18 @@ public class MedicineServlet extends HttpServlet {
         b.setImportPrice(new BigDecimal(price));
         b.setInitialQuantity(isNew ? Integer.parseInt(qty) : 0);
         if (parsedMfDate != null) b.setManufactureDate(parsedMfDate);
-        if (isNew) b.setImportDate(LocalDate.now());
+        if (isNew) {
+            // Ngày nhập kho: cho phép chọn (default hôm nay). Không nhận ngày trong tương lai.
+            LocalDate impDate = LocalDate.now();
+            String impStr = req.getParameter("importDate");
+            if (!ValidationUtil.isBlank(impStr)) {
+                try {
+                    LocalDate d = LocalDate.parse(impStr);
+                    if (!d.isAfter(LocalDate.now())) impDate = d; // chặn ngày nhập ở tương lai
+                } catch (Exception ignored) {}
+            }
+            b.setImportDate(impDate);
+        }
         if (!isNew) b.setBatchId(Integer.parseInt(bidStr));
 
         Account adminAcc = (Account) req.getSession(false).getAttribute("adminAccount");

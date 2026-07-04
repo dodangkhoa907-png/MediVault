@@ -444,6 +444,8 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
       <a href="${pageContext.request.contextPath}/medicines"       class="u-tab active">💊 Thuốc &amp; Lô hàng</a>
       <a href="${pageContext.request.contextPath}/purchase-orders" class="u-tab">📑 Đơn đặt hàng</a>
       <a href="${pageContext.request.contextPath}/categories"      class="u-tab">🏷️ Danh mục</a>
+      <a href="${pageContext.request.contextPath}/suppliers"       class="u-tab">🏭 Nhà cung cấp</a>
+      <a href="${pageContext.request.contextPath}/shelves"         class="u-tab">📍 Vị trí kệ</a>
     </div>
 
     <div class="stats-row">

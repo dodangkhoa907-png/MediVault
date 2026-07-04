@@ -1,4 +1,5 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8" %>
+<% String activeNav = "medicines"; %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
@@ -16,75 +17,99 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title><%= isNew ? "Nhập lô mới" : "Sửa lô hàng" %> — medicare</title>
+<title><%= isNew ? "Nhập lô mới" : "Sửa lô hàng" %> — MediCare</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --ink:#0B1628;--navy:#0F2645;--blue:#1558A8;--cyan:#3ABDE0;
   --surface:#F1F5FB;--white:#fff;--muted:#7A90B0;--border:#D5E0F0;
-  --green:#059669;--red:#DC2626;
+  --green:#059669;--red:#DC2626;--gold:#D97706;--sidebar:232px;
 }
-html,body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--surface);color:var(--ink)}
-.topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50}
-.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--ink)}
+html,body{height:100%;font-family:'Outfit',sans-serif}
+body{display:flex;background:var(--surface);color:var(--ink)}
+
+/* ── Sidebar (dùng chung admin) ── */
+.sidebar{width:var(--sidebar);min-height:100vh;background:linear-gradient(175deg,#071022 0%,#0F2645 45%,#1558A8 100%);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;box-shadow:4px 0 32px rgba(0,0,0,.18)}
+.sidebar-logo{height:66px;padding:0 20px;display:flex;align-items:center;gap:11px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
+.logo-text{font-size:16px;font-weight:800;color:#fff;letter-spacing:-.2px;line-height:1.1}
+.logo-text span{color:var(--cyan)}
+.logo-sub{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1.2px;text-transform:uppercase;margin-top:1px}
+.nav-section{padding:12px 0 4px;flex-shrink:0}
+.nav-label{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:500;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
+.nav-item:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.06)}
+.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:600}
+.nav-item.active::before{content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:56%;background:var(--cyan);border-radius:2px}
+.nav-badge{margin-left:auto;background:#DC2626;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;min-width:20px;text-align:center}
+.main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0}
+
+.topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50;flex-shrink:0}
+.topbar-title{font-size:16px;font-weight:700;color:var(--ink)}
 .btn-back{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:9px;border:1.5px solid var(--border);background:var(--white);color:var(--ink);font-size:13px;font-weight:600;text-decoration:none}
 .btn-back:hover{border-color:var(--blue);color:var(--blue)}
-
-    
-.topbar-right{margin-left:auto}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.clock{display:inline-flex;align-items:center;gap:8px;padding:6px 13px;border-radius:20px;background:#EFF6FF;color:var(--blue);font-size:12.5px;font-weight:700;white-space:nowrap}
+.clock .cl-time{font-variant-numeric:tabular-nums;font-weight:800}
 .user-av-sm{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#3ABDE0,#1558A8);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
-.content{max-width:640px;margin:28px auto;padding:0 20px 40px}
-.page-title{font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:4px}
-.page-sub{font-size:13px;color:var(--muted);margin-bottom:20px}
-.med-chip{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;background:var(--white);border:1.5px solid var(--border);border-radius:10px;margin-bottom:20px}
-.med-chip-name{font-size:14px;font-weight:700;color:var(--navy)}
-.med-chip-code{font-size:12px;color:var(--muted);font-family:monospace}
+
+.content{max-width:720px;margin:26px auto;padding:0 22px 48px}
+.page-title{font-size:23px;font-weight:900;margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--muted);margin-bottom:18px}
+.med-chip{display:flex;align-items:center;gap:12px;padding:13px 16px;background:linear-gradient(120deg,#0F2645,#1558A8);border-radius:14px;margin-bottom:18px;color:#fff}
+.med-chip-ico{width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.med-chip-name{font-size:15.5px;font-weight:800}
+.med-chip-code{font-size:12px;opacity:.85;font-family:monospace;margin-top:1px}
 .error-box{background:#FFF5F5;border:1px solid #FECACA;border-radius:12px;padding:14px 18px;margin-bottom:18px}
 .error-box ul{margin:0;padding-left:18px}
 .error-box li{font-size:13px;color:#991B1B;margin:3px 0}
-.card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:14px}
-.card-title{font-size:14px;font-weight:800;color:var(--navy);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:22px 24px;margin-bottom:14px}
+.card-title{font-size:14px;font-weight:800;color:var(--navy);margin-bottom:5px;display:flex;align-items:center;gap:8px}
+.card-desc{font-size:12px;color:var(--muted);margin-bottom:16px;padding-bottom:12px;border-bottom:1px dashed var(--border)}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .form-full{grid-column:1/-1}
 .form-group{display:flex;flex-direction:column;gap:5px}
 .form-label{font-size:12.5px;font-weight:700;color:var(--ink)}
 .form-label span{color:var(--red)}
-.form-input,.form-select{height:40px;padding:0 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;font-family:inherit;color:var(--ink);background:var(--white);outline:none;transition:.15s}
-.form-input:focus,.form-select:focus{border-color:var(--blue)}
+.form-input,.form-select{height:42px;padding:0 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;font-family:inherit;color:var(--ink);background:var(--white);outline:none;transition:.15s}
+.form-input:focus,.form-select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(21,88,168,.08)}
 .form-hint{font-size:11px;color:var(--muted)}
 .alert-box{background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:12px 14px;font-size:13px;color:#92400E;margin-bottom:14px}
 .form-actions{display:flex;gap:10px;margin-top:20px}
-.btn-save{flex:1;height:44px;background:var(--blue);color:#fff;border:none;border-radius:11px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
-.btn-save:hover{background:#0d3d63}
-.btn-cancel{height:44px;padding:0 22px;border:1.5px solid var(--border);border-radius:11px;background:var(--white);color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-flex;align-items:center}
+.btn-save{flex:1;height:46px;background:linear-gradient(135deg,#1558A8,#0d3d63);color:#fff;border:none;border-radius:11px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
+.btn-save:hover{filter:brightness(1.08)}
+.btn-cancel{height:46px;padding:0 22px;border:1.5px solid var(--border);border-radius:11px;background:var(--white);color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-flex;align-items:center}
 .btn-cancel:hover{border-color:var(--red);color:var(--red)}
 .po-toggle{display:flex;gap:10px;margin-bottom:16px}
-.po-toggle-opt{flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;transition:.15s}
+.po-toggle-opt{flex:1;display:flex;align-items:center;gap:8px;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;transition:.15s}
 .po-toggle-opt:has(input:checked){border-color:var(--blue);background:#EFF6FF;color:var(--blue)}
 .po-toggle-opt input{accent-color:var(--blue)}
 .po-toggle-opt input:disabled{cursor:not-allowed}
 .po-toggle-opt:has(input:disabled){opacity:.45;cursor:not-allowed}
+.hsd-live{margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:600;display:none}
 </style>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>
+<%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
 
+<div class="main">
 <div class="topbar">
-  <a href="${pageContext.request.contextPath}/medicines?action=detail&id=${medicine.medicineId}" class="btn-back">
-    ← ${medicine.medicineName}
-  </a>
+  <a href="${pageContext.request.contextPath}/medicines?action=detail&id=${medicine.medicineId}" class="btn-back">← ${medicine.medicineName}</a>
   <span class="topbar-title"><%= isNew ? "Nhập lô mới" : "Sửa lô hàng" %></span>
   <div class="topbar-right">
+    <span class="clock">🕐 <span id="clkDate"></span> · <span class="cl-time" id="clkTime"></span></span>
     <div class="user-av-sm"><%= initials %></div>
   </div>
 </div>
 
 <div class="content">
   <div class="page-title"><%= isNew ? "📦 Nhập lô hàng mới" : "✏️ Sửa thông tin lô" %></div>
+  <div class="page-sub"><%= isNew ? "Nhập hàng vật lý vào kho — mỗi lô có số lô, hạn dùng và số lượng riêng." : "Chỉ sửa được số lô, ngày tháng và giá nhập." %></div>
+
   <div class="med-chip">
-    <span>💊</span>
+    <div class="med-chip-ico">💊</div>
     <div>
       <div class="med-chip-name">${medicine.medicineName}</div>
       <div class="med-chip-code">${medicine.medicineCode} · ${medicine.unit}</div>
@@ -92,15 +117,11 @@ html,body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--surfa
   </div>
 
   <c:if test="${not empty errors}">
-    <div class="error-box">
-      <ul><c:forEach var="e" items="${errors}"><li>${e}</li></c:forEach></ul>
-    </div>
+    <div class="error-box"><ul><c:forEach var="e" items="${errors}"><li>${e}</li></c:forEach></ul></div>
   </c:if>
 
   <c:if test="${not isNew}">
-    <div class="alert-box">
-      ⚠️ Lưu ý: Chỉ được sửa số lô, ngày tháng và giá nhập. Số lượng không thể thay đổi sau khi nhập kho.
-    </div>
+    <div class="alert-box">⚠️ Chỉ được sửa số lô, ngày tháng và giá nhập. Số lượng không thể thay đổi sau khi nhập kho.</div>
   </c:if>
 
   <form method="post" action="${pageContext.request.contextPath}/medicines">
@@ -110,55 +131,19 @@ html,body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--surfa
       <input type="hidden" name="batchId" value="${batch.batchId}"/>
     </c:if>
 
-    <div class="card">
-      <div class="card-title">📋 Thông tin lô</div>
-      <div class="form-grid">
-        <div class="form-group form-full">
-          <label class="form-label">Số lô <span>*</span></label>
-          <input type="text" name="batchNumber" class="form-input"
-                 placeholder="VD: LOT-2026-001"
-                 value="${batch != null ? batch.batchNumber : ''}" required/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Ngày sản xuất</label>
-          <input type="date" name="manufactureDate" class="form-input"
-                 value="${batch != null && batch.manufactureDate != null ? batch.manufactureDate : ''}"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Ngày hết hạn <span>*</span></label>
-          <input type="date" name="expiryDate" id="expiryDateInp" class="form-input"
-                 value="${batch != null ? batch.expiryDate : ''}" required
-                 oninput="checkHsd(this)"/>
-          <div id="hsdWarn" style="display:none;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:600"></div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Giá nhập (₫) <span>*</span></label>
-          <input type="number" name="importPrice" class="form-input"
-                 placeholder="0" min="0" step="100"
-                 value="${batch != null ? batch.importPrice : ''}" required/>
-        </div>
-        <c:if test="${not isNew}">
-        <div class="form-group">
-          <label class="form-label">Ngày nhập kho</label>
-          <input type="text" class="form-input" value="${batch.importDate}" disabled
-                 style="background:#F8FAFC;color:var(--muted);cursor:default"/>
-          <span class="form-hint">Ngày nhập được ghi nhận tự động khi tạo lô, không thể thay đổi</span>
-        </div>
-        </c:if>
-      </div>
-    </div>
-
+    <%-- ① NGUỒN NHẬP — nhà cung cấp / đơn đặt hàng (đặt đầu cho rõ "hàng ở đâu ra") --%>
     <c:if test="${isNew}">
     <div class="card">
-      <div class="card-title">📑 Thuộc đơn đặt hàng nào?</div>
+      <div class="card-title">🏭 Nguồn nhập — hàng này lấy từ đâu?</div>
+      <div class="card-desc">Mỗi lô phải gắn với 1 <b>nhà cung cấp</b> và 1 <b>đơn đặt hàng</b> (để truy vết nguồn gốc & giá vốn).</div>
       <div class="po-toggle">
         <label class="po-toggle-opt">
           <input type="radio" name="poMode" value="existing" onchange="togglePoMode()" ${empty recentPOs ? 'disabled' : ''}>
-          <span>Chọn đơn có sẵn</span>
+          <span>📑 Gắn vào đơn đã có</span>
         </label>
         <label class="po-toggle-opt">
           <input type="radio" name="poMode" value="new" checked onchange="togglePoMode()">
-          <span>Tạo đơn mới</span>
+          <span>➕ Tạo đơn nhập mới</span>
         </label>
       </div>
 
@@ -170,7 +155,7 @@ html,body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--surfa
             <option value="${p.poId}">${p.poCode} · ${poSupplierMap[p.supplierId] != null ? poSupplierMap[p.supplierId].supplierName : ''} · ${fn:substring(p.orderDate.toString(),0,10)}</option>
           </c:forEach>
         </select>
-        <span class="form-hint">Chỉ hiện 15 đơn gần nhất. Vào "Đơn đặt hàng" ở sidebar để xem tất cả.</span>
+        <span class="form-hint">Chỉ hiện 15 đơn gần nhất. Xem tất cả ở tab <b>Đơn đặt hàng</b>.</span>
       </div>
 
       <div id="poNewBlock">
@@ -182,95 +167,180 @@ html,body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--surfa
               <option value="${s.supplierId}">${s.supplierName}</option>
             </c:forEach>
           </select>
+          <span class="form-hint">Nơi bạn mua/lấy lô hàng này về.</span>
         </div>
         <div class="form-group">
-          <label class="form-label">Ghi chú đơn (không bắt buộc)</label>
-          <input type="text" name="newPoNotes" class="form-input" placeholder="VD: Đặt hàng định kỳ tháng 6">
+          <label class="form-label">Ghi chú đơn (tùy chọn)</label>
+          <input type="text" name="newPoNotes" class="form-input" placeholder="VD: Đặt hàng định kỳ tháng này">
         </div>
-        <span class="form-hint">Hệ thống sẽ tự tạo 1 đơn đặt hàng mới và gắn lô này vào đó.</span>
+        <span class="form-hint">Hệ thống tự tạo 1 đơn nhập mới và gắn lô này vào.</span>
       </div>
     </div>
     </c:if>
 
-    <c:if test="${isNew}">
-      <div class="card">
-        <div class="card-title">📊 Số lượng nhập</div>
+    <%-- ② THÔNG TIN LÔ — số lô + các mốc ngày --%>
+    <div class="card">
+      <div class="card-title">📋 Thông tin lô &amp; ngày tháng</div>
+      <div class="card-desc">Ngày nhập &amp; ngày SX mặc định là <b>hôm nay</b> — sửa lại nếu nhập bù cho hôm trước.</div>
+      <div class="form-grid">
+        <div class="form-group form-full">
+          <label class="form-label">Số lô <span>*</span></label>
+          <input type="text" name="batchNumber" class="form-input" placeholder="VD: LOT-2026-001"
+                 value="${batch != null ? batch.batchNumber : ''}" required/>
+        </div>
+
+        <c:if test="${isNew}">
         <div class="form-group">
-          <label class="form-label">Số lượng nhập kho <span>*</span></label>
-          <input type="number" name="initialQuantity" class="form-input"
-                 placeholder="0" min="1" required style="max-width:200px"/>
-          <span class="form-hint">Đơn vị: ${medicine.unit} — Không thể thay đổi sau khi lưu</span>
+          <label class="form-label">Ngày nhập kho <span>*</span></label>
+          <input type="date" name="importDate" id="importDateInp" class="form-input" required/>
+          <span class="form-hint">Mặc định hôm nay. Không nhận ngày ở tương lai.</span>
+        </div>
+        </c:if>
+        <c:if test="${not isNew}">
+        <div class="form-group">
+          <label class="form-label">Ngày nhập kho</label>
+          <input type="text" class="form-input" value="${batch.importDate}" disabled style="background:#F8FAFC;color:var(--muted);cursor:default"/>
+          <span class="form-hint">Ghi nhận tự động khi tạo lô, không đổi được.</span>
+        </div>
+        </c:if>
+
+        <div class="form-group">
+          <label class="form-label">Ngày sản xuất</label>
+          <input type="date" name="manufactureDate" id="mfDateInp" class="form-input"
+                 value="${batch != null && batch.manufactureDate != null ? batch.manufactureDate : ''}"/>
+        </div>
+
+        <div class="form-group form-full">
+          <label class="form-label">Ngày hết hạn (HSD) <span>*</span></label>
+          <input type="date" name="expiryDate" id="expiryDateInp" class="form-input"
+                 value="${batch != null ? batch.expiryDate : ''}" required oninput="checkHsd(this)"/>
+          <div id="hsdWarn" class="hsd-live"></div>
         </div>
       </div>
+    </div>
+
+    <%-- ③ SỐ LƯỢNG & GIÁ --%>
+    <c:if test="${isNew}">
+    <div class="card">
+      <div class="card-title">📊 Số lượng &amp; giá nhập</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Số lượng nhập <span>*</span></label>
+          <input type="number" name="initialQuantity" class="form-input" placeholder="0" min="1" required/>
+          <span class="form-hint">Đơn vị: ${medicine.unit} — không đổi được sau khi lưu.</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Giá nhập / đơn vị (₫) <span>*</span></label>
+          <input type="number" name="importPrice" class="form-input" placeholder="0" min="0" step="100"
+                 value="${batch != null ? batch.importPrice : ''}" required/>
+          <span class="form-hint">Giá vốn để tính lãi khi bán.</span>
+        </div>
+      </div>
+    </div>
     </c:if>
 
     <c:if test="${not isNew}">
+    <div class="card">
+      <div class="card-title">📊 Giá nhập</div>
+      <div class="form-group" style="max-width:260px">
+        <label class="form-label">Giá nhập / đơn vị (₫) <span>*</span></label>
+        <input type="number" name="importPrice" class="form-input" placeholder="0" min="0" step="100"
+               value="${batch != null ? batch.importPrice : ''}" required/>
+      </div>
+    </div>
     <div class="card" style="border-color:#E5E7EB;background:#FAFBFD">
-      <div class="card-title" style="color:var(--muted)">📊 Thông tin tồn kho (chỉ đọc)</div>
+      <div class="card-title" style="color:var(--muted)">📦 Tồn kho (chỉ đọc)</div>
       <div class="form-grid">
         <div class="form-group">
           <label class="form-label">Số lượng nhập ban đầu</label>
-          <input type="text" class="form-input" value="${batch.initialQuantity} ${medicine.unit}" disabled
-                 style="background:#F8FAFC;color:var(--muted);cursor:default"/>
+          <input type="text" class="form-input" value="${batch.initialQuantity} ${medicine.unit}" disabled style="background:#F8FAFC;color:var(--muted);cursor:default"/>
         </div>
         <div class="form-group">
           <label class="form-label">Tồn kho hiện tại</label>
-          <input type="text" class="form-input" value="${batch.currentQuantity} ${medicine.unit}" disabled
-                 style="background:#F8FAFC;color:var(--muted);cursor:default"/>
+          <input type="text" class="form-input" value="${batch.currentQuantity} ${medicine.unit}" disabled style="background:#F8FAFC;color:var(--muted);cursor:default"/>
         </div>
       </div>
-      <div class="form-hint" style="margin-top:8px">💡 Để nhập thêm hàng vào lô này, dùng nút <strong>＋ Nhập thêm</strong> trên trang danh sách lô.</div>
+      <div class="form-hint" style="margin-top:8px">💡 Nhập thêm hàng vào lô này bằng nút <b>＋ Nhập thêm</b> ở trang danh sách lô.</div>
     </div>
     </c:if>
 
     <div class="form-actions">
-      <a href="${pageContext.request.contextPath}/medicines?action=detail&id=${medicine.medicineId}"
-         class="btn-cancel">Hủy</a>
-      <button type="submit" class="btn-save">
-        <%= isNew ? "📦 Xác nhận nhập kho" : "💾 Lưu thay đổi" %>
-      </button>
+      <a href="${pageContext.request.contextPath}/medicines?action=detail&id=${medicine.medicineId}" class="btn-cancel">Hủy</a>
+      <button type="submit" class="btn-save"><%= isNew ? "📦 Xác nhận nhập kho" : "💾 Lưu thay đổi" %></button>
     </div>
   </form>
-</div>
+</div><%-- .content --%>
+</div><%-- .main --%>
+
 <script>
-// Bug 1 fix: chỉ block form submission khi isNew (nhập lô mới)
 const IS_NEW_BATCH = <%= isNew %>;
 
+// ── Đồng hồ realtime trên topbar ──
+function tickClock() {
+  const n = new Date();
+  const days = ['CN','T2','T3','T4','T5','T6','T7'];
+  const p = x => String(x).padStart(2,'0');
+  const d = document.getElementById('clkDate');
+  const t = document.getElementById('clkTime');
+  if (d) d.textContent = days[n.getDay()] + ' ' + p(n.getDate()) + '/' + p(n.getMonth()+1) + '/' + n.getFullYear();
+  if (t) t.textContent = p(n.getHours()) + ':' + p(n.getMinutes()) + ':' + p(n.getSeconds());
+}
+tickClock(); setInterval(tickClock, 1000);
+
+// ── Auto-fill ngày mặc định = hôm nay (chỉ khi nhập lô mới, ô đang trống) ──
+function todayISO() {
+  const n = new Date();
+  const p = x => String(x).padStart(2,'0');
+  return n.getFullYear() + '-' + p(n.getMonth()+1) + '-' + p(n.getDate());
+}
+document.addEventListener('DOMContentLoaded', function() {
+  if (IS_NEW_BATCH) {
+    const imp = document.getElementById('importDateInp');
+    const mf  = document.getElementById('mfDateInp');
+    if (imp && !imp.value) { imp.value = todayISO(); imp.max = todayISO(); }
+    if (mf && !mf.value)   { mf.value = todayISO(); mf.max = todayISO(); }
+  }
+  const inp = document.getElementById('expiryDateInp');
+  if (inp && inp.value) checkHsd(inp);
+  togglePoMode();
+});
+
+// ── Kiểm tra HSD (còn bao nhiêu ngày, cảnh báo GPP ≥ 90 ngày khi nhập) ──
 function checkHsd(inp) {
   const warn = document.getElementById('hsdWarn');
   if (!inp.value) { warn.style.display = 'none'; inp.setCustomValidity(''); return; }
   const today = new Date(); today.setHours(0,0,0,0);
   const hsd = new Date(inp.value);
   const diffDays = Math.round((hsd - today) / 86400000);
+  const base = 'display:block;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:600;';
   if (diffDays < 0) {
-    warn.style.cssText = 'display:block;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:600;background:#FEE2E2;color:#991B1B;border:1px solid #FECACA';
-    warn.textContent = IS_NEW_BATCH ? '❌ Ngày hết hạn đã qua! Không thể nhập lô hết hạn.' : '⚠️ Ngày hết hạn đã qua — lô này đã hết hạn.';
+    warn.style.cssText = base + 'background:#FEE2E2;color:#991B1B;border:1px solid #FECACA';
+    warn.textContent = IS_NEW_BATCH ? '❌ HSD đã qua! Không thể nhập lô hết hạn.' : '⚠️ Lô này đã hết hạn.';
     inp.setCustomValidity(IS_NEW_BATCH ? 'Ngày hết hạn đã qua' : '');
   } else if (diffDays < 90) {
-    warn.style.cssText = 'display:block;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:600;background:#FFFBEB;color:#92400E;border:1px solid #FDE68A';
-    warn.textContent = '⚠️ HSD chỉ còn ' + diffDays + ' ngày' + (IS_NEW_BATCH ? ' — GPP yêu cầu ≥ 90 ngày khi nhập kho!' : '');
+    warn.style.cssText = base + 'background:#FFFBEB;color:#92400E;border:1px solid #FDE68A';
+    warn.textContent = '⚠️ HSD chỉ còn ' + diffDays + ' ngày' + (IS_NEW_BATCH ? ' — GPP khuyến nghị ≥ 90 ngày khi nhập kho!' : '');
     inp.setCustomValidity(IS_NEW_BATCH ? 'HSD phải còn ít nhất 90 ngày' : '');
   } else {
-    warn.style.display = 'none';
+    warn.style.cssText = base + 'background:#F0FDF4;color:#166534;border:1px solid #BBF7D0';
+    warn.textContent = '✓ HSD còn ' + diffDays + ' ngày (~' + Math.round(diffDays/30) + ' tháng).';
     inp.setCustomValidity('');
   }
 }
-document.addEventListener('DOMContentLoaded', function() {
-  const inp = document.getElementById('expiryDateInp');
-  if (inp && inp.value) checkHsd(inp);
-});
 
+// ── Chọn đơn có sẵn / tạo đơn mới ──
 function togglePoMode() {
   const existingBlock = document.getElementById('poExistingBlock');
-  if (!existingBlock) return; // chế độ sửa lô — không có thẻ chọn đơn đặt hàng
+  if (!existingBlock) return; // chế độ sửa lô
   const mode = document.querySelector('input[name="poMode"]:checked');
   const isExisting = mode && mode.value === 'existing';
   existingBlock.style.display = isExisting ? 'flex' : 'none';
   document.getElementById('poNewBlock').style.display = isExisting ? 'none' : 'block';
-  document.querySelector('select[name="poId"]').required = isExisting;
-  document.querySelector('select[name="newPoSupplierId"]').required = !isExisting;
+  const poSel = document.querySelector('select[name="poId"]');
+  const supSel = document.querySelector('select[name="newPoSupplierId"]');
+  if (poSel)  poSel.required  = isExisting;
+  if (supSel) supSel.required = !isExisting;
 }
-togglePoMode();
 </script>
 </body>
 </html>

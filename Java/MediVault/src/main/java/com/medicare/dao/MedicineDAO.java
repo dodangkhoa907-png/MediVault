@@ -185,6 +185,13 @@ public class MedicineDAO implements IMedicineDAO {
         return 0;
     }
 
+    /** setInt an toàn cho cột Integer nullable (ShelfID nullable; Category/Manufacturer
+     *  NOT NULL nhưng nếu null thì để DB báo lỗi rõ thay vì NPE khi unbox). */
+    private static void setIntOrNull(PreparedStatement ps, int idx, Integer val) throws java.sql.SQLException {
+        if (val == null) ps.setNull(idx, java.sql.Types.INTEGER);
+        else ps.setInt(idx, val);
+    }
+
     public boolean insert(Medicines m) {
         String sql = "INSERT INTO Medicines (MedicineName, GenericName, Barcode, RegistrationNumber, " +
                 "CategoryID, ManufacturerID, Unit, ShelfID, Dosage, Contraindications, " +
@@ -196,10 +203,10 @@ public class MedicineDAO implements IMedicineDAO {
             ps.setNString(2, m.getGenericName());
             ps.setString(3, m.getBarcode());
             ps.setString(4, m.getRegistrationNumber());
-            ps.setInt(5, m.getCategoryId());
-            ps.setInt(6, m.getManufacturerId());
+            setIntOrNull(ps, 5, m.getCategoryId());
+            setIntOrNull(ps, 6, m.getManufacturerId());
             ps.setNString(7, m.getUnit());
-            ps.setInt(8, m.getShelfId());
+            setIntOrNull(ps, 8, m.getShelfId());
             ps.setNString(9, m.getDosage());
             ps.setNString(10, m.getContraindications());
             ps.setNString(11, m.getStorageConditions());
@@ -226,10 +233,10 @@ public class MedicineDAO implements IMedicineDAO {
             ps.setNString(2, m.getGenericName());
             ps.setString(3, m.getBarcode());
             ps.setString(4, m.getRegistrationNumber());
-            ps.setInt(5, m.getCategoryId());
-            ps.setInt(6, m.getManufacturerId());
+            setIntOrNull(ps, 5, m.getCategoryId());
+            setIntOrNull(ps, 6, m.getManufacturerId());
             ps.setNString(7, m.getUnit());
-            ps.setInt(8, m.getShelfId());
+            setIntOrNull(ps, 8, m.getShelfId());
             ps.setNString(9, m.getDosage());
             ps.setNString(10, m.getContraindications());
             ps.setNString(11, m.getStorageConditions());
@@ -261,10 +268,10 @@ public class MedicineDAO implements IMedicineDAO {
             ps.setNString(2, m.getGenericName());
             ps.setString(3, m.getBarcode());
             ps.setString(4, m.getRegistrationNumber());
-            ps.setInt(5, m.getCategoryId());
-            ps.setInt(6, m.getManufacturerId());
+            setIntOrNull(ps, 5, m.getCategoryId());
+            setIntOrNull(ps, 6, m.getManufacturerId());
             ps.setNString(7, m.getUnit());
-            ps.setInt(8, m.getShelfId());
+            setIntOrNull(ps, 8, m.getShelfId());
             ps.setNString(9, m.getDosage());
             ps.setNString(10, m.getContraindications());
             ps.setNString(11, m.getStorageConditions());

@@ -69,6 +69,18 @@ public class DBContext {
             // KHÔNG dùng selectMethod=cursor — gây lỗi nested cursor conflict
             // khi dùng INSERT...SELECT...WHERE (subquery) trên cùng 1 connection
 
+            // ── SET options BẮT BUỘC cho SQL Server ───────────────────────
+            // Bảng Medicines có cột tính toán MedicineCode + có indexed view/
+            // filtered index trong schema. Mọi INSERT/UPDATE lên các bảng đó
+            // yêu cầu các SET option này ON, nếu không sẽ báo:
+            //   "UPDATE/INSERT failed because ... SET options ... 'QUOTED_IDENTIFIER'"
+            // → khiến thêm thuốc thất bại (msg=error) và ShiftAutoClose lỗi mỗi phút.
+            // connectionInitSql chạy 1 lần khi tạo connection vật lý (session-level).
+            config.setConnectionInitSql(
+                    "SET QUOTED_IDENTIFIER ON; SET ARITHABORT ON; SET ANSI_NULLS ON; "
+                  + "SET ANSI_PADDING ON; SET ANSI_WARNINGS ON; "
+                  + "SET CONCAT_NULL_YIELDS_NULL ON; SET NUMERIC_ROUNDABORT OFF");
+
             // ── Connection test ───────────────────────────────────────────
             config.setConnectionTestQuery("SELECT 1");  // test connection còn sống không
             config.setValidationTimeout(2000);          // 2s để validate
