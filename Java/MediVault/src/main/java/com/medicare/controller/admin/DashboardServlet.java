@@ -76,8 +76,14 @@ public class DashboardServlet extends HttpServlet {
         List<PasswordResetRequest> pendingResets = resetDAO.findAllPending();
         req.setAttribute("pendingResets",     pendingResets);
         req.setAttribute("pendingResetCount", pendingResets.size());
-        int pendingLeaveCount = leaveDAO.findPending().size();
-        req.setAttribute("pendingLeaveCount", pendingLeaveCount);
+        List<LeaveRequest> pendingLeaves = leaveDAO.findPending();
+        req.setAttribute("pendingLeaves",     pendingLeaves);
+        req.setAttribute("pendingLeaveCount", pendingLeaves.size());
+
+        // ── Yêu cầu đăng ký lại khuôn mặt (nhân viên gửi lên) ──
+        List<Account> pendingReenroll = ((AccountDAO) accountDAO).findPendingFaceReenroll();
+        req.setAttribute("pendingReenroll",      pendingReenroll);
+        req.setAttribute("pendingReenrollCount", pendingReenroll.size());
 
         // ── Account maps (N+1 avoid) ──
         Map<Integer, Account> resetAccountMap   = new HashMap<>();

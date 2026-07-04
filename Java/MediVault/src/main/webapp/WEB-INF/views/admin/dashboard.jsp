@@ -42,6 +42,17 @@
     java.util.Map<Integer, com.medicare.entity.Account> blockedMap =
         (java.util.Map<Integer, com.medicare.entity.Account>) request.getAttribute("blockedAccountMap");
     if (blockedMap == null) blockedMap = new java.util.HashMap<>();
+
+    // ── Yêu cầu từ nhân viên gửi lên (hiện trong chuông) ──
+    @SuppressWarnings("unchecked")
+    java.util.List<com.medicare.entity.Account> pendingReenroll =
+        (java.util.List<com.medicare.entity.Account>) request.getAttribute("pendingReenroll");
+    if (pendingReenroll == null) pendingReenroll = new java.util.ArrayList<>();
+
+    @SuppressWarnings("unchecked")
+    java.util.List<com.medicare.entity.LeaveRequest> pendingLeaves =
+        (java.util.List<com.medicare.entity.LeaveRequest>) request.getAttribute("pendingLeaves");
+    if (pendingLeaves == null) pendingLeaves = new java.util.ArrayList<>();
 %>
 
 <!DOCTYPE html>
@@ -174,7 +185,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 }
 .notif-dropdown{
   position:absolute;top:calc(100% + 8px);right:0;
-  width:300px;background:#fff;border:1px solid var(--border);border-radius:16px;
+  width:346px;background:#fff;border:1px solid var(--border);border-radius:16px;
   box-shadow:0 12px 40px rgba(0,0,0,.12);opacity:0;visibility:hidden;
   transform:translateY(-8px);transition:all .2s;z-index:200;overflow:hidden;
 }
@@ -183,6 +194,16 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .notif-head-title{font-size:13px;font-weight:700;color:var(--ink)}
 .notif-clear{background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);padding:0}
 .notif-clear:hover{color:var(--red)}
+/* Tabs lọc thông báo theo nhóm */
+.notif-tabs{display:flex;gap:6px;padding:9px 12px;border-bottom:1px solid var(--border);overflow-x:auto}
+.notif-tabs::-webkit-scrollbar{display:none}
+.notif-tab{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:11.5px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;transition:.15s;font-family:inherit}
+.notif-tab:hover{border-color:var(--cyan);color:var(--ink)}
+.notif-tab.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.notif-tab .nt-count{background:rgba(220,38,38,.9);color:#fff;border-radius:10px;padding:0 5px;font-size:9.5px;font-weight:800;min-width:15px;text-align:center}
+.notif-tab.active .nt-count{background:rgba(255,255,255,.28)}
+.notif-list{max-height:360px;overflow-y:auto}
+.notif-empty{padding:30px 16px;text-align:center;color:var(--muted);font-size:12.5px}
 .notif-item{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-bottom:1px solid #F8FAFC;transition:background .15s}
 .notif-item:hover{background:var(--surface)}
 .notif-item:last-child{border-bottom:none}
@@ -389,7 +410,8 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                 <button class="topbar-icon-btn" onclick="toggleNotif()" title="Thông báo">
                     🔔
                     <%
-                        int totalNotifCount = expiryCount + pendingResetCount;
+                        int totalNotifCount = expiryCount + pendingResetCount
+                                + pendingReenroll.size() + pendingLeaves.size() + blockedMap.size();
                     %>
                     <% if (totalNotifCount > 0) { %>
                     <span class="topbar-notif-badge" id="notifBadge"><%= totalNotifCount > 9 ? "9+" : totalNotifCount %></span>
@@ -400,11 +422,22 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                         <span class="notif-head-title">🔔 Thông báo</span>
                         <button class="notif-clear" onclick="closeNotif()">Đóng ✕</button>
                     </div>
+                    <%
+                        int staffNotifCount   = pendingReenroll.size() + pendingLeaves.size();
+                        int accountNotifCount = pendingResetCount + blockedMap.size();
+                        int stockNotifCount   = expiryCount;
+                    %>
+                    <div class="notif-tabs">
+                        <button class="notif-tab active" data-tab="all" onclick="filterNotif(this,'all')">Tất cả</button>
+                        <button class="notif-tab" data-tab="staff" onclick="filterNotif(this,'staff')">👥 Nhân viên<% if (staffNotifCount > 0) { %><span class="nt-count"><%= staffNotifCount %></span><% } %></button>
+                        <button class="notif-tab" data-tab="account" onclick="filterNotif(this,'account')">🔐 Tài khoản<% if (accountNotifCount > 0) { %><span class="nt-count"><%= accountNotifCount %></span><% } %></button>
+                        <button class="notif-tab" data-tab="stock" onclick="filterNotif(this,'stock')">📦 Kho<% if (stockNotifCount > 0) { %><span class="nt-count"><%= stockNotifCount %></span><% } %></button>
+                    </div>
                     <div class="notif-list" id="notifList">
                         <%-- ── Blocked accounts (quá 3 lần forgot-password hôm nay) ── --%>
                         <% for (java.util.Map.Entry<Integer, com.medicare.entity.Account> bEntry : blockedMap.entrySet()) {
                                com.medicare.entity.Account bAcc = bEntry.getValue(); %>
-                        <div class="notif-item" style="background:rgba(220,38,38,.04);border-left:3px solid #DC2626">
+                        <div class="notif-item" data-cat="account" style="background:rgba(220,38,38,.04);border-left:3px solid #DC2626">
                           <div class="notif-dot" style="background:#DC2626;animation:pulseDot 1.8s ease-in-out infinite"></div>
                           <div style="flex:1">
                             <div class="notif-text">🚫 <strong>@<%= bAcc.getUsername() %></strong> bị chặn gửi yêu cầu reset MK (quá 3 lần hôm nay)</div>
@@ -425,7 +458,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                                String editUrl = request.getContextPath() + "/accounts?action=edit&id=" + pr.getAccountId();
                                boolean isConfirmed = "CONFIRMED".equals(pr.getStatus());
                         %>
-                        <a href="<%= editUrl %>" class="notif-item" style="text-decoration:none;display:flex;cursor:pointer;
+                        <a href="<%= editUrl %>" class="notif-item" data-cat="account" style="text-decoration:none;display:flex;cursor:pointer;
                            background:rgba(245,158,11,.06);border-left:3px solid #F59E0B">
                           <div class="notif-dot" style="background:#D97706;animation:pulseDot 1.8s ease-in-out infinite"></div>
                           <div style="flex:1">
@@ -441,13 +474,40 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                         </a>
                         <% } %>
 
+                        <%-- ── Yêu cầu đăng ký lại khuôn mặt (nhân viên gửi lên) ── --%>
+                        <% for (com.medicare.entity.Account ra : pendingReenroll) { %>
+                        <a href="<%= request.getContextPath() %>/accounts" class="notif-item" data-cat="staff" style="text-decoration:none;display:flex;cursor:pointer;
+                           background:rgba(217,119,6,.06);border-left:3px solid #D97706">
+                          <div class="notif-dot" style="background:#D97706;animation:pulseDot 1.8s ease-in-out infinite"></div>
+                          <div style="flex:1">
+                            <div class="notif-text">🔄 <strong><%= ra.getFullName() != null ? ra.getFullName() : ra.getUsername() %></strong> xin đăng ký lại khuôn mặt</div>
+                            <div class="notif-time">@<%= ra.getUsername() %> · Bấm để duyệt</div>
+                          </div>
+                          <span style="font-size:13px;color:var(--muted);margin-left:auto;align-self:center">→</span>
+                        </a>
+                        <% } %>
+
+                        <%-- ── Đơn xin nghỉ phép chờ duyệt ── --%>
+                        <% if (!pendingLeaves.isEmpty()) { %>
+                        <a href="<%= request.getContextPath() %>/leave-requests?action=pending" class="notif-item" data-cat="staff" style="text-decoration:none;display:flex;cursor:pointer;
+                           background:rgba(37,99,235,.06);border-left:3px solid #2563EB">
+                          <div class="notif-dot" style="background:#2563EB;animation:pulseDot 1.8s ease-in-out infinite"></div>
+                          <div style="flex:1">
+                            <div class="notif-text">🏖️ <strong><%= pendingLeaves.size() %> đơn xin nghỉ</strong> chờ duyệt</div>
+                            <div class="notif-time">Bấm để xem &amp; duyệt</div>
+                          </div>
+                          <span style="font-size:13px;color:var(--muted);margin-left:auto;align-self:center">→</span>
+                        </a>
+                        <% } %>
+
                         <%-- ── Thuốc hết hạn ── --%>
                         <% if (expiryCount > 0) { %>
-                        <div class="notif-item"><div class="notif-dot"></div><div><div class="notif-text">⚠️ Có <%= expiryCount %> mặt hàng sắp hết hạn</div><div class="notif-time">Hôm nay</div></div></div>
+                        <div class="notif-item" data-cat="stock"><div class="notif-dot"></div><div><div class="notif-text">⚠️ Có <%= expiryCount %> mặt hàng sắp hết hạn</div><div class="notif-time">Hôm nay</div></div></div>
                         <% } else { %>
-                        <div class="notif-item"><div class="notif-dot old"></div><div><div class="notif-text">✅ Không có thuốc nào sắp hết hạn</div><div class="notif-time">Hôm nay</div></div></div>
+                        <div class="notif-item" data-cat="stock"><div class="notif-dot old"></div><div><div class="notif-text">✅ Không có thuốc nào sắp hết hạn</div><div class="notif-time">Hôm nay</div></div></div>
                         <% } %>
-                        <div class="notif-item"><div class="notif-dot old"></div><div><div class="notif-text">👤 Admin <%= fullName %> đăng nhập</div><div class="notif-time" id="loginTime"></div></div></div>
+                        <div class="notif-item" data-cat="system"><div class="notif-dot old"></div><div><div class="notif-text">👤 Admin <%= fullName %> đăng nhập</div><div class="notif-time" id="loginTime"></div></div></div>
+                        <div class="notif-empty" id="notifEmpty" style="display:none">📭 Không có thông báo trong mục này.</div>
                     </div>
                 </div>
             </div>
@@ -798,6 +858,20 @@ body{display:flex;background:var(--surface);color:var(--ink)}
     updateClock(); setInterval(updateClock, 1000);
     function toggleNotif() { document.getElementById('notifDropdown').classList.toggle('open'); }
     function closeNotif() { document.getElementById('notifDropdown').classList.remove('open'); }
+    // Lọc thông báo theo nhóm tab (all/staff/account/stock/system)
+    function filterNotif(btn, cat) {
+        document.querySelectorAll('.notif-tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        let shown = 0;
+        document.querySelectorAll('#notifList .notif-item').forEach(it => {
+            const c = it.getAttribute('data-cat') || 'system';
+            const vis = (cat === 'all') || (c === cat);
+            it.style.display = vis ? '' : 'none';
+            if (vis) shown++;
+        });
+        const emp = document.getElementById('notifEmpty');
+        if (emp) emp.style.display = shown === 0 ? 'block' : 'none';
+    }
     document.addEventListener('click', function(e) { const w = document.querySelector('.notif-wrap'); if(w && !w.contains(e.target)) closeNotif(); });
 
     // Auto-hide toast

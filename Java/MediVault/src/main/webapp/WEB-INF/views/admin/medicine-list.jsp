@@ -1094,11 +1094,17 @@ async function toggleExpand(tr, medicineId) {
     return;
   }
 
+  // Chặn double-click: chưa chèn xong row (fetch async) mà click tiếp sẽ tạo trùng.
+  if (tr.dataset.loading === '1') return;
+  tr.dataset.loading = '1';
   tr.classList.add('loading-row');
 
   try {
     const res  = await fetch(CTX + '/medicines?action=api-batches&medicineId=' + medicineId);
     const list = await res.json();
+
+    // Phòng thủ 2 lớp: nếu vì lý do nào đó row đã tồn tại thì không chèn nữa.
+    if (document.getElementById('br-' + medicineId)) return;
 
     const bRow = document.createElement('tr');
     bRow.id        = 'br-' + medicineId;
@@ -1146,6 +1152,7 @@ async function toggleExpand(tr, medicineId) {
     showToast('err', '❌ Không tải được lô hàng');
   } finally {
     tr.classList.remove('loading-row');
+    tr.dataset.loading = '0';
   }
 }
 

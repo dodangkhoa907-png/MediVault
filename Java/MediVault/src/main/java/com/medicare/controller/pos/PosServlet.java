@@ -102,6 +102,20 @@ public class PosServlet extends HttpServlet {
             resp.getWriter().print(customerJson(c));
             return;
         }
+
+        // Panel quản lý khách trong POS: tìm/liệt kê theo tên hoặc SĐT
+        if ("search-customers".equals(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            handleSearchCustomers(req, resp.getWriter());
+            return;
+        }
+
+        // Xem chi tiết 1 khách trong POS: hồ sơ + điểm/hạng + lịch sử mua gần đây
+        if ("pos-customer-detail".equals(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            handleCustomerDetail(req, resp.getWriter());
+            return;
+        }
         if ("shift-summary".equals(action)) {
             resp.setContentType("application/json;charset=UTF-8");
             PrintWriter out = resp.getWriter();
@@ -204,7 +218,7 @@ public class PosServlet extends HttpServlet {
         req.setAttribute("posStations",
                 new com.medicare.dao.PosStationDAO().findAllActive());
 
-        req.getRequestDispatcher("/WEB-INF/views/pos.jsp").forward(req, resp);
+        req.getRequestDispatcher("/WEB-INF/views/pos/pos.jsp").forward(req, resp);
     }
 
     @Override
@@ -328,6 +342,104 @@ public class PosServlet extends HttpServlet {
     }
 
     // ── Customer helpers (tạo nhanh + NFC + loyalty) ──────────────────────────
+
+    /**
+     * Panel Khách hàng trong POS: trả danh sách khách (tối đa 50) lọc theo tên
+     * hoặc SĐT. Nhẹ — chỉ id/tên/SĐT/hasNfc; điểm/dị ứng lấy khi chọn (find-customer).
+     */
+    private void handleSearchCustomers(HttpServletRequest req, PrintWriter out) {
+        String q = req.getParameter("q");
+        String kw = q != null ? q.trim().toLowerCase() : "";
+        List<Customer> all = customerDAO.findAll();
+        StringBuilder sb = new StringBuilder("[");
+        int n = 0;
+        for (Customer c : all) {
+            if (n >= 50) break;
+            String name  = c.getCustomerName() != null ? c.getCustomerName() : "";
+            String phone = c.getPhone() != null ? c.getPhone() : "";
+            if (!kw.isEmpty()
+                    && !name.toLowerCase().contains(kw)
+                    && !phone.contains(kw)) continue;
+            if (n > 0) sb.append(",");
+            sb.append("{\"id\":").append(c.getCustomerId())
+              .append(",\"name\":\"").append(esc(name)).append("\"")
+              .append(",\"phone\":\"").append(esc(phone)).append("\"")
+              .append(",\"hasNfc\":").append(c.getNfcCardUid() != null && !c.getNfcCardUid().isEmpty())
+              .append("}");
+            n++;
+        }
+        sb.append("]");
+        out.print(sb);
+    }
+
+    /**
+     * Chi tiết 1 khách cho POS (trang xem hồ sơ trong POS): thông tin + điểm/hạng
+     * + tối đa 10 hóa đơn gần nhất của khách. Chỉ đọc, an toàn cho nhân viên.
+     */
+    private void handleCustomerDetail(HttpServletRequest req, PrintWriter out) {
+        int id = parseIntOrZero(req.getParameter("id"));
+        Customer c = customerDAO.findById(id);
+        if (c == null) { out.print("{\"ok\":false,\"reason\":\"not_found\"}"); return; }
+
+        com.medicare.entity.LoyaltyCard card = new com.medicare.dao.LoyaltyDAO().findByCustomer(id);
+        String allergy = c.getAllergyHistory() != null ? c.getAllergyHistory().trim() : "";
+        String chronic = c.getChronicDisease() != null ? c.getChronicDisease().trim() : "";
+
+        StringBuilder inv = new StringBuilder();
+        int count = 0;
+        java.math.BigDecimal total = java.math.BigDecimal.ZERO;
+        String sql = "SELECT TOP 10 InvoiceCode, FinalAmount, PaymentMethod, Status, " +
+                "CONVERT(VARCHAR(16), CreatedAt, 120) AS CreatedAt " +
+                "FROM Invoices WHERE CustomerID = ? ORDER BY CreatedAt DESC";
+        String sqlTotal = "SELECT ISNULL(SUM(FinalAmount),0) AS T, COUNT(*) AS N " +
+                "FROM Invoices WHERE CustomerID = ? AND Status = 'COMPLETED'";
+        try (java.sql.Connection cn = com.medicare.config.DBContext.getConnection()) {
+            try (java.sql.PreparedStatement ps = cn.prepareStatement(sql)) {
+                ps.setInt(1, id);
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        if (count > 0) inv.append(",");
+                        java.math.BigDecimal amt = rs.getBigDecimal("FinalAmount");
+                        if (amt == null) amt = java.math.BigDecimal.ZERO;
+                        inv.append("{\"code\":\"").append(esc(rs.getString("InvoiceCode")))
+                           .append("\",\"time\":\"").append(rs.getString("CreatedAt"))
+                           .append("\",\"amount\":").append(amt.toPlainString())
+                           .append(",\"method\":\"").append(esc(rs.getString("PaymentMethod")))
+                           .append("\",\"status\":\"").append(esc(rs.getString("Status"))).append("\"}");
+                        count++;
+                    }
+                }
+            }
+            try (java.sql.PreparedStatement ps = cn.prepareStatement(sqlTotal)) {
+                ps.setInt(1, id);
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) total = rs.getBigDecimal("T");
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+
+        out.print("{\"ok\":true"
+                + ",\"id\":" + c.getCustomerId()
+                + ",\"name\":\"" + esc(c.getCustomerName()) + "\""
+                + ",\"phone\":\"" + esc(c.getPhone() != null ? c.getPhone() : "") + "\""
+                + ",\"email\":\"" + esc(c.getEmail() != null ? c.getEmail() : "") + "\""
+                + ",\"address\":\"" + esc(c.getAddress() != null ? c.getAddress() : "") + "\""
+                + ",\"gender\":\"" + esc(c.getGender() != null ? c.getGender() : "") + "\""
+                + ",\"dob\":\"" + (c.getDateOfBirth() != null ? c.getDateOfBirth().toString() : "") + "\""
+                + ",\"allergy\":\"" + esc(allergy) + "\""
+                + ",\"chronic\":\"" + esc(chronic) + "\""
+                + ",\"points\":" + (card != null ? card.getAvailablePoints() : 0)
+                + ",\"tier\":\"" + esc(card != null && card.getTierName() != null ? card.getTierName() : "") + "\""
+                + ",\"hasNfc\":" + (c.getNfcCardUid() != null && !c.getNfcCardUid().isEmpty())
+                + ",\"nfcUid\":\"" + esc(c.getNfcCardUid() != null ? c.getNfcCardUid() : "") + "\""
+                + ",\"invoiceCount\":" + count
+                + ",\"totalSpent\":" + (total != null ? total.toPlainString() : "0")
+                + ",\"invoices\":[" + inv + "]}");
+    }
+
+    private int parseIntOrZero(String s) {
+        try { return Integer.parseInt(s); } catch (Exception e) { return 0; }
+    }
 
     /** JSON khách hàng cho POS: kèm cảnh báo dị ứng + điểm/hạng thẻ. */
     private String customerJson(Customer c) {
