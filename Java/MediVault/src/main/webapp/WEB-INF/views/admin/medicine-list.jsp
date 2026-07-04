@@ -343,9 +343,9 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
 .price-wrap .dw-input{padding-right:30px}
 .price-sfx{position:absolute;right:11px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;color:var(--muted);pointer-events:none}
 .add-btn-xs{height:22px;padding:0 8px;background:rgba(58,189,224,.1);border:1.5px solid rgba(58,189,224,.3);border-radius:6px;font-size:11px;font-weight:700;color:#1558A8;cursor:pointer;flex-shrink:0}
-.checkbox-row-dw{display:flex;align-items:center;gap:9px;padding:10px 12px;background:rgba(245,158,11,.06);border:1.5px solid rgba(245,158,11,.2);border-radius:10px;cursor:pointer;grid-column:1/-1}
-.checkbox-row-dw input{width:16px;height:16px;cursor:pointer;accent-color:var(--gold)}
-.checkbox-row-dw label{font-size:13px;font-weight:600;color:#92400E;cursor:pointer}
+.checkbox-row-dw{display:flex;align-items:center;gap:14px;padding:11px 16px 11px 18px;background:rgba(245,158,11,.06);border:1.5px solid rgba(245,158,11,.2);border-radius:10px;cursor:pointer;grid-column:1/-1}
+.checkbox-row-dw input{width:18px;height:18px;cursor:pointer;accent-color:var(--gold);flex-shrink:0;margin:0}
+.checkbox-row-dw label{font-size:13px;font-weight:600;color:#92400E;cursor:pointer;line-height:1.4}
 /* Initial stock (Create only) */
 .init-stock-dw{background:linear-gradient(135deg,#F0FDF4,#ECFDF5);border:1.5px solid #A7F3D0;border-radius:12px;padding:12px 16px;margin-top:4px;grid-column:1/-1}
 .init-stock-toggle-dw{display:flex;align-items:flex-start;gap:9px;cursor:pointer;font-size:13px;font-weight:600;color:#065F46}
@@ -859,36 +859,28 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
               </c:forEach>
             </select>
           </div>
-        </div>
-      </div>
 
-      <%-- Section 3: Tồn kho ban đầu (Create only) --%>
-      <div class="dw-section" id="initStockSection">
-        <div class="dw-section-title">📦 Tồn kho ban đầu</div>
-        <div class="dw-grid">
-          <div class="init-stock-dw">
-            <div class="init-stock-toggle-dw">
-              <input type="checkbox" id="dwHasInitStock" onchange="toggleInitStockDw(this.checked)">
-              <label for="dwHasInitStock">Thuốc đã có hàng sẵn trong kho — khai báo số lượng ban đầu để hệ thống tự tạo lô</label>
+          <%-- Tồn kho ban đầu — nhập thẳng tại đây (chỉ hiện khi TẠO MỚI) --%>
+          <div class="dw-field span-2 dw-initstock" style="grid-column:1/-1;border-top:1px dashed var(--border);padding-top:12px;margin-top:2px">
+            <div style="font-size:13px;font-weight:700;color:#065F46">📦 Tồn kho ban đầu
+              <span style="font-weight:500;color:#059669;font-size:11.5px">— nếu thuốc đã có sẵn hàng, nhập số lượng để tự tạo lô đầu (để 0 nếu chưa nhập)</span>
             </div>
-            <div class="init-stock-fields-dw" id="initStockFieldsDw" style="display:none">
-              <div class="dw-field">
-                <label class="dw-label" style="color:#065F46">Số lượng <span class="req">*</span></label>
-                <input type="number" name="initialQuantity" id="dwInitQty" class="dw-input"
-                       placeholder="0" min="1">
-              </div>
-              <div class="dw-field">
-                <label class="dw-label" style="color:#065F46">Ngày HH <span class="req">*</span></label>
-                <input type="date" name="initialExpiryDate" id="dwInitExpiry" class="dw-input">
-              </div>
-              <div class="dw-field">
-                <label class="dw-label" style="color:#065F46">Giá nhập (₫)</label>
-                <div class="price-wrap">
-                  <input type="number" name="initialImportPrice" class="dw-input"
-                         placeholder="0" min="0" step="500">
-                  <span class="price-sfx">₫</span>
-                </div>
-              </div>
+          </div>
+          <div class="dw-field dw-initstock">
+            <label class="dw-label">Số lượng ban đầu</label>
+            <input type="number" name="initialQuantity" id="dwInitQty" class="dw-input" value="0"
+                   placeholder="VD: 100" min="0" oninput="onDwInitQty()">
+          </div>
+          <div class="dw-field dw-initstock">
+            <label class="dw-label">Ngày hết hạn lô <span id="dwInitExpReq" class="req" style="display:none">*</span></label>
+            <input type="date" name="initialExpiryDate" id="dwInitExpiry" class="dw-input">
+          </div>
+          <div class="dw-field dw-initstock">
+            <label class="dw-label">Giá nhập kho (₫)</label>
+            <div class="price-wrap">
+              <input type="number" name="initialImportPrice" class="dw-input"
+                     placeholder="0" min="0" step="500">
+              <span class="price-sfx">₫</span>
             </div>
           </div>
         </div>
@@ -1168,7 +1160,7 @@ function openAddPanel() {
   document.getElementById('dwSub').textContent = 'Tạo hồ sơ thuốc — tồn kho bắt đầu từ 0';
   document.getElementById('dwSaveBtn').textContent = '➕ Tạo hồ sơ thuốc';
   document.getElementById('dwFootHint').textContent = '';
-  document.getElementById('initStockSection').style.display = '';
+  document.querySelectorAll('.dw-initstock').forEach(el => el.style.display = '');
   openDrawer();
   setTimeout(() => document.getElementById('dwName').focus(), 260);
 }
@@ -1180,7 +1172,7 @@ async function openEditPanel(medicineId) {
   document.getElementById('dwSub').textContent = 'Chỉnh sửa thông tin hồ sơ thuốc';
   document.getElementById('dwSaveBtn').textContent = '💾 Lưu thay đổi';
   document.getElementById('dwFootHint').textContent = 'ID: ' + medicineId;
-  document.getElementById('initStockSection').style.display = 'none';
+  document.querySelectorAll('.dw-initstock').forEach(el => el.style.display = 'none');
   openDrawer();
 
   const loading = document.getElementById('dwLoading');
@@ -1244,8 +1236,10 @@ function resetDwForm() {
   document.getElementById('dwForm').reset();
   document.getElementById('dwMedId').value = '';
   document.getElementById('dwExistingImg').value = '';
-  document.getElementById('initStockFieldsDw').style.display = 'none';
-  document.getElementById('dwHasInitStock').checked = false;
+  const dwInitExpReq = document.getElementById('dwInitExpReq');
+  if (dwInitExpReq) dwInitExpReq.style.display = 'none';
+  const dwInitExpiry = document.getElementById('dwInitExpiry');
+  if (dwInitExpiry) dwInitExpiry.required = false;
   // Reset image preview
   const preview = document.getElementById('dwImgPreview');
   if (preview && preview.tagName === 'IMG')
@@ -1289,15 +1283,13 @@ document.getElementById('dwForm').addEventListener('submit', function() {
   btn.textContent = '⏳ Đang lưu...';
 });
 
-// ── INITIAL STOCK TOGGLE ──────────────────────────────────────────────────────
-function toggleInitStockDw(checked) {
-  const fields = document.getElementById('initStockFieldsDw');
-  const qtyIn  = document.getElementById('dwInitQty');
-  const expIn  = document.getElementById('dwInitExpiry');
-  fields.style.display = checked ? 'grid' : 'none';
-  if (qtyIn) qtyIn.required = checked;
-  if (expIn) expIn.required = checked;
-  if (checked && qtyIn) qtyIn.focus();
+// ── TỒN KHO BAN ĐẦU — HSD bắt buộc khi có số lượng ────────────────────────────
+function onDwInitQty() {
+  const qty = parseInt(document.getElementById('dwInitQty').value) || 0;
+  const expIn = document.getElementById('dwInitExpiry');
+  const req   = document.getElementById('dwInitExpReq');
+  if (expIn) expIn.required = qty > 0;
+  if (req)   req.style.display = qty > 0 ? 'inline' : 'none';
 }
 
 // ── STAT CARD SWITCHING ───────────────────────────────────────────────────────

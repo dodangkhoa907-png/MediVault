@@ -83,6 +83,9 @@ public class MedicineServlet extends HttpServlet {
             case "delete-batch" -> deleteBatch(req, resp);
             case "destroy-batch" -> destroyBatch(req, resp);
             case "create-category-ajax"    -> createCategoryAjax(req, resp);
+            case "create-shelf-ajax"       -> createShelfAjax(req, resp);
+            case "update-shelf-ajax"       -> updateShelfAjax(req, resp);
+            case "delete-shelf-ajax"       -> deleteShelfAjax(req, resp);
             case "create-manufacturer-ajax" -> createManufacturerAjax(req, resp);
             case "delete-manufacturer-ajax" -> deleteManufacturerAjax(req, resp);
             case "create-po-ajax"           -> createPoAjax(req, resp);
@@ -258,7 +261,7 @@ public class MedicineServlet extends HttpServlet {
         if (ValidationUtil.isBlank(mfrId))
             errors.add("Vui lòng chọn nhà sản xuất!");
 
-        // Validate initial stock (only for new medicine when admin declares existing qty)
+        // Validate initial stock (only for new medicine when admin adds initial qty)
         int initialQty = 0;
         LocalDate initialExpiry = null;
         if (isNew) {
@@ -267,16 +270,29 @@ public class MedicineServlet extends HttpServlet {
             try { initialQty = Integer.parseInt(initQtyStr); } catch (Exception ignored) {}
             if (initialQty > 0) {
                 if (ValidationUtil.isBlank(initExpiryStr)) {
-                    errors.add("Ngày hết hạn lô đầu tiên bắt buộc khi có số lượng ban đầu!");
+                    errors.add("Ngày hết hạn lô bắt buộc khi có số lượng thêm vào!");
                 } else {
                     try {
                         initialExpiry = LocalDate.parse(initExpiryStr);
                         if (!initialExpiry.isAfter(LocalDate.now()))
-                            errors.add("Ngày hết hạn lô ban đầu phải sau ngày hôm nay!");
+                            errors.add("Ngày hết hạn lô phải sau ngày hôm nay!");
                     } catch (Exception e) {
-                        errors.add("Ngày hết hạn lô ban đầu không hợp lệ!");
+                        errors.add("Ngày hết hạn lô không hợp lệ!");
                     }
                 }
+            }
+        }
+
+        // ── BẮT TRÙNG khi tạo mới: Barcode / Số đăng ký / trùng tên chính xác ──
+        if (isNew && errors.isEmpty()) {
+            Medicines dup = ((com.medicare.dao.MedicineDAO) medicineDAO).findDuplicate(
+                    req.getParameter("barcode"),
+                    req.getParameter("registrationNumber"),
+                    name);
+            if (dup != null) {
+                errors.add("Thuốc này đã có trong hệ thống: \"" + dup.getMedicineName()
+                        + "\" (" + dup.getMedicineCode() + ").");
+                req.setAttribute("dupMedicine", dup);   // JSP hiện nút "Nhập lô mới cho thuốc này →"
             }
         }
 
@@ -766,6 +782,78 @@ public class MedicineServlet extends HttpServlet {
 
     // ── AJAX: Tạo danh mục mới inline
     // ──────────────────────────────────────────────────────
+    // ── CRUD VỊ TRÍ KỆ (AJAX — dùng ngay trong form thuốc) ────────────────────
+
+    private void createShelfAjax(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        PrintWriter out = resp.getWriter();
+        String name  = req.getParameter("shelfName");
+        String notes = req.getParameter("locationNotes");
+        if (name == null || name.trim().isEmpty()) {
+            out.print("{\"ok\":false,\"error\":\"Tên kệ không được để trống!\"}"); return;
+        }
+        // Bắt trùng tên kệ (ShelfName UNIQUE trong DB — check trước cho thông báo đẹp)
+        for (com.medicare.entity.Shelf s : shelfDAO.findAll()) {
+            if (s.getShelfName() != null && s.getShelfName().equalsIgnoreCase(name.trim())) {
+                out.print("{\"ok\":false,\"error\":\"Kệ này đã tồn tại!\"}"); return;
+            }
+        }
+        com.medicare.entity.Shelf shelf = new com.medicare.entity.Shelf();
+        shelf.setShelfName(name.trim());
+        shelf.setLocationNotes(notes != null ? notes.trim() : null);
+        boolean ok = shelfDAO.insert(shelf);
+        if (ok) {
+            AuditHelper.log(req, "Tạo vị trí kệ", "Shelf", "Thêm kệ: " + name.trim());
+            // Lấy lại ID vừa tạo (insert không trả ID) — tìm theo tên unique
+            int newId = 0;
+            for (com.medicare.entity.Shelf s : shelfDAO.findAll()) {
+                if (s.getShelfName().equalsIgnoreCase(name.trim())) { newId = s.getShelfId(); break; }
+            }
+            out.print("{\"ok\":true,\"id\":" + newId + ",\"name\":\""
+                    + name.trim().replace("\"", "&quot;") + "\"}");
+        } else {
+            out.print("{\"ok\":false,\"error\":\"Lỗi khi lưu kệ!\"}");
+        }
+    }
+
+    private void updateShelfAjax(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        PrintWriter out = resp.getWriter();
+        int id = 0;
+        try { id = Integer.parseInt(req.getParameter("shelfId")); } catch (Exception ignored) {}
+        String name = req.getParameter("shelfName");
+        com.medicare.entity.Shelf shelf = shelfDAO.findById(id);
+        if (shelf == null || name == null || name.trim().isEmpty()) {
+            out.print("{\"ok\":false,\"error\":\"Dữ liệu không hợp lệ!\"}"); return;
+        }
+        shelf.setShelfName(name.trim());
+        String notes = req.getParameter("locationNotes");
+        if (notes != null) shelf.setLocationNotes(notes.trim());
+        boolean ok = shelfDAO.update(shelf);
+        if (ok) AuditHelper.log(req, "Sửa vị trí kệ", "Shelf", "Đổi tên kệ ID " + id + " → " + name.trim());
+        out.print(ok ? "{\"ok\":true}" : "{\"ok\":false,\"error\":\"Lỗi khi cập nhật (tên kệ có thể bị trùng)!\"}");
+    }
+
+    private void deleteShelfAjax(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        PrintWriter out = resp.getWriter();
+        int id = 0;
+        try { id = Integer.parseInt(req.getParameter("shelfId")); } catch (Exception ignored) {}
+        com.medicare.entity.Shelf shelf = shelfDAO.findById(id);
+        if (shelf == null) { out.print("{\"ok\":false,\"error\":\"Không tìm thấy kệ!\"}"); return; }
+        int inUse = shelfDAO.countMedicinesOnShelf(id);
+        if (inUse > 0) {
+            out.print("{\"ok\":false,\"error\":\"Không thể xóa — còn " + inUse
+                    + " thuốc đang đặt trên kệ này. Hãy chuyển thuốc sang kệ khác trước!\"}"); return;
+        }
+        boolean ok = shelfDAO.delete(id);
+        if (ok) AuditHelper.log(req, "Xóa vị trí kệ", "Shelf", "Xóa kệ: " + shelf.getShelfName());
+        out.print(ok ? "{\"ok\":true}" : "{\"ok\":false,\"error\":\"Lỗi khi xóa kệ!\"}");
+    }
+
     private void createCategoryAjax(HttpServletRequest req, HttpServletResponse resp)
             throws IOException {
         resp.setContentType("application/json;charset=UTF-8");

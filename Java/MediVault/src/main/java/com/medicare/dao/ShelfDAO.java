@@ -80,4 +80,28 @@ public class ShelfDAO implements IShelfDAO {
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
+
+    /** Đếm số thuốc đang đặt trên kệ — dùng để chặn xóa kệ đang có hàng. */
+    public int countMedicinesOnShelf(int shelfId) {
+        String sql = "SELECT COUNT(*) FROM Medicines WHERE ShelfID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, shelfId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return 1; // an toàn: lỗi DB coi như đang dùng → chặn xóa
+    }
+
+    /** Xóa kệ — CHỈ khi không còn thuốc nào đặt trên kệ. */
+    public boolean delete(int shelfId) {
+        if (countMedicinesOnShelf(shelfId) > 0) return false;
+        String sql = "DELETE FROM Shelves WHERE ShelfID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, shelfId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
 }

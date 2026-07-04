@@ -81,6 +81,37 @@ public class MedicineDAO implements IMedicineDAO {
         return null;
     }
 
+    /**
+     * Bắt TRÙNG khi tạo thuốc mới: khớp Barcode HOẶC Số đăng ký HOẶC trùng
+     * chính xác tên thuốc (không phân biệt hoa thường). Trả thuốc đã tồn tại
+     * để servlet gợi ý "Nhập lô mới cho thuốc này?", hoặc null nếu không trùng.
+     */
+    public Medicines findDuplicate(String barcode, String registrationNo, String name) {
+        boolean hasBarcode = barcode != null && !barcode.trim().isEmpty();
+        boolean hasReg     = registrationNo != null && !registrationNo.trim().isEmpty();
+        boolean hasName    = name != null && !name.trim().isEmpty();
+        if (!hasBarcode && !hasReg && !hasName) return null;
+
+        StringBuilder sql = new StringBuilder("SELECT TOP 1 * FROM Medicines WHERE (");
+        List<String> conds = new ArrayList<>();
+        if (hasBarcode) conds.add("Barcode = ?");
+        if (hasReg)     conds.add("RegistrationNumber = ?");
+        if (hasName)    conds.add("LOWER(MedicineName) = LOWER(?)");
+        sql.append(String.join(" OR ", conds)).append(")");
+
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql.toString())) {
+            int i = 1;
+            if (hasBarcode) ps.setString(i++, barcode.trim());
+            if (hasReg)     ps.setNString(i++, registrationNo.trim());
+            if (hasName)    ps.setNString(i++, name.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapRow(rs);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return null;
+    }
+
     // Tìm kiếm theo tên hoặc barcode — dùng cho màn hình bán hàng
     public List<Medicines> search(String keyword) {
         List<Medicines> list = new ArrayList<>();

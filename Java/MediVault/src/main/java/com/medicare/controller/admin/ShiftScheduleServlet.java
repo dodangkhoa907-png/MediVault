@@ -275,8 +275,9 @@ public class ShiftScheduleServlet extends HttpServlet {
             AuditHelper.log(req, "Hủy lịch ca", "ShiftSchedule",
                     "Hủy ca " + sc.getShiftTypeName() + " ngày " + sc.getWorkDate()
                             + " của " + sc.getStaffName());
-        resp.sendRedirect(req.getContextPath()
-                + "/shift-schedules?msg=" + (ok ? "cancelled" : "error"));
+        String msg = ok ? "cancelled"
+                : (sc != null && (sc.isConfirmed() || sc.isLate()) ? "shift-active" : "error");
+        resp.sendRedirect(req.getContextPath() + "/shift-schedules?msg=" + msg);
     }
 
     // ── DELETE (hard delete) ──────────────────────────────────────────────────

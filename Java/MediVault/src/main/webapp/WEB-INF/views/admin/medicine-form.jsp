@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" %>
 <% String activeNav = "medicines"; %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%
@@ -120,9 +120,9 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 select.field-input{appearance:none;cursor:pointer;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath stroke='%237A90B0' stroke-width='1.5' stroke-linecap='round' d='M1 1l4 4 4-4'/%3E%3C/svg%3E") no-repeat right 12px center;padding-right:30px}
 textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
 .field-hint{font-size:11px;color:var(--muted)}
-.checkbox-row{display:flex;align-items:center;gap:10px;padding:11px 14px;background:rgba(245,158,11,.06);border:1.5px solid rgba(245,158,11,.25);border-radius:10px;cursor:pointer}
-.checkbox-row input[type=checkbox]{width:17px;height:17px;cursor:pointer;accent-color:var(--gold)}
-.checkbox-row label{font-size:13px;font-weight:600;color:#92400E;cursor:pointer}
+.checkbox-row{display:flex;align-items:center;gap:14px;padding:12px 16px 12px 18px;background:rgba(245,158,11,.06);border:1.5px solid rgba(245,158,11,.25);border-radius:10px;cursor:pointer}
+.checkbox-row input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:var(--gold);flex-shrink:0;margin:0}
+.checkbox-row label{font-size:13px;font-weight:600;color:#92400E;cursor:pointer;line-height:1.4}
 .price-wrap{position:relative}
 .price-wrap .field-input{padding-right:36px}
 .price-suffix{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:11.5px;font-weight:700;color:var(--muted)}
@@ -264,6 +264,26 @@ textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
     </div>
     <% } %>
 
+    <%-- BẮT TRÙNG: thuốc đã tồn tại → gợi ý nhập lô mới thay vì tạo trùng --%>
+    <% com.medicare.entity.Medicines dupMed =
+           (com.medicare.entity.Medicines) request.getAttribute("dupMedicine");
+       if (dupMed != null) { %>
+    <div style="background:#fef2f2;border:2px solid #fca5a5;border-radius:14px;padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <span style="font-size:26px">🚫</span>
+      <div style="flex:1;min-width:220px">
+        <div style="font-weight:800;color:#991b1b;font-size:14px">Thuốc này đã có trong hệ thống!</div>
+        <div style="font-size:12.5px;color:#b91c1c;margin-top:3px">
+          <b><%= dupMed.getMedicineName() %></b> (<%= dupMed.getMedicineCode() %>)
+          — không tạo trùng. Bạn có muốn <b>nhập thêm lô mới</b> cho thuốc này không?
+        </div>
+      </div>
+      <a href="${pageContext.request.contextPath}/medicines?action=detail&id=<%= dupMed.getMedicineId() %>"
+         style="background:linear-gradient(135deg,#059669,#047857);color:#fff;text-decoration:none;padding:11px 20px;border-radius:11px;font-weight:800;font-size:13.5px;white-space:nowrap">
+        📦 Nhập lô mới cho thuốc này →
+      </a>
+    </div>
+    <% } %>
+
     <%-- ══ EDIT MODE: Two-column layout ══ --%>
     <% if (!isNew) { %>
     <div class="page-grid">
@@ -350,8 +370,10 @@ textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
                 <input type="number" name="expiryAlertDays" class="field-input" value="<%= vExpDays %>" min="1">
               </div>
               <div class="field">
-                <label class="field-label">Vị trí kệ</label>
-                <select name="shelfId" class="field-input">
+                <label class="field-label">Vị trí kệ
+                  <button type="button" onclick="openShelfMgr()" style="margin-left:6px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1558A8;border-radius:7px;padding:2px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🗂️ Quản lý kệ</button>
+                </label>
+                <select name="shelfId" class="field-input shelf-select">
                   <option value="">-- Chọn kệ (tùy chọn) --</option>
                   <% if (shelves != null) for (com.medicare.entity.Shelf sh : shelves) { %>
                   <option value="<%= sh.getShelfId() %>" <%= sh.getShelfId() == vShelfId ? "selected" : "" %>><%= sh.getShelfName() != null ? sh.getShelfName() : "Kệ " + sh.getShelfId() %></option>
@@ -465,7 +487,7 @@ textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
 
     <div class="add-hint">
       <span style="font-size:18px;flex-shrink:0">💡</span>
-      <div><strong>Tạo hồ sơ thuốc:</strong> Bước này chỉ đăng ký thuốc (tồn kho = 0). Sau khi lưu, hãy vào <strong>Nhập lô</strong> để nhập hàng vật lý vào kho — hoặc khai báo tồn kho ban đầu ngay bên dưới nếu đã có hàng sẵn.</div>
+      <div><strong>Tạo hồ sơ thuốc:</strong> Bước này chỉ đăng ký thuốc (tồn kho = 0). Sau khi lưu, hãy vào <strong>Nhập lô</strong> để nhập hàng vật lý vào kho — hoặc nhập số lượng thêm vào ngay bên dưới nếu đã có hàng sẵn.</div>
     </div>
 
     <form method="post" action="${pageContext.request.contextPath}/medicines" style="max-width:860px;margin:0 auto">
@@ -547,52 +569,43 @@ textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
             <input type="number" name="expiryAlertDays" class="field-input" value="<%= vExpDays %>" min="1">
           </div>
           <div class="field">
-            <label class="field-label">Vị trí kệ</label>
-            <select name="shelfId" class="field-input">
+            <label class="field-label">Vị trí kệ
+              <button type="button" onclick="openShelfMgr()" style="margin-left:6px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1558A8;border-radius:7px;padding:2px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🗂️ Quản lý kệ</button>
+            </label>
+            <select name="shelfId" class="field-input shelf-select">
               <option value="">-- Chọn kệ (tùy chọn) --</option>
               <% if (shelves != null) for (com.medicare.entity.Shelf sh : shelves) { %>
               <option value="<%= sh.getShelfId() %>"><%= sh.getShelfName() != null ? sh.getShelfName() : "Kệ " + sh.getShelfId() %></option>
               <% } %>
             </select>
           </div>
-        </div>
-      </div>
 
-      <%-- Tồn kho ban đầu --%>
-      <div class="init-stock-card">
-        <div class="init-stock-head">
-          <div class="init-stock-icon">📦</div>
-          <div>
-            <div style="font-size:14.5px;font-weight:700;color:#065F46">Tồn kho ban đầu (tùy chọn)</div>
-            <div style="font-size:12px;color:#059669;margin-top:2px">Khai báo ngay nếu thuốc đã có hàng sẵn — hệ thống tự tạo lô đầu tiên</div>
+          <%-- Thêm lô đầu — nhập số lượng thêm vào kho (tùy chọn) --%>
+          <div class="field span-2" style="border-top:1px dashed var(--border);padding-top:14px;margin-top:4px">
+            <div style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;color:#065F46">
+              📦 Thêm lô đầu vào kho
+              <span style="font-weight:500;color:#059669;font-size:11.5px">— nhập số lượng muốn thêm vào ngay khi tạo thuốc, hệ thống sẽ tự tạo lô nhập kho (để 0 nếu chưa có hàng)</span>
+            </div>
           </div>
-        </div>
-        <div class="init-stock-body">
-          <div class="qty-toggle">
-            <input type="checkbox" id="hasInitStock" onchange="toggleInitStock(this.checked)">
-            <label for="hasInitStock">✅ Thuốc này đã có sẵn hàng trong kho — khai báo số lượng ban đầu</label>
+          <div class="field">
+            <label class="field-label">Số lượng thêm vào</label>
+            <input type="number" id="initialQuantity" name="initialQuantity" class="field-input" value="0"
+                   placeholder="VD: 100" min="0" oninput="onInitQtyChange()">
+            <span class="field-hint">Hệ thống tự tạo lô nhập kho khi &gt; 0</span>
           </div>
-          <div id="initStockFields" class="qty-fields" style="display:none">
-            <div class="field">
-              <label class="field-label">Số lượng ban đầu <span class="req">*</span></label>
-              <input type="number" id="initialQuantity" name="initialQuantity" class="field-input" value="0"
-                     placeholder="VD: 100" min="1">
-              <span class="field-hint">Số lượng thực tế đang tồn trong kho</span>
+          <div class="field">
+            <label class="field-label">Ngày hết hạn lô <span id="initExpReq" class="req" style="display:none">*</span></label>
+            <input type="date" id="initialExpiryDate" name="initialExpiryDate" class="field-input">
+            <span class="field-hint">Bắt buộc khi có số lượng thêm vào</span>
+          </div>
+          <div class="field">
+            <label class="field-label">Giá nhập kho (₫)</label>
+            <div class="price-wrap">
+              <input type="number" name="initialImportPrice" class="field-input"
+                     placeholder="0" min="0" step="500" style="padding-right:36px">
+              <span class="price-suffix">₫</span>
             </div>
-            <div class="field">
-              <label class="field-label">Ngày hết hạn lô <span class="req">*</span></label>
-              <input type="date" id="initialExpiryDate" name="initialExpiryDate" class="field-input">
-              <span class="field-hint">HSD ghi trên bao bì</span>
-            </div>
-            <div class="field">
-              <label class="field-label">Giá nhập kho (₫)</label>
-              <div class="price-wrap">
-                <input type="number" name="initialImportPrice" class="field-input"
-                       placeholder="0" min="0" step="500" style="padding-right:36px">
-                <span class="price-suffix">₫</span>
-              </div>
-              <span class="field-hint">Để trống nếu không biết</span>
-            </div>
+            <span class="field-hint">Để trống nếu không biết</span>
           </div>
         </div>
       </div>
@@ -894,16 +907,13 @@ function checkPriceOutlier() {
   }
 }
 
-// ── INIT STOCK TOGGLE (Create mode) ─────────────────────────────────────────
-function toggleInitStock(checked) {
-  const fields = document.getElementById('initStockFields');
-  const qtyInput = document.getElementById('initialQuantity');
+// ── INIT STOCK (Create mode) — HSD bắt buộc khi có số lượng thêm vào ────────
+function onInitQtyChange() {
+  const qty = parseInt(document.getElementById('initialQuantity').value) || 0;
   const expInput = document.getElementById('initialExpiryDate');
-  if (!fields) return;
-  fields.style.display = checked ? 'grid' : 'none';
-  if (qtyInput) qtyInput.required = checked;
-  if (expInput) expInput.required = checked;
-  if (checked && qtyInput) qtyInput.focus();
+  const reqStar  = document.getElementById('initExpReq');
+  if (expInput) expInput.required = qty > 0;
+  if (reqStar)  reqStar.style.display = qty > 0 ? 'inline' : 'none';
 }
 
 // ── CATEGORY MODAL ──────────────────────────────────────────────────────────
@@ -970,6 +980,131 @@ function saveMfr() {
     })
     .catch(() => { err.textContent='❌ Lỗi kết nối!'; err.style.display='block'; });
 }
+
+// ══ QUẢN LÝ VỊ TRÍ KỆ (CRUD tại chỗ) ══════════════════════════════════════════
+const SHELF_DATA = [
+  <% if (shelves != null) { boolean first = true;
+       for (com.medicare.entity.Shelf sh : shelves) {
+         if (!first) out.print(",");
+         first = false; %>
+  { id: <%= sh.getShelfId() %>, name: '<%= (sh.getShelfName() != null ? sh.getShelfName() : "Kệ " + sh.getShelfId()).replace("'", "\\'") %>' }
+  <% } } %>
+];
+
+function openShelfMgr() {
+  renderShelfList();
+  document.getElementById('shelfMgrModal').style.display = 'flex';
+}
+function closeShelfMgr() { document.getElementById('shelfMgrModal').style.display = 'none'; }
+
+function renderShelfList() {
+  const box = document.getElementById('shelfMgrList');
+  if (!SHELF_DATA.length) {
+    box.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:13px;padding:18px 0">Chưa có kệ nào — thêm kệ đầu tiên bên dưới.</div>';
+    return;
+  }
+  box.innerHTML = SHELF_DATA.map(s =>
+    '<div style="display:flex;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9" data-shelf="' + s.id + '">'
+    + '<input type="text" value="' + s.name.replace(/"/g,'&quot;') + '" data-orig="' + s.name.replace(/"/g,'&quot;') + '"'
+    + ' style="flex:1;border:1.5px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit">'
+    + '<button type="button" onclick="saveShelf(' + s.id + ',this)" style="background:#ECFDF5;border:1px solid #A7F3D0;color:#047857;border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">💾</button>'
+    + '<button type="button" onclick="deleteShelf(' + s.id + ')" style="background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🗑️</button>'
+    + '</div>').join('');
+}
+
+function shelfMgrMsg(text, isErr) {
+  const el = document.getElementById('shelfMgrMsg');
+  el.textContent = text;
+  el.style.color = isErr ? '#B91C1C' : '#047857';
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3200);
+}
+
+/** Cập nhật lại mọi <select name=shelfId> trên trang sau khi CRUD */
+function syncShelfSelects() {
+  document.querySelectorAll('select.shelf-select').forEach(sel => {
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">-- Chọn kệ (tùy chọn) --</option>'
+      + SHELF_DATA.map(s => '<option value="' + s.id + '">' + s.name + '</option>').join('');
+    if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+  });
+}
+
+async function addShelf() {
+  const inp = document.getElementById('shelfNewName');
+  const name = inp.value.trim();
+  if (name.length < 1) { shelfMgrMsg('Nhập tên kệ trước đã!', true); return; }
+  const fd = new URLSearchParams({ action: 'create-shelf-ajax', shelfName: name });
+  try {
+    const r = await fetch('${pageContext.request.contextPath}/medicines', { method: 'POST', body: fd,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+    const d = await r.json();
+    if (d.ok) {
+      SHELF_DATA.push({ id: d.id, name: d.name });
+      inp.value = '';
+      renderShelfList(); syncShelfSelects();
+      shelfMgrMsg('✅ Đã thêm kệ "' + d.name + '"');
+    } else shelfMgrMsg('❌ ' + (d.error || 'Lỗi'), true);
+  } catch (e) { shelfMgrMsg('❌ Lỗi kết nối', true); }
+}
+
+async function saveShelf(id, btn) {
+  const row = btn.closest('[data-shelf]');
+  const inp = row.querySelector('input');
+  const name = inp.value.trim();
+  if (name.length < 1) { shelfMgrMsg('Tên kệ không được trống!', true); return; }
+  if (name === inp.dataset.orig) { shelfMgrMsg('Chưa có thay đổi.', true); return; }
+  const fd = new URLSearchParams({ action: 'update-shelf-ajax', shelfId: id, shelfName: name });
+  try {
+    const r = await fetch('${pageContext.request.contextPath}/medicines', { method: 'POST', body: fd,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+    const d = await r.json();
+    if (d.ok) {
+      const s = SHELF_DATA.find(x => x.id === id);
+      if (s) s.name = name;
+      inp.dataset.orig = name;
+      syncShelfSelects();
+      shelfMgrMsg('✅ Đã đổi tên kệ');
+    } else shelfMgrMsg('❌ ' + (d.error || 'Lỗi'), true);
+  } catch (e) { shelfMgrMsg('❌ Lỗi kết nối', true); }
+}
+
+async function deleteShelf(id) {
+  const s = SHELF_DATA.find(x => x.id === id);
+  if (!confirm('Xóa kệ "' + (s ? s.name : id) + '"?\nKệ đang có thuốc sẽ không xóa được.')) return;
+  const fd = new URLSearchParams({ action: 'delete-shelf-ajax', shelfId: id });
+  try {
+    const r = await fetch('${pageContext.request.contextPath}/medicines', { method: 'POST', body: fd,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+    const d = await r.json();
+    if (d.ok) {
+      const i = SHELF_DATA.findIndex(x => x.id === id);
+      if (i >= 0) SHELF_DATA.splice(i, 1);
+      renderShelfList(); syncShelfSelects();
+      shelfMgrMsg('🗑️ Đã xóa kệ');
+    } else shelfMgrMsg('❌ ' + (d.error || 'Lỗi'), true);
+  } catch (e) { shelfMgrMsg('❌ Lỗi kết nối', true); }
+}
 </script>
+
+<%-- Modal quản lý kệ --%>
+<div id="shelfMgrModal" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(11,22,40,.5);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeShelfMgr()">
+  <div style="background:#fff;border-radius:18px;max-width:440px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden">
+    <div style="padding:16px 22px;background:linear-gradient(135deg,#0F2645,#1558A8);color:#fff;display:flex;align-items:center;justify-content:space-between">
+      <h3 style="margin:0;font-size:16px;font-weight:800">🗂️ Quản lý vị trí kệ</h3>
+      <button onclick="closeShelfMgr()" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:30px;height:30px;border-radius:8px;font-size:14px;cursor:pointer">✕</button>
+    </div>
+    <div id="shelfMgrList" style="flex:1;overflow-y:auto;padding:12px 20px"></div>
+    <div style="padding:14px 20px;border-top:1.5px solid #f1f5f9">
+      <div id="shelfMgrMsg" style="display:none;font-size:12px;font-weight:700;margin-bottom:8px"></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="shelfNewName" placeholder="Tên kệ mới (VD: Kệ A3 — tầng 2)"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();addShelf();}"
+               style="flex:1;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:13.5px;font-family:inherit">
+        <button type="button" onclick="addShelf()" style="background:linear-gradient(135deg,#1558A8,#3ABDE0);border:none;color:#fff;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit">＋ Thêm kệ</button>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>

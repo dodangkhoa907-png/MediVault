@@ -90,18 +90,29 @@ public class PosServlet extends HttpServlet {
             Customer c = customerDAO.findByPhone(phone);
             resp.setContentType("application/json;charset=UTF-8");
             PrintWriter out = resp.getWriter();
-            if (c == null) {
-                out.print("{\"found\":false}");
-            } else {
-                out.printf("{\"found\":true,\"id\":%d,\"name\":\"%s\",\"phone\":\"%s\"}",
-                        c.getCustomerId(), esc(c.getCustomerName()), esc(c.getPhone()));
-            }
+            out.print(customerJson(c));
+            return;
+        }
+
+        // NFC: tra thẻ — trả khách nếu đã liên kết, {found:false} nếu thẻ trắng
+        if ("nfc-lookup".equals(action)) {
+            String uid = req.getParameter("uid");
+            Customer c = ((com.medicare.dao.CustomerDAO) customerDAO).findByNfcUid(uid);
+            resp.setContentType("application/json;charset=UTF-8");
+            resp.getWriter().print(customerJson(c));
             return;
         }
         if ("shift-summary".equals(action)) {
             resp.setContentType("application/json;charset=UTF-8");
             PrintWriter out = resp.getWriter();
             handleShiftSummary(req, out);
+            return;
+        }
+
+        if ("my-invoices".equals(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            PrintWriter out = resp.getWriter();
+            handleMyInvoices(req, out);
             return;
         }
 
@@ -152,7 +163,7 @@ public class PosServlet extends HttpServlet {
         if (stationParam != null && !stationParam.isEmpty()) {
             try {
                 int st = Integer.parseInt(stationParam);
-                if (st >= 1 && st <= 10) req.getSession(true).setAttribute("posStation", st);
+                if (st >= 1) req.getSession(true).setAttribute("posStation", st);
             } catch (NumberFormatException ignored) {}
         }
 
@@ -189,6 +200,10 @@ public class PosServlet extends HttpServlet {
         req.setAttribute("batchNoMap", batchNoMap);
         req.setAttribute("expiryMap",  expiryMap);
 
+        // Danh sách quầy POS động từ DB (đồng bộ với admin CRUD quầy ở shift-list)
+        req.setAttribute("posStations",
+                new com.medicare.dao.PosStationDAO().findAllActive());
+
         req.getRequestDispatcher("/WEB-INF/views/pos.jsp").forward(req, resp);
     }
 
@@ -206,7 +221,7 @@ public class PosServlet extends HttpServlet {
             if (stStr != null) {
                 try {
                     int st = Integer.parseInt(stStr);
-                    if (st >= 1 && st <= 10) {
+                    if (st >= 1) {
                         req.getSession(true).setAttribute("posStation", st);
                         out.print("{\"ok\":true,\"station\":" + st + "}");
                     } else {
@@ -220,6 +235,9 @@ public class PosServlet extends HttpServlet {
             }
             return;
         }
+
+        if ("quick-create-customer".equals(action)) { handleQuickCreateCustomer(req, out); return; }
+        if ("link-nfc".equals(action))              { handleLinkNfc(req, out); return; }
 
         if ("open-shift".equals(action))  { handleOpenShift(req, out); return; }
         if ("pos-pause".equals(action))   { req.getSession(true).setAttribute("posState","PAUSED");  out.print("{\"ok\":true}"); return; }
@@ -244,8 +262,12 @@ public class PosServlet extends HttpServlet {
                     if (uid != null && !uid.isEmpty())
                         acc = (Account) session.getAttribute("staffAccount_" + uid);
                     if (acc == null)
+                        acc = (Account) session.getAttribute("staffAccount");
+                    if (acc == null)
                         acc = (Account) session.getAttribute("adminAccount");
                 }
+                // POS bán bình thường không bắt buộc mở ca — chưa điểm danh thì
+                // hóa đơn ghi về tài khoản POS mặc định
                 int accountId = acc != null ? acc.getAccountId() : POS_ACCOUNT_ID;
 
                 Integer customerId = parseIntOrNull(req.getParameter("customerId"));
@@ -277,10 +299,17 @@ public class PosServlet extends HttpServlet {
 
                 if (result.isOk()) {
                     Invoice inv = result.getData();
-                    out.printf("{\"ok\":true,\"invoiceId\":%d,\"invoiceCode\":\"%s\",\"total\":%s}",
+                    // Tích điểm loyalty (1 điểm / 10.000đ) nếu hóa đơn gắn khách hàng
+                    int earned = 0;
+                    if (customerId != null && inv != null) {
+                        earned = new com.medicare.dao.LoyaltyDAO().earnFromInvoice(
+                                customerId, inv.getInvoiceId(), inv.getFinalAmount(), accountId);
+                    }
+                    out.printf("{\"ok\":true,\"invoiceId\":%d,\"invoiceCode\":\"%s\",\"total\":%s,\"earnedPoints\":%d}",
                             inv != null ? inv.getInvoiceId()  : 0,
                             inv != null ? esc(inv.getInvoiceCode()) : "",
-                            inv != null ? inv.getFinalAmount() : "0");
+                            inv != null ? inv.getFinalAmount() : "0",
+                            earned);
                     // Push tồn kho mới tới tất cả medicine-list tabs qua SSE
                     com.medicare.controller.admin.InventorySSEServlet.broadcast();
                 } else {
@@ -296,6 +325,89 @@ public class PosServlet extends HttpServlet {
         }
 
         out.print("{\"ok\":false,\"msg\":\"Unknown action\"}");
+    }
+
+    // ── Customer helpers (tạo nhanh + NFC + loyalty) ──────────────────────────
+
+    /** JSON khách hàng cho POS: kèm cảnh báo dị ứng + điểm/hạng thẻ. */
+    private String customerJson(Customer c) {
+        if (c == null) return "{\"found\":false}";
+        com.medicare.entity.LoyaltyCard card =
+                new com.medicare.dao.LoyaltyDAO().findByCustomer(c.getCustomerId());
+        String allergy = c.getAllergyHistory() != null ? c.getAllergyHistory().trim() : "";
+        return "{\"found\":true,\"id\":" + c.getCustomerId()
+                + ",\"name\":\"" + esc(c.getCustomerName()) + "\""
+                + ",\"phone\":\"" + esc(c.getPhone() != null ? c.getPhone() : "") + "\""
+                + ",\"allergy\":\"" + esc(allergy) + "\""
+                + ",\"points\":" + (card != null ? card.getAvailablePoints() : 0)
+                + ",\"tier\":\"" + esc(card != null && card.getTierName() != null ? card.getTierName() : "") + "\""
+                + ",\"hasNfc\":" + (c.getNfcCardUid() != null && !c.getNfcCardUid().isEmpty()) + "}";
+    }
+
+    /**
+     * Tạo nhanh khách tại quầy — chỉ SĐT + Tên (+ giới tính). Flow "1 giây":
+     * dược sĩ gõ đủ 10 số → không thấy → bấm [Tạo mới] → 2 trường → Lưu & Chọn.
+     */
+    private void handleQuickCreateCustomer(HttpServletRequest req, PrintWriter out) {
+        String phone  = req.getParameter("phone");
+        String name   = req.getParameter("name");
+        String gender = req.getParameter("gender");
+
+        if (phone == null || !phone.trim().matches("^0\\d{9}$")) {
+            out.print("{\"ok\":false,\"reason\":\"invalid_phone\"}"); return;
+        }
+        if (name == null || name.trim().length() < 2) {
+            out.print("{\"ok\":false,\"reason\":\"invalid_name\"}"); return;
+        }
+        phone = phone.trim();
+        if (customerDAO.findByPhone(phone) != null) {
+            out.print("{\"ok\":false,\"reason\":\"phone_exists\"}"); return;
+        }
+        if (gender != null && !gender.isEmpty()
+                && !gender.equals("M") && !gender.equals("F")) gender = null;
+
+        com.medicare.dao.CustomerDAO dao = (com.medicare.dao.CustomerDAO) customerDAO;
+        int newId = dao.quickCreate(name.trim(), phone, gender);
+        if (newId <= 0) { out.print("{\"ok\":false,\"reason\":\"db_error\"}"); return; }
+
+        // Tạo luôn thẻ tích điểm hạng khởi điểm
+        new com.medicare.dao.LoyaltyDAO().getOrCreateCard(newId);
+
+        com.medicare.util.AuditHelper.log(req, "Tạo khách hàng (POS)", "Customer", newId,
+                "Tạo nhanh khách tại quầy: " + name.trim() + " — " + phone);
+        out.print("{\"ok\":true,\"id\":" + newId + ",\"name\":\"" + esc(name.trim())
+                + "\",\"phone\":\"" + phone + "\",\"points\":0,\"tier\":\"\",\"allergy\":\"\"}");
+    }
+
+    /**
+     * Liên kết thẻ NFC trắng với khách (tra theo SĐT). Thẻ đã gán cho người
+     * khác thì từ chối. Nếu SĐT chưa có tài khoản → client mở form tạo nhanh.
+     */
+    private void handleLinkNfc(HttpServletRequest req, PrintWriter out) {
+        String uid   = req.getParameter("uid");
+        String phone = req.getParameter("phone");
+        if (uid == null || uid.trim().isEmpty()) {
+            out.print("{\"ok\":false,\"reason\":\"missing_uid\"}"); return;
+        }
+        com.medicare.dao.CustomerDAO dao = (com.medicare.dao.CustomerDAO) customerDAO;
+
+        Customer owner = dao.findByNfcUid(uid);
+        if (owner != null) {
+            out.print("{\"ok\":false,\"reason\":\"uid_taken\",\"name\":\""
+                    + esc(owner.getCustomerName()) + "\"}"); return;
+        }
+        Customer c = customerDAO.findByPhone(phone != null ? phone.trim() : "");
+        if (c == null) { out.print("{\"ok\":false,\"reason\":\"phone_not_found\"}"); return; }
+
+        boolean ok = dao.linkNfcCard(c.getCustomerId(), uid);
+        if (ok) {
+            com.medicare.util.AuditHelper.log(req, "Liên kết thẻ NFC", "Customer", c.getCustomerId(),
+                    "Gán thẻ NFC " + uid.trim() + " cho khách " + c.getCustomerName());
+            out.print(customerJson(dao.findById(c.getCustomerId())).replaceFirst(
+                    "\\{\"found\":true", "{\"ok\":true,\"found\":true"));
+        } else {
+            out.print("{\"ok\":false,\"reason\":\"db_error\"}");
+        }
     }
 
     // ── Face check-in từ POS (không cần đăng nhập trước) ──────────────────────
@@ -551,6 +663,54 @@ public class PosServlet extends HttpServlet {
                 esc(name), invoiceCount,
                 cashTotal.toPlainString(), qrTotal.toPlainString(), cardTotal.toPlainString(),
                 total.toPlainString(), opening.toPlainString(), closingCash.toPlainString());
+    }
+
+    /**
+     * "Hóa đơn của tôi" — danh sách bill CHÍNH nhân viên đang đăng nhập
+     * đã tạo trong ca hôm nay (lọc theo quầy nếu đã chọn) + tổng doanh thu.
+     */
+    private void handleMyInvoices(HttpServletRequest req, PrintWriter out) {
+        HttpSession session = req.getSession(false);
+        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
+        if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
+
+        Integer posStation = (Integer) session.getAttribute("posStation");
+        boolean hasSt = posStation != null && posStation > 0;
+
+        StringBuilder sb = new StringBuilder();
+        java.math.BigDecimal total = java.math.BigDecimal.ZERO;
+        int count = 0;
+        String sql = "SELECT InvoiceID, InvoiceCode, FinalAmount, PaymentMethod, Status, " +
+                "CONVERT(VARCHAR(5), CreatedAt, 108) AS CreatedTime " +
+                "FROM Invoices " +
+                "WHERE AccountID = ? AND CAST(CreatedAt AS DATE) = CAST(GETDATE() AS DATE) " +
+                (hasSt ? "AND PosStation = ? " : "") +
+                "ORDER BY CreatedAt DESC";
+        try (java.sql.Connection cn = com.medicare.config.DBContext.getConnection();
+             java.sql.PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, staff.getAccountId());
+            if (hasSt) ps.setInt(2, posStation);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    if (count > 0) sb.append(",");
+                    java.math.BigDecimal amt = rs.getBigDecimal("FinalAmount");
+                    if (amt == null) amt = java.math.BigDecimal.ZERO;
+                    String status = rs.getString("Status");
+                    if ("COMPLETED".equals(status)) total = total.add(amt);
+                    sb.append("{\"code\":\"").append(esc(rs.getString("InvoiceCode")))
+                      .append("\",\"time\":\"").append(rs.getString("CreatedTime"))
+                      .append("\",\"amount\":").append(amt.toPlainString())
+                      .append(",\"method\":\"").append(esc(rs.getString("PaymentMethod")))
+                      .append("\",\"status\":\"").append(esc(status)).append("\"}");
+                    count++;
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+
+        String name = staff.getFullName() != null ? staff.getFullName() : staff.getUsername();
+        out.print("{\"ok\":true,\"staffName\":\"" + esc(name) + "\",\"count\":" + count
+                + ",\"totalRevenue\":" + total.toPlainString()
+                + ",\"invoices\":[" + sb + "]}");
     }
 
     private void handleShiftSummary(HttpServletRequest req, PrintWriter out) {

@@ -103,41 +103,40 @@ public class PosStationDAO implements IPosStationDAO {
         return false;
     }
 
-    @Override
-    public boolean delete(int id) {
-        // Gỡ liên kết của các ca ngày hôm nay hoặc lịch sử khỏi quầy này trước khi xóa
-        String updateSchedulesSql = "UPDATE ShiftSchedules SET PosStation = 0 WHERE PosStation = ?";
-        String deleteStationSql = "DELETE FROM PosStations WHERE PosStationID = ?";
-        
-        Connection cn = null;
-        try {
-            cn = DBContext.getConnection();
-            cn.setAutoCommit(false);
-            
-            try (PreparedStatement psUpdate = cn.prepareStatement(updateSchedulesSql);
-                 PreparedStatement psDelete = cn.prepareStatement(deleteStationSql)) {
-                
-                psUpdate.setInt(1, id);
-                psUpdate.executeUpdate();
-                
-                psDelete.setInt(1, id);
-                int affected = psDelete.executeUpdate();
-                
-                cn.commit();
-                return affected > 0;
-            } catch (Exception e) {
-                cn.rollback();
-                throw e;
+    /**
+     * Quầy đang được sử dụng? = còn ca hôm nay/tương lai (chưa hủy) gán vào quầy này.
+     * Dùng để CHẶN xóa quầy khi đang có nhân viên làm/được xếp lịch tại đó.
+     */
+    public boolean isInUse(int id) {
+        String sql = "SELECT TOP 1 1 FROM ShiftSchedules "
+                + "WHERE PosStation = ? AND WorkDate >= CAST(GETDATE() AS DATE) "
+                + "AND Status NOT IN ('CANCELLED','ON_LEAVE')";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
             }
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            if (cn != null) {
-                try {
-                    cn.setAutoCommit(true);
-                    cn.close();
-                } catch (Exception ignored) {}
-            }
+            return true; // an toàn: lỗi DB thì coi như đang dùng → chặn xóa
+        }
+    }
+
+    /**
+     * Xóa quầy — CHỈ khi không còn ca hôm nay/tương lai nào gán vào quầy.
+     * KHÔNG đụng vào lịch sử (ca quá khứ giữ nguyên PosStation để báo cáo đúng).
+     */
+    @Override
+    public boolean delete(int id) {
+        if (isInUse(id)) return false;
+        String sql = "DELETE FROM PosStations WHERE PosStationID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return false;
     }
