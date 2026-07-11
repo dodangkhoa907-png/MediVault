@@ -223,17 +223,48 @@ body{display:flex;background:var(--surface);color:var(--ink)}
     <c:if test="${isNew}">
     <div class="card">
       <div class="card-title">📊 Số lượng &amp; giá nhập</div>
+      <div class="card-desc">Nhập theo <b>quy cách đóng gói</b> (hộp/vỉ/chai…) — hệ thống tự quy ra <b>${medicine.unit}</b> và giá vốn / ${medicine.unit}.</div>
+
+      <%-- Ẩn: giá trị quy về đơn vị bán (gửi lên server) --%>
+      <input type="hidden" name="initialQuantity" id="hidQty" value=""/>
+      <input type="hidden" name="importPrice"     id="hidPrice" value=""/>
+
       <div class="form-grid">
         <div class="form-group">
-          <label class="form-label">Số lượng nhập <span>*</span></label>
-          <input type="number" name="initialQuantity" class="form-input" placeholder="0" min="1" required/>
-          <span class="form-hint">Đơn vị: ${medicine.unit} — không đổi được sau khi lưu.</span>
+          <label class="form-label">Đơn vị nhập <span>*</span></label>
+          <select id="packUnit" class="form-input" onchange="onPackUnitChange();computePack()">
+            <option value="${medicine.unit}" data-base="1">${medicine.unit} (đơn vị bán)</option>
+            <option value="Vỉ">Vỉ</option>
+            <option value="Hộp">Hộp</option>
+            <option value="Chai">Chai</option>
+            <option value="Lọ">Lọ</option>
+            <option value="Ống">Ống</option>
+            <option value="Tuýp">Tuýp</option>
+            <option value="Gói">Gói</option>
+            <option value="Thùng">Thùng</option>
+          </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Giá nhập / đơn vị (₫) <span>*</span></label>
-          <input type="number" name="importPrice" class="form-input" placeholder="0" min="0" step="100"
-                 value="${batch != null ? batch.importPrice : ''}" required/>
-          <span class="form-hint">Giá vốn để tính lãi khi bán.</span>
+          <label class="form-label">Quy cách <span>*</span></label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:13px;color:var(--muted);white-space:nowrap">1 <b id="packUnitLbl2">${medicine.unit}</b> =</span>
+            <input type="number" id="packFactor" class="form-input" value="1" min="1" step="1" oninput="computePack()" style="max-width:110px" disabled/>
+            <span style="font-size:13px;color:var(--muted);white-space:nowrap">${medicine.unit}</span>
+          </div>
+          <span class="form-hint">VD: 1 Hộp = 10 Vỉ, 1 Vỉ = 10 Viên → 1 Hộp = 100 Viên.</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Số lượng nhập <span>*</span></label>
+          <input type="number" id="packQty" class="form-input" placeholder="0" min="1" step="1" required oninput="computePack()"/>
+          <span class="form-hint">Số <b id="packUnitLbl3">${medicine.unit}</b> nhập vào — không đổi sau khi lưu.</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Giá nhập / <span id="packUnitLbl4">${medicine.unit}</span> (₫) <span>*</span></label>
+          <input type="number" id="packPrice" class="form-input" placeholder="0" min="0" step="100" required oninput="computePack()"/>
+          <span class="form-hint">Giá vốn cho <b>1 <span id="packUnitLbl5">${medicine.unit}</span></b>.</span>
+        </div>
+        <div class="form-group form-full">
+          <div id="packSummary" style="display:none;background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:11px;padding:12px 15px;font-size:13.5px;color:#1558A8;font-weight:700"></div>
         </div>
       </div>
     </div>
@@ -303,7 +334,43 @@ document.addEventListener('DOMContentLoaded', function() {
   const inp = document.getElementById('expiryDateInp');
   if (inp && inp.value) checkHsd(inp);
   togglePoMode();
+  if (document.getElementById('packUnit')) { onPackUnitChange(); computePack(); }
 });
+
+// ── QUY CÁCH ĐÓNG GÓI → quy đổi ra đơn vị bán + giá vốn/đơn vị ──
+const BASE_UNIT = '${medicine.unit}';
+function onPackUnitChange() {
+  const sel = document.getElementById('packUnit');
+  const isBase = sel.selectedOptions[0].getAttribute('data-base') === '1';
+  const factor = document.getElementById('packFactor');
+  factor.disabled = isBase;
+  if (isBase) factor.value = 1;
+  const u = sel.value;
+  document.getElementById('packUnitLbl2').textContent = u;   // "1 [u] ="
+  document.getElementById('packUnitLbl3').textContent = u;   // "Số [u] nhập"
+  document.getElementById('packUnitLbl4').textContent = u;   // "Giá / [u]"
+  document.getElementById('packUnitLbl5').textContent = u;
+}
+function computePack() {
+  const qty    = parseFloat(document.getElementById('packQty').value)   || 0;
+  const factor = Math.max(1, parseInt(document.getElementById('packFactor').value) || 1);
+  const price  = parseFloat(document.getElementById('packPrice').value) || 0;
+  const baseQty   = Math.round(qty * factor);
+  const unitPrice = factor > 0 ? Math.round(price / factor) : 0;
+  document.getElementById('hidQty').value   = baseQty > 0 ? baseQty : '';
+  document.getElementById('hidPrice').value = price > 0 ? unitPrice : '';
+  const box = document.getElementById('packSummary');
+  const u   = document.getElementById('packUnit').value;
+  const fmt = n => new Intl.NumberFormat('vi-VN').format(Math.round(n||0));
+  if (baseQty > 0 || price > 0) {
+    box.style.display = 'block';
+    box.innerHTML = '📦 Nhập <b>' + fmt(qty) + ' ' + u + '</b>'
+      + (factor > 1 ? ' × ' + fmt(factor) + ' ' + BASE_UNIT + '/' + u : '')
+      + ' = <b style="color:#0F2645">' + fmt(baseQty) + ' ' + BASE_UNIT + '</b>'
+      + ' · Giá vốn: <b style="color:#0F2645">' + fmt(unitPrice) + 'đ/' + BASE_UNIT + '</b>'
+      + ' · Tổng tiền: <b style="color:#059669">' + fmt(qty * price) + 'đ</b>';
+  } else { box.style.display = 'none'; }
+}
 
 // ── Kiểm tra HSD (còn bao nhiêu ngày, cảnh báo GPP ≥ 90 ngày khi nhập) ──
 function checkHsd(inp) {

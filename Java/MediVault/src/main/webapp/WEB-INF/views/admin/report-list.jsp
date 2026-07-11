@@ -173,10 +173,11 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 
 /* CHART GRID */
 .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
-.chart-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.chart-card{background:linear-gradient(180deg,#FFFFFF 0%,#FAFCFF 100%);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:0 6px 24px rgba(15,38,69,.06);transition:transform .18s ease,box-shadow .18s ease}
+.chart-card:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(15,38,69,.11)}
 .chart-card-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .chart-card-head h3{font-size:13.5px;font-weight:700;color:var(--ink)}
-.chart-card-body{padding:14px 18px;height:240px}
+.chart-card-body{padding:14px 18px 16px;height:240px}
 .chart-legend{display:flex;gap:14px;padding:8px 18px 12px;flex-wrap:wrap}
 .leg-item{display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--muted)}
 .leg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
@@ -215,7 +216,7 @@ tbody tr:hover td{background:#F7FBFF}
     <div class="topbar-right">
       <span class="topbar-pill pill-period">🗓️ Tháng <%= repMonth %>/<%= repYear %></span>
       <span class="topbar-pill pill-invoice">🧾 <%= invoiceCount %> hóa đơn</span>
-      <a href="${pageContext.request.contextPath}/dashboard" class="topbar-user">
+      <a href="${pageContext.request.contextPath}/admin-profile" class="topbar-user">
         <div class="topbar-av"><%= initials %></div>
         <span class="topbar-name"><%= fullName %></span>
       </a>
@@ -361,7 +362,10 @@ tbody tr:hover td{background:#F7FBFF}
       </div>
       <div class="chart-card">
         <div class="chart-card-head"><h3>💊 Doanh thu theo Nhóm thuốc</h3></div>
-        <div class="chart-card-body"><canvas id="catChart"></canvas></div>
+        <div class="chart-card-body" style="height:330px;display:flex;gap:14px;align-items:center;padding:16px 20px">
+          <div style="flex:1;min-width:0;height:100%;position:relative"><canvas id="catChart"></canvas></div>
+          <div id="catLegend" style="width:210px;flex-shrink:0;max-height:100%;overflow-y:auto;display:flex;flex-direction:column;gap:4px"></div>
+        </div>
       </div>
     </div>
 
@@ -539,21 +543,43 @@ function renderCashChart(data) {
 }
 
 // 📊 Grouped Column Chart — Doanh thu / Giá vốn / Lợi nhuận gộp theo ngày
+function vGrad(ctx, top, bottom) {
+  const g = ctx.createLinearGradient(0, 0, 0, 240);
+  g.addColorStop(0, top); g.addColorStop(1, bottom);
+  return g;
+}
+function hGrad(ctx, left, right, w) {
+  const g = ctx.createLinearGradient(0, 0, w || 600, 0);
+  g.addColorStop(0, left); g.addColorStop(1, right);
+  return g;
+}
+// Plugin: bóng đổ dưới cột → cảm giác 3D lơ lửng, dễ nhìn (không thô như khối 3D cứng)
+const barShadow = {
+  id: 'barShadow',
+  beforeDatasetsDraw(chart) {
+    const ctx = chart.ctx; ctx.save();
+    ctx.shadowColor = 'rgba(15,38,69,.22)';
+    ctx.shadowBlur = 9; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 5;
+  },
+  afterDatasetsDraw(chart) { chart.ctx.restore(); }
+};
 function renderFinanceChart(data) {
   const canvas = document.getElementById('financeChart');
   if (!canvas) return;
   if (financeChart) financeChart.destroy();
-  financeChart = new Chart(canvas.getContext('2d'), {
+  const ctx = canvas.getContext('2d');
+  financeChart = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: data.finLabels||[],
       datasets: [
-        { label:'Doanh thu',      data:data.finRevenue||[], backgroundColor:'#1558A8', borderRadius:4, maxBarThickness:18 },
-        { label:'Giá vốn',        data:data.finCogs||[],    backgroundColor:'#CBD5E1', borderRadius:4, maxBarThickness:18 },
-        { label:'Lợi nhuận gộp',  data:data.finProfit||[],  backgroundColor:'#059669', borderRadius:4, maxBarThickness:18 }
+        { label:'Doanh thu',      data:data.finRevenue||[], backgroundColor:vGrad(ctx,'#2B7BE0','#0E3E78'), borderRadius:5, maxBarThickness:18 },
+        { label:'Giá vốn',        data:data.finCogs||[],    backgroundColor:vGrad(ctx,'#E2E8F0','#B8C4D6'), borderRadius:5, maxBarThickness:18 },
+        { label:'Lợi nhuận gộp',  data:data.finProfit||[],  backgroundColor:vGrad(ctx,'#12B981','#047857'), borderRadius:5, maxBarThickness:18 }
       ]
     },
-    options: { ...baseChartOptions(), plugins:{ ...baseChartOptions().plugins, legend:{display:false} } }
+    options: { ...baseChartOptions(), plugins:{ ...baseChartOptions().plugins, legend:{display:false} } },
+    plugins: [barShadow]
   });
 }
 
@@ -579,17 +605,14 @@ function renderWaterfallChart(data) {
     },
     options: {
       responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ top:26 } },
       scales:{
         x:{ stacked:true, ticks:{font:{family:'Outfit',size:11},color:'#7A90B0'}, grid:{display:false} },
         y:{ stacked:true, ticks:{callback:v=>new Intl.NumberFormat('vi-VN',{notation:'compact'}).format(v)+'đ',font:{family:'Outfit',size:11},color:'#7A90B0'}, grid:{color:'rgba(0,0,0,0.04)'} }
       },
       plugins:{
         legend:{display:false},
-        tooltip:{
-          backgroundColor:'rgba(11,22,40,.92)',titleColor:'#fff',bodyColor:'#ccc',padding:10,cornerRadius:8,
-          filter: item => item.datasetIndex === 1,
-          callbacks:{ label: c => ' ' + fmt(c.raw) }
-        }
+        tooltip: niceTooltip({ filter: item => item.datasetIndex === 1, callbacks:{ label: c => ' ' + fmt(c.raw) } })
       }
     }
   });
@@ -620,28 +643,73 @@ function renderHorizontalBar(canvasId, existing, labels, values, setRef) {
   if (existing) existing.destroy();
   // Sắp giảm dần để cột cao nhất nằm trên cùng
   const items = (labels||[]).map((l,i)=>({l, v:(values||[])[i]||0})).sort((a,b)=>b.v-a.v);
-  const chart = new Chart(canvas.getContext('2d'), {
+  const ctx = canvas.getContext('2d');
+  const chart = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: items.map(it=>it.l),
-      datasets: [{ data: items.map(it=>it.v), backgroundColor:'#1558A8', borderRadius:5, maxBarThickness:20 }]
+      datasets: [{ data: items.map(it=>it.v),
+        backgroundColor: hGrad(ctx, '#3ABDE0', '#1558A8', canvas.width || 600),
+        hoverBackgroundColor: hGrad(ctx, '#5AD0EE', '#1E6FD0', canvas.width || 600),
+        borderRadius:6, maxBarThickness:22 }]
     },
     options: {
       indexAxis: 'y',
       responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ right:14 } },
       plugins:{
         legend:{display:false},
-        tooltip:{backgroundColor:'rgba(11,22,40,.92)',titleColor:'#fff',bodyColor:'#ccc',padding:10,cornerRadius:8,
-          callbacks:{label:c=>' '+fmt(c.raw)}}
+        tooltip: niceTooltip({ yAlign:'center', callbacks:{label:c=>' '+fmt(c.raw)} })
       },
       scales:{
         x:{ticks:{callback:v=>new Intl.NumberFormat('vi-VN',{notation:'compact'}).format(v)+'đ',font:{family:'Outfit',size:11},color:'#7A90B0'},grid:{color:'rgba(0,0,0,0.04)'}},
         y:{ticks:{font:{family:'Outfit',size:11.5},color:'#334155'},grid:{display:false}}
       }
-    }
+    },
+    plugins: [barShadow]
   });
   setRef(chart);
 }
+
+const fmtCompact = v => new Intl.NumberFormat('vi-VN',{notation:'compact'}).format(+v||0)+'đ';
+
+// Plugin: chữ giữa doughnut — MẶC ĐỊNH hiện TỔNG, khi HOVER lát nào thì
+// hiện tên + tiền + % của lát đó NGAY GIỮA vòng (không cần tooltip nổi che chắn).
+const doughnutCenterText = {
+  id: 'doughnutCenterText',
+  afterDraw(chart) {
+    if (chart.config.type !== 'doughnut') return;
+    const ds = chart.data.datasets[0]; if (!ds) return;
+    const data = ds.data || [];
+    const total = data.reduce((a,b)=>a+(+b||0), 0);
+    const area = chart.chartArea; if (!area) return;
+    const ctx = chart.ctx;
+    const cx = (area.left + area.right) / 2, cy = (area.top + area.bottom) / 2;
+
+    const active = chart.getActiveElements ? chart.getActiveElements() : [];
+    let big, small, color = '#0F2645';
+    if (active.length) {
+      const i = active[0].index;
+      const val = +data[i] || 0;
+      big = fmtCompact(val);
+      small = ((chart.data.labels[i] || '') + ' · ' + Math.round(val/(total||1)*100) + '%').toUpperCase();
+      color = Array.isArray(ds.backgroundColor) ? ds.backgroundColor[i] : '#0F2645';
+    } else {
+      big = fmtCompact(total);
+      small = 'TỔNG DOANH THU';
+    }
+    ctx.save();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = color;
+    ctx.font = '800 20px Outfit, sans-serif';
+    ctx.fillText(big, cx, cy - 8);
+    ctx.fillStyle = '#7A90B0';
+    ctx.font = '700 9px Outfit, sans-serif';
+    let lbl = small; if (lbl.length > 20) lbl = lbl.slice(0, 19) + '…';
+    ctx.fillText(lbl, cx, cy + 12);
+    ctx.restore();
+  }
+};
 
 function renderDoughnut(canvasId, existing, labels, values, setRef) {
   const canvas = document.getElementById(canvasId);
@@ -651,28 +719,77 @@ function renderDoughnut(canvasId, existing, labels, values, setRef) {
     type: 'doughnut',
     data: {
       labels: labels||[],
-      datasets: [{ data: values||[], backgroundColor: PALETTE, borderWidth: 2, borderColor: '#fff' }]
+      datasets: [{ data: values||[], backgroundColor: PALETTE, borderWidth: 3, borderColor: '#fff', hoverOffset: 16, hoverBorderColor:'#fff' }]
     },
     options: {
       responsive:true, maintainAspectRatio:false,
-      cutout: '62%',
+      cutout: '68%',
+      layout:{ padding: 8 },
       plugins:{
-        legend:{ position:'right', labels:{ boxWidth:10, font:{family:'Outfit',size:11}, color:'#7A90B0' } },
-        tooltip:{ callbacks:{ label:c => ' ' + c.label + ': ' + fmt(c.raw) } }
+        legend:{ display:false },   // dùng legend HTML tùy chỉnh giàu thông tin bên cạnh
+        tooltip:{ enabled:false }    // đã hiện thông tin ở GIỮA vòng → không có hộp nổi che
       }
-    }
+    },
+    plugins: [doughnutCenterText]
   });
   setRef(chart);
+  buildDoughnutLegend(chart, labels||[], values||[]);
 }
 
+// Legend HTML giàu thông tin: chấm màu · tên · tiền · % — hover để làm nổi lát tương ứng
+function buildDoughnutLegend(chart, labels, values) {
+  const box = document.getElementById('catLegend');
+  if (!box) return;
+  const total = values.reduce((a,b)=>a+(+b||0), 0) || 1;
+  const rows = labels.map((l,i)=>({ l, v:+values[i]||0, i })).sort((a,b)=>b.v-a.v);
+  box.innerHTML = rows.map(r => {
+    const pct = Math.round(r.v/total*100);
+    const color = PALETTE[r.i % PALETTE.length];
+    return '<div class="dleg" data-idx="'+r.i+'" '
+      + 'style="display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:9px;cursor:pointer;transition:.14s">'
+      + '<span style="width:11px;height:11px;border-radius:50%;background:'+color+';flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>'
+      + '<div style="flex:1;min-width:0">'
+      +   '<div style="font-size:12px;font-weight:700;color:#0F2645;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(r.l)+'</div>'
+      +   '<div style="font-size:11px;color:#7A90B0;font-weight:600">'+fmt(r.v)+'</div>'
+      + '</div>'
+      + '<span style="font-size:12.5px;font-weight:800;color:'+color+'">'+pct+'%</span>'
+      + '</div>';
+  }).join('');
+  // Hover legend → highlight lát + cập nhật chữ giữa vòng
+  box.querySelectorAll('.dleg').forEach(el => {
+    const idx = +el.dataset.idx;
+    el.addEventListener('mouseenter', () => {
+      el.style.background = '#F1F5FB';
+      chart.setActiveElements([{ datasetIndex:0, index:idx }]);
+      chart.update('none');
+    });
+    el.addEventListener('mouseleave', () => {
+      el.style.background = '';
+      chart.setActiveElements([]);
+      chart.update('none');
+    });
+  });
+}
+function escH(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function niceTooltip(extra) {
+  return Object.assign({
+    backgroundColor:'rgba(11,22,40,.94)', titleColor:'#fff', bodyColor:'#E2E8F0',
+    padding:12, cornerRadius:10, caretPadding:10, caretSize:6,
+    borderColor:'rgba(58,189,224,.35)', borderWidth:1,
+    titleFont:{family:'Outfit',weight:'700',size:12.5},
+    bodyFont:{family:'Outfit',size:12.5},
+    usePointStyle:true, boxPadding:5, yAlign:'bottom'  // hiện PHÍA TRÊN điểm → không đè cột
+  }, extra || {});
+}
 function baseChartOptions() {
   return {
     responsive:true, maintainAspectRatio:false,
+    layout:{ padding:{ top:26 } },   // chừa chỗ cho tooltip nổi lên trên
     interaction:{mode:'index',intersect:false},
     plugins:{
       legend:{display:false},
-      tooltip:{backgroundColor:'rgba(11,22,40,.92)',titleColor:'#fff',bodyColor:'#ccc',padding:10,cornerRadius:8,
-        callbacks:{label:c=>' '+c.dataset.label+': '+fmt(c.raw)}}
+      tooltip: niceTooltip({ callbacks:{label:c=>' '+c.dataset.label+': '+fmt(c.raw)} })
     },
     scales:{
       y:{ticks:{callback:v=>new Intl.NumberFormat('vi-VN',{notation:'compact'}).format(v)+'đ',font:{family:'Outfit',size:11},color:'#7A90B0'},grid:{color:'rgba(0,0,0,0.04)'}},

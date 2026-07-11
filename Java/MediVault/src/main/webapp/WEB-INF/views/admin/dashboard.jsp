@@ -511,7 +511,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                     </div>
                 </div>
             </div>
-            <a href="<%= request.getContextPath() %>/accounts?action=view&id=<%= acc.getAccountId() %>" class="topbar-user" title="Xem hồ sơ của tôi">
+            <a href="<%= request.getContextPath() %>/admin-profile" class="topbar-user" title="Xem hồ sơ của tôi">
                 <div class="topbar-user-avatar"><%= initials %></div>
                 <span class="topbar-user-name"><%= fullName %></span>
             </a>
@@ -630,7 +630,6 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                     </div>
                     <select name="role" class="filter-select" onchange="filterTable()">
                         <option value="">Tất cả chức vụ</option>
-                        <option value="1" ${param.role == '1' ? 'selected' : ''}>🛡️ Admin</option>
                         <option value="2" ${param.role == '2' ? 'selected' : ''}>💊 Dược sĩ</option>
                         <option value="3" ${param.role == '3' ? 'selected' : ''}>📦 Thủ kho</option>
                     </select>
@@ -671,7 +670,9 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                             </c:when>
                             <c:otherwise>
                                 <c:forEach var="a" items="${accounts}" varStatus="st">
-                                    <tr>
+                                    <tr data-name="${a.fullName} @${a.username} ${a.email}"
+                                        data-role="${a.roleId}"
+                                        data-status="${a.active ? '1' : '0'}">
                                         <td style="color:var(--text-muted); font-size:12px;">${st.count}</td>
                                         <td>
                                             <div class="cell-user">
@@ -751,8 +752,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
             %>
             <div class="pagination">
                 <div class="pagination-info">
-                    Hiển thị trang <%= curPage %> / <%= totPages %>
-                    &nbsp;·&nbsp; Tổng <%= totRecords %> tài khoản
+                    Hiển thị <span id="visCount">${accounts.size()}</span> / ${accounts.size()} tài khoản
                 </div>
                 <div class="pagination-btns">
                     <% if (curPage > 1) { %>
@@ -894,15 +894,30 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 
 <script>
 function filterTable() {
-  const q      = (document.querySelector('#filterForm [name="q"]')?.value || '').toLowerCase();
+  const q      = (document.querySelector('#filterForm [name="q"]')?.value || '').trim().toLowerCase();
   const role   = document.querySelector('#filterForm [name="role"]')?.value || '';
   const status = document.querySelector('#filterForm [name="status"]')?.value || '';
+  let shown = 0;
   document.querySelectorAll('tbody tr[data-name]').forEach(row => {
     const show = (!q      || (row.dataset.name  || '').toLowerCase().includes(q))
               && (!role   || row.dataset.role   === role)
               && (!status || row.dataset.status === status);
     row.style.display = show ? '' : 'none';
+    if (show) shown++;
   });
+  const vc = document.getElementById('visCount');
+  if (vc) vc.textContent = shown;
+  // dòng "không tìm thấy" khi lọc ra rỗng
+  let noRow = document.getElementById('noResultRow');
+  const tbody = document.querySelector('.data-table tbody');
+  if (shown === 0 && tbody && !noRow) {
+    noRow = document.createElement('tr');
+    noRow.id = 'noResultRow';
+    noRow.innerHTML = '<td colspan="7"><div class="empty-state"><div class="icon">🔍</div><p>Không có tài khoản khớp bộ lọc.</p></div></td>';
+    tbody.appendChild(noRow);
+  } else if (shown > 0 && noRow) {
+    noRow.remove();
+  }
 }
 document.querySelector('#filterForm [name="q"]')
   ?.addEventListener('input', filterTable);
@@ -917,21 +932,34 @@ document.querySelector('#filterForm [name="q"]')
     const top5  = <%=request.getAttribute("chartTopJson")%>;
     const cat   = <%=request.getAttribute("chartCatJson")%>;
 
+    const money = n => new Intl.NumberFormat('vi-VN').format(Math.round(n||0)) + 'đ';
+    const TT = { // tooltip đồng bộ, dễ đọc
+        backgroundColor: 'rgba(15,38,69,.95)', titleColor: '#fff', bodyColor: '#E2E8F0',
+        padding: 10, cornerRadius: 8, titleFont: { weight: '700' }, displayColors: false
+    };
+    Chart.defaults.font.family = "'Outfit', sans-serif";
+    Chart.defaults.color = '#7A90B0';
+
     const dCanvas = document.getElementById('dailyChart');
     if (dCanvas && daily) {
         new Chart(dCanvas.getContext('2d'), {
             type: 'bar',
             data: {
                 labels: daily.labels,
-                datasets: [{ label: 'Doanh thu', data: daily.values,
-                    backgroundColor: 'rgba(21,88,168,0.72)', borderRadius: 4 }]
+                datasets: [{ label: 'Doanh thu', data: daily.values, maxBarThickness: 26,
+                    backgroundColor: 'rgba(21,88,168,0.78)', hoverBackgroundColor: '#1558A8', borderRadius: 5 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                layout: { padding: { top: 8, right: 8 } },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { ...TT, callbacks: { label: c => 'Doanh thu: ' + money(c.parsed.y) } }
+                },
                 scales: {
-                    y: { ticks: { callback: v => (v/1000000).toFixed(1)+'M' } },
-                    x: { ticks: { autoSkip: true, maxTicksLimit: 10, maxRotation: 45 } }
+                    y: { beginAtZero: true, grid: { color: 'rgba(213,224,240,.5)' },
+                         ticks: { callback: v => v >= 1e6 ? (v/1e6).toFixed(1)+'M' : (v/1e3).toFixed(0)+'K' } },
+                    x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 10, maxRotation: 0 } }
                 }
             }
         });
@@ -948,8 +976,15 @@ document.querySelector('#filterForm [name="q"]')
             },
             options: {
                 indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { x: { ticks: { precision: 0 } } }
+                layout: { padding: { right: 12 } },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { ...TT, callbacks: { label: c => 'Đã bán: ' + c.parsed.x + ' đơn vị' } }
+                },
+                scales: {
+                    x: { beginAtZero: true, grid: { color: 'rgba(213,224,240,.5)' }, ticks: { precision: 0 } },
+                    y: { grid: { display: false } }
+                }
             }
         });
     }
@@ -965,9 +1000,16 @@ document.querySelector('#filterForm [name="q"]')
                                       '#6D28D9','#DC2626','#0891B2','#7C3AED'] }]
             },
             options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom',
-                    labels: { font: { size: 11 }, boxWidth: 12 } } }
+                responsive: true, maintainAspectRatio: false, cutout: '62%',
+                layout: { padding: 6 },
+                plugins: {
+                    legend: { position: 'bottom',
+                        labels: { font: { size: 11 }, boxWidth: 10, usePointStyle: true, pointStyle: 'circle', padding: 12 } },
+                    tooltip: { ...TT, callbacks: { label: c => {
+                        const tot = c.dataset.data.reduce((a,b) => a + (b||0), 0) || 1;
+                        return ' ' + c.label + ': ' + money(c.parsed) + ' (' + Math.round(c.parsed/tot*100) + '%)';
+                    } } }
+                }
             }
         });
     }

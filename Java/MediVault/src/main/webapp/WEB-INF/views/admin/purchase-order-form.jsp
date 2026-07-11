@@ -9,6 +9,7 @@
     String initials = fullName.length() >= 2
         ? fullName.substring(0,1).toUpperCase() + fullName.substring(1,2).toUpperCase()
         : fullName.toUpperCase();
+    boolean embed = "1".equals(request.getParameter("embed")); // nhúng trong iframe modal → ẩn sidebar/topbar
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -84,12 +85,21 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .btn-save:hover{filter:brightness(1.08)}
 .btn-cancel{height:48px;padding:0 24px;border:1.5px solid var(--border);border-radius:12px;background:var(--white);color:var(--muted);font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-flex;align-items:center}
 .btn-cancel:hover{border-color:var(--red);color:var(--red)}
+<%-- Chế độ nhúng (iframe modal): ẩn sidebar, bỏ lề trái, gọn lại --%>
+<% if (embed) { %>
+body{background:#F1F5FB}
+.main{margin-left:0}
+.content{max-width:100%;margin:0 auto;padding:16px 20px 30px}
+<% } %>
 </style>
 </head>
 <body>
+<% if (!embed) { %>
 <%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
+<% } %>
 
 <div class="main">
+<% if (!embed) { %>
 <div class="topbar">
   <a href="${pageContext.request.contextPath}/purchase-orders" class="btn-back">← Đơn đặt hàng</a>
   <span class="topbar-title">Tạo phiếu nhập kho</span>
@@ -98,6 +108,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
     <div class="user-av-sm"><%= initials %></div>
   </div>
 </div>
+<% } %>
 
 <div class="content">
   <div class="page-title">📋 Tạo phiếu nhập kho</div>
@@ -109,6 +120,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 
   <form method="post" action="${pageContext.request.contextPath}/purchase-orders" onsubmit="return beforeSubmit()">
     <input type="hidden" name="action" value="save"/>
+    <input type="hidden" name="embed" value="${param.embed}"/>
 
     <div class="card">
       <div class="card-title">🧾 Thông tin phiếu</div>
@@ -138,8 +150,8 @@ body{display:flex;background:var(--surface);color:var(--ink)}
         <div class="fg">
           <label class="fl">Trạng thái</label>
           <select name="status" class="fs">
-            <option value="COMPLETED">✅ Đã nhập kho (hàng đã về)</option>
-            <option value="PENDING">⏳ Chờ xử lý (chưa về)</option>
+            <option value="COMPLETED">✅ Hàng đã về — nhập kho ngay</option>
+            <option value="PENDING">⏳ Đặt trước — hàng CHƯA về (kho chưa tăng, xác nhận sau)</option>
           </select>
         </div>
         <div class="fg">
@@ -191,7 +203,14 @@ body{display:flex;background:var(--surface);color:var(--ink)}
     </div>
 
     <div class="actions">
-      <a href="${pageContext.request.contextPath}/purchase-orders" class="btn-cancel">Hủy</a>
+      <c:choose>
+        <c:when test="${param.embed == '1'}">
+          <button type="button" class="btn-cancel" onclick="if(window.parent&&window.parent.closePoModal)window.parent.closePoModal();else history.back()">Hủy</button>
+        </c:when>
+        <c:otherwise>
+          <a href="${pageContext.request.contextPath}/purchase-orders" class="btn-cancel">Hủy</a>
+        </c:otherwise>
+      </c:choose>
       <button type="submit" class="btn-save">✅ Hoàn tất nhập kho</button>
     </div>
   </form>
@@ -266,6 +285,12 @@ function beforeSubmit(){
   return true;
 }
 addRow();
+// Nhảy từ màn "thuốc đã tồn tại" → tự chọn sẵn thuốc đó vào dòng đầu
+const PRESELECT_MED = ${preselectMedicineId != null ? preselectMedicineId : 0};
+if (PRESELECT_MED > 0) {
+  const sel = document.querySelector('#lineBody [name=lineMedicineId]');
+  if (sel) { sel.value = String(PRESELECT_MED); recalc(); }
+}
 </script>
 </body>
 </html>

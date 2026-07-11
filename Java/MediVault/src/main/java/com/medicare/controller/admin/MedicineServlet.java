@@ -53,6 +53,7 @@ public class MedicineServlet extends HttpServlet {
             }
             case "api-med"       -> apiGetMedicine(req, resp);
             case "api-batches"   -> apiGetBatches(req, resp);
+            case "check-duplicate" -> apiCheckDuplicate(req, resp);
             case "api-stats"     -> apiGetStats(resp);
             case "api-stock-map" -> apiGetStockMap(resp);
             case "detail" -> showDetail(req, resp);
@@ -121,8 +122,9 @@ public class MedicineServlet extends HttpServlet {
 
         List<Medicines> list = medicineDAO.findPaged(keyword, catId, page, pageSize);
 
-        // 1 query cho toàn bộ tồn kho — nhanh hơn N queries per trang
-        Map<Integer, Integer> stockMap = batchesDAO.getTotalQuantityMap();
+        // 1 query cho toàn bộ tồn kho — cache 30s để chuyển trang liên tục không query lại
+        Map<Integer, Integer> stockMap =
+                com.medicare.config.CacheManager.getShort("med.stockMap", batchesDAO::getTotalQuantityMap);
 
         // Batch summaries cho hover card + tab badge counts
         Map<Integer, Integer> activeBatchCountMap  = new HashMap<>();
@@ -139,10 +141,11 @@ public class MedicineServlet extends HttpServlet {
         String statusFilter = req.getParameter("statusFilter");
         req.setAttribute("medicines", list);
         req.setAttribute("stockMap", stockMap);
-        req.setAttribute("categories", categoryDAO.findAll());
-        req.setAttribute("manufacturers", manufacturerDAO.findAll());
-        req.setAttribute("shelves", shelfDAO.findAll());
-        req.setAttribute("suppliers", supplierDAO.findAllActive());
+        // Dropdown ít thay đổi → cache 30s (khỏi query lại mỗi lần vào trang)
+        req.setAttribute("categories",    com.medicare.config.CacheManager.getShort("ref.categories",     categoryDAO::findAll));
+        req.setAttribute("manufacturers", com.medicare.config.CacheManager.getShort("ref.manufacturers",  manufacturerDAO::findAll));
+        req.setAttribute("shelves",       com.medicare.config.CacheManager.getShort("ref.shelves",        shelfDAO::findAll));
+        req.setAttribute("suppliers",     com.medicare.config.CacheManager.getShort("ref.suppliersActive", supplierDAO::findAllActive));
         req.setAttribute("statusFilter", statusFilter != null ? statusFilter : "");
         req.setAttribute("activeBatchCountMap", activeBatchCountMap);
         req.setAttribute("expiringSoonCountMap", expiringSoonCountMap);
@@ -235,6 +238,49 @@ public class MedicineServlet extends HttpServlet {
         SidebarHelper.load(req);
 
         req.getRequestDispatcher("/WEB-INF/views/admin/batch-form.jsp").forward(req, resp);
+    }
+
+    // ── API: CHECK TRÙNG THUỐC (AJAX debounce khi đang gõ tên/mã vạch) ────────
+    // GET /medicines?action=check-duplicate&name=...&barcode=...&regNo=...&excludeId=...
+    // Trả {found:false} hoặc {found:true, ...toàn bộ thông tin thuốc + tồn kho + số lô}
+    private void apiCheckDuplicate(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        PrintWriter out = resp.getWriter();
+        String name    = req.getParameter("name");
+        String barcode = req.getParameter("barcode");
+        String regNo   = req.getParameter("regNo");
+        int excludeId  = 0;
+        try { excludeId = Integer.parseInt(req.getParameter("excludeId")); } catch (Exception ignored) {}
+
+        Medicines dup = ((com.medicare.dao.MedicineDAO) medicineDAO).findDuplicate(barcode, regNo, name);
+        if (dup == null || dup.getMedicineId() == excludeId) { // sửa chính nó → không tính trùng
+            out.print("{\"found\":false}");
+            return;
+        }
+        int stock = batchesDAO.getTotalQuantity(dup.getMedicineId());
+        String catName = "";
+        try {
+            com.medicare.entity.Category c = categoryDAO.findById(dup.getCategoryId() != null ? dup.getCategoryId() : 0);
+            if (c != null) catName = c.getCategoryName();
+        } catch (Exception ignored) {}
+        out.print("{\"found\":true"
+                + ",\"id\":" + dup.getMedicineId()
+                + ",\"code\":\"" + jsEsc(dup.getMedicineCode()) + "\""
+                + ",\"name\":\"" + jsEsc(dup.getMedicineName()) + "\""
+                + ",\"generic\":\"" + jsEsc(dup.getGenericName()) + "\""
+                + ",\"barcode\":\"" + jsEsc(dup.getBarcode()) + "\""
+                + ",\"unit\":\"" + jsEsc(dup.getUnit()) + "\""
+                + ",\"category\":\"" + jsEsc(catName) + "\""
+                + ",\"price\":" + (dup.getSellingPrice() != null ? dup.getSellingPrice().toPlainString() : "0")
+                + ",\"stock\":" + stock
+                + ",\"active\":" + dup.isStatus()
+                + "}");
+    }
+
+    private String jsEsc(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     // ── SAVE THUỐC ────────────────────────────────────────────────────────────
@@ -501,9 +547,21 @@ public class MedicineServlet extends HttpServlet {
             return;
         }
 
-        AuditHelper.log(req, isNew ? "Nhập lô thuốc" : "Sửa lô thuốc", "Batch",
-                (isNew ? "Nhập lô " : "Sửa lô ") + batchNo + (isNew ? " — SL: " + qty : ""));
-        resp.sendRedirect(base + "&msg=" + (isNew ? "batch-added" : "batch-updated"));
+        if (isNew) {
+            // Nhập lô mới → đã ghi vào PHIẾU NHẬP dạng PENDING (chưa cộng kho).
+            // Chuyển sang chi tiết đơn để admin bấm "Xác nhận Hàng Đã Tới".
+            int poId = result.getData() != null ? result.getData().getPoId() : 0;
+            AuditHelper.log(req, "Tạo phiếu nhập (chờ hàng)", "PurchaseOrder", poId,
+                    "Nhập lô " + batchNo + " — SL: " + qty + " (PENDING, chưa cộng kho)");
+            if (poId > 0) {
+                resp.sendRedirect(req.getContextPath() + "/purchase-orders?action=detail&id=" + poId + "&msg=po-pending");
+            } else {
+                resp.sendRedirect(base + "&msg=batch-added");
+            }
+            return;
+        }
+        AuditHelper.log(req, "Sửa lô thuốc", "Batch", "Sửa lô " + batchNo);
+        resp.sendRedirect(base + "&msg=batch-updated");
     }
 
     // ── HỦY LÔ (CANCELLED) ───────────────────────────────────────────────────

@@ -277,9 +277,25 @@ public class PosServlet extends HttpServlet {
                         acc = (Account) session.getAttribute("staffAccount_" + uid);
                     if (acc == null)
                         acc = (Account) session.getAttribute("staffAccount");
-                    if (acc == null)
-                        acc = (Account) session.getAttribute("adminAccount");
+                    // KHÔNG lấy adminAccount — admin không phải người đứng quầy POS
                 }
+
+                // Đọc posStation từ request hoặc session (cần sớm để tra attendance)
+                Integer posStation = parseIntOrNull(req.getParameter("posStation"));
+                if (posStation == null && session != null) {
+                    posStation = (Integer) session.getAttribute("posStation");
+                }
+                if (posStation == null) posStation = 1;
+
+                // Fallback: nếu không có staffAccount trong session, tra xem ai đang
+                // check-in active tại quầy này hôm nay (theo ShiftSchedule.PosStation)
+                if (acc == null && posStation > 0) {
+                    Attendance activeAtt = attendanceDAO.findActiveByStation(posStation);
+                    if (activeAtt != null) {
+                        acc = accountDAO.findById(activeAtt.getAccountId());
+                    }
+                }
+
                 // POS bán bình thường không bắt buộc mở ca — chưa điểm danh thì
                 // hóa đơn ghi về tài khoản POS mặc định
                 int accountId = acc != null ? acc.getAccountId() : POS_ACCOUNT_ID;
@@ -299,13 +315,6 @@ public class PosServlet extends HttpServlet {
                     medicineIds[i] = Integer.parseInt(medIdStrs[i]);
                     quantities[i]  = Integer.parseInt(qtyStrs[i]);
                 }
-
-                // Đọc posStation từ request hoặc session
-                Integer posStation = parseIntOrNull(req.getParameter("posStation"));
-                if (posStation == null && req.getSession(false) != null) {
-                    posStation = (Integer) req.getSession(false).getAttribute("posStation");
-                }
-                if (posStation == null) posStation = 1;
 
                 ServiceResult<Invoice> result = saleService.completeSale(
                         accountId, customerId, payMethod, discount,

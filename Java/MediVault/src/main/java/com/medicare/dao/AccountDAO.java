@@ -221,9 +221,7 @@ public class AccountDAO implements IAccountDAO {
         // Double-check validate tại DAO (bảo vệ tầng thứ 2)
         List<String> errors = validate(a);
         if (!errors.isEmpty()) {
-            System.err.println("[AccountDAO] insert thất bại — lỗi validate: "
-                    + ValidationUtil.joinErrors(errors));
-            return false;
+            throw new RuntimeException("Validate thất bại: " + ValidationUtil.joinErrors(errors));
         }
 
         String sql = "INSERT INTO Accounts " +
@@ -238,10 +236,14 @@ public class AccountDAO implements IAccountDAO {
             ps.setString(4, a.getEmail() != null ? a.getEmail().trim() : null);
             ps.setString(5, a.getPhone() != null ? a.getPhone().trim() : null);
             ps.setInt(6, a.getRoleId());
-            ps.setString(7, a.getCitizenId() != null ? a.getCitizenId().trim() : null);
-            ps.setString(8, a.getPosition() != null ? a.getPosition().trim() : null);
+            String cid = a.getCitizenId();
+            ps.setString(7, (cid != null && !cid.trim().isEmpty()) ? cid.trim() : null);
+            String pos = a.getPosition();
+            ps.setString(8, (pos != null && !pos.trim().isEmpty()) ? pos.trim() : null);
             return ps.executeUpdate() > 0;
-        } catch (Exception e) { e.printStackTrace(); return false; }
+        } catch (Exception e) {
+            throw new RuntimeException("SQL INSERT thất bại: " + e.getMessage(), e);
+        }
     }
 
     // ================================================================
@@ -268,7 +270,8 @@ public class AccountDAO implements IAccountDAO {
             ps.setString(2, a.getEmail() != null ? a.getEmail().trim() : null);
             ps.setString(3, a.getPhone() != null ? a.getPhone().trim() : null);
             ps.setInt(4, a.getRoleId());
-            ps.setString(5, a.getCitizenId() != null ? a.getCitizenId().trim() : null);
+            String cidUpd = a.getCitizenId();
+            ps.setString(5, (cidUpd != null && !cidUpd.trim().isEmpty()) ? cidUpd.trim() : null);
             ps.setString(6, a.getPosition() != null ? a.getPosition().trim() : null);
             // 3 field chuyên môn — nullable
             ps.setString(7, a.getProfessionalCertNo());

@@ -77,10 +77,10 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .page-title{font-size:26px;font-weight:800;color:var(--ink)}
 .page-sub{font-size:13px;color:var(--muted);margin-top:3px}
 /* ── UNDERLINE NAV TABS ── */
-.u-tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:20px;gap:0}
-.u-tab{padding:10px 22px;font-size:14px;font-weight:600;color:var(--muted);text-decoration:none;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .18s;white-space:nowrap}
-.u-tab:hover{color:var(--blue);background:rgba(21,88,168,.03)}
-.u-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.u-tabs{display:flex;gap:6px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content;margin-bottom:20px;flex-wrap:wrap}
+.u-tab{padding:8px 18px;border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;transition:all .15s;white-space:nowrap}
+.u-tab:hover{background:var(--surface);color:var(--ink)}
+.u-tab.active{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;box-shadow:0 3px 10px rgba(21,88,168,.25)}
 /* ── ALERT TABS ── */
 .cat-tab-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
 .cat-tab{height:34px;padding:0 14px;border-radius:20px;font-size:12.5px;font-weight:600;color:var(--muted);border:1.5px solid var(--border);background:var(--white);cursor:pointer;white-space:nowrap;transition:all .14s;display:inline-flex;align-items:center;gap:6px;font-family:inherit}
@@ -364,7 +364,6 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
 </style>
 </head>
 <body>
-<%@ include file="/WEB-INF/views/loading.jsp" %>
 
 <%-- Hover card --%>
 <div id="hoverCard" class="hover-card">
@@ -751,6 +750,21 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
       <span>Đang tải thông tin thuốc...</span>
     </div>
 
+    <%-- ⚠️ PANEL TRÙNG THUỐC — hiện khi gõ tên/mã vạch trùng với thuốc đã có --%>
+    <div id="dupPanel" style="display:none;margin:0 0 14px;background:#FFFBEB;border:1.5px solid #F59E0B;border-radius:14px;padding:16px 18px">
+      <div style="display:flex;align-items:center;gap:9px;font-size:14px;font-weight:800;color:#92400E;margin-bottom:10px">
+        ⚠️ Thuốc này ĐÃ TỒN TẠI trong hệ thống!
+      </div>
+      <div id="dupInfo" style="background:#fff;border:1px solid #FDE68A;border-radius:11px;padding:12px 14px;font-size:13px;line-height:1.9"></div>
+      <div id="dupAsk" style="margin-top:12px">
+        <div style="font-size:12.5px;font-weight:700;color:#92400E;margin-bottom:8px">👉 Không cần tạo lại. Bạn có muốn nhập lô cho thuốc này không?</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <a id="dupGoPO" href="#" style="background:linear-gradient(135deg,#1558A8,#0d3d63);color:#fff;text-decoration:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:800">📑 Chuyển sang Nhập Lô (tạo phiếu) →</a>
+          <a id="dupGoDetail" href="#" style="background:#fff;color:#1558A8;border:1.5px solid #BFDBFE;text-decoration:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700">👁 Xem thuốc</a>
+        </div>
+      </div>
+    </div>
+
     <form id="dwForm" method="post" action="${pageContext.request.contextPath}/medicines" enctype="multipart/form-data">
       <input type="hidden" name="action" value="save-medicine">
       <input type="hidden" name="medicineId" id="dwMedId">
@@ -1003,40 +1017,15 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
   </div>
 </div>
 
-<%-- ──── PURCHASE ORDER MODAL ──── --%>
-<div id="poModal" style="display:none;position:fixed;inset:0;background:rgba(11,22,40,.55);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(3px)">
-  <div style="background:#fff;border-radius:18px;width:480px;max-width:94vw;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)">
-    <div style="padding:18px 24px;background:linear-gradient(90deg,#0F2645,#1558A8);color:#fff;display:flex;align-items:center;justify-content:space-between">
-      <div>
-        <div style="font-size:15.5px;font-weight:800">📦 Tạo phiếu nhập kho</div>
-        <div style="font-size:12px;opacity:.75;margin-top:2px">Chọn nhà cung cấp để tạo đơn đặt hàng mới</div>
-      </div>
-      <button onclick="closePoModal()" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:30px;height:30px;border-radius:9px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">✕</button>
+<%-- ──── PURCHASE ORDER MODAL — nhúng form phiếu nhập ĐẦY ĐỦ qua iframe (đè lên trang) ──── --%>
+<div id="poModal" style="display:none;position:fixed;inset:0;background:rgba(11,22,40,.6);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:22px">
+  <div style="background:#F1F5FB;border-radius:18px;width:1080px;max-width:97vw;height:93vh;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.4);display:flex;flex-direction:column">
+    <div style="padding:12px 20px;background:linear-gradient(90deg,#0F2645,#1558A8);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div style="font-size:15px;font-weight:800">📦 Tạo phiếu nhập kho</div>
+      <button onclick="closePoModal()" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:30px;height:30px;border-radius:9px;cursor:pointer;font-size:15px">✕</button>
     </div>
-    <div class="po-modal-body">
-      <div class="po-field">
-        <label class="po-label">Nhà cung cấp <span style="color:#DC2626">*</span></label>
-        <select id="poSupplier" class="po-select">
-          <option value="">-- Chọn nhà cung cấp --</option>
-          <c:forEach var="sup" items="${suppliers}">
-            <option value="${sup.supplierId}">${fn:escapeXml(sup.supplierName)}</option>
-          </c:forEach>
-        </select>
-        <div style="font-size:11.5px;color:var(--muted);margin-top:5px">Không thấy nhà cung cấp? <a href="${pageContext.request.contextPath}/suppliers" target="_blank" style="color:var(--blue)">Vào mục Nhà cung cấp để thêm trước.</a></div>
-      </div>
-      <div class="po-field">
-        <label class="po-label">Ghi chú</label>
-        <textarea id="poNotes" class="po-textarea" placeholder="VD: Đặt hàng định kỳ tháng 7, giao trong 3 ngày..."></textarea>
-      </div>
-      <div id="poErr" style="font-size:12.5px;color:#DC2626;background:#FEF2F2;border:1px solid #FCA5A5;border-radius:9px;padding:8px 12px;display:none;margin-bottom:12px"></div>
-      <div class="po-actions">
-        <button id="poBtnSave" class="po-btn-save" onclick="savePoAjax()">📦 Tạo đơn đặt hàng</button>
-        <button class="po-btn-cancel" onclick="closePoModal()">Hủy</button>
-      </div>
-      <div style="margin-top:14px;padding:12px;background:#F0F7FF;border-radius:10px;font-size:12px;color:var(--blue);line-height:1.6">
-        💡 Sau khi tạo đơn, vào <strong>Chi tiết đơn</strong> để gắn lô hàng vào đơn này, hoặc vào <strong>Kho thuốc → Lô hàng</strong> để thêm lô mới và chọn đơn tương ứng.
-      </div>
-    </div>
+    <iframe id="poFrame" src="about:blank" title="Tạo phiếu nhập kho"
+            style="flex:1;width:100%;border:none;background:#F1F5FB"></iframe>
   </div>
 </div>
 
@@ -1164,6 +1153,10 @@ let _drawerMode = 'add'; // 'add' | 'edit'
 function openAddPanel() {
   _drawerMode = 'add';
   resetDwForm();
+  // reset panel trùng thuốc + mở khóa nút tạo
+  _dupFound = false;
+  document.getElementById('dupPanel').style.display = 'none';
+  document.getElementById('dwSaveBtn').disabled = false;
   document.getElementById('dwIcon').textContent = '➕';
   document.getElementById('dwTitle').textContent = 'Thêm thuốc mới';
   document.getElementById('dwSub').textContent = 'Tạo hồ sơ thuốc — tồn kho bắt đầu từ 0';
@@ -1176,6 +1169,9 @@ function openAddPanel() {
 
 async function openEditPanel(medicineId) {
   _drawerMode = 'edit';
+  _dupFound = false;
+  document.getElementById('dupPanel').style.display = 'none';
+  document.getElementById('dwSaveBtn').disabled = false;
   document.getElementById('dwIcon').textContent = '✏️';
   document.getElementById('dwTitle').textContent = 'Đang tải...';
   document.getElementById('dwSub').textContent = 'Chỉnh sửa thông tin hồ sơ thuốc';
@@ -1290,6 +1286,67 @@ document.getElementById('dwForm').addEventListener('submit', function() {
   const btn = document.getElementById('dwSaveBtn');
   btn.disabled = true;
   btn.textContent = '⏳ Đang lưu...';
+});
+
+// ── CHECK TRÙNG THUỐC realtime (AJAX + debounce 500ms) ────────────────────────
+// Gõ xong Tên thuốc / Mã vạch / Số ĐK → bắn API check ngầm. Nếu trùng:
+// hiện panel thông tin thuốc đã có + CHẶN nút "Tạo hồ sơ thuốc" + nút nhảy sang Nhập Lô.
+let _dupTimer = null, _dupFound = false;
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function dupCheck() {
+  if (_drawerMode !== 'add') return; // sửa thuốc thì server tự loại trừ, không check ở đây
+  clearTimeout(_dupTimer);
+  _dupTimer = setTimeout(async () => {
+    const name    = document.getElementById('dwName').value.trim();
+    const barcode = document.getElementById('dwBarcode').value.trim();
+    const regNo   = document.getElementById('dwRegNo').value.trim();
+    if (!name && !barcode && !regNo) { dupHide(); return; }
+    try {
+      const res = await fetch(CTX + '/medicines?action=check-duplicate'
+          + '&name=' + encodeURIComponent(name)
+          + '&barcode=' + encodeURIComponent(barcode)
+          + '&regNo=' + encodeURIComponent(regNo));
+      const d = await res.json();
+      if (d.found) dupShow(d); else dupHide();
+    } catch (e) { dupHide(); }
+  }, 500);
+}
+function dupShow(d) {
+  _dupFound = true;
+  const money = n => new Intl.NumberFormat('vi-VN').format(Math.round(n||0)) + 'đ';
+  document.getElementById('dupInfo').innerHTML =
+      '<b style="font-size:14.5px">' + escHtml(d.name) + '</b> '
+    + '<span style="font-family:monospace;color:#7A90B0">(' + escHtml(d.code) + ')</span><br>'
+    + (d.generic ? 'Hoạt chất: <b>' + escHtml(d.generic) + '</b> · ' : '')
+    + (d.category ? 'Nhóm: <b>' + escHtml(d.category) + '</b> · ' : '')
+    + 'ĐVT: <b>' + escHtml(d.unit) + '</b><br>'
+    + (d.barcode ? 'Mã vạch: <span style="font-family:monospace">' + escHtml(d.barcode) + '</span> · ' : '')
+    + 'Giá bán: <b style="color:#1558A8">' + money(d.price) + '</b> · '
+    + 'Tồn kho: <b style="color:' + (d.stock > 0 ? '#059669' : '#DC2626') + '">' + d.stock + ' ' + escHtml(d.unit) + '</b>'
+    + (d.active ? '' : ' · <span style="color:#DC2626;font-weight:700">⛔ đang ẨN bán</span>');
+  // Nếu thuốc ĐÃ có hàng → chỉ hiện thông tin; hết/chưa có hàng → mời nhập lô
+  document.getElementById('dupAsk').style.display = 'block';
+  document.getElementById('dupGoPO').href     = CTX + '/purchase-orders?action=new&medicineId=' + d.id;
+  document.getElementById('dupGoDetail').href = CTX + '/medicines?action=detail&id=' + d.id;
+  document.getElementById('dupPanel').style.display = 'block';
+  const btn = document.getElementById('dwSaveBtn');
+  btn.disabled = true;
+  btn.textContent = '⛔ Thuốc đã tồn tại — không thể tạo trùng';
+  document.getElementById('dupPanel').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+function dupHide() {
+  if (!_dupFound) { document.getElementById('dupPanel').style.display = 'none'; return; }
+  _dupFound = false;
+  document.getElementById('dupPanel').style.display = 'none';
+  const btn = document.getElementById('dwSaveBtn');
+  btn.disabled = false;
+  btn.textContent = '➕ Tạo hồ sơ thuốc';
+}
+['dwName','dwBarcode','dwRegNo'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', dupCheck);
 });
 
 // ── TỒN KHO BAN ĐẦU — HSD bắt buộc khi có số lượng ────────────────────────────
@@ -1518,8 +1575,16 @@ function deleteMfr(id, name) {
 }
 
 // ── PURCHASE ORDER MODAL ───────────────────────────────────────────────────────
-function openPoModal() { document.getElementById('poModal').style.display='flex'; }
-function closePoModal() { document.getElementById('poModal').style.display='none'; }
+function openPoModal() {
+  const f = document.getElementById('poFrame');
+  // nạp form phiếu nhập ĐẦY ĐỦ ở chế độ nhúng (ẩn sidebar), đè lên trang
+  if (f.src === 'about:blank' || !f.src) f.src = CTX + '/purchase-orders?action=new&embed=1';
+  document.getElementById('poModal').style.display='flex';
+}
+function closePoModal() {
+  document.getElementById('poModal').style.display='none';
+  document.getElementById('poFrame').src='about:blank'; // reset để lần sau mở mới
+}
 document.getElementById('poModal').addEventListener('click',function(e){if(e.target===this)closePoModal();});
 
 function savePoAjax() {

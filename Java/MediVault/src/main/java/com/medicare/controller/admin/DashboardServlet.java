@@ -43,11 +43,11 @@ public class DashboardServlet extends HttpServlet {
             return;
         }
 
-        // ── Stats ──
-        req.setAttribute("totalMedicines", medicineDAO.countAll());
-        req.setAttribute("lowStockCount",  medicineDAO.countLowStock());
-        req.setAttribute("expiryCount",    batchesDAO.findExpiringSoon().size());
-        req.setAttribute("expiredCount",   batchesDAO.findExpired().size());
+        // ── Stats (cache 3 phút — chậm đổi, tránh query lại mỗi lần vào dashboard) ──
+        req.setAttribute("totalMedicines", com.medicare.config.CacheManager.get("dash.totalMed",   medicineDAO::countAll));
+        req.setAttribute("lowStockCount",  com.medicare.config.CacheManager.get("dash.lowStock",   medicineDAO::countLowStock));
+        req.setAttribute("expiryCount",    com.medicare.config.CacheManager.get("dash.expiry",     () -> batchesDAO.findExpiringSoon().size()));
+        req.setAttribute("expiredCount",   com.medicare.config.CacheManager.get("dash.expired",    () -> batchesDAO.findExpired().size()));
 
         // ── Doanh thu hôm nay ──
         LocalDate today = LocalDate.now();
@@ -102,9 +102,10 @@ public class DashboardServlet extends HttpServlet {
         req.setAttribute("resetAccountMap",   resetAccountMap);
 
         // ── Chart data (JSON strings for JS) ──
-        req.setAttribute("chartDailyJson", buildDailyRevenueJson());
-        req.setAttribute("chartTopJson",   buildTop5MedicinesJson());
-        req.setAttribute("chartCatJson",   buildCategoryJson());
+        // Biểu đồ tổng hợp NẶNG (JOIN nhiều bảng) — cache 5 phút, chậm đổi
+        req.setAttribute("chartDailyJson", com.medicare.config.CacheManager.get5("dash.chartDaily", this::buildDailyRevenueJson));
+        req.setAttribute("chartTopJson",   com.medicare.config.CacheManager.get5("dash.chartTop",   this::buildTop5MedicinesJson));
+        req.setAttribute("chartCatJson",   com.medicare.config.CacheManager.get5("dash.chartCat",   this::buildCategoryJson));
 
         // ── Recent invoices (top 5 hôm nay, fallback 5 gần nhất) ──
         List<Invoice> recentInvoices = todayInvoiceList.size() >= 5

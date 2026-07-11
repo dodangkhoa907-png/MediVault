@@ -67,8 +67,24 @@ public class PurchaseOrderServlet extends HttpServlet {
         String action = req.getParameter("action");
         if ("save".equals(action)) {
             handleSave(req, resp, adminAcc);
+        } else if ("confirm".equals(action)) {
+            handleConfirmReceived(req, resp);
         } else {
             resp.sendRedirect(req.getContextPath() + "/purchase-orders");
+        }
+    }
+
+    // ── XÁC NHẬN HÀNG ĐÃ VỀ (Done) — trigger nhập kho từ chi tiết đơn ─────────
+    private void handleConfirmReceived(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        int poId = parseIntOr(req.getParameter("id"), 0);
+        int created = poDAO.confirmReceived(poId);
+        if (created > 0) {
+            AuditHelper.log(req, "Nhận hàng nhập kho", "PurchaseOrder", poId,
+                    "Xác nhận hàng đã về — tạo " + created + " lô vào kho (đơn ID " + poId + ")");
+            resp.sendRedirect(req.getContextPath() + "/purchase-orders?action=detail&id=" + poId + "&msg=received");
+        } else {
+            resp.sendRedirect(req.getContextPath() + "/purchase-orders?action=detail&id=" + poId + "&msg=receive-fail");
         }
     }
 
@@ -119,6 +135,7 @@ public class PurchaseOrderServlet extends HttpServlet {
         req.setAttribute("creator",     creator);
         req.setAttribute("batches",     batches);
         req.setAttribute("medicineMap", medicineMap);
+        req.setAttribute("podLines",    poDAO.findDetails(id)); // dòng hàng đã đặt (chứng từ)
         SidebarHelper.load(req);
 
         req.getRequestDispatcher("/WEB-INF/views/admin/purchase-order-detail.jsp").forward(req, resp);
@@ -129,6 +146,8 @@ public class PurchaseOrderServlet extends HttpServlet {
             throws ServletException, IOException {
         req.setAttribute("suppliers", supplierDAO.findAllActive());
         req.setAttribute("medicines", medicineDAO.findAll()); // cho dropdown dòng hàng
+        // Nhảy từ màn "thuốc đã tồn tại" sang: preselect thuốc vào dòng đầu tiên
+        req.setAttribute("preselectMedicineId", parseIntOr(req.getParameter("medicineId"), 0));
         SidebarHelper.load(req);
 
         req.getRequestDispatcher("/WEB-INF/views/admin/purchase-order-form.jsp").forward(req, resp);

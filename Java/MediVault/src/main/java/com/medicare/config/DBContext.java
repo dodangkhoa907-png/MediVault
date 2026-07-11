@@ -47,17 +47,20 @@ public class DBContext {
             config.setPassword(props.getProperty("db.password"));
 
             // ── Pool sizing ───────────────────────────────────────────────
-            config.setMaximumPoolSize(15);       // tăng từ 10→15 (nhà thuốc 5 tab cùng lúc)
-            config.setMinimumIdle(5);            // tăng từ 2→5: luôn sẵn 5 connection nóng
-            config.setConnectionTimeout(3000);   // 3s timeout nếu pool đầy
+            // DB đặt từ xa (network latency mỗi query) + click liên tục → cần nhiều
+            // connection hơn và CHỜ được connection thay vì fail (đỡ crash).
+            config.setMaximumPoolSize(30);       // 15→30: chịu được bùng nổ request khi bấm liên tục
+            config.setMinimumIdle(8);            // luôn sẵn 8 connection nóng
+            config.setConnectionTimeout(8000);   // 3s→8s: chờ connection thay vì báo lỗi ngay
             config.setIdleTimeout(600000);       // đóng idle sau 10 phút
             config.setMaxLifetime(1800000);      // recycle connection sau 30 phút
             config.setKeepaliveTime(60000);      // ping DB mỗi 1 phút tránh bị firewall kill
+            config.setLeakDetectionThreshold(20000); // cảnh báo log nếu connection giữ >20s (bắt rò rỉ)
 
             // ── PreparedStatement Cache (quan trọng nhất) ─────────────────
             // Tránh SQL Server phải parse lại cùng 1 câu SQL mỗi lần gọi
             config.addDataSourceProperty("cachePrepStmts",          "true");
-            config.addDataSourceProperty("prepStmtCacheSize",        "300");  // cache 300 stmt
+            config.addDataSourceProperty("prepStmtCacheSize",        "250");  // cache 250 stmt
             config.addDataSourceProperty("prepStmtCacheSqlLimit",    "2048"); // max 2KB/stmt
 
             // BẮT BUỘC: sendStringParametersAsUnicode=true để lưu tiếng Việt (NVARCHAR) không bị lỗi Mojibake
@@ -82,7 +85,9 @@ public class DBContext {
                   + "SET CONCAT_NULL_YIELDS_NULL ON; SET NUMERIC_ROUNDABORT OFF");
 
             // ── Connection test ───────────────────────────────────────────
-            config.setConnectionTestQuery("SELECT 1");  // test connection còn sống không
+            // KHÔNG set connectionTestQuery: driver mssql-jdbc hỗ trợ JDBC4 isValid(),
+            // HikariCP validate bằng isValid() (nhẹ, cục bộ) thay vì bắn "SELECT 1"
+            // round-trip tới DB TỪ XA mỗi lần mượn connection → giảm mạnh độ trễ.
             config.setValidationTimeout(2000);          // 2s để validate
 
             // 0 = không connect khi khởi động, chỉ connect khi có request đầu tiên.

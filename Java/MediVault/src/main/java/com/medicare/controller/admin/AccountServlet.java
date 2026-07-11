@@ -267,7 +267,7 @@ public class AccountServlet extends HttpServlet {
             errors = new java.util.ArrayList<>(ValidationUtil.validateAccount(
                     username, fullName, email, phone, citizenId, position));
             if (!ValidationUtil.isValidPassword(password))
-                errors.add("Mật khẩu phải có ít nhất 6 ký tự.");
+                errors.addAll(ValidationUtil.validatePassword(password));
         } else {
             errors = new java.util.ArrayList<>(ValidationUtil.validateAccount(
                     "skip", fullName, email, phone, citizenId, position));
@@ -344,8 +344,7 @@ public class AccountServlet extends HttpServlet {
         a.setFullName(fullName.trim());
         a.setEmail(email != null ? email.trim() : null);
         a.setPhone(phone != null ? phone.trim() : null);
-        // CitizenId là NOT NULL trong DB — dùng empty string nếu null
-        a.setCitizenId(citizenId != null && !citizenId.trim().isEmpty() ? citizenId.trim() : "");
+        a.setCitizenId(citizenId != null && !citizenId.trim().isEmpty() ? citizenId.trim() : null);
         a.setPosition(position != null ? position.trim() : null);
         a.setRoleId(Integer.parseInt(roleStr));
 

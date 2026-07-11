@@ -984,7 +984,7 @@ tbody tr{cursor:pointer}
       <span class="topbar-pill pill-total">📋 ${totalCount} ca</span>
       <span class="topbar-pill pill-open">🟢 ${openCount} đang mở</span>
       <span class="topbar-pill pill-staff">👥 ${fn:length(allStaff)} nhân viên</span>
-      <a href="${pageContext.request.contextPath}/dashboard" class="topbar-user">
+      <a href="${pageContext.request.contextPath}/admin-profile" class="topbar-user">
         <div class="topbar-av"><%= initials %></div>
         <span class="topbar-name"><%= fullName %></span>
       </a>

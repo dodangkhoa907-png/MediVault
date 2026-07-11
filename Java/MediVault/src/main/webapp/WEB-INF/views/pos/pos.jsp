@@ -1278,6 +1278,11 @@ function renderCart() {
       const meta = [];
       if (item.batchNo) meta.push('🏷 Lô: ' + item.batchNo);
       if (item.expiry)  meta.push('📅 HSD: ' + fmtDate(item.expiry));
+      // Tồn kho còn lại (để dược sĩ biết còn bao nhiêu mà bán) — đỏ nếu vượt tồn
+      const remain = item.stock - item.qty;
+      const stockColor = item.qty >= item.stock ? '#DC2626' : (remain <= 5 ? '#D97706' : '#059669');
+      meta.push('<span style="color:' + stockColor + ';font-weight:800">📦 Kho còn: ' + item.stock + ' ' + escHtml(item.unit)
+                + (item.qty > 0 ? ' (sau bán: ' + (remain < 0 ? 0 : remain) + ')' : '') + '</span>');
       const metaHtml = meta.length ? '<div class="inv-i-meta">' + meta.join(' · ') + '</div>' : '';
       const rxBadge = item.rx ? '<span class="mc-badge mb-rx" style="font-size:9px;padding:1px 4px;margin-right:6px;border-radius:3px;">Rx</span>' : '<span class="mc-badge mb-otc" style="font-size:9px;padding:1px 4px;margin-right:6px;border-radius:3px;">OTC</span>';
       return '<div class="inv-item">'

@@ -144,4 +144,21 @@
   .sidebar.open{transform:translateX(0)}
   .main{margin-left:0}
 }
+/* ── Chuyển trang MƯỢT (View Transitions API) — crossfade native khi điều hướng ── */
+@view-transition { navigation: auto; }
+/* Sidebar GIỮ NGUYÊN (không nhấp nháy) khi đổi trang; chỉ vùng nội dung crossfade */
+.sidebar{ view-transition-name: app-sidebar; }
+.main{ view-transition-name: app-main; }
+/* Nội dung mờ vào nhẹ nhàng thay vì giật */
+::view-transition-old(app-main){ animation: mv-fade-out .18s ease both; }
+::view-transition-new(app-main){ animation: mv-fade-in .26s ease both; }
+@keyframes mv-fade-out{ to{ opacity:0; transform:translateY(-4px) } }
+@keyframes mv-fade-in { from{ opacity:0; transform:translateY(6px) } }
+@media (prefers-reduced-motion: reduce){ @view-transition { navigation: none; } }
 </style>
+<%-- Click mục đang active KHÔNG reload lại trang (giữ nguyên tab hiện tại) --%>
+<script>
+document.querySelectorAll('.sidebar .nav-item.active').forEach(function(a){
+  a.addEventListener('click', function(e){ e.preventDefault(); });
+});
+</script>

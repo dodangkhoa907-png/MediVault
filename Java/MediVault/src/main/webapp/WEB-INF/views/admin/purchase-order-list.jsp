@@ -92,7 +92,7 @@ tbody tr:hover td{background:#F7FBFF}
     <div class="topbar-title">📑 Đơn đặt hàng</div>
     <div class="topbar-right">
       <span class="topbar-pill">📋 ${fn:length(pos)} đơn</span>
-      <a href="${pageContext.request.contextPath}/dashboard" class="topbar-user">
+      <a href="${pageContext.request.contextPath}/admin-profile" class="topbar-user">
         <div class="topbar-av"><%= initials %></div>
         <span class="topbar-name"><%= fullName %></span>
       </a>
@@ -111,6 +111,9 @@ tbody tr:hover td{background:#F7FBFF}
     <div class="section-tabs">
       <a href="${pageContext.request.contextPath}/medicines" class="section-tab">💊 Thuốc &amp; Lô hàng</a>
       <a href="${pageContext.request.contextPath}/purchase-orders" class="section-tab active">📑 Đơn đặt hàng</a>
+      <a href="${pageContext.request.contextPath}/categories" class="section-tab">🏷️ Danh mục</a>
+      <a href="${pageContext.request.contextPath}/suppliers" class="section-tab">🏭 Nhà cung cấp</a>
+      <a href="${pageContext.request.contextPath}/shelves" class="section-tab">📍 Vị trí kệ</a>
     </div>
 
     <div class="table-card">
@@ -119,12 +122,12 @@ tbody tr:hover td{background:#F7FBFF}
           <thead>
             <tr>
               <th>Mã đơn</th><th>Nhà cung cấp</th><th>Người tạo</th>
-              <th>Ngày đặt</th><th>Số lô hàng</th><th>Tổng giá trị</th><th></th>
+              <th>Ngày đặt</th><th>Trạng thái</th><th>Số lô hàng</th><th>Tổng giá trị</th><th></th>
             </tr>
           </thead>
           <tbody>
             <c:if test="${empty pos}">
-              <tr><td colspan="7" class="empty-row">Chưa có đơn đặt hàng nào. Bấm "Tạo đơn mới" để bắt đầu nhập kho.</td></tr>
+              <tr><td colspan="8" class="empty-row">Chưa có đơn đặt hàng nào. Bấm "Tạo đơn mới" để bắt đầu nhập kho.</td></tr>
             </c:if>
             <c:forEach var="po" items="${pos}">
               <tr onclick="location.href='${pageContext.request.contextPath}/purchase-orders?action=detail&id=${po.poId}'">
@@ -132,6 +135,12 @@ tbody tr:hover td{background:#F7FBFF}
                 <td style="font-weight:600">${supplierMap[po.supplierId] != null ? supplierMap[po.supplierId].supplierName : 'NCC #' += po.supplierId}</td>
                 <td>${accountMap[po.accountId] != null ? accountMap[po.accountId].fullName : 'ID ' += po.accountId}</td>
                 <td style="color:var(--muted);font-size:12.5px">${fn:substring(po.orderDate.toString(),0,16)}</td>
+                <td>
+                  <c:choose>
+                    <c:when test="${po.status == 'PENDING'}"><span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:800;background:#FFFBEB;color:#92400E;border:1px solid #FDE68A">⏳ Chờ hàng về</span></c:when>
+                    <c:otherwise><span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:800;background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0">✅ Đã nhập kho</span></c:otherwise>
+                  </c:choose>
+                </td>
                 <td>${batchCountMap[po.poId]} lô</td>
                 <td style="font-weight:800"><fmt:formatNumber value="${po.totalValue}" type="number" maxFractionDigits="0"/>đ</td>
                 <td><a href="${pageContext.request.contextPath}/purchase-orders?action=detail&id=${po.poId}" class="btn-detail" onclick="event.stopPropagation()">Xem →</a></td>
