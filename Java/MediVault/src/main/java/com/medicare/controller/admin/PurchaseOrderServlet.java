@@ -9,6 +9,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.*;
 
 /**
@@ -65,8 +67,24 @@ public class PurchaseOrderServlet extends HttpServlet {
         String action = req.getParameter("action");
         if ("save".equals(action)) {
             handleSave(req, resp, adminAcc);
+        } else if ("confirm".equals(action)) {
+            handleConfirmReceived(req, resp);
         } else {
             resp.sendRedirect(req.getContextPath() + "/purchase-orders");
+        }
+    }
+
+    // ── XÁC NHẬN HÀNG ĐÃ VỀ (Done) — trigger nhập kho từ chi tiết đơn ─────────
+    private void handleConfirmReceived(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        int poId = parseIntOr(req.getParameter("id"), 0);
+        int created = poDAO.confirmReceived(poId);
+        if (created > 0) {
+            AuditHelper.log(req, "Nhận hàng nhập kho", "PurchaseOrder", poId,
+                    "Xác nhận hàng đã về — tạo " + created + " lô vào kho (đơn ID " + poId + ")");
+            resp.sendRedirect(req.getContextPath() + "/purchase-orders?action=detail&id=" + poId + "&msg=received");
+        } else {
+            resp.sendRedirect(req.getContextPath() + "/purchase-orders?action=detail&id=" + poId + "&msg=receive-fail");
         }
     }
 
@@ -117,6 +135,7 @@ public class PurchaseOrderServlet extends HttpServlet {
         req.setAttribute("creator",     creator);
         req.setAttribute("batches",     batches);
         req.setAttribute("medicineMap", medicineMap);
+        req.setAttribute("podLines",    poDAO.findDetails(id)); // dòng hàng đã đặt (chứng từ)
         SidebarHelper.load(req);
 
         req.getRequestDispatcher("/WEB-INF/views/admin/purchase-order-detail.jsp").forward(req, resp);
@@ -126,19 +145,77 @@ public class PurchaseOrderServlet extends HttpServlet {
     private void showForm(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         req.setAttribute("suppliers", supplierDAO.findAllActive());
+        req.setAttribute("medicines", medicineDAO.findAll()); // cho dropdown dòng hàng
+        // Nhảy từ màn "thuốc đã tồn tại" sang: preselect thuốc vào dòng đầu tiên
+        req.setAttribute("preselectMedicineId", parseIntOr(req.getParameter("medicineId"), 0));
         SidebarHelper.load(req);
 
         req.getRequestDispatcher("/WEB-INF/views/admin/purchase-order-form.jsp").forward(req, resp);
     }
 
-    // ── SAVE (tạo đơn mới) ────────────────────────────────────────────────────
+    // ── SAVE (tạo phiếu nhập nhiều dòng → PO + N Batches trong 1 transaction) ──
     private void handleSave(HttpServletRequest req, HttpServletResponse resp, Account adminAcc)
             throws ServletException, IOException {
         List<String> errors = new ArrayList<>();
-        String supId = req.getParameter("supplierId");
-        String notes = req.getParameter("notes");
+        String supId  = req.getParameter("supplierId");
+        String notes  = req.getParameter("notes");
+        String status = req.getParameter("status");
+        String payment = req.getParameter("paymentMethod");
+        BigDecimal discount = parseMoney(req.getParameter("discountAmount"));
 
         if (ValidationUtil.isBlank(supId)) errors.add("Vui lòng chọn nhà cung cấp!");
+
+        // Các dòng hàng (mỗi dòng = 1 lô)
+        String[] medIds   = req.getParameterValues("lineMedicineId");
+        String[] qtys     = req.getParameterValues("lineQty");
+        String[] prices   = req.getParameterValues("linePrice");
+        String[] batchNos = req.getParameterValues("lineBatchNo");
+        String[] expiries = req.getParameterValues("lineExpiry");
+        String[] mfDates  = req.getParameterValues("lineMfDate");
+
+        List<Batches> lines = new ArrayList<>();
+        BigDecimal totalGoods = BigDecimal.ZERO;
+        int n = medIds != null ? medIds.length : 0;
+        for (int i = 0; i < n; i++) {
+            String midS = medIds[i];
+            if (ValidationUtil.isBlank(midS)) continue; // dòng trống → bỏ qua
+            int row = i + 1;
+            int medId = 0, qty = 0;
+            try { medId = Integer.parseInt(midS); } catch (Exception e) { errors.add("Dòng " + row + ": thuốc không hợp lệ."); continue; }
+            try { qty = Integer.parseInt(qtys[i]); } catch (Exception ignored) {}
+            BigDecimal price = parseMoney(prices != null ? prices[i] : null);
+            String batchNo = batchNos != null ? batchNos[i] : null;
+            String expiryS = expiries != null ? expiries[i] : null;
+
+            if (qty <= 0)                         errors.add("Dòng " + row + ": số lượng phải > 0.");
+            if (ValidationUtil.isBlank(batchNo))  errors.add("Dòng " + row + ": thiếu số lô.");
+            LocalDate expiry = null;
+            if (ValidationUtil.isBlank(expiryS)) {
+                errors.add("Dòng " + row + ": thiếu hạn dùng.");
+            } else {
+                try {
+                    expiry = LocalDate.parse(expiryS);
+                    if (!expiry.isAfter(LocalDate.now())) errors.add("Dòng " + row + ": HSD phải sau hôm nay.");
+                } catch (Exception e) { errors.add("Dòng " + row + ": HSD không hợp lệ."); }
+            }
+            if (!errors.isEmpty()) continue;
+
+            Batches b = new Batches();
+            b.setMedicineId(medId);
+            b.setBatchNumber(batchNo.trim());
+            b.setExpiryDate(expiry);
+            b.setImportPrice(price);
+            b.setInitialQuantity(qty);
+            b.setImportDate(LocalDate.now());
+            if (mfDates != null && !ValidationUtil.isBlank(mfDates[i])) {
+                try { b.setManufactureDate(LocalDate.parse(mfDates[i])); } catch (Exception ignored) {}
+            }
+            lines.add(b);
+            totalGoods = totalGoods.add(price.multiply(BigDecimal.valueOf(qty)));
+        }
+
+        if (lines.isEmpty() && errors.isEmpty())
+            errors.add("Phiếu nhập phải có ít nhất 1 dòng thuốc!");
 
         if (!errors.isEmpty()) {
             req.setAttribute("errors", errors);
@@ -149,16 +226,29 @@ public class PurchaseOrderServlet extends HttpServlet {
         PurchaseOrders po = new PurchaseOrders();
         po.setSupplierId(Integer.parseInt(supId));
         po.setAccountId(adminAcc.getAccountId());
-        po.setNotes(notes != null ? notes.trim() : null);
+        po.setNotes(ValidationUtil.isBlank(notes) ? null : notes.trim());
+        po.setStatus("PENDING".equals(status) ? "PENDING" : "COMPLETED");
+        po.setPaymentMethod(ValidationUtil.isBlank(payment) ? null : payment);
+        po.setDiscountAmount(discount);
+        po.setTotalValue(totalGoods); // giá trị hàng (chưa trừ CK)
 
-        int poId = poDAO.insert(po);
+        int poId = poDAO.createWithBatches(po, lines);
         if (poId > 0) {
-            AuditHelper.log(req, "Tạo đơn đặt hàng", "PurchaseOrder", poId,
-                    "Tạo đơn đặt hàng mới từ NCC ID " + supId);
+            AuditHelper.log(req, "Tạo phiếu nhập kho", "PurchaseOrder", poId,
+                    "Phiếu nhập " + lines.size() + " lô từ NCC ID " + supId
+                    + " — tổng " + totalGoods.toPlainString() + "đ");
             resp.sendRedirect(req.getContextPath() + "/purchase-orders?action=detail&id=" + poId + "&msg=created");
         } else {
-            resp.sendRedirect(req.getContextPath() + "/purchase-orders?msg=error");
+            req.setAttribute("errors", List.of("Lỗi khi lưu phiếu nhập — vui lòng thử lại."));
+            showForm(req, resp);
         }
+    }
+
+    private BigDecimal parseMoney(String s) {
+        if (s == null) return BigDecimal.ZERO;
+        s = s.replaceAll("[^0-9.]", "");
+        if (s.isEmpty()) return BigDecimal.ZERO;
+        try { return new BigDecimal(s); } catch (Exception e) { return BigDecimal.ZERO; }
     }
 
     private int parseIntOr(String s, int def) {

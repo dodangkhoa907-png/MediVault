@@ -61,25 +61,104 @@ tbody tr:last-child td{border-bottom:none}
 
 <div class="content">
 
-  <div class="hint-box">
-    <span style="font-size:15px;flex-shrink:0">💡</span>
-    <div>Để thêm lô hàng vào đơn này: vào <strong>Kho thuốc</strong> → chọn thuốc cần nhập → "Thêm lô mới" → chọn
-      <strong>${po.poCode}</strong> trong danh sách "đơn đã có".</div>
-  </div>
+  <%-- Toast kết quả nhận hàng --%>
+  <c:if test="${param.msg == 'po-pending'}">
+    <div style="background:#EFF6FF;border:1px solid #BFDBFE;color:#1558A8;border-radius:11px;padding:12px 18px;margin-bottom:16px;font-size:13.5px;font-weight:700">
+      📋 Đã tạo phiếu nhập — đơn đang <b>CHỜ HÀNG VỀ</b>. Kho CHƯA tăng. Khi hàng tới, bấm <b>"Xác nhận Hàng Đã Tới"</b> bên dưới.
+    </div>
+  </c:if>
+  <c:if test="${param.msg == 'received'}">
+    <div style="background:#D1FAE5;border:1px solid #A7F3D0;color:#065F46;border-radius:11px;padding:12px 18px;margin-bottom:16px;font-size:13.5px;font-weight:700">
+      ✅ Đã xác nhận hàng về — các lô đã được nhập kho, tồn kho đã tăng!
+    </div>
+  </c:if>
+  <c:if test="${param.msg == 'receive-fail'}">
+    <div style="background:#FEE2E2;border:1px solid #FECACA;color:#991B1B;border-radius:11px;padding:12px 18px;margin-bottom:16px;font-size:13.5px;font-weight:700">
+      ❌ Không thể xác nhận (đơn không ở trạng thái Chờ xử lý hoặc không có dòng hàng).
+    </div>
+  </c:if>
+
+  <%-- Banner trạng thái + nút DONE --%>
+  <c:choose>
+    <c:when test="${po.status == 'PENDING'}">
+      <div style="background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:14px;padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <div style="font-size:26px">⏳</div>
+        <div style="flex:1;min-width:220px">
+          <div style="font-size:14.5px;font-weight:800;color:#92400E">Đơn đang CHỜ HÀNG VỀ</div>
+          <div style="font-size:12.5px;color:#B45309;margin-top:2px">Kho <b>chưa tăng</b> viên nào. Khi xe hàng tới &amp; đếm khớp số lượng, bấm nút bên phải — hệ thống sẽ tự tạo lô và cộng tồn kho.</div>
+        </div>
+        <form method="post" action="${pageContext.request.contextPath}/purchase-orders"
+              onsubmit="return confirm('Xác nhận hàng đã về đủ? Hệ thống sẽ tạo lô và CỘNG TỒN KHO ngay.')">
+          <input type="hidden" name="action" value="confirm"/>
+          <input type="hidden" name="id" value="${po.poId}"/>
+          <button type="submit" style="background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;border-radius:12px;padding:13px 22px;font-size:14.5px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 6px 18px rgba(5,150,105,.35)">
+            ✅ Xác nhận Hàng Đã Tới
+          </button>
+        </form>
+      </div>
+    </c:when>
+    <c:otherwise>
+      <div style="background:#ECFDF5;border:1.5px solid #A7F3D0;border-radius:14px;padding:13px 20px;margin-bottom:18px;display:flex;align-items:center;gap:12px">
+        <div style="font-size:22px">✅</div>
+        <div style="font-size:13.5px;font-weight:800;color:#065F46">Đơn ĐÃ NHẬP KHO — các lô bên dưới đã được cộng vào tồn.</div>
+      </div>
+    </c:otherwise>
+  </c:choose>
 
   <div class="info-card">
     <div class="info-item"><div class="lbl">Nhà cung cấp</div><div class="val">${supplier != null ? supplier.supplierName : '—'}</div></div>
     <div class="info-item"><div class="lbl">Người tạo</div><div class="val">${creator != null ? creator.fullName : '—'}</div></div>
     <div class="info-item"><div class="lbl">Ngày đặt</div><div class="val" style="font-size:13px">${fn:substring(po.orderDate.toString(),0,16)}</div></div>
     <div class="info-item"><div class="lbl">Tổng giá trị</div><div class="val" style="color:var(--blue)"><fmt:formatNumber value="${po.totalValue}" type="number" maxFractionDigits="0"/>đ</div></div>
+    <div class="info-item"><div class="lbl">Người liên hệ NCC</div><div class="val" style="font-size:13px">${supplier != null && not empty supplier.contactName ? supplier.contactName : '—'}</div></div>
+    <div class="info-item"><div class="lbl">SĐT NCC</div><div class="val" style="font-size:13px">${supplier != null && not empty supplier.phone ? supplier.phone : '—'}</div></div>
+    <div class="info-item"><div class="lbl">Thanh toán</div><div class="val" style="font-size:13px">
+      <c:choose>
+        <c:when test="${po.paymentMethod == 'CASH'}">💵 Tiền mặt</c:when>
+        <c:when test="${po.paymentMethod == 'TRANSFER'}">🏦 Chuyển khoản</c:when>
+        <c:when test="${po.paymentMethod == 'DEBT'}">📝 Ghi nợ</c:when>
+        <c:otherwise>—</c:otherwise>
+      </c:choose>
+    </div></div>
+    <div class="info-item"><div class="lbl">Chiết khấu</div><div class="val" style="font-size:13px"><fmt:formatNumber value="${po.discountAmount}" type="number" maxFractionDigits="0"/>đ</div></div>
+    <div class="info-item full"><div class="lbl">Địa chỉ NCC (đặt hàng ở đâu)</div><div class="val" style="font-size:13px;font-weight:600">${supplier != null && not empty supplier.address ? supplier.address : 'Chưa cập nhật địa chỉ — vào tab Nhà cung cấp để bổ sung.'}</div></div>
     <c:if test="${not empty po.notes}">
       <div class="info-item full"><div class="lbl">Ghi chú</div><div class="val" style="font-size:13px;font-weight:500">${po.notes}</div></div>
     </c:if>
   </div>
 
+  <%-- CHỨNG TỪ: các dòng hàng ĐÃ ĐẶT (luôn hiển thị, kể cả khi chưa nhập kho) --%>
+  <div class="table-card" style="margin-bottom:18px">
+    <div class="table-card-head">
+      <h2>🧾 Hàng đã đặt trong đơn (${fn:length(podLines)})</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Thuốc</th><th>Số lô dự kiến</th><th>HSD</th><th>SL đặt</th><th>Giá nhập</th><th>Thành tiền</th></tr>
+        </thead>
+        <tbody>
+          <c:if test="${empty podLines}">
+            <tr><td colspan="6" class="empty-row">Đơn này không có dòng hàng chi tiết (đơn tạo trước khi nâng cấp hệ thống).</td></tr>
+          </c:if>
+          <c:forEach var="d" items="${podLines}">
+            <tr>
+              <td style="font-weight:700">${d.medicineName}</td>
+              <td style="font-family:monospace">${not empty d.batchNumber ? d.batchNumber : '—'}</td>
+              <td style="color:var(--muted)">${d.expiryDate != null ? d.expiryDate : '—'}</td>
+              <td style="font-weight:700">${d.quantity}</td>
+              <td><fmt:formatNumber value="${d.importPrice}" type="number" maxFractionDigits="0"/>đ</td>
+              <td style="font-weight:800"><fmt:formatNumber value="${d.importPrice * d.quantity}" type="number" maxFractionDigits="0"/>đ</td>
+            </tr>
+          </c:forEach>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <div class="table-card">
     <div class="table-card-head">
-      <h2>📦 Các lô hàng thuộc đơn này (${fn:length(batches)})</h2>
+      <h2>📦 Lô ĐÃ NHẬP KHO từ đơn này (${fn:length(batches)})</h2>
       <a href="${pageContext.request.contextPath}/medicines" class="btn-primary">＋ Thêm lô hàng</a>
     </div>
     <div class="table-wrap">

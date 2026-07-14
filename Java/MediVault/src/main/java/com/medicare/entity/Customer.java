@@ -16,6 +16,7 @@ public class Customer {
     private String allergyHistory;
     private String chronicDisease;
     private LocalDateTime createdAt;
+    private String nfcCardUid;   // UID thẻ NFC vật lý liên kết
 
     public Customer() {}
 
@@ -58,4 +59,6 @@ public class Customer {
     public void setChronicDisease(String chronicDisease) { this.chronicDisease = chronicDisease; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public String getNfcCardUid() { return nfcCardUid; }
+    public void setNfcCardUid(String nfcCardUid) { this.nfcCardUid = nfcCardUid; }
 }

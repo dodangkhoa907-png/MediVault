@@ -589,7 +589,14 @@ public class ShiftServlet extends HttpServlet {
         }
         String tab = req.getParameter("tab");
         String suffix = (tab != null && !tab.isEmpty()) ? "&tab=" + tab : "";
-        String msg = ok ? ("delete".equals(mode) ? "deleted" : "cancelled") : "error";
+        String msg;
+        if (ok) {
+            msg = "delete".equals(mode) ? "deleted" : "cancelled";
+        } else if (sc != null && (sc.isConfirmed() || sc.isLate())) {
+            msg = "shift-active"; // nhân viên ĐANG trong ca → không được xóa/hủy
+        } else {
+            msg = "error";
+        }
         resp.sendRedirect(req.getContextPath() + "/shifts?msg=" + msg + suffix);
     }
 
@@ -626,7 +633,9 @@ public class ShiftServlet extends HttpServlet {
                     "Hủy ca " + sc.getShiftTypeName() + " ngày " + sc.getWorkDate());
         String tab = req.getParameter("tab");
         String suffix = (tab != null && !tab.isEmpty()) ? "&tab=" + tab : "";
-        resp.sendRedirect(req.getContextPath() + "/shifts?msg=" + (ok ? "cancelled" : "error") + suffix);
+        String msg = ok ? "cancelled"
+                : (sc != null && (sc.isConfirmed() || sc.isLate()) ? "shift-active" : "error");
+        resp.sendRedirect(req.getContextPath() + "/shifts?msg=" + msg + suffix);
     }
 
     /** Gán quầy POS hoặc tạo ca mới gán quầy */
@@ -719,16 +728,21 @@ public class ShiftServlet extends HttpServlet {
 
     private void handlePosCounterDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         int id = parseIntOr(req.getParameter("posStationId"), 0);
+        String msg = "error";
         if (id > 0) {
             PosStation ps = posStationDAO.findById(id);
             if (ps != null) {
-                boolean ok = posStationDAO.delete(id);
-                if (ok) {
+                com.medicare.dao.PosStationDAO dao = (com.medicare.dao.PosStationDAO) posStationDAO;
+                if (dao.isInUse(id)) {
+                    // Còn nhân viên được xếp/đang làm tại quầy → CHẶN xóa
+                    msg = "counter-in-use";
+                } else if (posStationDAO.delete(id)) {
                     AuditHelper.log(req, "Xóa quầy POS", "PosStation", "Xóa quầy ID " + id + " — " + ps.getStationName());
+                    msg = "counter-deleted";
                 }
             }
         }
-        resp.sendRedirect(req.getContextPath() + "/shifts?tab=pos-map&msg=counter-deleted");
+        resp.sendRedirect(req.getContextPath() + "/shifts?tab=pos-map&msg=" + msg);
     }
 
 }

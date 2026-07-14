@@ -1,0 +1,102 @@
+<%@ page contentType="text/html;charset=UTF-8" %>
+<% String activeNav = "medicines"; %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%
+    com.medicare.entity.Account acc = (com.medicare.entity.Account) session.getAttribute("adminAccount");
+    if (acc == null) { response.sendRedirect(request.getContextPath() + "/login"); return; }
+    String fullName = acc.getFullName() != null ? acc.getFullName() : acc.getUsername();
+    String initials = fullName.length() >= 2 ? fullName.substring(0,2).toUpperCase() : fullName.toUpperCase();
+    com.medicare.entity.Supplier s = (com.medicare.entity.Supplier) request.getAttribute("supplier");
+    boolean isNew = (s == null || s.getSupplierId() == 0);
+%>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title><%= isNew ? "Thêm" : "Sửa" %> nhà cung cấp — MediCare</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--ink:#0B1628;--navy:#0F2645;--blue:#1558A8;--cyan:#3ABDE0;--surface:#F1F5FB;--white:#fff;--muted:#7A90B0;--border:#D5E0F0;--red:#DC2626;--sidebar:232px;}
+html,body{height:100%;font-family:'Outfit',sans-serif}
+body{display:flex;background:var(--surface);color:var(--ink)}
+.sidebar{width:var(--sidebar);min-height:100vh;background:linear-gradient(175deg,#071022 0%,#0F2645 45%,#1558A8 100%);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;box-shadow:4px 0 32px rgba(0,0,0,.18)}
+.sidebar-logo{height:66px;padding:0 20px;display:flex;align-items:center;gap:11px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
+.logo-icon{width:36px;height:36px;background:linear-gradient(135deg,#3ABDE0,#1558A8);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.logo-text{font-size:16px;font-weight:800;color:#fff;line-height:1.1}
+.logo-sub{font-size:10px;color:rgba(255,255,255,.45);letter-spacing:.5px;text-transform:uppercase}
+.nav-section{padding:10px 12px 4px;flex-shrink:0}
+.nav-label{font-size:9.5px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase;padding:0 8px;margin-bottom:4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:10px;color:rgba(255,255,255,.6);text-decoration:none;font-size:13.5px;font-weight:500;margin-bottom:2px}
+.nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav-item.active{background:rgba(58,189,224,.15);color:#fff;border:1px solid rgba(58,189,224,.2)}
+.sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
+.sidebar-user{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.06)}
+.user-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#3ABDE0,#1558A8);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff}
+.user-name{font-size:13px;font-weight:700;color:#fff}.user-role{font-size:11px;color:rgba(255,255,255,.4)}
+.logout-btn{margin-left:auto;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.4);text-decoration:none;font-size:16px}
+.main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50}
+.btn-back{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:9px;border:1.5px solid var(--border);background:var(--white);color:var(--ink);font-size:13px;font-weight:600;text-decoration:none}
+.btn-back:hover{border-color:var(--blue);color:var(--blue)}
+.topbar-title{font-size:16px;font-weight:700}
+.content{max-width:680px;margin:26px auto;padding:0 22px 48px;width:100%}
+.page-title{font-size:23px;font-weight:900;margin-bottom:16px}
+.error-box{background:#FFF5F5;border:1px solid #FECACA;border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#991B1B;font-weight:600}
+.card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:24px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.fg{display:flex;flex-direction:column;gap:5px}.fg.full{grid-column:1/-1}
+.fl{font-size:12.5px;font-weight:700}.fl span{color:var(--red)}
+.fi{height:42px;padding:0 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;font-family:inherit;outline:none}
+.fi:focus{border-color:var(--blue)}
+textarea.fi{height:auto;min-height:70px;padding:10px 12px;resize:vertical}
+.chk{display:flex;align-items:center;gap:9px;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer}
+.chk input{width:17px;height:17px;accent-color:var(--blue)}
+.actions{display:flex;gap:10px;margin-top:20px}
+.btn-save{flex:1;height:46px;background:linear-gradient(135deg,#1558A8,#0d3d63);color:#fff;border:none;border-radius:11px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
+.btn-cancel{height:46px;padding:0 22px;border:1.5px solid var(--border);border-radius:11px;background:#fff;color:var(--muted);font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-flex;align-items:center}
+.btn-cancel:hover{border-color:var(--red);color:var(--red)}
+</style>
+</head>
+<body>
+<%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
+<div class="main">
+  <div class="topbar">
+    <a href="${pageContext.request.contextPath}/suppliers" class="btn-back">← Nhà cung cấp</a>
+    <span class="topbar-title"><%= isNew ? "Thêm nhà cung cấp" : "Sửa nhà cung cấp" %></span>
+  </div>
+  <div class="content">
+    <div class="page-title"><%= isNew ? "🏭 Thêm nhà cung cấp" : "✏️ Sửa nhà cung cấp" %></div>
+    <c:if test="${not empty error}"><div class="error-box">⚠️ ${error}</div></c:if>
+    <form method="post" action="${pageContext.request.contextPath}/suppliers">
+      <c:if test="${supplier != null && supplier.supplierId != 0}">
+        <input type="hidden" name="supplierId" value="${supplier.supplierId}"/>
+      </c:if>
+      <div class="card">
+        <div class="grid">
+          <div class="fg full"><label class="fl">Tên nhà cung cấp <span>*</span></label>
+            <input class="fi" name="supplierName" required value="${supplier != null ? supplier.supplierName : ''}" placeholder="VD: Công ty Dược ABC"/></div>
+          <div class="fg"><label class="fl">Người liên hệ</label>
+            <input class="fi" name="contactName" value="${supplier != null ? supplier.contactName : ''}" placeholder="VD: Nguyễn Văn A"/></div>
+          <div class="fg"><label class="fl">Số điện thoại</label>
+            <input class="fi" name="phone" value="${supplier != null ? supplier.phone : ''}" placeholder="VD: 0901234567"/></div>
+          <div class="fg"><label class="fl">Email</label>
+            <input class="fi" type="email" name="email" value="${supplier != null ? supplier.email : ''}" placeholder="VD: contact@abc.vn"/></div>
+          <div class="fg"><label class="fl">Số giấy phép KD</label>
+            <input class="fi" name="licenseNumber" value="${supplier != null ? supplier.licenseNumber : ''}" placeholder="VD: GPKD-12345"/></div>
+          <div class="fg full"><label class="fl">Địa chỉ</label>
+            <textarea class="fi" name="address" placeholder="Địa chỉ đầy đủ...">${supplier != null ? supplier.address : ''}</textarea></div>
+          <c:if test="${supplier != null && supplier.supplierId != 0}">
+          <div class="fg full"><label class="chk"><input type="checkbox" name="isActive" ${supplier.active ? 'checked' : ''} value="on"> Đang hợp tác (bỏ tick = ngừng)</label></div>
+          </c:if>
+        </div>
+        <div class="actions">
+          <a href="${pageContext.request.contextPath}/suppliers" class="btn-cancel">Hủy</a>
+          <button type="submit" class="btn-save"><%= isNew ? "💾 Thêm nhà cung cấp" : "💾 Lưu thay đổi" %></button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+</body>
+</html>

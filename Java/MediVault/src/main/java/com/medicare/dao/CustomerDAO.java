@@ -26,6 +26,7 @@ public class CustomerDAO implements ICustomerDAO {
         c.setChronicDisease(MojibakeUtil.fix(rs.getNString("ChronicDisease")));
         if (rs.getTimestamp("CreatedAt") != null)
             c.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
+        try { c.setNfcCardUid(rs.getString("NfcCardUid")); } catch (SQLException ignored) {}
         return c;
     }
 
@@ -80,6 +81,75 @@ public class CustomerDAO implements ICustomerDAO {
             ps.setNString(8, c.getOccupation());
             ps.setNString(9, c.getAllergyHistory());
             ps.setNString(10, c.getChronicDisease());
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    /** Tìm khách theo UID thẻ NFC đã liên kết. */
+    public Customer findByNfcUid(String uid) {
+        if (uid == null || uid.trim().isEmpty()) return null;
+        String sql = "SELECT * FROM Customers WHERE NfcCardUid = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, uid.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapRow(rs);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return null;
+    }
+
+    /**
+     * Liên kết thẻ NFC với khách hàng. Thẻ chỉ gán được cho 1 khách
+     * (unique index) và không ghi đè thẻ đã gán cho người khác.
+     */
+    public boolean linkNfcCard(int customerId, String uid) {
+        if (uid == null || uid.trim().isEmpty()) return false;
+        String sql = "UPDATE Customers SET NfcCardUid = ? WHERE CustomerID = ? " +
+                "AND NOT EXISTS (SELECT 1 FROM Customers WHERE NfcCardUid = ? AND CustomerID != ?)";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, uid.trim());
+            ps.setInt(2, customerId);
+            ps.setString(3, uid.trim());
+            ps.setInt(4, customerId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    /** Tạo nhanh khách tại POS (chỉ tên + SĐT + giới tính) — trả CustomerID mới, -1 nếu lỗi. */
+    public int quickCreate(String name, String phone, String gender) {
+        String sql = "INSERT INTO Customers (CustomerName, Phone, Gender) VALUES (?,?,?)";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setNString(1, name);
+            ps.setString(2, phone);
+            if (gender == null || gender.isEmpty()) ps.setNull(3, Types.VARCHAR);
+            else ps.setString(3, gender);
+            if (ps.executeUpdate() == 0) return -1;
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return -1;
+    }
+
+    /** Khách tự cập nhật hồ sơ từ Customer Portal (không đổi được SĐT/tên tại đây). */
+    public boolean updateProfileFromPortal(int customerId, String email, String address,
+                                           java.time.LocalDate dob, String gender,
+                                           String allergy, String chronic) {
+        String sql = "UPDATE Customers SET Email=?, Address=?, DateOfBirth=?, Gender=?, " +
+                "AllergyHistory=?, ChronicDisease=? WHERE CustomerID=?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, email);
+            ps.setNString(2, address);
+            ps.setObject(3, dob != null ? Date.valueOf(dob) : null);
+            if (gender == null || gender.isEmpty()) ps.setNull(4, Types.VARCHAR);
+            else ps.setString(4, gender);
+            ps.setNString(5, allergy);
+            ps.setNString(6, chronic);
+            ps.setInt(7, customerId);
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }

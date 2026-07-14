@@ -295,9 +295,23 @@ public class ShiftScheduleDAO implements IShiftScheduleDAO {
     }
 
     // ── DELETE ────────────────────────────────────────────────────────────────
+    /**
+     * Hủy ca — CHỈ khi nhân viên CHƯA vào ca. Ca đã check-in (CONFIRMED/LATE)
+     * hoặc đã có bản ghi điểm danh thì KHÔNG được hủy (chống mất dấu ca đang chạy
+     * và giữ nguyên lịch sử chấm công).
+     */
     @Override
     public boolean cancel(int scheduleId) {
-        return updateStatus(scheduleId, "CANCELLED");
+        String sql = "UPDATE ShiftSchedules SET Status='CANCELLED' "
+                + "WHERE ScheduleID=? "
+                + "AND Status IN ('SCHEDULED','LEAVE_PENDING') "
+                + "AND NOT EXISTS (SELECT 1 FROM Attendance WHERE ScheduleID=?)";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, scheduleId);
+            ps.setInt(2, scheduleId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
     }
 
     @Override

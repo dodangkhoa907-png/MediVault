@@ -147,7 +147,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
   <header class="topbar">
     <span class="topbar-title">👤 Quản lý tài khoản</span>
     <div class="topbar-right">
-      <a href="${pageContext.request.contextPath}/dashboard" class="topbar-user" style="font-size:13px;font-weight:500;color:var(--muted);text-decoration:none;padding:6px 12px;border:1.5px solid var(--border);border-radius:8px;">← Dashboard</a>
+      <a href="${pageContext.request.contextPath}/admin-profile" class="topbar-user" style="font-size:13px;font-weight:500;color:var(--muted);text-decoration:none;padding:6px 12px;border:1.5px solid var(--border);border-radius:8px;">← Dashboard</a>
       <div class="topbar-user">
         <div class="topbar-av"><%= initials %></div>
         <span class="topbar-name"><%= fullName %></span>

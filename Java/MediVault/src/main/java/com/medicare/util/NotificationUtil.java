@@ -23,6 +23,7 @@ public class NotificationUtil {
 
     private static final ILeaveRequestDAO leaveDAO = new LeaveRequestDAO();
     private static final IPasswordResetDAO resetDAO = new PasswordResetDAO();
+    private static final com.medicare.dao.AccountDAO accountDAO = new com.medicare.dao.AccountDAO();
 
     /** Gọi từ mọi Servlet admin — set attributes cho JSP */
     public static void loadAdminNotifications(HttpServletRequest req) {
@@ -30,12 +31,15 @@ public class NotificationUtil {
             int leaveCount = leaveDAO.findPending().size();
             int resetCount = 0;
             try { resetCount = resetDAO.findAllPending().size(); } catch (Exception ignored) {}
+            int reenrollCount = 0;
+            try { reenrollCount = accountDAO.findPendingFaceReenroll().size(); } catch (Exception ignored) {}
 
-            int total = leaveCount + resetCount;
+            int total = leaveCount + resetCount + reenrollCount;
 
-            req.setAttribute("pendingLeaveCount", leaveCount);
-            req.setAttribute("pendingResetCount", resetCount);
-            req.setAttribute("totalNotifCount",   total);
+            req.setAttribute("pendingLeaveCount",    leaveCount);
+            req.setAttribute("pendingResetCount",    resetCount);
+            req.setAttribute("pendingReenrollCount", reenrollCount);
+            req.setAttribute("totalNotifCount",      total);
 
             // Build notification list cho dropdown
             List<Map<String, Object>> notifs = new ArrayList<>();
@@ -46,6 +50,16 @@ public class NotificationUtil {
                 n.put("title", leaveCount + " đơn xin nghỉ chờ duyệt");
                 n.put("sub",   "Nhấn để xem và duyệt");
                 n.put("link",  req.getContextPath() + "/leave-requests?action=pending");
+                n.put("badge", "badge-amber");
+                notifs.add(n);
+            }
+
+            if (reenrollCount > 0) {
+                Map<String, Object> n = new LinkedHashMap<>();
+                n.put("icon",  "🔄");
+                n.put("title", reenrollCount + " yêu cầu đăng ký lại khuôn mặt");
+                n.put("sub",   "Nhân viên xin quét lại khuôn mặt — nhấn để duyệt");
+                n.put("link",  req.getContextPath() + "/accounts");
                 n.put("badge", "badge-amber");
                 notifs.add(n);
             }

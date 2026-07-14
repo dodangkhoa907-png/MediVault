@@ -34,7 +34,7 @@ public class AuditLogServlet extends HttpServlet {
         }
 
         int page = 1;
-        int pageSize = 20;
+        int pageSize = 100; // tải nhiều hơn để lọc theo Role/Nhân viên/Loại phía client cho đủ dữ liệu
         String pageStr = req.getParameter("page");
         String keyword = req.getParameter("search");
 
@@ -57,7 +57,12 @@ public class AuditLogServlet extends HttpServlet {
         com.medicare.dao.interfaces.IBatchesDAO batchesDAO = new com.medicare.dao.BatchesDAO();
         com.medicare.dao.interfaces.IPasswordResetDAO resetDAO = new com.medicare.dao.PasswordResetDAO();
 
-        java.util.List<com.medicare.entity.Account> allAccounts = accountDAO.findAllStaff();
+        // Tất cả tài khoản (gồm admin) — cho dropdown lọc theo người + map role
+        java.util.List<com.medicare.entity.Account> allAccounts = accountDAO.findAll();
+        java.util.Map<Integer,Integer> roleMap = new java.util.HashMap<>();
+        for (com.medicare.entity.Account a : allAccounts) roleMap.put(a.getAccountId(), a.getRoleId());
+        req.setAttribute("auditAccounts", allAccounts);
+        req.setAttribute("auditRoleMap", roleMap);
         req.setAttribute("activeAccounts", (long) allAccounts.stream()
                 .filter(com.medicare.entity.Account::isActive).count());
         req.setAttribute("expiryCount",    batchesDAO.findExpiringSoon().size());

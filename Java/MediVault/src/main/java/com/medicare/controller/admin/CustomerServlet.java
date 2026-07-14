@@ -100,9 +100,16 @@ public class CustomerServlet extends HttpServlet {
             if (inv.getFinalAmount() != null) totalSpent = totalSpent.add(inv.getFinalAmount());
         }
 
-        req.setAttribute("customer",   customer);
-        req.setAttribute("invoices",   invoices);
-        req.setAttribute("totalSpent", totalSpent);
+        // Thẻ tích điểm + lịch sử điểm (giống portal khách) để hồ sơ đầy đủ hơn
+        com.medicare.dao.LoyaltyDAO loyaltyDAO = new com.medicare.dao.LoyaltyDAO();
+        com.medicare.entity.LoyaltyCard card = loyaltyDAO.getOrCreateCard(id);
+        List<String[]> pointHistory = loyaltyDAO.history(id, 10);
+
+        req.setAttribute("customer",     customer);
+        req.setAttribute("invoices",     invoices);
+        req.setAttribute("totalSpent",   totalSpent);
+        req.setAttribute("card",         card);
+        req.setAttribute("pointHistory", pointHistory);
         SidebarHelper.load(req);
 
         req.getRequestDispatcher("/WEB-INF/views/admin/customer-detail.jsp").forward(req, resp);

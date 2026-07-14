@@ -42,6 +42,17 @@
     java.util.Map<Integer, com.medicare.entity.Account> blockedMap =
         (java.util.Map<Integer, com.medicare.entity.Account>) request.getAttribute("blockedAccountMap");
     if (blockedMap == null) blockedMap = new java.util.HashMap<>();
+
+    // ── Yêu cầu từ nhân viên gửi lên (hiện trong chuông) ──
+    @SuppressWarnings("unchecked")
+    java.util.List<com.medicare.entity.Account> pendingReenroll =
+        (java.util.List<com.medicare.entity.Account>) request.getAttribute("pendingReenroll");
+    if (pendingReenroll == null) pendingReenroll = new java.util.ArrayList<>();
+
+    @SuppressWarnings("unchecked")
+    java.util.List<com.medicare.entity.LeaveRequest> pendingLeaves =
+        (java.util.List<com.medicare.entity.LeaveRequest>) request.getAttribute("pendingLeaves");
+    if (pendingLeaves == null) pendingLeaves = new java.util.ArrayList<>();
 %>
 
 <!DOCTYPE html>
@@ -174,7 +185,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 }
 .notif-dropdown{
   position:absolute;top:calc(100% + 8px);right:0;
-  width:300px;background:#fff;border:1px solid var(--border);border-radius:16px;
+  width:346px;background:#fff;border:1px solid var(--border);border-radius:16px;
   box-shadow:0 12px 40px rgba(0,0,0,.12);opacity:0;visibility:hidden;
   transform:translateY(-8px);transition:all .2s;z-index:200;overflow:hidden;
 }
@@ -183,6 +194,16 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .notif-head-title{font-size:13px;font-weight:700;color:var(--ink)}
 .notif-clear{background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);padding:0}
 .notif-clear:hover{color:var(--red)}
+/* Tabs lọc thông báo theo nhóm */
+.notif-tabs{display:flex;gap:6px;padding:9px 12px;border-bottom:1px solid var(--border);overflow-x:auto}
+.notif-tabs::-webkit-scrollbar{display:none}
+.notif-tab{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:11.5px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;transition:.15s;font-family:inherit}
+.notif-tab:hover{border-color:var(--cyan);color:var(--ink)}
+.notif-tab.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.notif-tab .nt-count{background:rgba(220,38,38,.9);color:#fff;border-radius:10px;padding:0 5px;font-size:9.5px;font-weight:800;min-width:15px;text-align:center}
+.notif-tab.active .nt-count{background:rgba(255,255,255,.28)}
+.notif-list{max-height:360px;overflow-y:auto}
+.notif-empty{padding:30px 16px;text-align:center;color:var(--muted);font-size:12.5px}
 .notif-item{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-bottom:1px solid #F8FAFC;transition:background .15s}
 .notif-item:hover{background:var(--surface)}
 .notif-item:last-child{border-bottom:none}
@@ -389,7 +410,8 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                 <button class="topbar-icon-btn" onclick="toggleNotif()" title="Thông báo">
                     🔔
                     <%
-                        int totalNotifCount = expiryCount + pendingResetCount;
+                        int totalNotifCount = expiryCount + pendingResetCount
+                                + pendingReenroll.size() + pendingLeaves.size() + blockedMap.size();
                     %>
                     <% if (totalNotifCount > 0) { %>
                     <span class="topbar-notif-badge" id="notifBadge"><%= totalNotifCount > 9 ? "9+" : totalNotifCount %></span>
@@ -400,11 +422,22 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                         <span class="notif-head-title">🔔 Thông báo</span>
                         <button class="notif-clear" onclick="closeNotif()">Đóng ✕</button>
                     </div>
+                    <%
+                        int staffNotifCount   = pendingReenroll.size() + pendingLeaves.size();
+                        int accountNotifCount = pendingResetCount + blockedMap.size();
+                        int stockNotifCount   = expiryCount;
+                    %>
+                    <div class="notif-tabs">
+                        <button class="notif-tab active" data-tab="all" onclick="filterNotif(this,'all')">Tất cả</button>
+                        <button class="notif-tab" data-tab="staff" onclick="filterNotif(this,'staff')">👥 Nhân viên<% if (staffNotifCount > 0) { %><span class="nt-count"><%= staffNotifCount %></span><% } %></button>
+                        <button class="notif-tab" data-tab="account" onclick="filterNotif(this,'account')">🔐 Tài khoản<% if (accountNotifCount > 0) { %><span class="nt-count"><%= accountNotifCount %></span><% } %></button>
+                        <button class="notif-tab" data-tab="stock" onclick="filterNotif(this,'stock')">📦 Kho<% if (stockNotifCount > 0) { %><span class="nt-count"><%= stockNotifCount %></span><% } %></button>
+                    </div>
                     <div class="notif-list" id="notifList">
                         <%-- ── Blocked accounts (quá 3 lần forgot-password hôm nay) ── --%>
                         <% for (java.util.Map.Entry<Integer, com.medicare.entity.Account> bEntry : blockedMap.entrySet()) {
                                com.medicare.entity.Account bAcc = bEntry.getValue(); %>
-                        <div class="notif-item" style="background:rgba(220,38,38,.04);border-left:3px solid #DC2626">
+                        <div class="notif-item" data-cat="account" style="background:rgba(220,38,38,.04);border-left:3px solid #DC2626">
                           <div class="notif-dot" style="background:#DC2626;animation:pulseDot 1.8s ease-in-out infinite"></div>
                           <div style="flex:1">
                             <div class="notif-text">🚫 <strong>@<%= bAcc.getUsername() %></strong> bị chặn gửi yêu cầu reset MK (quá 3 lần hôm nay)</div>
@@ -425,7 +458,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                                String editUrl = request.getContextPath() + "/accounts?action=edit&id=" + pr.getAccountId();
                                boolean isConfirmed = "CONFIRMED".equals(pr.getStatus());
                         %>
-                        <a href="<%= editUrl %>" class="notif-item" style="text-decoration:none;display:flex;cursor:pointer;
+                        <a href="<%= editUrl %>" class="notif-item" data-cat="account" style="text-decoration:none;display:flex;cursor:pointer;
                            background:rgba(245,158,11,.06);border-left:3px solid #F59E0B">
                           <div class="notif-dot" style="background:#D97706;animation:pulseDot 1.8s ease-in-out infinite"></div>
                           <div style="flex:1">
@@ -441,17 +474,44 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                         </a>
                         <% } %>
 
+                        <%-- ── Yêu cầu đăng ký lại khuôn mặt (nhân viên gửi lên) ── --%>
+                        <% for (com.medicare.entity.Account ra : pendingReenroll) { %>
+                        <a href="<%= request.getContextPath() %>/accounts" class="notif-item" data-cat="staff" style="text-decoration:none;display:flex;cursor:pointer;
+                           background:rgba(217,119,6,.06);border-left:3px solid #D97706">
+                          <div class="notif-dot" style="background:#D97706;animation:pulseDot 1.8s ease-in-out infinite"></div>
+                          <div style="flex:1">
+                            <div class="notif-text">🔄 <strong><%= ra.getFullName() != null ? ra.getFullName() : ra.getUsername() %></strong> xin đăng ký lại khuôn mặt</div>
+                            <div class="notif-time">@<%= ra.getUsername() %> · Bấm để duyệt</div>
+                          </div>
+                          <span style="font-size:13px;color:var(--muted);margin-left:auto;align-self:center">→</span>
+                        </a>
+                        <% } %>
+
+                        <%-- ── Đơn xin nghỉ phép chờ duyệt ── --%>
+                        <% if (!pendingLeaves.isEmpty()) { %>
+                        <a href="<%= request.getContextPath() %>/leave-requests?action=pending" class="notif-item" data-cat="staff" style="text-decoration:none;display:flex;cursor:pointer;
+                           background:rgba(37,99,235,.06);border-left:3px solid #2563EB">
+                          <div class="notif-dot" style="background:#2563EB;animation:pulseDot 1.8s ease-in-out infinite"></div>
+                          <div style="flex:1">
+                            <div class="notif-text">🏖️ <strong><%= pendingLeaves.size() %> đơn xin nghỉ</strong> chờ duyệt</div>
+                            <div class="notif-time">Bấm để xem &amp; duyệt</div>
+                          </div>
+                          <span style="font-size:13px;color:var(--muted);margin-left:auto;align-self:center">→</span>
+                        </a>
+                        <% } %>
+
                         <%-- ── Thuốc hết hạn ── --%>
                         <% if (expiryCount > 0) { %>
-                        <div class="notif-item"><div class="notif-dot"></div><div><div class="notif-text">⚠️ Có <%= expiryCount %> mặt hàng sắp hết hạn</div><div class="notif-time">Hôm nay</div></div></div>
+                        <div class="notif-item" data-cat="stock"><div class="notif-dot"></div><div><div class="notif-text">⚠️ Có <%= expiryCount %> mặt hàng sắp hết hạn</div><div class="notif-time">Hôm nay</div></div></div>
                         <% } else { %>
-                        <div class="notif-item"><div class="notif-dot old"></div><div><div class="notif-text">✅ Không có thuốc nào sắp hết hạn</div><div class="notif-time">Hôm nay</div></div></div>
+                        <div class="notif-item" data-cat="stock"><div class="notif-dot old"></div><div><div class="notif-text">✅ Không có thuốc nào sắp hết hạn</div><div class="notif-time">Hôm nay</div></div></div>
                         <% } %>
-                        <div class="notif-item"><div class="notif-dot old"></div><div><div class="notif-text">👤 Admin <%= fullName %> đăng nhập</div><div class="notif-time" id="loginTime"></div></div></div>
+                        <div class="notif-item" data-cat="system"><div class="notif-dot old"></div><div><div class="notif-text">👤 Admin <%= fullName %> đăng nhập</div><div class="notif-time" id="loginTime"></div></div></div>
+                        <div class="notif-empty" id="notifEmpty" style="display:none">📭 Không có thông báo trong mục này.</div>
                     </div>
                 </div>
             </div>
-            <a href="<%= request.getContextPath() %>/accounts?action=view&id=<%= acc.getAccountId() %>" class="topbar-user" title="Xem hồ sơ của tôi">
+            <a href="<%= request.getContextPath() %>/admin-profile" class="topbar-user" title="Xem hồ sơ của tôi">
                 <div class="topbar-user-avatar"><%= initials %></div>
                 <span class="topbar-user-name"><%= fullName %></span>
             </a>
@@ -570,7 +630,6 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                     </div>
                     <select name="role" class="filter-select" onchange="filterTable()">
                         <option value="">Tất cả chức vụ</option>
-                        <option value="1" ${param.role == '1' ? 'selected' : ''}>🛡️ Admin</option>
                         <option value="2" ${param.role == '2' ? 'selected' : ''}>💊 Dược sĩ</option>
                         <option value="3" ${param.role == '3' ? 'selected' : ''}>📦 Thủ kho</option>
                     </select>
@@ -611,7 +670,9 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                             </c:when>
                             <c:otherwise>
                                 <c:forEach var="a" items="${accounts}" varStatus="st">
-                                    <tr>
+                                    <tr data-name="${a.fullName} @${a.username} ${a.email}"
+                                        data-role="${a.roleId}"
+                                        data-status="${a.active ? '1' : '0'}">
                                         <td style="color:var(--text-muted); font-size:12px;">${st.count}</td>
                                         <td>
                                             <div class="cell-user">
@@ -691,8 +752,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
             %>
             <div class="pagination">
                 <div class="pagination-info">
-                    Hiển thị trang <%= curPage %> / <%= totPages %>
-                    &nbsp;·&nbsp; Tổng <%= totRecords %> tài khoản
+                    Hiển thị <span id="visCount">${accounts.size()}</span> / ${accounts.size()} tài khoản
                 </div>
                 <div class="pagination-btns">
                     <% if (curPage > 1) { %>
@@ -798,6 +858,20 @@ body{display:flex;background:var(--surface);color:var(--ink)}
     updateClock(); setInterval(updateClock, 1000);
     function toggleNotif() { document.getElementById('notifDropdown').classList.toggle('open'); }
     function closeNotif() { document.getElementById('notifDropdown').classList.remove('open'); }
+    // Lọc thông báo theo nhóm tab (all/staff/account/stock/system)
+    function filterNotif(btn, cat) {
+        document.querySelectorAll('.notif-tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        let shown = 0;
+        document.querySelectorAll('#notifList .notif-item').forEach(it => {
+            const c = it.getAttribute('data-cat') || 'system';
+            const vis = (cat === 'all') || (c === cat);
+            it.style.display = vis ? '' : 'none';
+            if (vis) shown++;
+        });
+        const emp = document.getElementById('notifEmpty');
+        if (emp) emp.style.display = shown === 0 ? 'block' : 'none';
+    }
     document.addEventListener('click', function(e) { const w = document.querySelector('.notif-wrap'); if(w && !w.contains(e.target)) closeNotif(); });
 
     // Auto-hide toast
@@ -820,15 +894,30 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 
 <script>
 function filterTable() {
-  const q      = (document.querySelector('#filterForm [name="q"]')?.value || '').toLowerCase();
+  const q      = (document.querySelector('#filterForm [name="q"]')?.value || '').trim().toLowerCase();
   const role   = document.querySelector('#filterForm [name="role"]')?.value || '';
   const status = document.querySelector('#filterForm [name="status"]')?.value || '';
+  let shown = 0;
   document.querySelectorAll('tbody tr[data-name]').forEach(row => {
     const show = (!q      || (row.dataset.name  || '').toLowerCase().includes(q))
               && (!role   || row.dataset.role   === role)
               && (!status || row.dataset.status === status);
     row.style.display = show ? '' : 'none';
+    if (show) shown++;
   });
+  const vc = document.getElementById('visCount');
+  if (vc) vc.textContent = shown;
+  // dòng "không tìm thấy" khi lọc ra rỗng
+  let noRow = document.getElementById('noResultRow');
+  const tbody = document.querySelector('.data-table tbody');
+  if (shown === 0 && tbody && !noRow) {
+    noRow = document.createElement('tr');
+    noRow.id = 'noResultRow';
+    noRow.innerHTML = '<td colspan="7"><div class="empty-state"><div class="icon">🔍</div><p>Không có tài khoản khớp bộ lọc.</p></div></td>';
+    tbody.appendChild(noRow);
+  } else if (shown > 0 && noRow) {
+    noRow.remove();
+  }
 }
 document.querySelector('#filterForm [name="q"]')
   ?.addEventListener('input', filterTable);
@@ -843,21 +932,34 @@ document.querySelector('#filterForm [name="q"]')
     const top5  = <%=request.getAttribute("chartTopJson")%>;
     const cat   = <%=request.getAttribute("chartCatJson")%>;
 
+    const money = n => new Intl.NumberFormat('vi-VN').format(Math.round(n||0)) + 'đ';
+    const TT = { // tooltip đồng bộ, dễ đọc
+        backgroundColor: 'rgba(15,38,69,.95)', titleColor: '#fff', bodyColor: '#E2E8F0',
+        padding: 10, cornerRadius: 8, titleFont: { weight: '700' }, displayColors: false
+    };
+    Chart.defaults.font.family = "'Outfit', sans-serif";
+    Chart.defaults.color = '#7A90B0';
+
     const dCanvas = document.getElementById('dailyChart');
     if (dCanvas && daily) {
         new Chart(dCanvas.getContext('2d'), {
             type: 'bar',
             data: {
                 labels: daily.labels,
-                datasets: [{ label: 'Doanh thu', data: daily.values,
-                    backgroundColor: 'rgba(21,88,168,0.72)', borderRadius: 4 }]
+                datasets: [{ label: 'Doanh thu', data: daily.values, maxBarThickness: 26,
+                    backgroundColor: 'rgba(21,88,168,0.78)', hoverBackgroundColor: '#1558A8', borderRadius: 5 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                layout: { padding: { top: 8, right: 8 } },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { ...TT, callbacks: { label: c => 'Doanh thu: ' + money(c.parsed.y) } }
+                },
                 scales: {
-                    y: { ticks: { callback: v => (v/1000000).toFixed(1)+'M' } },
-                    x: { ticks: { autoSkip: true, maxTicksLimit: 10, maxRotation: 45 } }
+                    y: { beginAtZero: true, grid: { color: 'rgba(213,224,240,.5)' },
+                         ticks: { callback: v => v >= 1e6 ? (v/1e6).toFixed(1)+'M' : (v/1e3).toFixed(0)+'K' } },
+                    x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 10, maxRotation: 0 } }
                 }
             }
         });
@@ -874,8 +976,15 @@ document.querySelector('#filterForm [name="q"]')
             },
             options: {
                 indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { x: { ticks: { precision: 0 } } }
+                layout: { padding: { right: 12 } },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { ...TT, callbacks: { label: c => 'Đã bán: ' + c.parsed.x + ' đơn vị' } }
+                },
+                scales: {
+                    x: { beginAtZero: true, grid: { color: 'rgba(213,224,240,.5)' }, ticks: { precision: 0 } },
+                    y: { grid: { display: false } }
+                }
             }
         });
     }
@@ -891,9 +1000,16 @@ document.querySelector('#filterForm [name="q"]')
                                       '#6D28D9','#DC2626','#0891B2','#7C3AED'] }]
             },
             options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom',
-                    labels: { font: { size: 11 }, boxWidth: 12 } } }
+                responsive: true, maintainAspectRatio: false, cutout: '62%',
+                layout: { padding: 6 },
+                plugins: {
+                    legend: { position: 'bottom',
+                        labels: { font: { size: 11 }, boxWidth: 10, usePointStyle: true, pointStyle: 'circle', padding: 12 } },
+                    tooltip: { ...TT, callbacks: { label: c => {
+                        const tot = c.dataset.data.reduce((a,b) => a + (b||0), 0) || 1;
+                        return ' ' + c.label + ': ' + money(c.parsed) + ' (' + Math.round(c.parsed/tot*100) + '%)';
+                    } } }
+                }
             }
         });
     }

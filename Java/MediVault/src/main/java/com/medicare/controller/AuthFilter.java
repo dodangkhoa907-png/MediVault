@@ -114,7 +114,9 @@ public class AuthFilter implements Filter {
                 || uri.endsWith("/fix.jsp")
                 // ── NFC: không cần session — xác thực bằng cardId ──
                 || uri.startsWith(ctx + "/nfc-checkin")
-                || uri.startsWith(ctx + "/api/nfc");
+                || uri.startsWith(ctx + "/api/nfc")
+                // ── Customer Portal: khách hàng đăng nhập bằng SĐT, tự quản session riêng ──
+                || uri.startsWith(ctx + "/portal");
 
         // ── 2. Lấy session hiện tại (không tạo mới) ──
         HttpSession session = req.getSession(false);

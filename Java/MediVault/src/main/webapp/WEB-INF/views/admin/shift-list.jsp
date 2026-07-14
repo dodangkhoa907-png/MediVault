@@ -275,12 +275,8 @@ tbody tr{cursor:pointer}
 .empty-state p{font-size:13px}
 
 /* ── MODAL (dùng cho cả ShiftType + Quick-schedule) ── */
-.modal-overlay{
-  position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:3000;
-  display:flex;align-items:center;justify-content:center;
-  opacity:0;pointer-events:none;transition:opacity .2s;
-}
-.modal-overlay.open{opacity:1;pointer-events:auto}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:9999;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
 .modal{background:var(--white);border-radius:16px;width:520px;max-width:94vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.2);transform:translateY(20px);transition:transform .22s}
 .modal-overlay.open .modal{transform:translateY(0)}
 .modal-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--white);z-index:1}
@@ -329,8 +325,8 @@ tbody tr{cursor:pointer}
   border-radius:8px;padding:10px 12px;margin-top:-6px;margin-bottom:14px;line-height:1.5}
 
 /* ── MODAL XẾP CA ĐẦY ĐỦ ── */
-.sched-overlay{position:fixed;inset:0;background:rgba(11,22,40,.55);z-index:600;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s}
-.sched-overlay.open{opacity:1;pointer-events:auto}
+.sched-overlay{display:none;position:fixed;inset:0;background:rgba(11,22,40,.55);z-index:9999;align-items:center;justify-content:center}
+.sched-overlay.open{display:flex}
 .sched-modal{background:var(--white);border-radius:18px;width:640px;max-width:95vw;max-height:88vh;overflow-y:auto;box-shadow:0 28px 80px rgba(0,0,0,.22);transform:translateY(20px);transition:transform .24s;display:flex;flex-direction:column}
 .sched-overlay.open .sched-modal{transform:translateY(0)}
 .sched-modal-head{padding:18px 24px 14px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--white);z-index:1;border-radius:18px 18px 0 0}
@@ -381,15 +377,35 @@ tbody tr{cursor:pointer}
 .week-sub{font-size:12px;color:var(--muted)}
 .btn-nav{padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--white);font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;text-decoration:none;transition:all .18s;display:inline-flex;align-items:center}
 .btn-nav:hover{border-color:var(--blue);color:var(--blue)}
-.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:20px}
-.day-col{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:visible;min-height:80px}
-.day-col.today-col{border-color:var(--blue);box-shadow:0 0 0 2px rgba(21,88,168,.1)}
+/* ══ LỊCH TUẦN 3D — cột không co dưới 150px: màn hẹp tự xuống hàng (4+3)
+      thay vì bóp méo chữ khi zoom 100%.
+      LƯU Ý: KHÔNG dùng perspective/will-change ở đây — chúng tạo 3D-context
+      làm hỏng hit-test click của các phần tử con (nút + Thêm ca, thẻ ca).
+      Hiệu ứng nâng dùng translateY thuần → an toàn tuyệt đối với click. ══ */
+.week-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin-bottom:20px}
+@media(max-width:1420px){.week-grid{grid-template-columns:repeat(4,minmax(150px,1fr))}}
+@media(max-width:900px){.week-grid{grid-template-columns:repeat(2,minmax(150px,1fr))}}
+.day-col{
+  background:linear-gradient(160deg,#ffffff 0%,#f6f9ff 100%);
+  border:1px solid rgba(213,224,240,.8);border-radius:16px;overflow:visible;min-height:96px;
+  box-shadow:0 1px 2px rgba(15,38,69,.05),0 10px 22px -14px rgba(15,38,69,.28);
+  transition:box-shadow .18s,border-color .18s;
+  position:relative;z-index:0}
+.day-col:hover{
+  border-color:#BFDBFE;
+  box-shadow:0 4px 8px rgba(15,38,69,.07),0 24px 38px -16px rgba(21,88,168,.35)}
+.day-col.today-col{
+  border-color:var(--blue);
+  background:linear-gradient(160deg,#ffffff 0%,#eef6ff 100%);
+  box-shadow:0 0 0 2px rgba(21,88,168,.14),0 14px 28px -14px rgba(21,88,168,.4)}
 .day-col.past-col{opacity:.55}
+.day-col.past-col:hover{opacity:.8}
 .day-col.past-col .day-head{background:var(--surface)}
-.day-head{padding:10px 8px;border-bottom:1px solid var(--border);text-align:center}
-.day-name{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.day-date{font-size:20px;font-weight:900;color:var(--ink);margin-top:1px;line-height:1}
+.day-head{padding:11px 8px;border-bottom:1px solid var(--border);text-align:center;border-radius:16px 16px 0 0}
+.day-name{font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.7px}
+.day-date{font-size:22px;font-weight:900;color:var(--ink);margin-top:2px;line-height:1}
 .day-col.today-col .day-date{color:var(--blue)}
+.day-col.today-col .day-name::after{content:' •';color:var(--cyan)}
 .day-body{padding:7px}
 .shift-chip{padding:6px 8px;border-radius:8px;margin-bottom:5px;font-size:11.5px;cursor:pointer;transition:opacity .15s;position:relative}
 .shift-chip:hover{opacity:.82}
@@ -406,7 +422,7 @@ tbody tr{cursor:pointer}
 .st-sys-closed{background:#EEF2FF;color:#4338CA}
 .chip-cancel{position:absolute;top:3px;right:3px;width:15px;height:15px;border-radius:50%;background:rgba(220,38,38,.1);border:none;color:var(--red);font-size:9px;cursor:pointer;display:none;align-items:center;justify-content:center;line-height:1}
 .shift-chip:hover .chip-cancel{display:flex}
-.day-add{display:flex;align-items:center;justify-content:center;padding:7px;color:var(--muted);font-size:11px;border:1.5px dashed var(--border);border-radius:8px;cursor:pointer;transition:all .18s;margin-top:4px;background:transparent;width:100%;box-sizing:border-box}
+.day-add{display:flex;align-items:center;justify-content:center;padding:7px;color:var(--muted);font-size:11px;border:1.5px dashed var(--border);border-radius:8px;cursor:pointer;transition:all .18s;margin-top:4px;background:transparent;width:100%;box-sizing:border-box;font-family:'Outfit',sans-serif;outline:none}
 .day-add:hover{border-color:var(--blue);color:var(--blue);background:#EFF6FF}
 .empty-day{color:var(--muted);font-size:11px;text-align:center;padding:18px 0}
 /* Quick form */
@@ -442,7 +458,7 @@ tbody tr{cursor:pointer}
 .staff-card{
   background:var(--white);border:1px solid var(--border);border-radius:10px;
   margin-bottom:6px;cursor:pointer;transition:box-shadow .18s,border-color .18s;
-  position:relative;overflow:visible;
+  position:relative;overflow:visible;z-index:1;
 }
 .staff-card:hover{border-color:#93C5FD;box-shadow:0 3px 14px rgba(21,88,168,.13)}
 .staff-card-head{
@@ -536,10 +552,8 @@ tbody tr{cursor:pointer}
 /* ════════════════════════════════════════════════════
    DETAIL MODAL — overlay giống modal sửa/xóa
    ════════════════════════════════════════════════════ */
-.detail-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:3000;
-  display:flex;align-items:center;justify-content:center;
-  opacity:0;pointer-events:none;transition:opacity .2s}
-.detail-overlay.open{opacity:1;pointer-events:auto}
+.detail-overlay{display:none;position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:9999;align-items:center;justify-content:center}
+.detail-overlay.open{display:flex}
 .detail-modal{background:var(--white);border-radius:16px;width:540px;max-width:94vw;
   box-shadow:0 24px 70px rgba(0,0,0,.22);
   transform:translateY(16px);transition:transform .22s;overflow:hidden}
@@ -655,8 +669,8 @@ tbody tr{cursor:pointer}
 /* Chip đang active (CONFIRMED) — không edit được */
 .chip-active-note{font-size:10px;color:#059669;font-weight:600;margin-top:4px;padding:2px 6px;background:#ECFDF5;border-radius:5px;display:inline-block}
 /* Edit modal */
-.edit-modal-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:3000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
-.edit-modal-overlay.open{opacity:1;pointer-events:auto}
+.edit-modal-overlay{display:none;position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:9999;align-items:center;justify-content:center}
+.edit-modal-overlay.open{display:flex}
 .edit-modal{background:var(--white);border-radius:16px;width:480px;max-width:94vw;box-shadow:0 24px 70px rgba(0,0,0,.22);transform:translateY(16px);transition:transform .22s}
 .edit-modal-overlay.open .edit-modal{transform:translateY(0)}
 .em-head{padding:16px 20px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between}
@@ -674,8 +688,8 @@ tbody tr{cursor:pointer}
 .em-cancel{padding:7px 16px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
 .em-submit{padding:7px 20px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
 /* Delete modal */
-.del-modal-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:3000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
-.del-modal-overlay.open{opacity:1;pointer-events:auto}
+.del-modal-overlay{display:none;position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:9999;align-items:center;justify-content:center}
+.del-modal-overlay.open{display:flex}
 .del-modal{background:var(--white);border-radius:16px;width:560px;max-width:94vw;max-height:85vh;overflow-y:auto;box-shadow:0 24px 70px rgba(0,0,0,.22);transform:translateY(16px);transition:transform .22s}
 .del-modal-overlay.open .del-modal{transform:translateY(0)}
 .dm-head{padding:16px 20px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--white);z-index:1}
@@ -713,10 +727,8 @@ tbody tr{cursor:pointer}
 .shift-chip.chip-selected{outline:2.5px solid var(--blue);outline-offset:1px}
 .shift-chip.chip-selected-del{outline:2.5px solid #DC2626;outline-offset:1px}
 /* Modal chọn ca (edit/delete) — dùng lại sched-overlay CSS */
-.selmode-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:3000;
-  display:flex;align-items:center;justify-content:center;
-  opacity:0;pointer-events:none;transition:opacity .2s}
-.selmode-overlay.open{opacity:1;pointer-events:auto}
+.selmode-overlay{display:none;position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:9999;align-items:center;justify-content:center}
+.selmode-overlay.open{display:flex}
 .selmode-modal{background:var(--white);border-radius:18px;width:900px;max-width:96vw;
   max-height:90vh;overflow-y:auto;box-shadow:0 28px 80px rgba(0,0,0,.25);
   transform:translateY(18px);transition:transform .24s;display:flex;flex-direction:column}
@@ -903,6 +915,8 @@ tbody tr{cursor:pointer}
       <c:when test="${param.msg == 'counter-added'}">   <div class="toast toast-ok"   id="toast">✅ Thêm quầy thành công!</div></c:when>
       <c:when test="${param.msg == 'counter-updated'}"> <div class="toast toast-ok"   id="toast">✅ Cập nhật quầy thành công!</div></c:when>
       <c:when test="${param.msg == 'counter-deleted'}"> <div class="toast toast-ok"   id="toast">🗑️ Xóa quầy thành công!</div></c:when>
+      <c:when test="${param.msg == 'counter-in-use'}">  <div class="toast toast-err"  id="toast">🚫 Không thể xóa quầy — đang có nhân viên được xếp lịch/làm việc tại quầy này!</div></c:when>
+      <c:when test="${param.msg == 'shift-active'}">    <div class="toast toast-err"  id="toast">🚫 Không thể xóa/hủy — nhân viên ĐANG trong ca làm việc!</div></c:when>
       <c:when test="${param.msg == 'opened'}">       <div class="toast toast-ok"   id="toast">✅ Mở ca thành công!</div></c:when>
       <c:when test="${param.msg == 'closed'}">       <div class="toast toast-ok"   id="toast">✅ Đóng ca thành công!</div></c:when>
       <c:when test="${param.msg == 'force-closed'}"> <div class="toast toast-info" id="toast">🔒 Admin đã đóng ca.</div></c:when>
@@ -971,7 +985,7 @@ tbody tr{cursor:pointer}
       <span class="topbar-pill pill-total">📋 ${totalCount} ca</span>
       <span class="topbar-pill pill-open">🟢 ${openCount} đang mở</span>
       <span class="topbar-pill pill-staff">👥 ${fn:length(allStaff)} nhân viên</span>
-      <a href="${pageContext.request.contextPath}/dashboard" class="topbar-user">
+      <a href="${pageContext.request.contextPath}/admin-profile" class="topbar-user">
         <div class="topbar-av"><%= initials %></div>
         <span class="topbar-name"><%= fullName %></span>
       </a>
@@ -1156,13 +1170,13 @@ tbody tr{cursor:pointer}
                     <%-- ── STAFF CARD ── --%>
                     <div class="staff-card"
                          data-sched-id="${firstSc.scheduleId}"
-                         data-staff-name="${firstSc.staffName}"
-                         data-shift-type="${firstSc.shiftTypeName}"
+                         data-staff-name="${fn:escapeXml(firstSc.staffName)}"
+                         data-shift-type="${fn:escapeXml(firstSc.shiftTypeName)}"
                          data-shift-type-id="${firstSc.shiftTypeId}"
                          data-status="${firstSc.status}"
                          data-work-date="${firstSc.workDate}" data-is-past="${dayDate.isBefore(today)}"
                          data-late-tol="${firstSc.lateToleranceMinutes}"
-                         data-notes="${firstSc.notes}"
+                         data-notes="${fn:escapeXml(firstSc.notes)}"
                          data-pos-station="${firstSc.posStation}"
                          data-total="${totalShifts}"
                          data-planned-start="${not empty firstSc.plannedStart ? fn:substring(firstSc.plannedStart.toString(),11,16) : ''}"
@@ -1244,7 +1258,7 @@ tbody tr{cursor:pointer}
               </c:choose>
 
               <c:if test="${!dayDate.isBefore(today)}">
-                <a onclick="openSchedModalForDay('${dayDate}','')" class="day-add">＋ Thêm ca</a>
+                <button type="button" onclick="(function(d){var m=document.getElementById('fullSchedModal');if(!m)return;document.querySelectorAll('#fullStaffChips input,#fullStypeCards input').forEach(function(c){c.checked=false;});var f=document.getElementById('fsDateFrom');if(f)f.value=d;var t=document.getElementById('fsDateTo');if(t)t.value='';if(typeof updateFullPreview==='function')updateFullPreview();m.classList.add('open');m.style.display='flex';}('${dayDate}'))" class="day-add">＋ Thêm ca</button>
               </c:if>
             </div>
           </div>
@@ -1901,8 +1915,8 @@ tbody tr{cursor:pointer}
       <button class="btn-cancel-m" onclick="closeTypeModal()">Hủy</button>
       <button class="btn-save-m" onclick="submitTypeForm()">💾 Lưu loại ca</button>
     </div>
-  </div>
-</div>
+  </div><%-- end .modal --%>
+</div><%-- end #typeModal .modal-overlay --%>
 
 <!-- ==========================================
      MODAL POS 1: Xếp lịch & Gán quầy POS (Create)
@@ -2284,6 +2298,70 @@ tbody tr{cursor:pointer}
     <div class="sched-modal-foot">
       <button type="button" class="btn-sched-cancel" onclick="closeFullSchedModal()">Hủy</button>
       <button type="button" class="btn-sched-submit" onclick="submitFullSched()">📅 Xếp lịch ca</button>
+    </div>
+  </div>
+</div>
+
+<%-- ════════════════════════════════════════════════════
+     MODAL THÊM 1 CA NHANH cho 1 ngày (bấm "+ Thêm ca" ở ô ngày)
+     POST /shifts?action=schedule-bulk (1 NV × 1 loại ca × 1 ngày)
+     ════════════════════════════════════════════════════ --%>
+<div class="edit-modal-overlay" id="quickShiftModal">
+  <div class="edit-modal">
+    <div class="em-head">
+      <span class="em-title" id="quickShiftTitle">➕ Thêm ca làm mới</span>
+      <button class="em-close" onclick="closeQuickShift()">✕</button>
+    </div>
+    <div class="em-body">
+      <form id="quickShiftForm" method="post" action="${pageContext.request.contextPath}/shifts">
+        <input type="hidden" name="action" value="schedule-bulk">
+        <input type="hidden" name="dateFrom" id="qsDate">
+
+        <div class="em-fg" style="margin-bottom:12px">
+          <label>Nhân viên <span style="color:var(--red)">*</span></label>
+          <select name="accountId" id="qsStaff" required
+                  style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--navy);background:#fff">
+            <option value="">— Chọn nhân viên —</option>
+            <c:forEach var="s" items="${allStaff}">
+              <option value="${s.accountId}">${not empty s.fullName ? s.fullName : s.username} · ${s.roleId==2?'Dược sĩ':'Thủ kho'}</option>
+            </c:forEach>
+          </select>
+        </div>
+
+        <div class="em-fg" style="margin-bottom:12px">
+          <label>Loại ca <span style="color:var(--red)">*</span></label>
+          <select name="shiftTypeId" id="qsType" required
+                  style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--navy);background:#fff">
+            <option value="">— Chọn loại ca —</option>
+            <c:forEach var="st" items="${shiftTypes}">
+              <c:if test="${st.active}">
+                <option value="${st.shiftTypeId}">${st.name} (${st.startHour}:${st.startMinute<10?'0':''}${st.startMinute}–${st.endHour}:${st.endMinute<10?'0':''}${st.endMinute})</option>
+              </c:if>
+            </c:forEach>
+          </select>
+        </div>
+
+        <div class="em-fg" style="margin-bottom:12px">
+          <label>Quầy POS <span style="color:var(--muted);font-weight:400">(tùy chọn)</span></label>
+          <select name="posStation" id="qsPos"
+                  style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--navy);background:#fff">
+            <option value="0">— Chưa gán quầy —</option>
+            <c:forEach var="ps" items="${posStations}">
+              <option value="${ps.posStationId}">🖥️ ${fn:escapeXml(ps.stationName)}</option>
+            </c:forEach>
+          </select>
+        </div>
+
+        <div class="em-fg">
+          <label>Ghi chú <span style="color:var(--muted);font-weight:400">(tùy chọn)</span></label>
+          <textarea name="note" rows="2" placeholder="Ghi chú cho ca này..."
+                    style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="em-foot" style="display:flex;gap:10px;padding:14px 20px;border-top:1px solid var(--border)">
+      <button type="button" onclick="closeQuickShift()" style="flex:1;padding:10px;background:#f1f5f9;color:#475569;border:none;border-radius:9px;font-weight:700;cursor:pointer;font-family:inherit">Hủy</button>
+      <button type="button" onclick="submitQuickShift()" style="flex:2;padding:10px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;border:none;border-radius:9px;font-weight:800;cursor:pointer;font-family:inherit">✓ Thêm ca</button>
     </div>
   </div>
 </div>
@@ -2713,9 +2791,92 @@ const SCHED_LIST = [
   </div>
 </div>
 
+<%-- ══ SAFETY FUNCTIONS — defined before main script; main script overrides with full versions if it loads ══ --%>
+<script id="safetyFns">
+function openFullSchedModal(preDate, preAccountId) {
+  var today = new Date().toISOString().split('T')[0];
+  var m = document.getElementById('fullSchedModal');
+  if (!m) return;
+  var f = document.getElementById('fsDateFrom'); if (f) f.value = preDate || today;
+  var t = document.getElementById('fsDateTo');   if (t) t.value = '';
+  document.querySelectorAll('#fullStaffChips input,#fullStypeCards input').forEach(function(c){c.checked=false;});
+  if (preAccountId) { var cb=document.querySelector('#fullStaffChips input[value="'+preAccountId+'"]'); if(cb)cb.checked=true; }
+  m.classList.add('open'); m.style.display='flex';
+}
+function closeFullSchedModal()  { var m=document.getElementById('fullSchedModal');    if(m){m.classList.remove('open');m.style.display='';} }
+function openSchedModal(d,id)   { openFullSchedModal(d,id); }
+function openSchedModalForDay(d,id){ openFullSchedModal(d,id); }
+function closeSchedModal()      { var m=document.getElementById('schedModal');         if(m){m.classList.remove('open');m.style.display='';} }
+function openEditSelectModal()  { var m=document.getElementById('editSelectModal');    if(m){m.classList.add('open');m.style.display='flex';} }
+function closeEditSelectModal() { var m=document.getElementById('editSelectModal');    if(m){m.classList.remove('open');m.style.display='';} }
+function openDeleteSelectModal(){ var m=document.getElementById('deleteSelectModal');  if(m){m.classList.add('open');m.style.display='flex';} }
+function closeDeleteSelectModal(){ var m=document.getElementById('deleteSelectModal'); if(m){m.classList.remove('open');m.style.display='';} }
+function closeDetailPanel()     { var m=document.getElementById('detailOverlay');      if(m){m.classList.remove('open');m.style.display='';} }
+function closeEditModal()       { var m=document.getElementById('editSchedModal');     if(m){m.classList.remove('open');m.style.display='';} }
+function closeDeleteModal()     { var m=document.getElementById('deleteStaffModal');   if(m){m.classList.remove('open');m.style.display='';} }
+function closeQuickShift()      { var m=document.getElementById('quickShiftModal');    if(m){m.classList.remove('open');m.style.display='';} }
+function closeTypeModal()       { var m=document.getElementById('typeModal');          if(m){m.classList.remove('open');m.style.display='';} }
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-pane').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  var tp=document.getElementById('tab-'+tab); if(tp)tp.classList.add('active');
+  if(btn)btn.classList.add('active');
+}
+</script>
+<%-- POS data block in its own <script> — isolated so a data syntax error can't kill the main functions --%>
+<script>
+var _posCtx = '${pageContext.request.contextPath}';
+var _todaySchedules = <%
+  StringBuilder _tsb = new StringBuilder("[");
+  java.util.List<com.medicare.entity.ShiftSchedule> _todayList =
+      (java.util.List<com.medicare.entity.ShiftSchedule>) request.getAttribute("todaySchedules");
+  if (_todayList != null) {
+    boolean _fts = true;
+    for (com.medicare.entity.ShiftSchedule _ts : _todayList) {
+      if (!_fts) _tsb.append(",");
+      _fts = false;
+      String _sn = _ts.getStaffName()    != null ? _ts.getStaffName().replace("\\","\\\\").replace("'","\\'").replace("\n","\\n").replace("\r","") : "";
+      String _sp = _ts.getShiftTypeName()!= null ? _ts.getShiftTypeName().replace("\\","\\\\").replace("'","\\'").replace("\n","\\n").replace("\r","") : "";
+      String _ss = _ts.getStatus()       != null ? _ts.getStatus() : "";
+      String _sn2= _ts.getNotes()        != null ? _ts.getNotes().replace("\\","\\\\").replace("'","\\'").replace("\n","\\n").replace("\r","") : "";
+      _tsb.append("{")
+          .append("scheduleId:").append(_ts.getScheduleId()).append(",")
+          .append("staffName:'").append(_sn).append("',")
+          .append("posStation:").append(_ts.getPosStation()).append(",")
+          .append("status:'").append(_ss).append("',")
+          .append("shiftType:'").append(_sp).append("',")
+          .append("startHour:").append(_ts.getStartHour()).append(",")
+          .append("endHour:").append(_ts.getEndHour()).append(",")
+          .append("shiftTypeId:").append(_ts.getShiftTypeId()).append(",")
+          .append("lateToleranceMinutes:").append(_ts.getLateToleranceMinutes()).append(",")
+          .append("notes:'").append(_sn2).append("'")
+          .append("}");
+    }
+  }
+  _tsb.append("]");
+  out.print(_tsb.toString());
+%>;
+var _posStations = <%
+  StringBuilder _psb = new StringBuilder("[");
+  java.util.List<com.medicare.entity.PosStation> _psList =
+      (java.util.List<com.medicare.entity.PosStation>) request.getAttribute("posStations");
+  if (_psList != null) {
+    boolean _fps = true;
+    for (com.medicare.entity.PosStation _ps : _psList) {
+      if (!_fps) _psb.append(",");
+      _fps = false;
+      String _pn = _ps.getStationName() != null ? _ps.getStationName().replace("\\","\\\\").replace("'","\\'").replace("\n","\\n").replace("\r","") : "";
+      _psb.append("{id:").append(_ps.getPosStationId()).append(",name:'").append(_pn).append("'}");
+    }
+  }
+  _psb.append("]");
+  out.print(_psb.toString());
+%>;
+</script>
 
 <script>
 const ctx_path = '${pageContext.request.contextPath}';
+console.log('[MediVault] Main script block loaded OK — ctx_path=' + ctx_path);
 
 // ── Tab switching ─────────────────────────────────
 function switchTab(tab, btn) {
@@ -2765,7 +2926,8 @@ function openSchedModal(preDate, preAccountId) {
   // Uncheck all radio
   document.querySelectorAll('#schedForm input[name="shiftTypeId"]').forEach(r => r.checked = false);
   updateSchedPreview();
-  document.getElementById('schedModal').classList.add('open');
+  const sm = document.getElementById('schedModal');
+  if (sm) { sm.classList.add('open'); sm.style.display = 'flex'; }
 }
 function openSchedModalForDay(date, accountId) {
   const today = new Date().toISOString().split('T')[0];
@@ -2776,7 +2938,8 @@ function openSchedModalForDay(date, accountId) {
   openSchedModal(date, accountId);
 }
 function closeSchedModal() {
-  document.getElementById('schedModal').classList.remove('open');
+  const sm = document.getElementById('schedModal');
+  if (sm) { sm.classList.remove('open'); sm.style.display = ''; }
 }
 function updateSchedPreview() {
   const from = document.getElementById('schedFrom').value;
@@ -2873,7 +3036,8 @@ function openTypeModal() {
   setTime24('End',   '14:00');
   document.getElementById('typeRate').value = '60000';
   updateDurPreview();
-  document.getElementById('typeModal').classList.add('open');
+  const tm1 = document.getElementById('typeModal');
+  if (tm1) { tm1.classList.add('open'); tm1.style.display = 'flex'; }
 }
 function editType(id, name, sh, sm, eh, em, rate, allow) {
   document.getElementById('modalTitle').textContent = 'Sửa loại ca';
@@ -2885,9 +3049,13 @@ function editType(id, name, sh, sm, eh, em, rate, allow) {
   document.getElementById('typeRate').value      = rate;
   document.getElementById('typeAllowance').value = allow;
   updateDurPreview();
-  document.getElementById('typeModal').classList.add('open');
+  const tm2 = document.getElementById('typeModal');
+  if (tm2) { tm2.classList.add('open'); tm2.style.display = 'flex'; }
 }
-function closeTypeModal() { document.getElementById('typeModal').classList.remove('open'); }
+function closeTypeModal() {
+  const tm = document.getElementById('typeModal');
+  if (tm) { tm.classList.remove('open'); tm.style.display = ''; }
+}
 document.getElementById('typeModal').addEventListener('click', function(e) {
   if (e.target === this) closeTypeModal();
 });
@@ -3058,6 +3226,7 @@ let _activeStatus = null;
 let _activePosStation = 0;
 
 function showDetailPanel(cardEl) {
+  try {
   if (_activeCard) _activeCard.classList.remove('selected');
   if (_activeCard === cardEl) { closeDetailPanel(); return; }
 
@@ -3133,7 +3302,9 @@ function showDetailPanel(cardEl) {
   document.getElementById('sdpEditBtn').style.display = canEdit ? '' : 'none';
   document.getElementById('sdpDelBtn').style.display  = canEdit ? '' : 'none';
 
-  document.getElementById('detailOverlay').classList.add('open');
+  const dov = document.getElementById('detailOverlay');
+  if (dov) { dov.classList.add('open'); dov.style.display = 'flex'; }
+  } catch(err) { console.error('[showDetailPanel]', err); }
 }
 
 // ── Render timeline bar ──
@@ -3187,7 +3358,8 @@ function renderTimeline(shifts) {
 function closeDetailPanel() {
   if (_activeCard) _activeCard.classList.remove('selected');
   _activeCard = null;
-  document.getElementById('detailOverlay').classList.remove('open');
+  const dov = document.getElementById('detailOverlay');
+  if (dov) { dov.classList.remove('open'); dov.style.display = ''; }
 }
 
 function formatDate(dateStr) {
@@ -3243,6 +3415,7 @@ function cancelSchedule(scheduleId) {
 //  FULL SCHEDULE MODAL — nhiều NV + nhiều ca + range ngày
 // ══════════════════════════════════════════════════════
 function openFullSchedModal(preDate, preAccountId) {
+  console.log('[openFullSchedModal] called with', preDate, preAccountId);
   const today = new Date().toISOString().split('T')[0];
   const fromEl = document.getElementById('fsDateFrom');
   const toEl   = document.getElementById('fsDateTo');
@@ -3260,14 +3433,16 @@ function openFullSchedModal(preDate, preAccountId) {
   }
 
   updateFullPreview();
-  document.getElementById('fullSchedModal').classList.add('open');
+  const m = document.getElementById('fullSchedModal');
+  if (m) { m.classList.add('open'); m.style.display = 'flex'; }
   // Đóng modal xếp ca cũ nếu đang mở
   const old = document.getElementById('schedModal');
-  if (old) old.classList.remove('open');
+  if (old) { old.classList.remove('open'); old.style.display = ''; }
 }
 
 function closeFullSchedModal() {
-  document.getElementById('fullSchedModal').classList.remove('open');
+  const m = document.getElementById('fullSchedModal');
+  if (m) { m.classList.remove('open'); m.style.display = ''; }
 }
 
 function toggleAllStaff() {
@@ -3366,13 +3541,47 @@ document.querySelectorAll('#fullStaffChips input, #fullStypeCards input').forEac
   cb.addEventListener('change', updateFullPreview);
 });
 
-// Đổi hàm openSchedModal và openSchedModalForDay → gọi modal mới
+// Nút "Xếp ca mới" (top) vẫn dùng modal xếp hàng loạt
 function openSchedModal(preDate, preAccountId) {
   openFullSchedModal(preDate, preAccountId);
 }
 function openSchedModalForDay(date, accountId) {
   openFullSchedModal(date, accountId);
 }
+
+// ── THÊM 1 CA NHANH cho 1 ngày (nút "+ Thêm ca" ở ô ngày) ──────────────────
+function openQuickShift(date) {
+  const today = new Date().toISOString().split('T')[0];
+  if (date && date < today) {
+    alert('⛔ Không thể xếp ca cho ngày ' + date + ' — ngày này đã qua!');
+    return;
+  }
+  const f = document.getElementById('quickShiftForm');
+  if (f) f.reset();
+  document.getElementById('qsDate').value = date;
+  // Hiển thị ngày (dd/mm/yyyy) trên tiêu đề
+  let label = date;
+  const p = (date || '').split('-');
+  if (p.length === 3) label = p[2] + '/' + p[1] + '/' + p[0];
+  document.getElementById('quickShiftTitle').textContent = '➕ Thêm ca — ' + label;
+  const qsm = document.getElementById('quickShiftModal');
+  if (qsm) { qsm.classList.add('open'); qsm.style.display = 'flex'; }
+}
+function closeQuickShift() {
+  const qsm = document.getElementById('quickShiftModal');
+  if (qsm) { qsm.classList.remove('open'); qsm.style.display = ''; }
+}
+function submitQuickShift() {
+  const staff = document.getElementById('qsStaff').value;
+  const type  = document.getElementById('qsType').value;
+  if (!staff) { alert('Vui lòng chọn nhân viên!'); return; }
+  if (!type)  { alert('Vui lòng chọn loại ca!');   return; }
+  document.getElementById('quickShiftForm').submit();
+}
+// Click nền ngoài để đóng
+document.getElementById('quickShiftModal').addEventListener('click', function(e) {
+  if (e.target === this) closeQuickShift();
+});
 
 
 // ── Tìm kiếm nhân viên trong modal ───────────────────────────────────────
@@ -3416,10 +3625,12 @@ function openEditModal(schedId, shiftTypeId, shiftTypeName, lateTol, notes, staf
   document.getElementById('editPosStation').value   = posStation || 0;
   document.getElementById('editModalTitle').textContent =
     (isConfirmed ? '🟢 Đang ca — ' : '✏️ ') + 'Sửa ca ' + staffName + ' — ' + workDate;
-  document.getElementById('editSchedModal').classList.add('open');
+  const ems = document.getElementById('editSchedModal');
+  if (ems) { ems.classList.add('open'); ems.style.display = 'flex'; }
 }
 function closeEditModal() {
-  document.getElementById('editSchedModal').classList.remove('open');
+  const ems = document.getElementById('editSchedModal');
+  if (ems) { ems.classList.remove('open'); ems.style.display = ''; }
 }
 function submitEditSched() {
   const stSel = document.getElementById('editShiftType');
@@ -3471,14 +3682,16 @@ function openDeleteStaffModal(accountId, staffName, refDate) {
   document.getElementById('delTotalCount').textContent    = '';
   document.getElementById('delItemsList').innerHTML       = '';
 
-  document.getElementById('deleteStaffModal').classList.add('open');
+  const dsModal = document.getElementById('deleteStaffModal');
+  if (dsModal) { dsModal.classList.add('open'); dsModal.style.display = 'flex'; }
 
   // Load preview ngay
   loadDelPreview();
 }
 
 function closeDeleteModal() {
-  document.getElementById('deleteStaffModal').classList.remove('open');
+  const dsModal = document.getElementById('deleteStaffModal');
+  if (dsModal) { dsModal.classList.remove('open'); dsModal.style.display = ''; }
 }
 
 function loadDelPreview() {
@@ -3580,16 +3793,17 @@ let _editSelIds = new Set(); // scheduleId đã chọn
 
 function openEditSelectModal() {
   _editSelIds.clear();
-  // Reset tất cả chip
   document.querySelectorAll('#editWeekGrid .sm-chip').forEach(ch => {
     ch.classList.remove('sm-selected-edit');
   });
   document.getElementById('editPanel').classList.remove('show');
   updateEditSelUI();
-  document.getElementById('editSelectModal').classList.add('open');
+  const esm = document.getElementById('editSelectModal');
+  if (esm) { esm.classList.add('open'); esm.style.display = 'flex'; }
 }
 function closeEditSelectModal() {
-  document.getElementById('editSelectModal').classList.remove('open');
+  const esm = document.getElementById('editSelectModal');
+  if (esm) { esm.classList.remove('open'); esm.style.display = ''; }
 }
 
 function toggleEditChip(el) {
@@ -3704,10 +3918,12 @@ function openDeleteSelectModal() {
   document.getElementById('delSelSummary').style.display = 'none';
   document.getElementById('delSelList').innerHTML = '';
   updateDelSelUI();
-  document.getElementById('deleteSelectModal').classList.add('open');
+  const dsm = document.getElementById('deleteSelectModal');
+  if (dsm) { dsm.classList.add('open'); dsm.style.display = 'flex'; }
 }
 function closeDeleteSelectModal() {
-  document.getElementById('deleteSelectModal').classList.remove('open');
+  const dsm = document.getElementById('deleteSelectModal');
+  if (dsm) { dsm.classList.remove('open'); dsm.style.display = ''; }
 }
 
 function toggleDelChip(el) {
@@ -3795,42 +4011,12 @@ function openChipEditModal(scheduleId, staffName, workDate, currentTypeId) {
   // Pre-select loại ca
   const sel = document.getElementById('editSchedTypeId');
   if (sel) sel.value = currentTypeId;
-  modal.classList.add('open');
+  modal.classList.add('open'); modal.style.display = 'flex';
 }
 
 // ════════════════════════════════════════════════════════════
-//  POS MAP — Sơ đồ quầy POS
+//  POS MAP — Sơ đồ quầy POS  (_posCtx/_todaySchedules/_posStations defined in separate data block above)
 // ════════════════════════════════════════════════════════════
-const _posCtx = '${pageContext.request.contextPath}';
-
-// Dữ liệu lịch ca hôm nay từ server (truyền qua JSP)
-const _todaySchedules = [
-  <c:forEach var="ts" items="${todaySchedules}" varStatus="st">
-    {
-      scheduleId: ${ts.scheduleId},
-      staffName:  '${fn:escapeXml(ts.staffName)}',
-      posStation: ${ts.posStation},
-      status:     '${ts.status}',
-      shiftType:  '${fn:escapeXml(ts.shiftTypeName)}',
-      startHour:  ${ts.startHour},
-      endHour:    ${ts.endHour},
-      shiftTypeId: ${ts.shiftTypeId},
-      lateToleranceMinutes: ${ts.lateToleranceMinutes},
-      notes:      '${fn:escapeXml(ts.notes != null ? ts.notes : "")}'
-    }<c:if test="${!st.last}">,</c:if>
-  </c:forEach>
-];
-
-// Danh sách quầy POS từ database
-const _posStations = [
-  <c:forEach var="ps" items="${posStations}" varStatus="st">
-    {
-      id: ${ps.posStationId},
-      name: '${fn:escapeXml(ps.stationName)}'
-    }<c:if test="${!st.last}">,</c:if>
-  </c:forEach>
-];
-
 let _posOnlineIds = [];  // accountIds đang online ở POS (từ polling)
 let _posMapInterval = null;
 
@@ -4313,6 +4499,19 @@ document.addEventListener('DOMContentLoaded', function() {
   // Nếu tab pos-map là active tab khi load
   if ('<%= activeTab %>'.indexOf('pos-map') >= 0) initPosMap();
 });
+</script>
+<%-- Parse diagnostic: shows green/red badge for 6s after page load --%>
+<script>
+(function(){
+  var ok = typeof updateFullPreview === 'function';
+  var b = document.createElement('div');
+  b.style.cssText = 'position:fixed;bottom:6px;left:50%;transform:translateX(-50%);z-index:99999;padding:4px 12px;border-radius:20px;font-size:11.5px;font-weight:700;font-family:Outfit,sans-serif;';
+  b.style.background = ok ? '#10b981' : '#dc2626';
+  b.style.color = '#fff';
+  b.textContent = ok ? '✓ Main JS loaded OK' : '✗ Main JS FAILED (using safety fns)';
+  document.body.appendChild(b);
+  setTimeout(function(){b.remove();},6000);
+})();
 </script>
 </body>
 </html>

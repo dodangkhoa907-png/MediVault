@@ -145,6 +145,8 @@ body{display:flex}
 .cust-wrap input{flex:1;height:34px;padding:0 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none}
 .cust-wrap input:focus{border-color:var(--sky)}
 .cust-btn{width:34px;height:34px;background:var(--blue);border:none;border-radius:8px;color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cust-btn-add{background:linear-gradient(135deg,#0d9488,#0f766e);font-size:20px;font-weight:700;line-height:1}
+.cust-btn-add:hover{filter:brightness(1.08)}
 .cust-found-row{margin-top:6px;padding:6px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;display:none;align-items:center;gap:7px;font-size:13px}
 .cust-found-name{font-weight:700;color:var(--green);flex:1}
 .cust-rm{color:var(--red);cursor:pointer;background:none;border:none;font-size:14px;line-height:1}
@@ -494,7 +496,7 @@ body{display:flex}
     <span class="sb-label">Tồn kho</span>
     <span class="sb-tip">Tồn kho</span>
   </a>
-  <a href="#" class="sb-btn">
+  <a href="#" class="sb-btn" onclick="event.preventDefault();openCustMgmt()">
     <span class="sb-icon">👥</span>
     <span class="sb-label">Khách hàng</span>
     <span class="sb-tip">Khách hàng</span>
@@ -517,6 +519,8 @@ body{display:flex}
           <div><div style="font-size:13px;font-weight:700;color:#fff"><%= fullName %></div><div style="font-size:10.5px;color:rgba(255,255,255,.45)">Đang ca làm việc</div></div>
         </div>
         <a href="<%= ctx %>/staff-dashboard" style="display:block;padding:8px 11px;background:rgba(255,255,255,.1);border-radius:8px;color:#93c5fd;font-size:12.5px;font-weight:600;text-decoration:none;margin-bottom:5px;text-align:center">📅 Xem lịch ca</a>
+        <button onclick="openMyInvModal();toggleCheckinPanel();" style="display:block;width:100%;padding:8px 11px;background:rgba(255,255,255,.1);border-radius:8px;color:#a5f3fc;font-size:12.5px;font-weight:600;text-align:center;border:none;cursor:pointer;font-family:inherit;margin-bottom:5px">🧾 Hóa đơn của tôi</button>
+        <button onclick="openOpenCashModal();toggleCheckinPanel();" style="display:block;width:100%;padding:8px 11px;background:rgba(255,255,255,.1);border-radius:8px;color:#86efac;font-size:12.5px;font-weight:600;text-align:center;border:none;cursor:pointer;font-family:inherit;margin-bottom:5px">💵 Khai báo tiền đầu ca (tùy chọn)</button>
         <button onclick="openEndShiftModal();toggleCheckinPanel();" style="display:block;width:100%;padding:8px 11px;background:rgba(239,68,68,.15);border-radius:8px;color:#fca5a5;font-size:12.5px;font-weight:600;text-align:center;border:none;cursor:pointer;font-family:inherit">⏻ Kết thúc ca</button>
         <% } else { %>
         <div style="font-size:11.5px;color:rgba(255,255,255,.5);margin-bottom:11px">Điểm danh để ghi nhận doanh số theo nhân viên</div>
@@ -559,19 +563,134 @@ body{display:flex}
     </c:forEach>
   </div>
 
-  <!-- Điểm danh banner — only shown when no staff is checked in -->
+  <%-- Banner nhắc điểm danh — POS KHÔNG khóa, bán hàng bình thường --%>
   <% if (!isLoggedIn) { %>
   <div id="checkinBanner" style="padding:10px 16px;background:linear-gradient(90deg,#fffbeb,#fef3c7);border-bottom:2px solid #f59e0b;display:flex;align-items:center;gap:12px;flex-shrink:0">
     <span style="font-size:20px;flex-shrink:0">⏰</span>
     <div style="flex:1;min-width:0">
       <div style="font-size:13px;font-weight:700;color:#92400e">Chưa điểm danh ca làm</div>
-      <div style="font-size:11.5px;color:#b45309;margin-top:1px">Vui lòng điểm danh để ghi nhận doanh số</div>
+      <div style="font-size:11.5px;color:#b45309;margin-top:1px">Vui lòng điểm danh để ghi nhận doanh số theo nhân viên</div>
     </div>
     <button onclick="openFaceModal()" style="padding:8px 18px;background:#f59e0b;border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:6px">
       📷 Điểm danh ngay
     </button>
   </div>
   <% } %>
+
+  <%-- Modal: Khai báo tiền đầu ca (mở ca) --%>
+  <div id="openCashModal" style="display:none;position:fixed;inset:0;z-index:9600;background:rgba(11,22,40,.55);align-items:center;justify-content:center;padding:20px">
+    <div style="background:#fff;border-radius:18px;max-width:400px;width:100%;padding:28px;box-shadow:0 24px 70px rgba(0,0,0,.35)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="font-size:26px">💵</span>
+        <h3 style="margin:0;font-size:18px;font-weight:800;color:#0f172a">Khai báo tiền đầu ca</h3>
+      </div>
+      <p style="font-size:12.5px;color:#64748b;margin:0 0 16px;line-height:1.5">Đếm tiền mặt hiện có trong két và nhập số tiền để mở ca. Số này dùng đối soát khi kết ca.</p>
+      <label style="font-size:12.5px;font-weight:700;color:#334155;display:block;margin-bottom:6px">Tiền mặt trong két (đ) <span style="color:#dc2626">*</span></label>
+      <input type="number" id="openCashInput" min="0" step="1000" placeholder="VD: 500000"
+             style="width:100%;border:1.5px solid #e2e8f0;border-radius:11px;padding:12px 14px;font-size:17px;font-weight:700;font-family:inherit;box-sizing:border-box"
+             onkeydown="if(event.key==='Enter')confirmOpenShift()">
+      <div id="openCashErr" style="color:#dc2626;font-size:12px;margin-top:6px;display:none"></div>
+      <button type="button" id="openShiftBtn" onclick="confirmOpenShift()"
+              style="width:100%;margin-top:16px;padding:13px;background:linear-gradient(135deg,#059669,#047857);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">✓ Mở ca &amp; bắt đầu bán hàng</button>
+    </div>
+  </div>
+
+  <%-- Modal: Hóa đơn của tôi (bill trong ca hôm nay của chính nhân viên) --%>
+  <div id="myInvModal" style="display:none;position:fixed;inset:0;z-index:9600;background:rgba(11,22,40,.55);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeMyInvModal()">
+    <div style="background:#fff;border-radius:18px;max-width:520px;width:100%;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden">
+      <div style="padding:18px 22px;background:linear-gradient(135deg,#1558A8,#3ABDE0);color:#fff;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <h3 style="margin:0;font-size:17px;font-weight:800">🧾 Hóa đơn của tôi — hôm nay</h3>
+          <div id="myInvSummary" style="font-size:12px;opacity:.85;margin-top:3px">Đang tải…</div>
+        </div>
+        <button onclick="closeMyInvModal()" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:32px;height:32px;border-radius:9px;font-size:16px;cursor:pointer">✕</button>
+      </div>
+      <div id="myInvList" style="flex:1;overflow-y:auto;padding:14px 18px">
+        <div style="color:#94a3b8;font-size:13px;text-align:center;padding:26px 0">Đang tải…</div>
+      </div>
+    </div>
+  </div>
+
+  <%-- Modal: TẠO NHANH khách hàng (2 trường, <5 giây) --%>
+  <div id="quickCreateModal" style="display:none;position:fixed;inset:0;z-index:9650;background:rgba(11,22,40,.55);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeQuickCreate()">
+    <div style="background:#fff;border-radius:18px;max-width:380px;width:100%;padding:26px;box-shadow:0 24px 70px rgba(0,0,0,.35)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <span style="font-size:24px">⚡</span>
+        <h3 style="margin:0;font-size:17px;font-weight:800;color:#0f172a">Tạo nhanh khách hàng</h3>
+      </div>
+      <p style="font-size:12px;color:#64748b;margin:0 0 14px">Chỉ cần SĐT + Tên. Khách tự bổ sung hồ sơ tại Cổng khách hàng sau.</p>
+      <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:5px">Số điện thoại <span style="color:#dc2626">*</span></label>
+      <input type="tel" id="qcPhone" maxlength="10" inputmode="numeric" placeholder="0901234567"
+             oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)"
+             style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:11px 13px;font-size:16px;font-weight:700;font-family:inherit;letter-spacing:1px;box-sizing:border-box">
+      <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin:12px 0 5px">Họ tên khách <span style="color:#dc2626">*</span></label>
+      <input type="text" id="qcName" placeholder="VD: Đào Trần Thanh Trúc"
+             onkeydown="if(event.key==='Enter')submitQuickCreate()"
+             style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:11px 13px;font-size:14.5px;font-family:inherit;box-sizing:border-box">
+      <div style="display:flex;gap:10px;margin-top:12px">
+        <label style="flex:1;display:flex;align-items:center;gap:7px;border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 12px;font-size:13px;font-weight:600;cursor:pointer">
+          <input type="radio" name="qcGender" value="M" style="accent-color:#0d9488"> 👨 Nam</label>
+        <label style="flex:1;display:flex;align-items:center;gap:7px;border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 12px;font-size:13px;font-weight:600;cursor:pointer">
+          <input type="radio" name="qcGender" value="F" style="accent-color:#0d9488"> 👩 Nữ</label>
+      </div>
+      <div id="qcErr" style="display:none;color:#dc2626;font-size:12px;margin-top:8px"></div>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button onclick="closeQuickCreate()" style="flex:1;background:#f1f5f9;color:#475569;border:none;border-radius:11px;padding:12px;font-weight:700;cursor:pointer;font-family:inherit">Hủy</button>
+        <button id="qcSaveBtn" onclick="submitQuickCreate()" style="flex:2;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;border-radius:11px;padding:12px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit">💾 Lưu &amp; Chọn</button>
+      </div>
+    </div>
+  </div>
+
+  <%-- Modal: THẺ NFC — chạm thẻ / nhập UID, liên kết thẻ trắng --%>
+  <div id="nfcModal" style="display:none;position:fixed;inset:0;z-index:9650;background:rgba(11,22,40,.55);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeNfcModal()">
+    <div style="background:#fff;border-radius:18px;max-width:380px;width:100%;padding:26px;box-shadow:0 24px 70px rgba(0,0,0,.35);text-align:center">
+      <div style="width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#ccfbf1,#99f6e4);display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 12px">📶</div>
+      <h3 style="margin:0 0 6px;font-size:17px;font-weight:800;color:#0f172a">Thẻ thành viên NFC</h3>
+      <p id="nfcStatus" style="font-size:12.5px;color:#64748b;margin:0 0 14px;line-height:1.5">Chạm thẻ vào đầu đọc hoặc nhập mã thẻ…</p>
+      <input type="text" id="nfcUidInput" placeholder="UID thẻ (tự nhận khi chạm)"
+             onkeydown="if(event.key==='Enter')nfcLookup()"
+             style="width:100%;border:1.5px solid #e2e8f0;border-radius:11px;padding:12px 13px;font-size:15px;font-weight:700;font-family:inherit;letter-spacing:1px;text-align:center;box-sizing:border-box">
+      <button onclick="nfcLookup()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#1558A8,#3ABDE0);color:#fff;border:none;border-radius:11px;padding:12px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit">🔍 Tra thẻ</button>
+      <div id="nfcStep2" style="display:none;margin-top:14px;padding-top:14px;border-top:1px dashed #e2e8f0">
+        <input type="tel" id="nfcPhoneInput" maxlength="10" inputmode="numeric" placeholder="SĐT khách để liên kết thẻ"
+               oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)"
+               onkeydown="if(event.key==='Enter')nfcLinkSubmit()"
+               style="width:100%;border:1.5px solid #e2e8f0;border-radius:11px;padding:12px 13px;font-size:15px;font-weight:700;font-family:inherit;letter-spacing:1px;text-align:center;box-sizing:border-box">
+        <button onclick="nfcLinkSubmit()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;border-radius:11px;padding:12px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit">🔗 Liên kết thẻ</button>
+      </div>
+    </div>
+  </div>
+
+  <%-- Modal: QUẢN LÝ KHÁCH HÀNG — tìm / chọn / tạo mới ngay trong POS --%>
+  <div id="custMgmtModal" style="display:none;position:fixed;inset:0;z-index:9650;background:rgba(11,22,40,.55);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeCustMgmt()">
+    <div style="background:#fff;border-radius:18px;max-width:560px;width:100%;max-height:82vh;display:flex;flex-direction:column;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,.35)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <h3 style="margin:0;font-size:17px;font-weight:800;color:#0f172a">👥 Khách hàng</h3>
+        <button onclick="closeCustMgmt()" style="background:#f1f5f9;border:none;border-radius:9px;width:32px;height:32px;cursor:pointer;font-size:15px;color:#475569">✕</button>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:12px">
+        <input type="text" id="cmSearch" placeholder="Tìm theo tên hoặc SĐT…" oninput="custMgmtSearch()"
+               style="flex:1;border:1.5px solid #e2e8f0;border-radius:11px;padding:11px 13px;font-size:14px;font-family:inherit;box-sizing:border-box">
+        <button onclick="closeCustMgmt();openQuickCreate()" style="flex-shrink:0;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;border-radius:11px;padding:0 16px;font-weight:800;font-size:13.5px;cursor:pointer;font-family:inherit">＋ Thêm mới</button>
+      </div>
+      <div id="cmList" style="overflow-y:auto;flex:1;min-height:120px"></div>
+    </div>
+  </div>
+
+  <%-- Modal: XEM CHI TIẾT khách hàng trong POS --%>
+  <div id="custDetailModal" style="display:none;position:fixed;inset:0;z-index:9660;background:rgba(11,22,40,.6);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeCustDetail()">
+    <div style="background:#fff;border-radius:18px;max-width:600px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.4)">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #eef2f7">
+        <h3 style="margin:0;font-size:15px;font-weight:800;color:#0f172a">👤 Hồ sơ khách hàng</h3>
+        <button onclick="closeCustDetail()" style="background:#f1f5f9;border:none;border-radius:9px;width:32px;height:32px;cursor:pointer;font-size:15px;color:#475569">✕</button>
+      </div>
+      <div id="cdBody" style="padding:20px;overflow-y:auto;flex:1"></div>
+      <div style="padding:14px 20px;border-top:1px solid #eef2f7;display:flex;gap:10px">
+        <button onclick="closeCustDetail()" style="flex:1;background:#f1f5f9;color:#475569;border:none;border-radius:11px;padding:12px;font-weight:700;cursor:pointer;font-family:inherit">Đóng</button>
+        <button onclick="cdPickAndClose()" style="flex:2;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;border-radius:11px;padding:12px;font-weight:800;cursor:pointer;font-family:inherit">✓ Chọn khách này vào hóa đơn</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Medicine grid -->
   <div class="med-grid" id="medGrid">
@@ -667,14 +786,25 @@ body{display:flex}
   <div class="inv-customer">
     <div class="f-label">Khách hàng</div>
     <div class="cust-wrap">
-      <input type="text" id="custPhone" placeholder="Nhập SĐT để tìm khách…" oninput="onCustInput()" autocomplete="off">
-      <button class="cust-btn" onclick="searchCustomer()">🔍</button>
+      <input type="text" id="custPhone" placeholder="Gõ SĐT (tự tìm khi đủ 10 số)…" oninput="onCustInput()" autocomplete="off" inputmode="numeric">
+      <button class="cust-btn" onclick="searchCustomer()" title="Tìm khách theo SĐT">🔍</button>
+      <button class="cust-btn cust-btn-add" onclick="openQuickCreate()" title="Thêm khách hàng mới">＋</button>
     </div>
+    <%-- Không tìm thấy → nút tạo nhanh 1 chạm --%>
+    <button id="custCreateRow" style="display:none;width:100%;margin-top:7px;padding:9px 12px;background:linear-gradient(135deg,#0d9488,#0f766e);border:none;border-radius:9px;color:#fff;font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit;text-align:left"
+            onclick="openQuickCreate()">
+      ＋ Tạo mới khách hàng: <span id="custCreatePhone"></span>
+    </button>
     <div class="cust-found-row" id="custFound">
       <span>👤</span>
       <span class="cust-found-name" id="custFoundName"></span>
       <span style="font-size:12px;color:var(--muted)" id="custFoundPhone"></span>
+      <span id="custTierBadge" style="display:none;font-size:10.5px;font-weight:800;background:#f0fdfa;color:#0f766e;border:1px solid #99f6e4;padding:1px 8px;border-radius:10px"></span>
       <button class="cust-rm" onclick="removeCustomer()">✕</button>
+    </div>
+    <%-- CẢNH BÁO ĐỎ dị ứng thuốc — hiện khi khách có tiền sử dị ứng --%>
+    <div id="custAllergyRow" style="display:none;margin-top:7px;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:9px;padding:8px 11px;font-size:12px;color:#991b1b;line-height:1.45">
+      🚨 <b>DỊ ỨNG:</b> <span id="custAllergyText"></span>
     </div>
   </div>
 
@@ -969,6 +1099,7 @@ let allMedicines = [];
 
 // ── Multi-POS state ──
 let currentStation = <%= posStation %>;  // 0 = belum pilih
+let nfcBridge = null;                    // EventSource cầu nối NFC (khai báo sớm, tránh TDZ)
 let currentStaffId = null;
 let currentStaffName = '<%= fullName %>';
 let currentInvoice = null; // {id, code, total, discount, cashReceived, change}
@@ -981,6 +1112,9 @@ let currentInvoice = null; // {id, code, total, discount, cashReceived, change}
     days[n.getDay()] + ' ' + n.getDate().toString().padStart(2,'0') + '/' +
     (n.getMonth()+1).toString().padStart(2,'0') + '/' + n.getFullYear();
 })();
+
+// ── Nối kênh nghe thẻ NFC nếu quầy đã được chọn từ trước (session giữ lại) ──
+if (typeof initNfcBridge === 'function') initNfcBridge();
 
 // ── Load medicines from DOM ──
 document.querySelectorAll('.med-card').forEach(card => {
@@ -1144,6 +1278,11 @@ function renderCart() {
       const meta = [];
       if (item.batchNo) meta.push('🏷 Lô: ' + item.batchNo);
       if (item.expiry)  meta.push('📅 HSD: ' + fmtDate(item.expiry));
+      // Tồn kho còn lại (để dược sĩ biết còn bao nhiêu mà bán) — đỏ nếu vượt tồn
+      const remain = item.stock - item.qty;
+      const stockColor = item.qty >= item.stock ? '#DC2626' : (remain <= 5 ? '#D97706' : '#059669');
+      meta.push('<span style="color:' + stockColor + ';font-weight:800">📦 Kho còn: ' + item.stock + ' ' + escHtml(item.unit)
+                + (item.qty > 0 ? ' (sau bán: ' + (remain < 0 ? 0 : remain) + ')' : '') + '</span>');
       const metaHtml = meta.length ? '<div class="inv-i-meta">' + meta.join(' · ') + '</div>' : '';
       const rxBadge = item.rx ? '<span class="mc-badge mb-rx" style="font-size:9px;padding:1px 4px;margin-right:6px;border-radius:3px;">Rx</span>' : '<span class="mc-badge mb-otc" style="font-size:9px;padding:1px 4px;margin-right:6px;border-radius:3px;">OTC</span>';
       return '<div class="inv-item">'
@@ -1318,31 +1457,296 @@ function updateCheckoutBtnState() {
   }
 }
 
-// ── Customer ──
+// ── Customer: auto-search khi đủ 10 số + tạo nhanh + NFC ──
 let custTimer;
-function onCustInput() { clearTimeout(custTimer); custTimer = setTimeout(searchCustomer, 600); }
+function onCustInput() {
+  clearTimeout(custTimer);
+  const digits = document.getElementById('custPhone').value.replace(/\D/g, '');
+  document.getElementById('custCreateRow').style.display = 'none';
+  if (digits.length === 10) { searchCustomer(); return; }  // đủ 10 số → tìm NGAY, không cần Enter
+  custTimer = setTimeout(searchCustomer, 600);
+}
+
+/** Hiển thị khách đã chọn: tên + SĐT + hạng/điểm + CẢNH BÁO ĐỎ dị ứng. */
+function applyCustomer(data) {
+  selectedCustomer = { id: data.id, name: data.name, phone: data.phone };
+  document.getElementById('custFoundName').textContent  = data.name;
+  document.getElementById('custFoundPhone').textContent = data.phone;
+  const badge = document.getElementById('custTierBadge');
+  if (data.tier) {
+    badge.textContent = data.tier + ' · ' + (data.points || 0) + 'đ';
+    badge.style.display = 'inline-block';
+  } else badge.style.display = 'none';
+  document.getElementById('custFound').style.display = 'flex';
+  document.getElementById('custCreateRow').style.display = 'none';
+  // Cảnh báo dị ứng — chốt an toàn ngành dược
+  const aRow = document.getElementById('custAllergyRow');
+  if (data.allergy && data.allergy.trim()) {
+    document.getElementById('custAllergyText').textContent = data.allergy;
+    aRow.style.display = 'block';
+  } else aRow.style.display = 'none';
+}
+
 function searchCustomer() {
   const phone = document.getElementById('custPhone').value.trim();
   if (phone.length < 9) return;
   fetch(ctx + '/pos?action=find-customer&phone=' + encodeURIComponent(phone))
     .then(r => r.json()).then(data => {
-      const row = document.getElementById('custFound');
       if (data.found) {
-        selectedCustomer = { id: data.id, name: data.name, phone: data.phone };
-        document.getElementById('custFoundName').textContent  = data.name;
-        document.getElementById('custFoundPhone').textContent = data.phone;
-        row.style.display = 'flex';
+        applyCustomer(data);
+        showToast('✓ ' + data.name + (data.points ? ' · ' + data.points + ' điểm' : ''), 'ok');
       } else {
         selectedCustomer = null;
-        showToast('⚠️ Không tìm thấy khách hàng', 'err');
-        row.style.display = 'none';
+        document.getElementById('custFound').style.display = 'none';
+        document.getElementById('custAllergyRow').style.display = 'none';
+        // Chưa có tài khoản → hiện nút tạo nhanh 1 chạm
+        if (/^0\d{9}$/.test(phone)) {
+          document.getElementById('custCreatePhone').textContent = phone;
+          document.getElementById('custCreateRow').style.display = 'block';
+        } else {
+          showToast('⚠️ Không tìm thấy khách hàng', 'err');
+        }
       }
     }).catch(() => { showToast('Lỗi kết nối khi tìm khách hàng', 'err'); });
 }
+
 function removeCustomer() {
   selectedCustomer = null;
   document.getElementById('custPhone').value = '';
   document.getElementById('custFound').style.display = 'none';
+  document.getElementById('custAllergyRow').style.display = 'none';
+  document.getElementById('custCreateRow').style.display = 'none';
+}
+
+// ── Panel QUẢN LÝ KHÁCH HÀNG trong POS (tìm / chọn / tạo mới) ──
+let _cmTimer = null;
+function openCustMgmt() {
+  document.getElementById('cmSearch').value = '';
+  document.getElementById('custMgmtModal').style.display = 'flex';
+  custMgmtSearch();
+  setTimeout(() => document.getElementById('cmSearch').focus(), 100);
+}
+function closeCustMgmt() { document.getElementById('custMgmtModal').style.display = 'none'; }
+
+function custMgmtSearch() {
+  clearTimeout(_cmTimer);
+  _cmTimer = setTimeout(async () => {
+    const q = document.getElementById('cmSearch').value.trim();
+    const box = document.getElementById('cmList');
+    box.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:24px;font-size:13px">⏳ Đang tải…</div>';
+    try {
+      const res = await fetch(ctx + '/pos?action=search-customers&q=' + encodeURIComponent(q));
+      const list = await res.json();
+      if (!list.length) {
+        box.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:24px;font-size:13px">Không có khách hàng nào.'
+          + (q ? ' Thử bấm <b>＋ Thêm mới</b>.' : '') + '</div>';
+        return;
+      }
+      box.innerHTML = list.map(c =>
+        '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #eef2f7;border-radius:11px;margin-bottom:7px;transition:.12s" '
+        + 'onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'\'">'
+        + '<span style="font-size:18px">' + (c.hasNfc ? '📶' : '👤') + '</span>'
+        + '<div onclick="posCustomerDetail(' + c.id + ')" style="flex:1;min-width:0;cursor:pointer">'
+        + '<div style="font-weight:700;font-size:13.5px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHtml(c.name) + '</div>'
+        + '<div style="font-size:12px;color:#64748b">' + escHtml(c.phone || '—') + '</div>'
+        + '</div>'
+        + '<button onclick="posCustomerDetail(' + c.id + ')" style="flex-shrink:0;background:#eff6ff;color:#1558a8;border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">👁 Xem</button>'
+        + '<button onclick="pickCustomer(\'' + c.phone + '\')" style="flex-shrink:0;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;border-radius:8px;padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Chọn →</button>'
+        + '</div>'
+      ).join('');
+    } catch (e) {
+      box.innerHTML = '<div style="text-align:center;color:#dc2626;padding:24px;font-size:13px">❌ Lỗi tải danh sách</div>';
+    }
+  }, 250);
+}
+
+/** Chọn khách từ panel → tái dùng find-customer để lấy đủ điểm/dị ứng rồi áp vào hóa đơn. */
+function pickCustomer(phone) {
+  if (!phone) return;
+  document.getElementById('custPhone').value = phone;
+  closeCustMgmt();
+  searchCustomer();
+}
+
+// ── Trang XEM CHI TIẾT khách hàng trong POS ──
+async function posCustomerDetail(id) {
+  const modal = document.getElementById('custDetailModal');
+  const body  = document.getElementById('cdBody');
+  modal.style.display = 'flex';
+  body.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:40px;font-size:13px">⏳ Đang tải hồ sơ…</div>';
+  try {
+    const res = await fetch(ctx + '/pos?action=pos-customer-detail&id=' + id);
+    const d = await res.json();
+    if (!d.ok) { body.innerHTML = '<div style="text-align:center;color:#dc2626;padding:40px">Không tìm thấy khách hàng.</div>'; return; }
+    window._cdPhone = d.phone;
+
+    const gender = d.gender === 'M' ? 'Nam' : d.gender === 'F' ? 'Nữ' : '—';
+    const money  = n => new Intl.NumberFormat('vi-VN').format(Math.round(n || 0)) + 'đ';
+    const stBadge = s => s === 'COMPLETED' ? '<span style="color:#059669;font-weight:700">✅ Hoàn tất</span>'
+                        : s === 'CANCELLED' ? '<span style="color:#dc2626;font-weight:700">❌ Đã hủy</span>'
+                        : '<span style="color:#d97706;font-weight:700">⏳ Xử lý</span>';
+
+    let invRows = d.invoices.length
+      ? d.invoices.map(iv =>
+          '<tr style="border-bottom:1px solid #f1f5f9">'
+          + '<td style="padding:8px 6px;font-family:monospace;color:#1558a8;font-weight:700">' + escHtml(iv.code) + '</td>'
+          + '<td style="padding:8px 6px;color:#64748b;font-size:12px">' + escHtml(iv.time) + '</td>'
+          + '<td style="padding:8px 6px;text-align:right;font-weight:800">' + money(iv.amount) + '</td>'
+          + '<td style="padding:8px 6px;text-align:right">' + stBadge(iv.status) + '</td>'
+          + '</tr>').join('')
+      : '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:22px">🛒 Chưa có hóa đơn nào.</td></tr>';
+
+    const medBox = (label, val, warn) => val
+      ? '<div style="margin-top:8px"><div style="font-size:10.5px;font-weight:700;text-transform:uppercase;color:#7a90b0;margin-bottom:3px">' + label + '</div>'
+        + '<div style="padding:9px 11px;border-radius:9px;font-size:12.5px;font-weight:600;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b">' + escHtml(val) + '</div></div>'
+      : '';
+
+    body.innerHTML =
+      '<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">'
+      + '<div style="width:58px;height:58px;border-radius:16px;background:linear-gradient(135deg,#3abde0,#1558a8);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;color:#fff;flex-shrink:0">' + escHtml((d.name||'?').charAt(0).toUpperCase()) + '</div>'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-size:19px;font-weight:900;color:#0f172a">' + escHtml(d.name) + '</div>'
+      + '<div style="font-size:13px;color:#64748b">📱 ' + escHtml(d.phone || '—')
+      + (d.tier ? ' · <span style="color:#d97706;font-weight:700">🏅 ' + escHtml(d.tier) + '</span>' : '')
+      + (d.hasNfc ? ' · <span style="color:#0d9488;font-weight:700">📶 có thẻ NFC</span>' : '') + '</div>'
+      + '</div></div>'
+      // KPI
+      + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">'
+      + '<div style="background:#f5f3ff;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:900;color:#7c3aed">' + d.points + '</div><div style="font-size:10.5px;color:#7a90b0;font-weight:700;text-transform:uppercase">Điểm</div></div>'
+      + '<div style="background:#eff6ff;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:900;color:#1558a8">' + d.invoiceCount + '</div><div style="font-size:10.5px;color:#7a90b0;font-weight:700;text-transform:uppercase">Hóa đơn</div></div>'
+      + '<div style="background:#ecfdf5;border-radius:12px;padding:12px;text-align:center"><div style="font-size:16px;font-weight:900;color:#059669">' + money(d.totalSpent) + '</div><div style="font-size:10.5px;color:#7a90b0;font-weight:700;text-transform:uppercase">Đã chi</div></div>'
+      + '</div>'
+      // Info
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;margin-bottom:6px">'
+      + '<div><span style="color:#7a90b0;font-size:11px;font-weight:700;text-transform:uppercase">Giới tính</span><div style="font-weight:700">' + gender + '</div></div>'
+      + '<div><span style="color:#7a90b0;font-size:11px;font-weight:700;text-transform:uppercase">Ngày sinh</span><div style="font-weight:700">' + (d.dob || '—') + '</div></div>'
+      + '<div><span style="color:#7a90b0;font-size:11px;font-weight:700;text-transform:uppercase">Email</span><div style="font-weight:700;word-break:break-all">' + (escHtml(d.email) || '—') + '</div></div>'
+      + '<div><span style="color:#7a90b0;font-size:11px;font-weight:700;text-transform:uppercase">Địa chỉ</span><div style="font-weight:700">' + (escHtml(d.address) || '—') + '</div></div>'
+      + '</div>'
+      + medBox('⚠️ Dị ứng', d.allergy, true)
+      + medBox('⚠️ Bệnh mạn tính', d.chronic, true)
+      // History
+      + '<div style="margin-top:16px"><div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:6px">📋 Lịch sử mua gần đây</div>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:12.5px">' + invRows + '</table></div>';
+  } catch (e) {
+    body.innerHTML = '<div style="text-align:center;color:#dc2626;padding:40px">❌ Lỗi tải hồ sơ</div>';
+  }
+}
+function closeCustDetail() { document.getElementById('custDetailModal').style.display = 'none'; }
+function cdPickAndClose() {
+  if (window._cdPhone) { document.getElementById('custPhone').value = window._cdPhone; closeCustDetail(); closeCustMgmt(); searchCustomer(); }
+}
+
+// ── Tạo nhanh khách hàng (form 2 trường, <5 giây) ──
+let _qcLinkNfcUid = null;   // nếu set: sau khi tạo xong tự liên kết thẻ NFC này
+function openQuickCreate(nfcUid) {
+  _qcLinkNfcUid = nfcUid || null;
+  const phone = document.getElementById('custPhone').value.replace(/\D/g, '');
+  document.getElementById('qcPhone').value = /^0\d{9}$/.test(phone) ? phone : '';
+  document.getElementById('qcName').value = '';
+  document.getElementById('qcErr').style.display = 'none';
+  document.querySelectorAll('input[name=qcGender]').forEach(r => r.checked = false);
+  document.getElementById('quickCreateModal').style.display = 'flex';
+  setTimeout(() => document.getElementById(
+      document.getElementById('qcPhone').value ? 'qcName' : 'qcPhone').focus(), 100);
+}
+function closeQuickCreate() { document.getElementById('quickCreateModal').style.display = 'none'; }
+
+async function submitQuickCreate() {
+  const phone = document.getElementById('qcPhone').value.replace(/\D/g, '');
+  const name  = document.getElementById('qcName').value.trim();
+  const gEl   = document.querySelector('input[name=qcGender]:checked');
+  const err   = document.getElementById('qcErr');
+  if (!/^0\d{9}$/.test(phone)) { err.textContent = 'SĐT phải đủ 10 số, bắt đầu bằng 0.'; err.style.display = 'block'; return; }
+  if (name.length < 2) { err.textContent = 'Vui lòng nhập tên khách.'; err.style.display = 'block'; return; }
+  err.style.display = 'none';
+  const btn = document.getElementById('qcSaveBtn');
+  btn.disabled = true; btn.textContent = '⏳ Đang lưu…';
+  try {
+    const res = await fetch(ctx + '/pos', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'quick-create-customer', phone: phone, name: name, gender: gEl ? gEl.value : '' }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    const d = await res.json();
+    if (d.ok) {
+      applyCustomer(d);
+      document.getElementById('custPhone').value = phone;
+      closeQuickCreate();
+      showToast('✅ Đã tạo khách: ' + d.name, 'ok');
+      // Nếu flow đến từ thẻ NFC trắng → liên kết luôn
+      if (_qcLinkNfcUid) { await doLinkNfc(_qcLinkNfcUid, phone); _qcLinkNfcUid = null; }
+    } else {
+      const map = { phone_exists: 'SĐT này đã có tài khoản — bấm 🔍 để chọn.', invalid_phone: 'SĐT không hợp lệ.', invalid_name: 'Tên không hợp lệ.' };
+      err.textContent = map[d.reason] || ('Lỗi: ' + d.reason);
+      err.style.display = 'block';
+    }
+  } catch (e) { err.textContent = 'Lỗi kết nối: ' + e.message; err.style.display = 'block'; }
+  btn.disabled = false; btn.textContent = '💾 Lưu & Chọn';
+}
+
+// ── NFC: chạm thẻ (đầu đọc = bàn phím) hoặc nhập UID tay ──
+function openNfcModal() {
+  document.getElementById('nfcUidInput').value = '';
+  document.getElementById('nfcStep2').style.display = 'none';
+  document.getElementById('nfcStatus').textContent = 'Chạm thẻ vào đầu đọc hoặc nhập mã thẻ…';
+  document.getElementById('nfcModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('nfcUidInput').focus(), 100);
+}
+function closeNfcModal() { document.getElementById('nfcModal').style.display = 'none'; }
+
+async function nfcLookup() {
+  const uid = document.getElementById('nfcUidInput').value.trim();
+  if (!uid) return;
+  const st = document.getElementById('nfcStatus');
+  st.textContent = '⏳ Đang tra thẻ…';
+  try {
+    const res = await fetch(ctx + '/pos?action=nfc-lookup&uid=' + encodeURIComponent(uid));
+    const d = await res.json();
+    if (d.found) {
+      applyCustomer(d);
+      closeNfcModal();
+      showToast('✓ Thẻ của ' + d.name + (d.points ? ' · ' + d.points + ' điểm' : ''), 'ok');
+    } else {
+      // Thẻ trắng → bước 2: nhập SĐT để liên kết
+      st.textContent = '🆕 Thẻ chưa định danh — nhập SĐT khách để liên kết:';
+      document.getElementById('nfcStep2').style.display = 'block';
+      setTimeout(() => document.getElementById('nfcPhoneInput').focus(), 80);
+    }
+  } catch (e) { st.textContent = '❌ Lỗi kết nối.'; }
+}
+
+async function doLinkNfc(uid, phone) {
+  try {
+    const res = await fetch(ctx + '/pos', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'link-nfc', uid: uid, phone: phone }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    const d = await res.json();
+    if (d.ok) {
+      applyCustomer(d);
+      closeNfcModal();
+      showToast('🔗 Đã liên kết thẻ cho ' + d.name, 'ok');
+      return true;
+    }
+    if (d.reason === 'phone_not_found') {
+      // SĐT chưa có tài khoản → mở form tạo nhanh, tạo xong tự link lại
+      closeNfcModal();
+      document.getElementById('custPhone').value = phone;
+      openQuickCreate(uid);
+      return false;
+    }
+    showToast(d.reason === 'uid_taken' ? '⚠️ Thẻ đã gán cho: ' + (d.name || 'khách khác') : '❌ Lỗi: ' + d.reason, 'err');
+  } catch (e) { showToast('❌ Lỗi kết nối', 'err'); }
+  return false;
+}
+
+function nfcLinkSubmit() {
+  const uid   = document.getElementById('nfcUidInput').value.trim();
+  const phone = document.getElementById('nfcPhoneInput').value.replace(/\D/g, '');
+  if (!/^0\d{9}$/.test(phone)) { showToast('⚠️ SĐT phải đủ 10 số', 'err'); return; }
+  doLinkNfc(uid, phone);
 }
 
 // ── Checkout ──
@@ -1444,7 +1848,8 @@ function submitSale() {
         document.getElementById('smChange').textContent = (received > 0 && selectedPayment === 'CASH')
           ? 'Tiền thừa: ' + fmtMoney(change) : '';
         document.getElementById('successModal').classList.add('show');
-        showToast('✅ Thanh toán thành công!', 'ok');
+        showToast('✅ Thanh toán thành công!'
+          + (data.earnedPoints > 0 ? ' Khách +' + data.earnedPoints + ' điểm ⭐' : ''), 'ok');
       } else {
         showToast('❌ ' + (data.msg || 'Lỗi xử lý!'), 'err');
         btn.disabled = false; btn.innerHTML = '🛒 THANH TOÁN';
@@ -1709,22 +2114,43 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── MULTI-POS STATION ─────────────────────────────────────────────────────────
-const MAX_STATIONS = 5; // PHẢI khớp với số quầy trong admin (shift-list.jsp: Quầy 1-5)
+// Danh sách quầy ĐỘNG từ DB (bảng PosStations, admin CRUD ở shift-list.jsp).
+// Fallback Quầy 1-5 nếu DB chưa có quầy nào (tương thích dữ liệu cũ).
+const POS_STATIONS = [
+  <c:forEach var="pst" items="${posStations}" varStatus="pstS">
+  { id: ${pst.posStationId}, name: '${fn:replace(pst.stationName, "'", "\\'")}' }<c:if test="${!pstS.last}">,</c:if>
+  </c:forEach>
+];
+if (POS_STATIONS.length === 0) {
+  for (let i = 1; i <= 5; i++) POS_STATIONS.push({ id: i, name: 'Quầy ' + i });
+}
+// Tên hiển thị của quầy theo ID (dùng TÊN trong DB, không phải ID) — tránh lệch
+// số như "Quầy 12" khi ID không liền mạch.
+function stationLabelFor(id) {
+  const st = POS_STATIONS.find(s => s.id === id);
+  if (st && st.name) return st.name;
+  return id > 0 ? 'Quầy ' + id : 'Chọn quầy';
+}
+// Sửa nhãn quầy render sẵn từ server (dùng ID) về đúng TÊN quầy khi đã chọn.
+if (typeof updateStationUI === 'function') updateStationUI();
 
 function openStationModal() {
   const grid = document.getElementById('stationGrid');
   grid.innerHTML = '';
-  for (let i = 1; i <= MAX_STATIONS; i++) {
+  POS_STATIONS.forEach(st => {
     const opt = document.createElement('div');
-    opt.className = 'station-opt' + (currentStation === i ? ' selected' : '');
-    opt.dataset.station = i;
-    opt.innerHTML = '<div class="so-num">Q' + i + '</div><div class="so-label">Quầy ' + i + '</div>';
+    opt.className = 'station-opt' + (currentStation === st.id ? ' selected' : '');
+    opt.dataset.station = st.id;
+    // Nhãn lớn lấy SỐ QUẦY từ tên (VD "Quầy 3" → "Q3"), khớp với admin —
+    // KHÔNG dùng st.id vì id trong DB có thể không liền mạch (2,3,4,5,12…).
+    const soNum = (String(st.name).match(/\d+/) || [st.id])[0];
+    opt.innerHTML = '<div class="so-num">Q' + soNum + '</div><div class="so-label">' + st.name + '</div>';
     opt.onclick = function() {
       document.querySelectorAll('.station-opt').forEach(o => o.classList.remove('selected'));
       this.classList.add('selected');
     };
     grid.appendChild(opt);
-  }
+  });
   document.getElementById('stationModal').classList.add('show');
 }
 
@@ -1746,12 +2172,51 @@ function confirmStation() {
 
   updateStationUI();
   closeStationModal();
-  showToast('✓ Đã chuyển sang Quầy ' + station, 'ok');
+  initNfcBridge();  // đổi quầy → nối lại kênh nghe thẻ NFC cho đúng quầy
+  showToast('✓ Đã chuyển sang ' + stationLabelFor(station), 'ok');
+}
+
+// ── CẦU NỐI NFC REALTIME (điện thoại quét thẻ → tự nhảy vào màn POS) ──────────
+// Điện thoại (app NFC Tools) POST UID về /pos/nfc-scan?station=N; server đẩy SSE
+// về đây. Ta chỉ nhận UID rồi tái dùng logic tra thẻ sẵn có.
+// (biến nfcBridge đã khai báo ở khối Multi-POS state phía trên để tránh lỗi TDZ)
+function initNfcBridge() {
+  if (nfcBridge) { try { nfcBridge.close(); } catch (_) {} nfcBridge = null; }
+  if (!currentStation || currentStation <= 0) return; // chưa chọn quầy thì chưa nghe
+  try {
+    nfcBridge = new EventSource(ctx + '/pos/nfc-stream?station=' + currentStation);
+    nfcBridge.addEventListener('nfc', ev => {
+      try { const d = JSON.parse(ev.data); if (d && d.uid) onNfcScanned(d.uid); } catch (_) {}
+    });
+    // EventSource tự động reconnect khi rớt mạng — không cần xử lý thêm.
+    nfcBridge.onerror = () => {};
+  } catch (e) {}
+}
+
+/** Nhận UID từ điện thoại: tra thẻ, thấy khách thì fill; thẻ trắng thì mở liên kết. */
+async function onNfcScanned(uid) {
+  uid = (uid || '').trim().toUpperCase();
+  if (!uid) return;
+  try {
+    const res = await fetch(ctx + '/pos?action=nfc-lookup&uid=' + encodeURIComponent(uid));
+    const d = await res.json();
+    if (d.found) {
+      applyCustomer(d);
+      showToast('📶 Thẻ của ' + d.name + (d.points ? ' · ' + d.points + ' điểm' : ''), 'ok');
+    } else {
+      // Thẻ chưa định danh → mở modal, sang thẳng bước nhập SĐT liên kết
+      openNfcModal();
+      document.getElementById('nfcUidInput').value = uid;
+      document.getElementById('nfcStatus').textContent = '🆕 Thẻ mới vừa quét — nhập SĐT khách để liên kết:';
+      document.getElementById('nfcStep2').style.display = 'block';
+      setTimeout(() => document.getElementById('nfcPhoneInput').focus(), 120);
+    }
+  } catch (e) { showToast('❌ Lỗi tra thẻ NFC', 'err'); }
 }
 
 function updateStationUI() {
   const lbl = document.getElementById('stationLabel');
-  if (lbl) lbl.textContent = currentStation > 0 ? 'Quầy ' + currentStation : 'Chọn quầy';
+  if (lbl) lbl.textContent = currentStation > 0 ? stationLabelFor(currentStation) : 'Chọn quầy';
 }
 
 // ── FACE RECOGNITION CHECK-IN ─────────────────────────────────────────────────
@@ -1985,7 +2450,7 @@ async function confirmFaceCheckin() {
         const lblEl = checkinIcon.querySelector('.sb-label');
         if (lblEl) lblEl.textContent = data.name;
       }
-      // Ẩn banner điểm danh
+      // Ẩn banner điểm danh (nếu còn)
       const banner = document.getElementById('checkinBanner');
       if (banner) banner.remove();
       // Sidebar button: đổi sang toggle panel (đã logged in)
@@ -1998,7 +2463,7 @@ async function confirmFaceCheckin() {
                                                    '✓ Đăng nhập thành công';
       showToast(msg + ' — ' + data.name, 'ok');
     } else if (data.reason === 'wrong-station') {
-      showToast('⚠️ Ca của ' + (data.name || '') + ' được xếp ở Quầy ' + data.correctStation, 'err');
+      showToast('⚠️ Ca của ' + (data.name || '') + ' được xếp ở ' + stationLabelFor(data.correctStation), 'err');
       btn.disabled    = false;
       btn.textContent = '✓ Xác nhận điểm danh';
     } else {
@@ -2023,6 +2488,100 @@ async function confirmFaceCheckin() {
     showToast('❌ Lỗi kết nối', 'err');
     btn.disabled    = false;
     btn.textContent = '✓ Xác nhận điểm danh';
+  }
+}
+
+// ── SHIFT-LOCK: mở/đóng khóa màn hình + mở ca (khai báo tiền đầu ca) ─────────
+function hideShiftLock() {
+  const ov = document.getElementById('shiftLockOverlay');
+  if (ov) ov.remove();
+}
+function showShiftLock() {
+  // Ca bị mất (session hết hạn / chưa mở) — reload để server render lại overlay đúng trạng thái
+  window.location.reload();
+}
+function openOpenCashModal() {
+  const m = document.getElementById('openCashModal');
+  m.style.display = 'flex';
+  const inp = document.getElementById('openCashInput');
+  inp.value = '';
+  document.getElementById('openCashErr').style.display = 'none';
+  setTimeout(() => inp.focus(), 120);
+}
+async function confirmOpenShift() {
+  const inp = document.getElementById('openCashInput');
+  const err = document.getElementById('openCashErr');
+  const val = parseFloat(inp.value);
+  if (isNaN(val) || val < 0) {
+    err.textContent = 'Vui lòng nhập số tiền hợp lệ (≥ 0).';
+    err.style.display = 'block';
+    inp.focus();
+    return;
+  }
+  const btn = document.getElementById('openShiftBtn');
+  btn.disabled = true; btn.textContent = '⏳ Đang mở ca…';
+  try {
+    const res = await fetch(ctx + '/pos', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'open-shift', openingCash: val }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('openCashModal').style.display = 'none';
+      hideShiftLock();
+      showToast('🔓 Đã mở ca — tiền đầu ca ' + fmtMoney(val), 'ok');
+    } else {
+      err.textContent = data.reason === 'not_logged_in'
+        ? 'Chưa điểm danh — hãy điểm danh khuôn mặt trước.'
+        : ('Lỗi: ' + (data.reason || 'không mở được ca'));
+      err.style.display = 'block';
+      btn.disabled = false; btn.textContent = '✓ Mở ca & bắt đầu bán hàng';
+    }
+  } catch (e) {
+    err.textContent = 'Lỗi kết nối: ' + e.message;
+    err.style.display = 'block';
+    btn.disabled = false; btn.textContent = '✓ Mở ca & bắt đầu bán hàng';
+  }
+}
+
+// ── HÓA ĐƠN CỦA TÔI (bill trong ca hôm nay của chính nhân viên) ──────────────
+function closeMyInvModal() { document.getElementById('myInvModal').style.display = 'none'; }
+async function openMyInvModal() {
+  const modal = document.getElementById('myInvModal');
+  const list  = document.getElementById('myInvList');
+  const sum   = document.getElementById('myInvSummary');
+  modal.style.display = 'flex';
+  list.innerHTML = '<div style="color:#94a3b8;font-size:13px;text-align:center;padding:26px 0">Đang tải…</div>';
+  sum.textContent = 'Đang tải…';
+  try {
+    const res = await fetch(ctx + '/pos?action=my-invoices');
+    const data = await res.json();
+    if (!data.ok) {
+      list.innerHTML = '<div style="color:#dc2626;font-size:13px;text-align:center;padding:26px 0">'
+        + (data.reason === 'not_logged_in' ? 'Chưa điểm danh ca làm.' : 'Lỗi tải dữ liệu.') + '</div>';
+      sum.textContent = '';
+      return;
+    }
+    sum.textContent = data.count + ' hóa đơn · Doanh thu: ' + fmtMoney(parseFloat(data.totalRevenue) || 0);
+    if (!data.invoices.length) {
+      list.innerHTML = '<div style="text-align:center;padding:32px 0;color:#94a3b8"><div style="font-size:34px;margin-bottom:8px">🧾</div><div style="font-size:13px">Chưa có hóa đơn nào trong ca hôm nay.</div></div>';
+      return;
+    }
+    const mLabel = { 'CASH': '💵 Tiền mặt', 'QR_CODE': '📱 QR', 'CARD': '💳 Thẻ' };
+    list.innerHTML = data.invoices.map(iv => {
+      const refunded = iv.status !== 'COMPLETED';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid #f1f5f9">'
+        + '<div><div style="font-weight:700;font-size:13.5px;color:#0f172a">' + iv.code + '</div>'
+        + '<div style="font-size:11.5px;color:#94a3b8;margin-top:2px">' + iv.time + ' · ' + (mLabel[iv.method] || iv.method) + '</div></div>'
+        + '<div style="text-align:right"><div style="font-weight:800;font-size:14px;color:' + (refunded ? '#dc2626' : '#059669') + '">'
+        + fmtMoney(parseFloat(iv.amount) || 0) + '</div>'
+        + (refunded ? '<div style="font-size:10.5px;color:#dc2626;font-weight:700">Hoàn trả</div>' : '')
+        + '</div></div>';
+    }).join('');
+  } catch (e) {
+    list.innerHTML = '<div style="color:#dc2626;font-size:13px;text-align:center;padding:26px 0">Lỗi kết nối.</div>';
+    sum.textContent = '';
   }
 }
 
@@ -2223,7 +2782,7 @@ async function openEndShiftModal() {
     var qrV    = parseFloat(d.qrTotal)    || 0;
     var cardV  = parseFloat(d.cardTotal)  || 0;
     var grand  = cashV + qrV + cardV;
-    var stLbl  = d.posStation > 0 ? ' · Quầy ' + d.posStation : '';
+    var stLbl  = d.posStation > 0 ? ' · ' + stationLabelFor(d.posStation) : '';
     var timeLbl = d.checkInTime ? ' · Vào ca: ' + d.checkInTime : '';
     document.getElementById('esrHeadMeta').textContent = d.staffName + timeLbl + stLbl;
     document.getElementById('esrGrandTotal').textContent = fmtMoney(grand);

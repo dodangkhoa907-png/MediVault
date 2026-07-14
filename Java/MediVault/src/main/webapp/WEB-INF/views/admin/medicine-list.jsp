@@ -77,10 +77,10 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .page-title{font-size:26px;font-weight:800;color:var(--ink)}
 .page-sub{font-size:13px;color:var(--muted);margin-top:3px}
 /* ── UNDERLINE NAV TABS ── */
-.u-tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:20px;gap:0}
-.u-tab{padding:10px 22px;font-size:14px;font-weight:600;color:var(--muted);text-decoration:none;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .18s;white-space:nowrap}
-.u-tab:hover{color:var(--blue);background:rgba(21,88,168,.03)}
-.u-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.u-tabs{display:flex;gap:6px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content;margin-bottom:20px;flex-wrap:wrap}
+.u-tab{padding:8px 18px;border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;transition:all .15s;white-space:nowrap}
+.u-tab:hover{background:var(--surface);color:var(--ink)}
+.u-tab.active{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;box-shadow:0 3px 10px rgba(21,88,168,.25)}
 /* ── ALERT TABS ── */
 .cat-tab-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
 .cat-tab{height:34px;padding:0 14px;border-radius:20px;font-size:12.5px;font-weight:600;color:var(--muted);border:1.5px solid var(--border);background:var(--white);cursor:pointer;white-space:nowrap;transition:all .14s;display:inline-flex;align-items:center;gap:6px;font-family:inherit}
@@ -343,9 +343,9 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
 .price-wrap .dw-input{padding-right:30px}
 .price-sfx{position:absolute;right:11px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;color:var(--muted);pointer-events:none}
 .add-btn-xs{height:22px;padding:0 8px;background:rgba(58,189,224,.1);border:1.5px solid rgba(58,189,224,.3);border-radius:6px;font-size:11px;font-weight:700;color:#1558A8;cursor:pointer;flex-shrink:0}
-.checkbox-row-dw{display:flex;align-items:center;gap:9px;padding:10px 12px;background:rgba(245,158,11,.06);border:1.5px solid rgba(245,158,11,.2);border-radius:10px;cursor:pointer;grid-column:1/-1}
-.checkbox-row-dw input{width:16px;height:16px;cursor:pointer;accent-color:var(--gold)}
-.checkbox-row-dw label{font-size:13px;font-weight:600;color:#92400E;cursor:pointer}
+.checkbox-row-dw{display:flex;align-items:center;gap:14px;padding:11px 16px 11px 18px;background:rgba(245,158,11,.06);border:1.5px solid rgba(245,158,11,.2);border-radius:10px;cursor:pointer;grid-column:1/-1}
+.checkbox-row-dw input{width:18px;height:18px;cursor:pointer;accent-color:var(--gold);flex-shrink:0;margin:0}
+.checkbox-row-dw label{font-size:13px;font-weight:600;color:#92400E;cursor:pointer;line-height:1.4}
 /* Initial stock (Create only) */
 .init-stock-dw{background:linear-gradient(135deg,#F0FDF4,#ECFDF5);border:1.5px solid #A7F3D0;border-radius:12px;padding:12px 16px;margin-top:4px;grid-column:1/-1}
 .init-stock-toggle-dw{display:flex;align-items:flex-start;gap:9px;cursor:pointer;font-size:13px;font-weight:600;color:#065F46}
@@ -364,7 +364,6 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
 </style>
 </head>
 <body>
-<%@ include file="/WEB-INF/views/loading.jsp" %>
 
 <%-- Hover card --%>
 <div id="hoverCard" class="hover-card">
@@ -444,6 +443,8 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
       <a href="${pageContext.request.contextPath}/medicines"       class="u-tab active">💊 Thuốc &amp; Lô hàng</a>
       <a href="${pageContext.request.contextPath}/purchase-orders" class="u-tab">📑 Đơn đặt hàng</a>
       <a href="${pageContext.request.contextPath}/categories"      class="u-tab">🏷️ Danh mục</a>
+      <a href="${pageContext.request.contextPath}/suppliers"       class="u-tab">🏭 Nhà cung cấp</a>
+      <a href="${pageContext.request.contextPath}/shelves"         class="u-tab">📍 Vị trí kệ</a>
     </div>
 
     <div class="stats-row">
@@ -749,6 +750,21 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
       <span>Đang tải thông tin thuốc...</span>
     </div>
 
+    <%-- ⚠️ PANEL TRÙNG THUỐC — hiện khi gõ tên/mã vạch trùng với thuốc đã có --%>
+    <div id="dupPanel" style="display:none;margin:0 0 14px;background:#FFFBEB;border:1.5px solid #F59E0B;border-radius:14px;padding:16px 18px">
+      <div style="display:flex;align-items:center;gap:9px;font-size:14px;font-weight:800;color:#92400E;margin-bottom:10px">
+        ⚠️ Thuốc này ĐÃ TỒN TẠI trong hệ thống!
+      </div>
+      <div id="dupInfo" style="background:#fff;border:1px solid #FDE68A;border-radius:11px;padding:12px 14px;font-size:13px;line-height:1.9"></div>
+      <div id="dupAsk" style="margin-top:12px">
+        <div style="font-size:12.5px;font-weight:700;color:#92400E;margin-bottom:8px">👉 Không cần tạo lại. Bạn có muốn nhập lô cho thuốc này không?</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <a id="dupGoPO" href="#" style="background:linear-gradient(135deg,#1558A8,#0d3d63);color:#fff;text-decoration:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:800">📑 Chuyển sang Nhập Lô (tạo phiếu) →</a>
+          <a id="dupGoDetail" href="#" style="background:#fff;color:#1558A8;border:1.5px solid #BFDBFE;text-decoration:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700">👁 Xem thuốc</a>
+        </div>
+      </div>
+    </div>
+
     <form id="dwForm" method="post" action="${pageContext.request.contextPath}/medicines" enctype="multipart/form-data">
       <input type="hidden" name="action" value="save-medicine">
       <input type="hidden" name="medicineId" id="dwMedId">
@@ -859,36 +875,28 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
               </c:forEach>
             </select>
           </div>
-        </div>
-      </div>
 
-      <%-- Section 3: Tồn kho ban đầu (Create only) --%>
-      <div class="dw-section" id="initStockSection">
-        <div class="dw-section-title">📦 Tồn kho ban đầu</div>
-        <div class="dw-grid">
-          <div class="init-stock-dw">
-            <div class="init-stock-toggle-dw">
-              <input type="checkbox" id="dwHasInitStock" onchange="toggleInitStockDw(this.checked)">
-              <label for="dwHasInitStock">Thuốc đã có hàng sẵn trong kho — khai báo số lượng ban đầu để hệ thống tự tạo lô</label>
+          <%-- Tồn kho ban đầu — nhập thẳng tại đây (chỉ hiện khi TẠO MỚI) --%>
+          <div class="dw-field span-2 dw-initstock" style="grid-column:1/-1;border-top:1px dashed var(--border);padding-top:12px;margin-top:2px">
+            <div style="font-size:13px;font-weight:700;color:#065F46">📦 Tồn kho ban đầu
+              <span style="font-weight:500;color:#059669;font-size:11.5px">— nếu thuốc đã có sẵn hàng, nhập số lượng để tự tạo lô đầu (để 0 nếu chưa nhập)</span>
             </div>
-            <div class="init-stock-fields-dw" id="initStockFieldsDw" style="display:none">
-              <div class="dw-field">
-                <label class="dw-label" style="color:#065F46">Số lượng <span class="req">*</span></label>
-                <input type="number" name="initialQuantity" id="dwInitQty" class="dw-input"
-                       placeholder="0" min="1">
-              </div>
-              <div class="dw-field">
-                <label class="dw-label" style="color:#065F46">Ngày HH <span class="req">*</span></label>
-                <input type="date" name="initialExpiryDate" id="dwInitExpiry" class="dw-input">
-              </div>
-              <div class="dw-field">
-                <label class="dw-label" style="color:#065F46">Giá nhập (₫)</label>
-                <div class="price-wrap">
-                  <input type="number" name="initialImportPrice" class="dw-input"
-                         placeholder="0" min="0" step="500">
-                  <span class="price-sfx">₫</span>
-                </div>
-              </div>
+          </div>
+          <div class="dw-field dw-initstock">
+            <label class="dw-label">Số lượng ban đầu</label>
+            <input type="number" name="initialQuantity" id="dwInitQty" class="dw-input" value="0"
+                   placeholder="VD: 100" min="0" oninput="onDwInitQty()">
+          </div>
+          <div class="dw-field dw-initstock">
+            <label class="dw-label">Ngày hết hạn lô <span id="dwInitExpReq" class="req" style="display:none">*</span></label>
+            <input type="date" name="initialExpiryDate" id="dwInitExpiry" class="dw-input">
+          </div>
+          <div class="dw-field dw-initstock">
+            <label class="dw-label">Giá nhập kho (₫)</label>
+            <div class="price-wrap">
+              <input type="number" name="initialImportPrice" class="dw-input"
+                     placeholder="0" min="0" step="500">
+              <span class="price-sfx">₫</span>
             </div>
           </div>
         </div>
@@ -1009,40 +1017,15 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
   </div>
 </div>
 
-<%-- ──── PURCHASE ORDER MODAL ──── --%>
-<div id="poModal" style="display:none;position:fixed;inset:0;background:rgba(11,22,40,.55);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(3px)">
-  <div style="background:#fff;border-radius:18px;width:480px;max-width:94vw;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)">
-    <div style="padding:18px 24px;background:linear-gradient(90deg,#0F2645,#1558A8);color:#fff;display:flex;align-items:center;justify-content:space-between">
-      <div>
-        <div style="font-size:15.5px;font-weight:800">📦 Tạo phiếu nhập kho</div>
-        <div style="font-size:12px;opacity:.75;margin-top:2px">Chọn nhà cung cấp để tạo đơn đặt hàng mới</div>
-      </div>
-      <button onclick="closePoModal()" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:30px;height:30px;border-radius:9px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">✕</button>
+<%-- ──── PURCHASE ORDER MODAL — nhúng form phiếu nhập ĐẦY ĐỦ qua iframe (đè lên trang) ──── --%>
+<div id="poModal" style="display:none;position:fixed;inset:0;background:rgba(11,22,40,.6);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:22px">
+  <div style="background:#F1F5FB;border-radius:18px;width:1080px;max-width:97vw;height:93vh;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.4);display:flex;flex-direction:column">
+    <div style="padding:12px 20px;background:linear-gradient(90deg,#0F2645,#1558A8);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div style="font-size:15px;font-weight:800">📦 Tạo phiếu nhập kho</div>
+      <button onclick="closePoModal()" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:30px;height:30px;border-radius:9px;cursor:pointer;font-size:15px">✕</button>
     </div>
-    <div class="po-modal-body">
-      <div class="po-field">
-        <label class="po-label">Nhà cung cấp <span style="color:#DC2626">*</span></label>
-        <select id="poSupplier" class="po-select">
-          <option value="">-- Chọn nhà cung cấp --</option>
-          <c:forEach var="sup" items="${suppliers}">
-            <option value="${sup.supplierId}">${fn:escapeXml(sup.supplierName)}</option>
-          </c:forEach>
-        </select>
-        <div style="font-size:11.5px;color:var(--muted);margin-top:5px">Không thấy nhà cung cấp? <a href="${pageContext.request.contextPath}/suppliers" target="_blank" style="color:var(--blue)">Vào mục Nhà cung cấp để thêm trước.</a></div>
-      </div>
-      <div class="po-field">
-        <label class="po-label">Ghi chú</label>
-        <textarea id="poNotes" class="po-textarea" placeholder="VD: Đặt hàng định kỳ tháng 7, giao trong 3 ngày..."></textarea>
-      </div>
-      <div id="poErr" style="font-size:12.5px;color:#DC2626;background:#FEF2F2;border:1px solid #FCA5A5;border-radius:9px;padding:8px 12px;display:none;margin-bottom:12px"></div>
-      <div class="po-actions">
-        <button id="poBtnSave" class="po-btn-save" onclick="savePoAjax()">📦 Tạo đơn đặt hàng</button>
-        <button class="po-btn-cancel" onclick="closePoModal()">Hủy</button>
-      </div>
-      <div style="margin-top:14px;padding:12px;background:#F0F7FF;border-radius:10px;font-size:12px;color:var(--blue);line-height:1.6">
-        💡 Sau khi tạo đơn, vào <strong>Chi tiết đơn</strong> để gắn lô hàng vào đơn này, hoặc vào <strong>Kho thuốc → Lô hàng</strong> để thêm lô mới và chọn đơn tương ứng.
-      </div>
-    </div>
+    <iframe id="poFrame" src="about:blank" title="Tạo phiếu nhập kho"
+            style="flex:1;width:100%;border:none;background:#F1F5FB"></iframe>
   </div>
 </div>
 
@@ -1102,11 +1085,17 @@ async function toggleExpand(tr, medicineId) {
     return;
   }
 
+  // Chặn double-click: chưa chèn xong row (fetch async) mà click tiếp sẽ tạo trùng.
+  if (tr.dataset.loading === '1') return;
+  tr.dataset.loading = '1';
   tr.classList.add('loading-row');
 
   try {
     const res  = await fetch(CTX + '/medicines?action=api-batches&medicineId=' + medicineId);
     const list = await res.json();
+
+    // Phòng thủ 2 lớp: nếu vì lý do nào đó row đã tồn tại thì không chèn nữa.
+    if (document.getElementById('br-' + medicineId)) return;
 
     const bRow = document.createElement('tr');
     bRow.id        = 'br-' + medicineId;
@@ -1154,6 +1143,7 @@ async function toggleExpand(tr, medicineId) {
     showToast('err', '❌ Không tải được lô hàng');
   } finally {
     tr.classList.remove('loading-row');
+    tr.dataset.loading = '0';
   }
 }
 
@@ -1163,24 +1153,31 @@ let _drawerMode = 'add'; // 'add' | 'edit'
 function openAddPanel() {
   _drawerMode = 'add';
   resetDwForm();
+  // reset panel trùng thuốc + mở khóa nút tạo
+  _dupFound = false;
+  document.getElementById('dupPanel').style.display = 'none';
+  document.getElementById('dwSaveBtn').disabled = false;
   document.getElementById('dwIcon').textContent = '➕';
   document.getElementById('dwTitle').textContent = 'Thêm thuốc mới';
   document.getElementById('dwSub').textContent = 'Tạo hồ sơ thuốc — tồn kho bắt đầu từ 0';
   document.getElementById('dwSaveBtn').textContent = '➕ Tạo hồ sơ thuốc';
   document.getElementById('dwFootHint').textContent = '';
-  document.getElementById('initStockSection').style.display = '';
+  document.querySelectorAll('.dw-initstock').forEach(el => el.style.display = '');
   openDrawer();
   setTimeout(() => document.getElementById('dwName').focus(), 260);
 }
 
 async function openEditPanel(medicineId) {
   _drawerMode = 'edit';
+  _dupFound = false;
+  document.getElementById('dupPanel').style.display = 'none';
+  document.getElementById('dwSaveBtn').disabled = false;
   document.getElementById('dwIcon').textContent = '✏️';
   document.getElementById('dwTitle').textContent = 'Đang tải...';
   document.getElementById('dwSub').textContent = 'Chỉnh sửa thông tin hồ sơ thuốc';
   document.getElementById('dwSaveBtn').textContent = '💾 Lưu thay đổi';
   document.getElementById('dwFootHint').textContent = 'ID: ' + medicineId;
-  document.getElementById('initStockSection').style.display = 'none';
+  document.querySelectorAll('.dw-initstock').forEach(el => el.style.display = 'none');
   openDrawer();
 
   const loading = document.getElementById('dwLoading');
@@ -1244,8 +1241,10 @@ function resetDwForm() {
   document.getElementById('dwForm').reset();
   document.getElementById('dwMedId').value = '';
   document.getElementById('dwExistingImg').value = '';
-  document.getElementById('initStockFieldsDw').style.display = 'none';
-  document.getElementById('dwHasInitStock').checked = false;
+  const dwInitExpReq = document.getElementById('dwInitExpReq');
+  if (dwInitExpReq) dwInitExpReq.style.display = 'none';
+  const dwInitExpiry = document.getElementById('dwInitExpiry');
+  if (dwInitExpiry) dwInitExpiry.required = false;
   // Reset image preview
   const preview = document.getElementById('dwImgPreview');
   if (preview && preview.tagName === 'IMG')
@@ -1289,15 +1288,74 @@ document.getElementById('dwForm').addEventListener('submit', function() {
   btn.textContent = '⏳ Đang lưu...';
 });
 
-// ── INITIAL STOCK TOGGLE ──────────────────────────────────────────────────────
-function toggleInitStockDw(checked) {
-  const fields = document.getElementById('initStockFieldsDw');
-  const qtyIn  = document.getElementById('dwInitQty');
-  const expIn  = document.getElementById('dwInitExpiry');
-  fields.style.display = checked ? 'grid' : 'none';
-  if (qtyIn) qtyIn.required = checked;
-  if (expIn) expIn.required = checked;
-  if (checked && qtyIn) qtyIn.focus();
+// ── CHECK TRÙNG THUỐC realtime (AJAX + debounce 500ms) ────────────────────────
+// Gõ xong Tên thuốc / Mã vạch / Số ĐK → bắn API check ngầm. Nếu trùng:
+// hiện panel thông tin thuốc đã có + CHẶN nút "Tạo hồ sơ thuốc" + nút nhảy sang Nhập Lô.
+let _dupTimer = null, _dupFound = false;
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function dupCheck() {
+  if (_drawerMode !== 'add') return; // sửa thuốc thì server tự loại trừ, không check ở đây
+  clearTimeout(_dupTimer);
+  _dupTimer = setTimeout(async () => {
+    const name    = document.getElementById('dwName').value.trim();
+    const barcode = document.getElementById('dwBarcode').value.trim();
+    const regNo   = document.getElementById('dwRegNo').value.trim();
+    if (!name && !barcode && !regNo) { dupHide(); return; }
+    try {
+      const res = await fetch(CTX + '/medicines?action=check-duplicate'
+          + '&name=' + encodeURIComponent(name)
+          + '&barcode=' + encodeURIComponent(barcode)
+          + '&regNo=' + encodeURIComponent(regNo));
+      const d = await res.json();
+      if (d.found) dupShow(d); else dupHide();
+    } catch (e) { dupHide(); }
+  }, 500);
+}
+function dupShow(d) {
+  _dupFound = true;
+  const money = n => new Intl.NumberFormat('vi-VN').format(Math.round(n||0)) + 'đ';
+  document.getElementById('dupInfo').innerHTML =
+      '<b style="font-size:14.5px">' + escHtml(d.name) + '</b> '
+    + '<span style="font-family:monospace;color:#7A90B0">(' + escHtml(d.code) + ')</span><br>'
+    + (d.generic ? 'Hoạt chất: <b>' + escHtml(d.generic) + '</b> · ' : '')
+    + (d.category ? 'Nhóm: <b>' + escHtml(d.category) + '</b> · ' : '')
+    + 'ĐVT: <b>' + escHtml(d.unit) + '</b><br>'
+    + (d.barcode ? 'Mã vạch: <span style="font-family:monospace">' + escHtml(d.barcode) + '</span> · ' : '')
+    + 'Giá bán: <b style="color:#1558A8">' + money(d.price) + '</b> · '
+    + 'Tồn kho: <b style="color:' + (d.stock > 0 ? '#059669' : '#DC2626') + '">' + d.stock + ' ' + escHtml(d.unit) + '</b>'
+    + (d.active ? '' : ' · <span style="color:#DC2626;font-weight:700">⛔ đang ẨN bán</span>');
+  // Nếu thuốc ĐÃ có hàng → chỉ hiện thông tin; hết/chưa có hàng → mời nhập lô
+  document.getElementById('dupAsk').style.display = 'block';
+  document.getElementById('dupGoPO').href     = CTX + '/purchase-orders?action=new&medicineId=' + d.id;
+  document.getElementById('dupGoDetail').href = CTX + '/medicines?action=detail&id=' + d.id;
+  document.getElementById('dupPanel').style.display = 'block';
+  const btn = document.getElementById('dwSaveBtn');
+  btn.disabled = true;
+  btn.textContent = '⛔ Thuốc đã tồn tại — không thể tạo trùng';
+  document.getElementById('dupPanel').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+function dupHide() {
+  if (!_dupFound) { document.getElementById('dupPanel').style.display = 'none'; return; }
+  _dupFound = false;
+  document.getElementById('dupPanel').style.display = 'none';
+  const btn = document.getElementById('dwSaveBtn');
+  btn.disabled = false;
+  btn.textContent = '➕ Tạo hồ sơ thuốc';
+}
+['dwName','dwBarcode','dwRegNo'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', dupCheck);
+});
+
+// ── TỒN KHO BAN ĐẦU — HSD bắt buộc khi có số lượng ────────────────────────────
+function onDwInitQty() {
+  const qty = parseInt(document.getElementById('dwInitQty').value) || 0;
+  const expIn = document.getElementById('dwInitExpiry');
+  const req   = document.getElementById('dwInitExpReq');
+  if (expIn) expIn.required = qty > 0;
+  if (req)   req.style.display = qty > 0 ? 'inline' : 'none';
 }
 
 // ── STAT CARD SWITCHING ───────────────────────────────────────────────────────
@@ -1517,8 +1575,16 @@ function deleteMfr(id, name) {
 }
 
 // ── PURCHASE ORDER MODAL ───────────────────────────────────────────────────────
-function openPoModal() { document.getElementById('poModal').style.display='flex'; }
-function closePoModal() { document.getElementById('poModal').style.display='none'; }
+function openPoModal() {
+  const f = document.getElementById('poFrame');
+  // nạp form phiếu nhập ĐẦY ĐỦ ở chế độ nhúng (ẩn sidebar), đè lên trang
+  if (f.src === 'about:blank' || !f.src) f.src = CTX + '/purchase-orders?action=new&embed=1';
+  document.getElementById('poModal').style.display='flex';
+}
+function closePoModal() {
+  document.getElementById('poModal').style.display='none';
+  document.getElementById('poFrame').src='about:blank'; // reset để lần sau mở mới
+}
 document.getElementById('poModal').addEventListener('click',function(e){if(e.target===this)closePoModal();});
 
 function savePoAjax() {

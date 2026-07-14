@@ -85,61 +85,48 @@ public class MedicineService implements IMedicineService {
         if (!b.getExpiryDate().isAfter(java.time.LocalDate.now().plusDays(90)))
             return ServiceResult.fail("GPP: Hạn sử dụng phải còn ≥ 90 ngày khi nhập kho mới!");
 
-        // ── Nhập lô mới: bắt buộc gắn vào một Đơn đặt hàng ──────────────
-        // (FK_Batch_PO NOT NULL trong DB)
-        int poId = -1;
-        int supplierId = -1;
+        // ── Nhập lô mới: KHÔNG cộng kho ngay. Ghi vào PHIẾU NHẬP dạng PENDING (chờ hàng về).
+        // Kho (Batches) chỉ tăng khi admin bấm "Xác nhận Hàng Đã Tới" ở chi tiết đơn.
+        java.math.BigDecimal lineTotal = (b.getImportPrice() != null ? b.getImportPrice() : java.math.BigDecimal.ZERO)
+                .multiply(java.math.BigDecimal.valueOf(b.getInitialQuantity()));
 
         if ("existing".equals(poMode)) {
             if (ValidationUtil.isBlank(poIdStr))
                 return ServiceResult.fail("Vui lòng chọn đơn đặt hàng đã có!");
-
             PurchaseOrders po;
-            try {
-                po = poDAO.findById(Integer.parseInt(poIdStr));
-            } catch (NumberFormatException e) {
-                return ServiceResult.fail("ID đơn đặt hàng không hợp lệ!");
-            }
-            if (po == null)
-                return ServiceResult.fail("Đơn đặt hàng không tồn tại, vui lòng chọn lại!");
+            try { po = poDAO.findById(Integer.parseInt(poIdStr)); }
+            catch (NumberFormatException e) { return ServiceResult.fail("ID đơn đặt hàng không hợp lệ!"); }
+            if (po == null) return ServiceResult.fail("Đơn đặt hàng không tồn tại, vui lòng chọn lại!");
 
-            poId = po.getPoId();
-            supplierId = po.getSupplierId();
-
-        } else {
-            // mode = "new" — tạo đơn đặt hàng mới ngay
-            if (ValidationUtil.isBlank(newSupplierId))
-                return ServiceResult.fail("Vui lòng chọn nhà cung cấp cho đơn đặt hàng mới!");
-
-            int supId;
-            try {
-                supId = Integer.parseInt(newSupplierId);
-            } catch (NumberFormatException e) {
-                return ServiceResult.fail("ID nhà cung cấp không hợp lệ!");
-            }
-
-            PurchaseOrders newPo = new PurchaseOrders();
-            newPo.setSupplierId(supId);
-            newPo.setAccountId(adminAccountId);
-            newPo.setNotes(!ValidationUtil.isBlank(newPoNotes) ? newPoNotes.trim() : null);
-
-            poId = poDAO.insert(newPo);
-            if (poId <= 0)
-                return ServiceResult.fail("Không tạo được đơn đặt hàng mới, vui lòng thử lại!");
-
-            supplierId = supId;
+            b.setPoId(po.getPoId());
+            b.setSupplierId(po.getSupplierId());
+            if (!poDAO.addDetail(po.getPoId(), b))
+                return ServiceResult.fail("Thêm dòng hàng vào đơn thất bại!");
+            // Nếu đơn đã COMPLETED (hàng về từ trước) → cộng kho luôn cho dòng mới này
+            if ("COMPLETED".equals(po.getStatus()) && !batchesDAO.insert(b))
+                return ServiceResult.fail("Nhập lô thất bại — kiểm tra log Tomcat!");
+            poDAO.recalcTotalValue(po.getPoId());
+            return ServiceResult.ok(b);
         }
 
+        // mode = "new" — tạo PHIẾU NHẬP MỚI dạng PENDING (chưa cộng kho)
+        if (ValidationUtil.isBlank(newSupplierId))
+            return ServiceResult.fail("Vui lòng chọn nhà cung cấp cho đơn đặt hàng mới!");
+        int supId;
+        try { supId = Integer.parseInt(newSupplierId); }
+        catch (NumberFormatException e) { return ServiceResult.fail("ID nhà cung cấp không hợp lệ!"); }
+
+        PurchaseOrders newPo = new PurchaseOrders();
+        newPo.setSupplierId(supId);
+        newPo.setAccountId(adminAccountId);
+        newPo.setNotes(!ValidationUtil.isBlank(newPoNotes) ? newPoNotes.trim() : null);
+        newPo.setStatus("PENDING");
+        newPo.setTotalValue(lineTotal);
+
+        int poId = poDAO.createWithBatches(newPo, java.util.List.of(b)); // PENDING → chỉ ghi chi tiết, KHÔNG tạo Batch
+        if (poId <= 0)
+            return ServiceResult.fail("Không tạo được phiếu nhập, vui lòng thử lại!");
         b.setPoId(poId);
-        b.setSupplierId(supplierId);
-
-        boolean ok = batchesDAO.insert(b);
-        if (!ok)
-            return ServiceResult.fail("Nhập lô thất bại — kiểm tra log Tomcat!");
-
-        // Cập nhật lại tổng giá trị đơn
-        poDAO.recalcTotalValue(poId);
-
         return ServiceResult.ok(b);
     }
 

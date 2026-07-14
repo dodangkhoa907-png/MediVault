@@ -53,13 +53,16 @@ public class AuditLogDAO implements IAuditLogDAO {
     @Override
     public List<AuditLog> findPaginated(int page, int pageSize, String keyword) {
         List<AuditLog> list = new ArrayList<>();
-        int offset = (page - 1) * pageSize;
+        // offset & pageSize là INT nội bộ (không phải input người dùng) → nhúng thẳng an toàn.
+        // Tránh lỗi driver mssql-jdbc trả 0 dòng khi OFFSET/FETCH bị tham số hóa (? ROWS).
+        int offset = Math.max(0, (page - 1) * pageSize);
+        int fetch  = Math.max(1, pageSize);
         String sql = "SELECT l.*, a.Username FROM AuditLog l "
                 + "LEFT JOIN Accounts a ON l.AccountID = a.AccountID "
                 + "WHERE (? IS NULL OR l.Action LIKE ? OR l.EntityType LIKE ? "
                 + "  OR l.Description LIKE ? OR a.Username LIKE ?) "
                 + "ORDER BY l.CreatedAt DESC "
-                + "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+                + "OFFSET " + offset + " ROWS FETCH NEXT " + fetch + " ROWS ONLY";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             String like = (keyword == null || keyword.trim().isEmpty())
@@ -67,7 +70,6 @@ public class AuditLogDAO implements IAuditLogDAO {
             ps.setString(1, like); ps.setString(2, like);
             ps.setString(3, like); ps.setString(4, like);
             ps.setString(5, like);
-            ps.setInt(6, offset); ps.setInt(7, pageSize);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) list.add(mapRow(rs));
             }

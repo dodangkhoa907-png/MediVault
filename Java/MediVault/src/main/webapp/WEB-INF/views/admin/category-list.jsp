@@ -110,6 +110,8 @@ td{padding:14px 16px;font-size:13.5px;color:var(--ink);vertical-align:middle}
       <a href="${pageContext.request.contextPath}/medicines" class="section-tab">💊 Thuốc &amp; Lô hàng</a>
       <a href="${pageContext.request.contextPath}/purchase-orders" class="section-tab">📑 Đơn đặt hàng</a>
       <a href="${pageContext.request.contextPath}/categories" class="section-tab active">🏷️ Danh mục</a>
+      <a href="${pageContext.request.contextPath}/suppliers" class="section-tab">🏭 Nhà cung cấp</a>
+      <a href="${pageContext.request.contextPath}/shelves" class="section-tab">📍 Vị trí kệ</a>
     </div>
 
     <% if ("created".equals(msg)) { %><div class="toast-bar toast-ok">✅ Đã thêm danh mục mới thành công!</div><% } %>

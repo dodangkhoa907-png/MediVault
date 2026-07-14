@@ -36,6 +36,40 @@
     if (currentPage  == null) currentPage  = 1;
     if (totalPages   == null) totalPages   = 1;
     if (searchKeyword == null) searchKeyword = "";
+
+    @SuppressWarnings("unchecked")
+    java.util.Map<Integer,Integer> auditRoleMap =
+        (java.util.Map<Integer,Integer>) request.getAttribute("auditRoleMap");
+    if (auditRoleMap == null) auditRoleMap = new java.util.HashMap<>();
+    @SuppressWarnings("unchecked")
+    java.util.List<com.medicare.entity.Account> auditAccounts =
+        (java.util.List<com.medicare.entity.Account>) request.getAttribute("auditAccounts");
+    if (auditAccounts == null) auditAccounts = new java.util.ArrayList<>();
+%>
+<%!
+    // Phân loại 1 dòng nhật ký thành nhóm hành động (dựa vào action + module)
+    private String auditCat(String action, String entity) {
+        String a = (action == null ? "" : action).toLowerCase();
+        String e = (entity == null ? "" : entity).toLowerCase();
+        if (e.contains("invoice") || a.contains("bán") || a.contains("hóa đơn") || a.contains("pos")) return "pos";
+        if (e.contains("shift")   || a.contains("ca ")  || a.contains("lịch")   || a.contains("nghỉ")) return "shift";
+        if (e.contains("attendance") || a.contains("điểm danh") || a.contains("check") || a.contains("chấm công")) return "attendance";
+        if (e.contains("batch") || e.contains("purchaseorder") || e.contains("medicine") || a.contains("lô") || a.contains("nhập") || a.contains("thuốc")) return "inventory";
+        if (e.contains("account") || e.contains("customer") || a.contains("tài khoản") || a.contains("khách") || a.contains("mật khẩu")) return "account";
+        if (e.contains("auth") || a.contains("đăng nhập") || a.contains("đăng xuất")) return "auth";
+        return "other";
+    }
+    private String catLabel(String c) {
+        switch (c) {
+            case "pos": return "🛒 Bán hàng";
+            case "shift": return "📅 Ca làm việc";
+            case "attendance": return "⏱️ Điểm danh";
+            case "inventory": return "📦 Kho / Nhập lô";
+            case "account": return "👤 Tài khoản";
+            case "auth": return "🔑 Đăng nhập";
+            default: return "⚙️ Khác";
+        }
+    }
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -225,7 +259,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                     </div>
                 </div>
             </div>
-            <a href="<%= request.getContextPath() %>/accounts?action=view&id=<%= acc.getAccountId() %>" class="topbar-user">
+            <a href="<%= request.getContextPath() %>/admin-profile" class="topbar-user">
                 <div class="topbar-user-avatar"><%= initials %></div>
                 <span class="topbar-user-name"><%= fullName %></span>
             </a>
@@ -262,6 +296,43 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                 <% } %>
             </form>
 
+            <!-- ── BỘ LỌC PHÂN CẤP: Role → Nhân viên → Loại hành động ── -->
+            <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:16px;display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <span style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Vai trò</span>
+                <div id="afRoleTabs" style="display:flex;gap:6px;flex-wrap:wrap">
+                  <button type="button" class="af-tab active" data-role="" onclick="afRole(this,'')">Tất cả</button>
+                  <button type="button" class="af-tab" data-role="1" onclick="afRole(this,'1')">🛡️ Admin</button>
+                  <button type="button" class="af-tab" data-role="2" onclick="afRole(this,'2')">💊 Dược sĩ</button>
+                  <button type="button" class="af-tab" data-role="3" onclick="afRole(this,'3')">📦 Thủ kho</button>
+                </div>
+                <span style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-left:8px">Nhân viên</span>
+                <select id="afStaff" onchange="afApply()" style="height:34px;border:1.5px solid var(--border);border-radius:9px;padding:0 10px;font-family:inherit;font-size:13px;min-width:180px">
+                  <option value="">— Tất cả người —</option>
+                  <% for (com.medicare.entity.Account a : auditAccounts) {
+                       String nm = a.getFullName() != null ? a.getFullName() : a.getUsername(); %>
+                  <option value="<%= a.getAccountId() %>" data-role="<%= a.getRoleId() %>"><%= nm %> (@<%= a.getUsername() %>)</option>
+                  <% } %>
+                </select>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                <span style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-right:4px">Loại</span>
+                <% String[][] cats = {{"","Tất cả loại"},{"pos","🛒 Bán hàng"},{"shift","📅 Ca làm việc"},{"attendance","⏱️ Điểm danh"},{"inventory","📦 Kho / Nhập lô"},{"account","👤 Tài khoản"},{"auth","🔑 Đăng nhập"},{"other","⚙️ Khác"}};
+                   for (int i=0;i<cats.length;i++) { %>
+                <button type="button" class="af-cat <%= i==0?"active":"" %>" data-cat="<%= cats[i][0] %>" onclick="afCat(this,'<%= cats[i][0] %>')"><%= cats[i][1] %></button>
+                <% } %>
+              </div>
+              <div style="font-size:12px;color:var(--muted)">Đang hiện <b id="afCount">0</b> nhật ký (trong <%= auditLogs.size() %> gần nhất).</div>
+            </div>
+            <style>
+              .af-tab,.af-cat{border:1.5px solid var(--border);background:#fff;border-radius:20px;padding:6px 13px;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;font-family:inherit;transition:.14s}
+              .af-tab:hover,.af-cat:hover{border-color:var(--cyan);color:var(--ink)}
+              .af-tab.active{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;border-color:transparent}
+              .af-cat.active{background:var(--navy);color:#fff;border-color:transparent}
+              .rolechip{display:inline-block;font-size:10px;font-weight:800;padding:1px 7px;border-radius:20px;margin-left:6px}
+              .rc1{background:#FEE2E2;color:#991B1B}.rc2{background:#EFF6FF;color:#1558A8}.rc3{background:#FFFBEB;color:#92400E}.rc0{background:#F1F5F9;color:#64748B}
+            </style>
+
             <!-- Table -->
             <div class="table-wrap">
                 <table class="data-table">
@@ -295,14 +366,21 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                                else if (act.contains("Xóa") || act.contains("Khóa"))          actionBadge = "badge-red";
                                else if (act.contains("Đăng nhập") || act.contains("Đăng xuất")) actionBadge = "badge-blue";
                                else if (act.contains("Cập nhật") || act.contains("Sửa") || act.contains("Đặt lại")) actionBadge = "badge-gold";
+                               String _cat = auditCat(act, log.getEntityType());
+                               int _role = log.getAccountId() != null ? auditRoleMap.getOrDefault(log.getAccountId(), 0) : 0;
+                               String _rlabel = _role==1?"Admin":_role==2?"Dược sĩ":_role==3?"Thủ kho":"Hệ thống";
                     %>
-                        <tr>
+                        <tr data-role="<%= _role %>" data-acct="<%= log.getAccountId() != null ? log.getAccountId() : 0 %>" data-cat="<%= _cat %>">
                             <td class="log-id">#<%= log.getLogId() %></td>
                             <td>
                                 <% java.lang.String uname = log.getUsername() != null ? log.getUsername() : "Hệ thống"; %>
                                 <span style="font-weight:600;color:var(--ink)">@<%= uname %></span>
+                                <span class="rolechip rc<%= _role %>"><%= _rlabel %></span>
                             </td>
-                            <td><span class="badge <%= actionBadge %>"><%= act %></span></td>
+                            <td>
+                                <span class="badge <%= actionBadge %>"><%= act %></span>
+                                <div style="font-size:10.5px;color:var(--muted);font-weight:700;margin-top:3px"><%= catLabel(_cat) %></div>
+                            </td>
                             <td><span style="font-size:12.5px;color:var(--navy);font-weight:500"><%= log.getEntityType() != null ? log.getEntityType() : "—" %></span></td>
                             <td>
                                 <div class="log-desc" title="<%= log.getDescription() != null ? log.getDescription() : "" %>">
@@ -367,6 +445,51 @@ document.addEventListener('click', e => {
 document.getElementById('searchInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('filterForm').submit();
 });
+
+// ── BỘ LỌC PHÂN CẤP nhật ký: Role → Nhân viên → Loại ──
+const afState = { role:'', cat:'' };
+function afRole(btn, role) {
+    document.querySelectorAll('#afRoleTabs .af-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    afState.role = role;
+    // Lọc dropdown nhân viên theo role đang chọn
+    const sel = document.getElementById('afStaff');
+    sel.value = '';
+    sel.querySelectorAll('option').forEach(o => {
+        if (!o.value) return; // giữ "Tất cả người"
+        o.hidden = role !== '' && o.dataset.role !== role;
+    });
+    afApply();
+}
+function afCat(btn, cat) {
+    document.querySelectorAll('.af-cat').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    afState.cat = cat;
+    afApply();
+}
+function afApply() {
+    const acct = document.getElementById('afStaff').value || '';
+    let shown = 0;
+    document.querySelectorAll('.data-table tbody tr[data-role]').forEach(row => {
+        const okRole = !afState.role || row.dataset.role === afState.role;
+        const okAcct = !acct        || row.dataset.acct === acct;
+        const okCat  = !afState.cat || row.dataset.cat  === afState.cat;
+        const show = okRole && okAcct && okCat;
+        row.style.display = show ? '' : 'none';
+        if (show) shown++;
+    });
+    const cnt = document.getElementById('afCount');
+    if (cnt) cnt.textContent = shown;
+    // dòng "không có" khi rỗng
+    const tbody = document.querySelector('.data-table tbody');
+    let none = document.getElementById('afNoRow');
+    if (shown === 0 && tbody && !none) {
+        none = document.createElement('tr'); none.id = 'afNoRow';
+        none.innerHTML = '<td colspan="7"><div class="empty-state"><div class="icon">🔍</div><p>Không có nhật ký khớp bộ lọc.</p></div></td>';
+        tbody.appendChild(none);
+    } else if (shown > 0 && none) { none.remove(); }
+}
+afApply(); // đếm ban đầu
 </script>
 </body>
 </html>

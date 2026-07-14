@@ -393,7 +393,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
             <div class="info-card-icon ici-blue">🙂</div>
             <div class="info-card-title">Khuôn mặt điểm danh</div>
           </div>
-          <div style="padding:4px 2px">
+          <div style="padding:18px 20px">
             <% if (a.isFaceReenrollPending()) { %>
               <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start">
                 <div style="font-size:22px">⏳</div>
