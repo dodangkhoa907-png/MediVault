@@ -202,14 +202,14 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
       <span class="nav-icon">🏖️</span> Xin nghỉ phép
     </a>
   </nav>
-  <% if (staffAcc.getRoleId() == 2) { %>
+  <% if (staffAcc.getRoleId() == 2 || staffAcc.getRoleId() == 3) { %>
   <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
     <a href="<%= request.getContextPath() %>/pos?uid=<%= uid %>" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
     </a>
     <a href="<%= request.getContextPath() %>/pos?uid=<%= uid %>&view=invoices" class="nav-item">
-      <span class="nav-icon">🧾</span> Hóa đơn của tôi
+      <span class="nav-icon">🧾</span> Xem hóa đơn
     </a>
   </nav>
   <% } %>

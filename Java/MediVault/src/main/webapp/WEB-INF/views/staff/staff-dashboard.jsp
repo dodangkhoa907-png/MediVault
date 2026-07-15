@@ -475,17 +475,18 @@ body{display:flex;background:var(--soft);color:var(--ink)}
     </a>
   </nav>
 
-  <% if (acc.getRoleId() == 2) { %>
+  <% if (acc.getRoleId() == 2 || acc.getRoleId() == 3) { %>
   <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
     <a href="${pageContext.request.contextPath}/pos?uid=<%= _uid %>" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
     </a>
     <a href="${pageContext.request.contextPath}/pos?uid=<%= _uid %>&view=invoices" class="nav-item">
-      <span class="nav-icon">🧾</span> Hóa đơn của tôi
+      <span class="nav-icon">🧾</span> Xem hóa đơn
     </a>
   </nav>
-  <% } else { %>
+  <% } %>
+  <% if (acc.getRoleId() == 3) { %>
   <nav class="nav-block">
     <div class="nav-label">Kho hàng</div>
     <a href="${pageContext.request.contextPath}/staff-dashboard?uid=<%= _uid %>" class="nav-item" style="opacity:.5;cursor:default">

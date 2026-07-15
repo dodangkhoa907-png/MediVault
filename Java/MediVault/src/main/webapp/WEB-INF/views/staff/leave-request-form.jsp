@@ -159,14 +159,14 @@ body{display:flex}
       <span class="nav-icon">🏖️</span> Xin nghỉ phép
     </a>
   </nav>
-  <% if (staffAcc.getRoleId() == 2) { %>
+  <% if (staffAcc.getRoleId() == 2 || staffAcc.getRoleId() == 3) { %>
   <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
     <a href="${pageContext.request.contextPath}/pos?uid=<%= uid %>" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
     </a>
     <a href="${pageContext.request.contextPath}/pos?uid=<%= uid %>&view=invoices" class="nav-item">
-      <span class="nav-icon">🧾</span> Hóa đơn của tôi
+      <span class="nav-icon">🧾</span> Xem hóa đơn
     </a>
   </nav>
   <% } %>

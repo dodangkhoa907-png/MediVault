@@ -269,19 +269,12 @@ public class PosServlet extends HttpServlet {
 
         if ("complete-sale".equals(action)) {
             try {
-                HttpSession session = req.getSession(false);
-                Account acc = null;
-                if (session != null) {
-                    String uid = req.getParameter("uid");
-                    if (uid != null && !uid.isEmpty())
-                        acc = (Account) session.getAttribute("staffAccount_" + uid);
-                    if (acc == null)
-                        acc = (Account) session.getAttribute("staffAccount");
-                    // KHÔNG lấy adminAccount — admin không phải người đứng quầy POS
-                }
+                Account acc = getStaffAccount(req);
+                // KHÔNG lấy adminAccount — admin không phải người đứng quầy POS
 
                 // Đọc posStation từ request hoặc session (cần sớm để tra attendance)
                 Integer posStation = parseIntOrNull(req.getParameter("posStation"));
+                HttpSession session = req.getSession(false);
                 if (posStation == null && session != null) {
                     posStation = (Integer) session.getAttribute("posStation");
                 }

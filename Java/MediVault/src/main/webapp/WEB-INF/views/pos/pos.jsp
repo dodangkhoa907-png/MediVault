@@ -497,8 +497,8 @@ body{display:flex}
   </a>
   <a href="#" class="sb-btn" onclick="event.preventDefault(); openMyInvModal();">
     <span class="sb-icon">🧾</span>
-    <span class="sb-label">Hóa đơn của tôi</span>
-    <span class="sb-tip">Hóa đơn của tôi</span>
+    <span class="sb-label">Xem hóa đơn</span>
+    <span class="sb-tip">Xem hóa đơn</span>
   </a>
 
   <div class="sb-divider"></div>
@@ -1866,6 +1866,11 @@ function submitSale() {
         document.getElementById('successModal').classList.add('show');
         showToast('✅ Thanh toán thành công!'
           + (data.earnedPoints > 0 ? ' Khách +' + data.earnedPoints + ' điểm ⭐' : ''), 'ok');
+        
+        // Tự động xuất hiện/in hóa đơn ngay sau khi thanh toán thành công
+        setTimeout(() => {
+          printReceipt();
+        }, 300);
       } else {
         showToast('❌ ' + (data.msg || 'Lỗi xử lý!'), 'err');
         btn.disabled = false; btn.innerHTML = '🛒 THANH TOÁN';
@@ -2132,6 +2137,11 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => openStationModal(), 600);
   }
   updateStationUI();
+
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('view') === 'invoices') {
+    setTimeout(() => openMyInvModal(), 800);
+  }
 });
 
 // ── MULTI-POS STATION ─────────────────────────────────────────────────────────

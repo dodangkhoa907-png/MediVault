@@ -194,14 +194,14 @@ body{display:flex;background:var(--soft);color:var(--ink)}
       <span class="nav-icon">🏖️</span> Xin nghỉ phép
     </a>
   </nav>
-  <% if (acc.getRoleId() == 2) { %>
+  <% if (acc.getRoleId() == 2 || acc.getRoleId() == 3) { %>
   <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
     <a href="<%= request.getContextPath() %>/pos?uid=<%= _staffUid %>" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
     </a>
     <a href="<%= request.getContextPath() %>/pos?uid=<%= _staffUid %>&view=invoices" class="nav-item">
-      <span class="nav-icon">🧾</span> Hóa đơn của tôi
+      <span class="nav-icon">🧾</span> Xem hóa đơn
     </a>
   </nav>
   <% } %>
