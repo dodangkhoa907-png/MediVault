@@ -186,7 +186,7 @@ public class PosServlet extends HttpServlet {
         Integer posStationObj = sess != null ? (Integer) sess.getAttribute("posStation") : null;
         int posStation = posStationObj != null ? posStationObj : 0;
         String posStateS  = sess != null ? (String)  sess.getAttribute("posState")     : null;
-        Account staffAccS = sess != null ? (Account) sess.getAttribute("staffAccount") : null;
+        Account staffAccS = getStaffAccount(req);
         boolean hasStaff  = staffAccS != null && staffAccS.getRoleId() != 1;
 
         String screenState;
@@ -712,7 +712,7 @@ public class PosServlet extends HttpServlet {
 
     private void handleOpenShift(HttpServletRequest req, PrintWriter out) {
         HttpSession session = req.getSession(false);
-        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
+        Account staff = getStaffAccount(req);
         if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
         BigDecimal openingCash = BigDecimal.ZERO;
         String cashStr = req.getParameter("openingCash");
@@ -730,7 +730,7 @@ public class PosServlet extends HttpServlet {
 
     private void handleEndShift(HttpServletRequest req, PrintWriter out) {
         HttpSession session = req.getSession(false);
-        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
+        Account staff = getStaffAccount(req);
         if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
 
         // Accept actual cash counted by staff
@@ -792,7 +792,7 @@ public class PosServlet extends HttpServlet {
      */
     private void handleMyInvoices(HttpServletRequest req, PrintWriter out) {
         HttpSession session = req.getSession(false);
-        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
+        Account staff = getStaffAccount(req);
         if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
 
         Integer posStation = (Integer) session.getAttribute("posStation");
@@ -836,7 +836,7 @@ public class PosServlet extends HttpServlet {
 
     private void handleShiftSummary(HttpServletRequest req, PrintWriter out) {
         HttpSession session = req.getSession(false);
-        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
+        Account staff = getStaffAccount(req);
         if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
 
         Integer posStation = session != null ? (Integer)    session.getAttribute("posStation")    : null;
@@ -897,5 +897,19 @@ public class PosServlet extends HttpServlet {
     private String esc(String s) {
         if (s == null) return "";
         return s.replace("\\","\\\\").replace("\"","\\\"").replace("\n"," ").replace("\r","");
+    }
+
+    private Account getStaffAccount(HttpServletRequest req) {
+        HttpSession session = req.getSession(false);
+        if (session == null) return null;
+        String uid = req.getParameter("uid");
+        Account acc = null;
+        if (uid != null && !uid.isEmpty()) {
+            acc = (Account) session.getAttribute("staffAccount_" + uid);
+        }
+        if (acc == null) {
+            acc = (Account) session.getAttribute("staffAccount");
+        }
+        return acc;
     }
 }

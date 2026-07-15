@@ -3,7 +3,14 @@
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
-    com.medicare.entity.Account acc = (com.medicare.entity.Account) session.getAttribute("staffAccount");
+    String _uid = request.getParameter("uid");
+    com.medicare.entity.Account acc = null;
+    if (_uid != null && !_uid.isEmpty()) {
+        acc = (com.medicare.entity.Account) session.getAttribute("staffAccount_" + _uid);
+    }
+    if (acc == null) {
+        acc = (com.medicare.entity.Account) session.getAttribute("staffAccount");
+    }
     boolean isLoggedIn = (acc != null && acc.getRoleId() != 1);
     String fullName = isLoggedIn ? (acc.getFullName() != null ? acc.getFullName() : acc.getUsername()) : "Dược sĩ";
     String initials = fullName.length() >= 2
@@ -488,7 +495,7 @@ body{display:flex}
     <span class="sb-label">Bán hàng POS</span>
     <span class="sb-tip">Bán hàng POS</span>
   </a>
-  <a href="#" class="sb-btn">
+  <a href="#" class="sb-btn" onclick="event.preventDefault(); openMyInvModal();">
     <span class="sb-icon">🧾</span>
     <span class="sb-label">Hóa đơn của tôi</span>
     <span class="sb-tip">Hóa đơn của tôi</span>
@@ -1095,6 +1102,10 @@ body{display:flex}
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
 <script>
 const ctx = '<%= ctx %>';
+const getUid = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('uid') || '';
+};
 const screenState = '${screenState}';
 const sellerName = '<%= fullName %>';
 let cart = [];
@@ -2257,7 +2268,7 @@ async function loadFaceModels() {
 
 async function loadFaceDescriptors() {
   try {
-    const res  = await fetch(ctx + '/pos?action=face-descriptors');
+    const res  = await fetch(ctx + '/pos?action=face-descriptors&uid=' + encodeURIComponent(getUid()));
     const data = await res.json();
     faceDescriptors = data
       .filter(d => d.descriptor)
@@ -2565,7 +2576,7 @@ async function openMyInvModal() {
   list.innerHTML = '<div style="color:#94a3b8;font-size:13px;text-align:center;padding:26px 0">Đang tải…</div>';
   sum.textContent = 'Đang tải…';
   try {
-    const res = await fetch(ctx + '/pos?action=my-invoices');
+    const res = await fetch(ctx + '/pos?action=my-invoices&uid=' + encodeURIComponent(getUid()));
     const data = await res.json();
     if (!data.ok) {
       list.innerHTML = '<div style="color:#dc2626;font-size:13px;text-align:center;padding:26px 0">'
@@ -2782,7 +2793,7 @@ async function openEndShiftModal() {
   calcCashVariance();
 
   try {
-    var res = await fetch(ctx + '/pos?action=shift-summary');
+    var res = await fetch(ctx + '/pos?action=shift-summary&uid=' + encodeURIComponent(getUid()));
     var d = await res.json();
     if (!d.ok) {
       document.getElementById('esrHeadMeta').textContent = 'Chưa điểm danh — không có dữ liệu ca';

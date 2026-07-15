@@ -151,12 +151,17 @@ select,option{font-family:inherit;font-size:inherit}
       <span class="nav-icon">🏖️</span> Xin nghỉ phép
     </a>
   </nav>
+  <% if (staffAcc.getRoleId() == 2) { %>
   <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
     <a href="${pageContext.request.contextPath}/pos?uid=${staffUid}" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
     </a>
+    <a href="${pageContext.request.contextPath}/pos?uid=${staffUid}&view=invoices" class="nav-item">
+      <span class="nav-icon">🧾</span> Hóa đơn của tôi
+    </a>
   </nav>
+  <% } %>
   <div class="sidebar-footer">
     <a href="${pageContext.request.contextPath}/logout?from=staff&amp;uid=${staffUid}" class="logout-btn-full">
       <span style="font-size:15px;line-height:1">⏻</span>

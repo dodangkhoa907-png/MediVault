@@ -481,7 +481,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
     <a href="${pageContext.request.contextPath}/pos?uid=<%= _uid %>" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
     </a>
-    <a href="${pageContext.request.contextPath}/staff-dashboard?uid=<%= _uid %>" class="nav-item" style="opacity:.5;cursor:default">
+    <a href="${pageContext.request.contextPath}/pos?uid=<%= _uid %>&view=invoices" class="nav-item">
       <span class="nav-icon">🧾</span> Hóa đơn của tôi
     </a>
   </nav>
