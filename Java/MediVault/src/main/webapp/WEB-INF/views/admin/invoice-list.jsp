@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8"  pageEncoding="UTF-8" %>
 <% String activeNav = "invoices"; %>
 <%@ taglib prefix="c"   uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
@@ -14,11 +14,15 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Hóa đơn — MediCare</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -26,7 +30,7 @@
   --surface:#F1F5FB;--white:#fff;--muted:#7A90B0;--border:#D5E0F0;
   --green:#059669;--red:#DC2626;--gold:#D97706;--sidebar:232px;--radius:14px;
 }
-html,body{height:100%;font-family:'Outfit',sans-serif}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif}
 body{display:flex;background:var(--surface);color:var(--ink)}
 .sidebar{width:var(--sidebar);min-height:100vh;background:linear-gradient(175deg,#071022 0%,#0F2645 45%,#1558A8 100%);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;box-shadow:4px 0 32px rgba(0,0,0,.18)}
 .sidebar-logo{height:66px;padding:0 20px;display:flex;align-items:center;gap:11px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
@@ -34,39 +38,39 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .logo-text span{color:var(--cyan)}
 .logo-sub{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1.2px;text-transform:uppercase;margin-top:1px}
 .nav-section{padding:12px 0 4px;flex-shrink:0}
-.nav-label{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:500;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
+.nav-label{font-size:9px;font-weight:750;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:750;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
 .nav-item:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.06)}
-.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:600}
+.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:750}
 .nav-item.active::before{content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:56%;background:var(--cyan);border-radius:2px}
-.nav-badge{margin-left:auto;background:#DC2626;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;min-width:20px;text-align:center}
+.nav-badge{margin-left:auto;background:#DC2626;color:#fff;font-size:10px;font-weight:750;padding:1px 7px;border-radius:20px;min-width:20px;text-align:center}
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0}
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50;flex-shrink:0}
-.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--ink)}
+.topbar-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:750;color:var(--ink)}
 
     
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.topbar-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12.5px;font-weight:700;background:#EFF6FF;color:var(--blue)}
+.topbar-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12.5px;font-weight:750;background:#EFF6FF;color:var(--blue)}
 .topbar-user{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 7px;border:1.5px solid var(--border);border-radius:20px;text-decoration:none;color:inherit}
 .topbar-av{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
-.topbar-name{font-size:13px;font-weight:600;color:var(--navy)}
+.topbar-name{font-size:13px;font-weight:750;color:var(--navy)}
 .content{padding:22px 26px;flex:1;min-width:0}
 .page-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:20px}
-.page-head-left .breadcrumb{font-size:11.5px;color:var(--muted);font-weight:500;margin-bottom:4px}
+.page-head-left .breadcrumb{font-size:11.5px;color:var(--muted);font-weight:750;margin-bottom:4px}
 .page-head-left h1{font-size:26px;color:var(--ink)}
 .section-tabs{display:flex;gap:6px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content;margin-bottom:18px}
-.section-tab{padding:8px 18px;border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.section-tab{padding:8px 18px;border-radius:9px;font-size:13px;font-weight:750;color:var(--muted);text-decoration:none;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
 .section-tab:hover{background:var(--surface);color:var(--ink)}
 .section-tab.active{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;box-shadow:0 3px 10px rgba(21,88,168,.25)}
 .section-tab.disabled{cursor:not-allowed;opacity:.55;pointer-events:none}
-.table-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.table-card{background:#fff;border:1px solid rgba(213,224,240,.45);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 3px rgba(15,38,69,.03),0 4px 12px rgba(15,38,69,.04)}
 .filter-row{display:flex;gap:10px;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap}
-.filter-row input,.filter-row select{height:38px;padding:0 12px;border:1.5px solid var(--border);border-radius:9px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none}
+.filter-row input,.filter-row select{height:38px;padding:0 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none}
 .filter-row input[type="date"]{min-width:130px}
 .filter-search{flex:1;min-width:180px}
 .filter-search input{width:100%}
-.filter-chip{height:38px;padding:0 16px;border-radius:9px;background:var(--blue);color:#fff;border:none;font-size:12.5px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
-.filter-clear{height:38px;padding:0 14px;border-radius:9px;background:var(--surface);border:1.5px solid var(--border);color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+.filter-chip{height:38px;padding:0 16px;border-radius:9px;background:var(--blue);color:#fff;border:none;font-size:12.5px;font-weight:750;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+.filter-clear{height:38px;padding:0 14px;border-radius:9px;background:var(--surface);border:1.5px solid var(--border);color:var(--muted);font-size:12.5px;font-weight:750;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
 .table-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
 thead th{padding:10px 16px;background:#F8FAFC;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);text-align:left;white-space:nowrap;border-bottom:1px solid var(--border)}
@@ -74,21 +78,36 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink);border-bottom:1px sol
 tbody tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:#F7FBFF}
 tbody tr{cursor:pointer}
-.inv-code{font-family:monospace;font-weight:700;color:var(--blue)}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700}
+.inv-code{font-family:monospace;font-weight:750;color:var(--blue)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:750}
 .badge-completed{background:#ECFDF5;color:var(--green)}
 .badge-cancelled{background:#FEF2F2;color:var(--red)}
 .badge-pending{background:#FFFBEB;color:var(--gold)}
-.pay-badge{font-size:11.5px;font-weight:600;color:var(--muted)}
+.pay-badge{font-size:11.5px;font-weight:750;color:var(--muted)}
 .empty-row{text-align:center;padding:48px;color:var(--muted)}
 .pagination{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border)}
 .pagination-info{font-size:12.5px;color:var(--muted)}
 .pagination-btns{display:flex;gap:5px}
-.page-btn{width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;text-decoration:none;color:var(--navy);background:var(--surface);border:1.5px solid var(--border)}
+.page-btn{width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:750;text-decoration:none;color:var(--navy);background:var(--surface);border:1.5px solid var(--border)}
 .page-btn:hover{border-color:var(--cyan);color:var(--blue)}
 .page-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
 .page-btn.disabled{opacity:.4;pointer-events:none}
+select,option{font-family:inherit;font-size:inherit}
+.cdd{position:relative;user-select:none;display:inline-block}
+.cdd-btn{display:flex;align-items:center;gap:6px;padding:9px 14px;background:var(--white,#fff);border:1.5px solid var(--border,#D5E0F0);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;color:var(--ink,#0B1628);cursor:pointer;transition:all .18s;white-space:nowrap}
+.cdd-btn:hover{border-color:var(--cyan,#3ABDE0);background:var(--cyan-soft,#EBF8FD)}
+.cdd-btn.open{border-color:var(--cyan,#3ABDE0);box-shadow:0 0 0 3px rgba(58,189,224,.12)}
+.cdd-arrow{font-size:9px;color:var(--muted,#7A90B0);transition:transform .2s}
+.cdd-btn.open .cdd-arrow{transform:rotate(180deg)}
+.cdd-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:100%;background:var(--white,#fff);border:1.5px solid var(--border,#D5E0F0);border-radius:12px;padding:6px;box-shadow:0 12px 36px rgba(15,38,69,.15);z-index:200;opacity:0;transform:translateY(-6px);pointer-events:none;transition:all .18s ease;max-height:260px;overflow-y:auto}
+.cdd-menu.show{opacity:1;transform:translateY(0);pointer-events:auto}
+.cdd-menu::-webkit-scrollbar{width:4px}
+.cdd-menu::-webkit-scrollbar-thumb{background:var(--border,#D5E0F0);border-radius:4px}
+.cdd-opt{padding:8px 14px;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;color:var(--ink,#0B1628);cursor:pointer;transition:all .12s;white-space:nowrap}
+.cdd-opt:hover{background:var(--surface,#F1F5FB);color:var(--blue,#1558A8)}
+.cdd-opt.active{background:linear-gradient(135deg,var(--blue,#1558A8),#0D3F85);color:#fff;font-weight:750}
 </style>
+    
 </head>
 <body>
 
@@ -126,26 +145,72 @@ tbody tr{cursor:pointer}
         </div>
         <input type="date" name="from" value="${filterFrom}" title="Từ ngày">
         <input type="date" name="to" value="${filterTo}" title="Đến ngày">
-        <select name="status">
-          <option value="">Tất cả trạng thái</option>
-          <option value="COMPLETED" ${filterStatus == 'COMPLETED' ? 'selected' : ''}>Hoàn tất</option>
-          <option value="CANCELLED" ${filterStatus == 'CANCELLED' ? 'selected' : ''}>Đã hủy</option>
-          <option value="PENDING"   ${filterStatus == 'PENDING'   ? 'selected' : ''}>Đang xử lý</option>
-        </select>
-        <select name="payment">
-          <option value="">Tất cả thanh toán</option>
-          <option value="CASH"     ${filterPayment == 'CASH'     ? 'selected' : ''}>Tiền mặt</option>
-          <option value="CARD"     ${filterPayment == 'CARD'     ? 'selected' : ''}>Thẻ</option>
-          <option value="TRANSFER" ${filterPayment == 'TRANSFER' ? 'selected' : ''}>Chuyển khoản</option>
-          <option value="EWALLET"  ${filterPayment == 'EWALLET'  ? 'selected' : ''}>Ví điện tử</option>
-          <option value="QR_CODE"  ${filterPayment == 'QR_CODE'  ? 'selected' : ''}>QR Code</option>
-        </select>
-        <select name="staff">
-          <option value="">Tất cả nhân viên</option>
-          <c:forEach var="s" items="${allStaff}">
-            <option value="${s.accountId}" ${filterStaff == s.accountId.toString() ? 'selected' : ''}>${s.fullName}</option>
-          </c:forEach>
-        </select>
+        <input type="hidden" name="status" id="hStatus" value="${filterStatus}">
+        <div class="cdd" id="cddStatus">
+          <div class="cdd-btn" onclick="toggleCdd('cddStatus')">
+            <span class="cdd-label">
+              <c:choose>
+                <c:when test="${filterStatus == 'COMPLETED'}">Hoàn tất</c:when>
+                <c:when test="${filterStatus == 'CANCELLED'}">Đã hủy</c:when>
+                <c:when test="${filterStatus == 'PENDING'}">Đang xử lý</c:when>
+                <c:otherwise>Tất cả trạng thái</c:otherwise>
+              </c:choose>
+            </span>
+            <span class="cdd-arrow">▼</span>
+          </div>
+          <div class="cdd-menu">
+            <div class="cdd-opt ${empty filterStatus ? 'active' : ''}" data-val="" onclick="pickCdd('cddStatus','hStatus',this,false)">Tất cả trạng thái</div>
+            <div class="cdd-opt ${filterStatus == 'COMPLETED' ? 'active' : ''}" data-val="COMPLETED" onclick="pickCdd('cddStatus','hStatus',this,false)">Hoàn tất</div>
+            <div class="cdd-opt ${filterStatus == 'CANCELLED' ? 'active' : ''}" data-val="CANCELLED" onclick="pickCdd('cddStatus','hStatus',this,false)">Đã hủy</div>
+            <div class="cdd-opt ${filterStatus == 'PENDING' ? 'active' : ''}" data-val="PENDING" onclick="pickCdd('cddStatus','hStatus',this,false)">Đang xử lý</div>
+          </div>
+        </div>
+        <input type="hidden" name="payment" id="hPayment" value="${filterPayment}">
+        <div class="cdd" id="cddPayment">
+          <div class="cdd-btn" onclick="toggleCdd('cddPayment')">
+            <span class="cdd-label">
+              <c:choose>
+                <c:when test="${filterPayment == 'CASH'}">Tiền mặt</c:when>
+                <c:when test="${filterPayment == 'CARD'}">Thẻ</c:when>
+                <c:when test="${filterPayment == 'TRANSFER'}">Chuyển khoản</c:when>
+                <c:when test="${filterPayment == 'EWALLET'}">Ví điện tử</c:when>
+                <c:when test="${filterPayment == 'QR_CODE'}">QR Code</c:when>
+                <c:otherwise>Tất cả thanh toán</c:otherwise>
+              </c:choose>
+            </span>
+            <span class="cdd-arrow">▼</span>
+          </div>
+          <div class="cdd-menu">
+            <div class="cdd-opt ${empty filterPayment ? 'active' : ''}" data-val="" onclick="pickCdd('cddPayment','hPayment',this,false)">Tất cả thanh toán</div>
+            <div class="cdd-opt ${filterPayment == 'CASH' ? 'active' : ''}" data-val="CASH" onclick="pickCdd('cddPayment','hPayment',this,false)">Tiền mặt</div>
+            <div class="cdd-opt ${filterPayment == 'CARD' ? 'active' : ''}" data-val="CARD" onclick="pickCdd('cddPayment','hPayment',this,false)">Thẻ</div>
+            <div class="cdd-opt ${filterPayment == 'TRANSFER' ? 'active' : ''}" data-val="TRANSFER" onclick="pickCdd('cddPayment','hPayment',this,false)">Chuyển khoản</div>
+            <div class="cdd-opt ${filterPayment == 'EWALLET' ? 'active' : ''}" data-val="EWALLET" onclick="pickCdd('cddPayment','hPayment',this,false)">Ví điện tử</div>
+            <div class="cdd-opt ${filterPayment == 'QR_CODE' ? 'active' : ''}" data-val="QR_CODE" onclick="pickCdd('cddPayment','hPayment',this,false)">QR Code</div>
+          </div>
+        </div>
+        <input type="hidden" name="staff" id="hStaff" value="${filterStaff}">
+        <div class="cdd" id="cddStaff">
+          <div class="cdd-btn" onclick="toggleCdd('cddStaff')">
+            <span class="cdd-label">
+              <c:choose>
+                <c:when test="${empty filterStaff}">Tất cả nhân viên</c:when>
+                <c:otherwise>
+                  <c:forEach var="s" items="${allStaff}">
+                    <c:if test="${filterStaff == s.accountId.toString()}">${s.fullName}</c:if>
+                  </c:forEach>
+                </c:otherwise>
+              </c:choose>
+            </span>
+            <span class="cdd-arrow">▼</span>
+          </div>
+          <div class="cdd-menu">
+            <div class="cdd-opt ${empty filterStaff ? 'active' : ''}" data-val="" onclick="pickCdd('cddStaff','hStaff',this,false)">Tất cả nhân viên</div>
+            <c:forEach var="s" items="${allStaff}">
+              <div class="cdd-opt ${filterStaff == s.accountId.toString() ? 'active' : ''}" data-val="${s.accountId}" onclick="pickCdd('cddStaff','hStaff',this,false)">${s.fullName}</div>
+            </c:forEach>
+          </div>
+        </div>
         <button type="submit" class="filter-chip">🔍 Lọc</button>
         <a href="${pageContext.request.contextPath}/invoices" class="filter-clear">✕ Xóa lọc</a>
       </form>
@@ -238,12 +303,16 @@ tbody tr{cursor:pointer}
     <div style="text-align:center;color:#94a3b8;padding:30px 0">Đang tải…</div>
   </div>
   <div style="padding:14px 22px;border-top:1px solid #e2e8f0;display:flex;gap:10px;flex-shrink:0">
-    <button onclick="printInvOff()" style="flex:1;padding:11px;background:#EFF6FF;color:#1558A8;border:1.5px solid #BFDBFE;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">🖨️ In lại hóa đơn</button>
-    <a id="ioFullLink" href="#" style="flex:1;padding:11px;background:#1558A8;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;text-decoration:none;text-align:center">📄 Trang đầy đủ</a>
+    <button onclick="printInvOff()" style="flex:1;padding:11px;background:#EFF6FF;color:#1558A8;border:1.5px solid #BFDBFE;border-radius:10px;font-weight:750;font-size:13px;cursor:pointer;font-family:inherit">🖨️ In lại hóa đơn</button>
+    <a id="ioFullLink" href="#" style="flex:1;padding:11px;background:#1558A8;color:#fff;border:none;border-radius:10px;font-weight:750;font-size:13px;cursor:pointer;font-family:inherit;text-decoration:none;text-align:center">📄 Trang đầy đủ</a>
   </div>
 </aside>
 
 <script>
+function toggleCdd(id){var w=document.getElementById(id),m=w.querySelector('.cdd-menu'),b=w.querySelector('.cdd-btn');var open=m.classList.contains('show');document.querySelectorAll('.cdd-menu.show').forEach(function(x){x.classList.remove('show');x.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')});if(!open){m.classList.add('show');b.classList.add('open');var act=m.querySelector('.cdd-opt.active');if(act)act.scrollIntoView({block:'nearest'})}}
+function pickCdd(wId,hId,el,autoSubmit){document.getElementById(hId).value=el.dataset.val;var w=document.getElementById(wId);w.querySelector('.cdd-label').textContent=el.textContent;w.querySelectorAll('.cdd-opt').forEach(function(o){o.classList.remove('active')});el.classList.add('active');w.querySelector('.cdd-menu').classList.remove('show');w.querySelector('.cdd-btn').classList.remove('open');if(autoSubmit){var f=w.closest('form');if(f)f.submit()}}
+document.addEventListener('click',function(e){if(!e.target.closest('.cdd')){document.querySelectorAll('.cdd-menu.show').forEach(function(m){m.classList.remove('show');m.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')})}});
+
 const IO_CTX = '${pageContext.request.contextPath}';
 let _ioData = null;
 
@@ -274,14 +343,14 @@ function openInvOff(id) {
         + '<div style="font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:.6px;margin-bottom:8px">DANH MỤC THUỐC (' + d.items.length + ')</div>'
         + d.items.map(it =>
             '<div style="display:flex;justify-content:space-between;align-items:center;background:#F8FAFC;border-radius:11px;padding:10px 13px;margin-bottom:7px">'
-          + '<div style="min-width:0"><div style="font-weight:700;font-size:13px">' + it.name + '</div>'
+          + '<div style="min-width:0"><div style="font-weight:750;font-size:13px">' + it.name + '</div>'
           + '<div style="font-size:11px;color:#94a3b8">Lô ' + (it.batch || '—') + ' · SL ' + it.qty + ' × ' + fmtV(it.price) + '</div></div>'
           + '<b style="font-size:12.5px;white-space:nowrap;margin-left:10px">' + fmtV(it.subtotal) + '</b></div>').join('')
         + '<div style="border-top:1.5px dashed #e2e8f0;margin-top:14px;padding-top:12px;font-size:13px">'
         + '<div style="display:flex;justify-content:space-between;padding:3px 0"><span style="color:#64748b">Tiền hàng</span><b>' + fmtV(d.gross) + '</b></div>'
         + (d.discount > 0 ? '<div style="display:flex;justify-content:space-between;padding:3px 0"><span style="color:#64748b">Giảm giá</span><b style="color:#DC2626">−' + fmtV(d.discount) + '</b></div>' : '')
         + '<div style="display:flex;justify-content:space-between;align-items:center;background:#EFF6FF;border-radius:11px;padding:11px 14px;margin-top:8px">'
-        + '<span style="font-weight:700;color:#1558A8;font-size:12.5px">TỔNG THANH TOÁN</span>'
+        + '<span style="font-weight:750;color:#1558A8;font-size:12.5px">TỔNG THANH TOÁN</span>'
         + '<b style="font-size:19px;color:#0F2645">' + fmtV(d.total) + '</b></div></div>';
     })
     .catch(() => { body.innerHTML = '<div style="color:#DC2626;text-align:center;padding:24px 0">Lỗi kết nối.</div>'; });
@@ -289,7 +358,7 @@ function openInvOff(id) {
 function ioCell(label, value) {
   return '<div style="background:#F8FAFC;border-radius:10px;padding:9px 12px">'
     + '<div style="font-size:10px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px">' + label + '</div>'
-    + '<div style="font-weight:700;margin-top:3px">' + value + '</div></div>';
+    + '<div style="font-weight:750;margin-top:3px">' + value + '</div></div>';
 }
 function closeInvOff() {
   document.getElementById('invOffcanvas').style.right = '-480px';
@@ -302,10 +371,15 @@ function printInvOff() {
   const d = _ioData;
   const fmtV = n => new Intl.NumberFormat('vi-VN').format(n) + 'đ';
   const w = window.open('', '_blank', 'width=420,height=640');
-  w.document.write('<html><head><title>' + d.code + '</title><style>'
+  w.document.write('<html><head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    <title>' + d.code + '</title><style>'
     + 'body{font-family:monospace;font-size:12px;width:300px;margin:10px auto}h2{text-align:center;font-size:15px;margin:4px 0}'
     + '.c{text-align:center}.r{display:flex;justify-content:space-between;padding:1.5px 0}hr{border:none;border-top:1px dashed #000;margin:7px 0}'
-    + '</style></head><body>'
+    + '</style>    
+</head><body>'
     + '<h2>💊 MediCare</h2><div class="c">HÓA ĐƠN BÁN LẺ</div><div class="c">' + d.code + ' · ' + d.time + '</div><hr>'
     + '<div class="r"><span>Nhân viên:</span><span>' + d.staff + '</span></div>'
     + (d.customer ? '<div class="r"><span>Khách:</span><span>' + d.customer + '</span></div>' : '')

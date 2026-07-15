@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java"  pageEncoding="UTF-8" %>
 <% String activeNav = "shifts"; %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
@@ -12,13 +12,17 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Lịch ca tuần — medicare</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--ink:#0B1628;--navy:#0F2645;--blue:#1558A8;--cyan:#3ABDE0;--surface:#F1F5FB;--white:#fff;--muted:#7A90B0;--border:#D5E0F0;--green:#059669;--red:#DC2626;--amber:#F59E0B;--sidebar:232px;--radius:14px}
-html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--surface);color:var(--ink)}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(--surface);color:var(--ink)}
 body{display:flex}
 .sidebar{width:var(--sidebar);min-height:100vh;background:linear-gradient(175deg,#071022 0%,#0F2645 45%,#1558A8 100%);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;box-shadow:4px 0 32px rgba(0,0,0,.18)}
 .sidebar-logo{height:66px;padding:0 20px;display:flex;align-items:center;gap:11px;border-bottom:1px solid rgba(255,255,255,.06)}
@@ -26,32 +30,32 @@ body{display:flex}
 .logo-text{font-size:16px;font-weight:800;color:#fff}.logo-text span{color:var(--cyan)}
 .logo-sub{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1.2px;text-transform:uppercase;margin-top:1px}
 .nav-section{padding:12px 0 4px}
-.nav-label{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:500;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
+.nav-label{font-size:9px;font-weight:750;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:750;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
 .nav-item:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.06)}
-.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:600}
+.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:750}
 .nav-item.active::before{content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:56%;background:var(--cyan);border-radius:2px}
 .sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid rgba(255,255,255,.06)}
 .sidebar-user{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
 .user-av{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
-.user-name{font-size:12.5px;font-weight:600;color:#fff;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.user-name{font-size:12.5px;font-weight:750;color:#fff;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .user-role{font-size:10px;color:rgba(255,255,255,.35);margin-top:1px}
 .logout-btn{margin-left:auto;width:28px;height:28px;border-radius:8px;background:rgba(220,38,38,.12);border:none;display:flex;align-items:center;justify-content:center;color:rgba(220,38,38,.7);font-size:13px;cursor:pointer;text-decoration:none;transition:all .18s}
 .logout-btn:hover{background:rgba(220,38,38,.2);color:var(--red)}
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh}
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50}
-.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--ink)}
+.topbar-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:750;color:var(--ink)}
 
     
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.topbar-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12.5px;font-weight:700}
+.topbar-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12.5px;font-weight:750}
 .pill-blue{background:#EFF6FF;color:var(--blue)}
-.btn-primary{padding:7px 16px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:background .18s}
+.btn-primary{padding:7px 16px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:background .18s}
 .btn-primary:hover{background:#0D3F85}
 .content{padding:22px 26px;flex:1}
 
 /* Toast */
-.toast{position:fixed;top:20px;right:24px;padding:12px 20px;border-radius:11px;font-size:13px;font-weight:700;color:#fff;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.15);animation:slideIn .3s ease}
+.toast{position:fixed;top:20px;right:24px;padding:12px 20px;border-radius:11px;font-size:13px;font-weight:750;color:#fff;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.15);animation:slideIn .3s ease}
 .toast-ok{background:#059669}.toast-err{background:#DC2626}.toast-info{background:#1558A8}
 @keyframes slideIn{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
 
@@ -59,7 +63,7 @@ body{display:flex}
 .week-nav{display:flex;align-items:center;gap:12px;margin-bottom:20px}
 .week-title{font-size:15px;font-weight:800;color:var(--ink)}
 .week-sub{font-size:12px;color:var(--muted)}
-.btn-nav{padding:6px 14px;border:1.5px solid var(--border);border-radius:8px;background:var(--white);font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;text-decoration:none;transition:all .18s}
+.btn-nav{padding:6px 14px;border:1.5px solid var(--border);border-radius:8px;background:var(--white);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;color:var(--ink);cursor:pointer;text-decoration:none;transition:all .18s}
 .btn-nav:hover{border-color:var(--blue);color:var(--blue)}
 
 /* Week grid */
@@ -67,17 +71,17 @@ body{display:flex}
 .day-col{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;min-height:160px}
 .day-col.today{border-color:var(--blue);box-shadow:0 0 0 2px rgba(21,88,168,.12)}
 .day-head{padding:10px 12px;border-bottom:1px solid var(--border);text-align:center}
-.day-name{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.day-date{font-size:18px;font-weight:900;color:var(--ink);margin-top:2px}
+.day-name{font-size:11px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.day-date{font-size:18px;font-weight:800;color:var(--ink);margin-top:2px}
 .day-col.today .day-date{color:var(--blue)}
 .day-body{padding:8px}
 .shift-chip{padding:6px 8px;border-radius:8px;margin-bottom:5px;font-size:11.5px;cursor:pointer;transition:all .15s;position:relative}
 .chip-morning{background:#EFF6FF;border:1px solid #BFDBFE}
 .chip-afternoon{background:#FFF7ED;border:1px solid #FED7AA}
 .chip-night{background:#F5F3FF;border:1px solid #DDD6FE}
-.chip-name{font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip-name{font-weight:750;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip-time{font-size:10.5px;color:var(--muted);margin-top:2px}
-.chip-status{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;margin-top:3px;padding:1px 6px;border-radius:10px}
+.chip-status{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:750;margin-top:3px;padding:1px 6px;border-radius:10px}
 .st-scheduled{background:#DBEAFE;color:#1E40AF}
 .st-confirmed{background:#D1FAE5;color:#065F46}
 .st-absent{background:#FEE2E2;color:#991B1B}
@@ -95,16 +99,31 @@ body{display:flex}
 .form-body{padding:18px 20px}
 .form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 .fg{display:flex;flex-direction:column;gap:5px}
-.fg label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.fg select,.fg input{border:1.5px solid var(--border);border-radius:8px;padding:8px 11px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;transition:border .18s}
+.fg label{font-size:11px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.fg select,.fg input{border:1.5px solid var(--border);border-radius:8px;padding:8px 11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;transition:border .18s}
 .fg select:focus,.fg input:focus{border-color:var(--blue);background:#fff}
 .fg small{font-size:11px;color:var(--muted)}
 .form-actions{display:flex;gap:10px;margin-top:16px;align-items:center}
-.btn-submit{padding:9px 24px;background:var(--blue);color:#fff;border:none;border-radius:9px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:background .18s}
+.btn-submit{padding:9px 24px;background:var(--blue);color:#fff;border:none;border-radius:9px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer;transition:background .18s}
 .btn-submit:hover{background:#0D3F85}
-.btn-ghost{padding:9px 16px;background:transparent;border:1.5px solid var(--border);border-radius:9px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;text-decoration:none;transition:all .18s}
+.btn-ghost{padding:9px 16px;background:transparent;border:1.5px solid var(--border);border-radius:9px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;color:var(--muted);cursor:pointer;text-decoration:none;transition:all .18s}
 .btn-ghost:hover{border-color:var(--red);color:var(--red)}
+select,option{font-family:inherit;font-size:inherit}
+.cdd{position:relative;user-select:none;display:inline-block}
+.cdd-btn{display:flex;align-items:center;gap:6px;padding:9px 14px;background:var(--white,#fff);border:1.5px solid var(--border,#D5E0F0);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;color:var(--ink,#0B1628);cursor:pointer;transition:all .18s;white-space:nowrap}
+.cdd-btn:hover{border-color:var(--cyan,#3ABDE0);background:var(--cyan-soft,#EBF8FD)}
+.cdd-btn.open{border-color:var(--cyan,#3ABDE0);box-shadow:0 0 0 3px rgba(58,189,224,.12)}
+.cdd-arrow{font-size:9px;color:var(--muted,#7A90B0);transition:transform .2s}
+.cdd-btn.open .cdd-arrow{transform:rotate(180deg)}
+.cdd-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:100%;background:var(--white,#fff);border:1.5px solid var(--border,#D5E0F0);border-radius:12px;padding:6px;box-shadow:0 12px 36px rgba(15,38,69,.15);z-index:200;opacity:0;transform:translateY(-6px);pointer-events:none;transition:all .18s ease;max-height:260px;overflow-y:auto}
+.cdd-menu.show{opacity:1;transform:translateY(0);pointer-events:auto}
+.cdd-menu::-webkit-scrollbar{width:4px}
+.cdd-menu::-webkit-scrollbar-thumb{background:var(--border,#D5E0F0);border-radius:4px}
+.cdd-opt{padding:8px 14px;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;color:var(--ink,#0B1628);cursor:pointer;transition:all .12s;white-space:nowrap}
+.cdd-opt:hover{background:var(--surface,#F1F5FB);color:var(--blue,#1558A8)}
+.cdd-opt.active{background:linear-gradient(135deg,var(--blue,#1558A8),#0D3F85);color:#fff;font-weight:750}
 </style>
+    
 </head>
 <body>
 <%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
@@ -138,21 +157,35 @@ body{display:flex}
           <div class="form-grid">
             <div class="fg">
               <label>Nhân viên</label>
-              <select name="accountId" required>
-                <option value="">-- Chọn --</option>
-                <c:forEach var="s" items="${allStaff}">
-                  <option value="${s.accountId}">${s.fullName}</option>
-                </c:forEach>
-              </select>
+              <input type="hidden" name="accountId" id="hQsAccountId" value="">
+              <div class="cdd" id="cddQsAccountId">
+                <div class="cdd-btn" onclick="toggleCdd('cddQsAccountId')">
+                  <span class="cdd-label">-- Chọn --</span>
+                  <span class="cdd-arrow">▼</span>
+                </div>
+                <div class="cdd-menu">
+                  <div class="cdd-opt active" data-val="" onclick="pickCdd('cddQsAccountId','hQsAccountId',this,false)">-- Chọn --</div>
+                  <c:forEach var="s" items="${allStaff}">
+                    <div class="cdd-opt" data-val="${s.accountId}" onclick="pickCdd('cddQsAccountId','hQsAccountId',this,false)">${s.fullName}</div>
+                  </c:forEach>
+                </div>
+              </div>
             </div>
             <div class="fg">
               <label>Loại ca</label>
-              <select name="shiftTypeId" required>
-                <option value="">-- Chọn --</option>
-                <c:forEach var="st" items="${shiftTypes}">
-                  <option value="${st.shiftTypeId}">${st.name} (${st.startHour}:00–${st.endHour}:00)</option>
-                </c:forEach>
-              </select>
+              <input type="hidden" name="shiftTypeId" id="hQsShiftTypeId" value="">
+              <div class="cdd" id="cddQsShiftTypeId">
+                <div class="cdd-btn" onclick="toggleCdd('cddQsShiftTypeId')">
+                  <span class="cdd-label">-- Chọn --</span>
+                  <span class="cdd-arrow">▼</span>
+                </div>
+                <div class="cdd-menu">
+                  <div class="cdd-opt active" data-val="" onclick="pickCdd('cddQsShiftTypeId','hQsShiftTypeId',this,false)">-- Chọn --</div>
+                  <c:forEach var="st" items="${shiftTypes}">
+                    <div class="cdd-opt" data-val="${st.shiftTypeId}" onclick="pickCdd('cddQsShiftTypeId','hQsShiftTypeId',this,false)">${st.name} (${st.startHour}:00–${st.endHour}:00)</div>
+                  </c:forEach>
+                </div>
+              </div>
             </div>
             <div class="fg">
               <label>Ngày làm</label>
@@ -240,6 +273,10 @@ body{display:flex}
 </div>
 
 <script>
+function toggleCdd(id){var w=document.getElementById(id),m=w.querySelector('.cdd-menu'),b=w.querySelector('.cdd-btn');var open=m.classList.contains('show');document.querySelectorAll('.cdd-menu.show').forEach(function(x){x.classList.remove('show');x.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')});if(!open){m.classList.add('show');b.classList.add('open');var act=m.querySelector('.cdd-opt.active');if(act)act.scrollIntoView({block:'nearest'})}}
+function pickCdd(wId,hId,el,autoSubmit){document.getElementById(hId).value=el.dataset.val;var w=document.getElementById(wId);w.querySelector('.cdd-label').textContent=el.textContent;w.querySelectorAll('.cdd-opt').forEach(function(o){o.classList.remove('active')});el.classList.add('active');w.querySelector('.cdd-menu').classList.remove('show');w.querySelector('.cdd-btn').classList.remove('open');if(autoSubmit){var f=w.closest('form');if(f)f.submit()}}
+document.addEventListener('click',function(e){if(!e.target.closest('.cdd')){document.querySelectorAll('.cdd-menu.show').forEach(function(m){m.classList.remove('show');m.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')})}});
+
 const toast = document.getElementById('toast');
 if (toast) setTimeout(()=>{toast.style.opacity='0';setTimeout(()=>toast.remove(),400)},3500);
 </script>

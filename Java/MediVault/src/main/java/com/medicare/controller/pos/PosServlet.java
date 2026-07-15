@@ -158,8 +158,8 @@ public class PosServlet extends HttpServlet {
                     out.printf("{\"medId\":%d,\"medName\":\"%s\",\"medCode\":\"%s\",\"unit\":\"%s\"," +
                                     "\"totalStock\":%d,\"batchNo\":\"%s\",\"expiryDate\":\"%s\"," +
                                     "\"currentQty\":%d,\"initialQty\":%d,\"importPrice\":\"%s\"}",
-                            rs.getInt("MedicineID"), esc(rs.getNString("MedicineName")),
-                            esc(rs.getString("MedicineCode")), esc(rs.getNString("Unit")),
+                            rs.getInt("MedicineID"), esc(rs.getString("MedicineName")),
+                            esc(rs.getString("MedicineCode")), esc(rs.getString("Unit")),
                             rs.getInt("TotalStock"),
                             esc(rs.getString("BatchNumber") != null ? rs.getString("BatchNumber") : ""),
                             rs.getString("ExpiryDate") != null ? rs.getString("ExpiryDate") : "",

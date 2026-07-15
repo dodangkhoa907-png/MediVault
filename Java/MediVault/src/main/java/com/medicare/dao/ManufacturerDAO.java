@@ -13,9 +13,9 @@ public class ManufacturerDAO implements IManufacturerDAO {
     private Manufacturer mapRow(ResultSet rs) throws SQLException {
         return new Manufacturer(
                 rs.getInt("ManufacturerID"),
-                MojibakeUtil.fix(rs.getNString("Name")),
+                MojibakeUtil.fix(rs.getString("Name")),
                 rs.getString("Country"),
-                MojibakeUtil.fix(rs.getNString("Address"))
+                MojibakeUtil.fix(rs.getString("Address"))
         );
     }
 

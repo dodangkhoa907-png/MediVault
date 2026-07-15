@@ -14,20 +14,20 @@ public class MedicineDAO implements IMedicineDAO {
         Medicines m = new Medicines();
         m.setMedicineId(rs.getInt("MedicineID"));
         m.setMedicineCode(rs.getString("MedicineCode"));
-        m.setMedicineName(MojibakeUtil.fix(rs.getNString("MedicineName")));
-        m.setGenericName(MojibakeUtil.fix(rs.getNString("GenericName")));
+        m.setMedicineName(MojibakeUtil.fix(rs.getString("MedicineName")));
+        m.setGenericName(MojibakeUtil.fix(rs.getString("GenericName")));
         m.setBarcode(rs.getString("Barcode"));
         m.setRegistrationNumber(rs.getString("RegistrationNumber"));
         m.setCategoryId(rs.getInt("CategoryID"));
         m.setManufacturerId(rs.getInt("ManufacturerID"));
-        m.setUnit(MojibakeUtil.fix(rs.getNString("Unit")));
+        m.setUnit(MojibakeUtil.fix(rs.getString("Unit")));
         m.setShelfId(rs.getInt("ShelfID"));
-        m.setDosage(MojibakeUtil.fix(rs.getNString("Dosage")));
-        m.setContraindications(MojibakeUtil.fix(rs.getNString("Contraindications")));
+        m.setDosage(MojibakeUtil.fix(rs.getString("Dosage")));
+        m.setContraindications(MojibakeUtil.fix(rs.getString("Contraindications")));
         m.setPrescriptionRequired(rs.getBoolean("IsPrescriptionRequired"));
         m.setSellingPrice(rs.getBigDecimal("SellingPrice"));
         m.setMinInventory(rs.getInt("MinInventory"));
-        m.setStorageConditions(MojibakeUtil.fix(rs.getNString("StorageConditions")));
+        m.setStorageConditions(MojibakeUtil.fix(rs.getString("StorageConditions")));
         m.setStatus(rs.getBoolean("Status"));
         m.setExpiryAlertDays(rs.getInt("ExpiryAlertDays"));
         if (rs.getTimestamp("CreatedAt") != null)

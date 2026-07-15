@@ -21,7 +21,7 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
         if (rs.getTimestamp("OrderDate") != null)
             po.setOrderDate(rs.getTimestamp("OrderDate").toLocalDateTime());
         po.setTotalValue(rs.getBigDecimal("TotalValue"));
-        po.setNotes(rs.getNString("Notes"));
+        po.setNotes(rs.getString("Notes"));
         try { po.setStatus(rs.getString("Status")); } catch (SQLException ignored) {}
         try { po.setPaymentMethod(rs.getString("PaymentMethod")); } catch (SQLException ignored) {}
         try { po.setDiscountAmount(rs.getBigDecimal("DiscountAmount")); } catch (SQLException ignored) {}
@@ -163,7 +163,7 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
                     d.setBatchNumber(rs.getString("BatchNumber"));
                     if (rs.getDate("ExpiryDate") != null)      d.setExpiryDate(rs.getDate("ExpiryDate").toLocalDate());
                     if (rs.getDate("ManufactureDate") != null) d.setManufactureDate(rs.getDate("ManufactureDate").toLocalDate());
-                    d.setMedicineName(rs.getNString("MedicineName"));
+                    d.setMedicineName(rs.getString("MedicineName"));
                     list.add(d);
                 }
             }

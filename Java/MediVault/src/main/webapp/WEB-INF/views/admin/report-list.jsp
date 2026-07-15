@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8"  pageEncoding="UTF-8" %>
 <% String activeNav = "reports"; %>
 <%@ taglib prefix="c"   uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
@@ -62,17 +62,21 @@
         String bg    = good ? "rgba(5,150,105,.1)" : "rgba(220,38,38,.1)";
         String arrow = up ? "▲" : "▼";
         String val   = String.format("%.1f", Math.abs(pct));
-        return "<span style=\"display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;background:" + bg + ";color:" + color + ";margin-top:5px\">" + arrow + " " + val + "% so tháng trước</span>";
+        return "<span style=\"display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:750;padding:2px 8px;border-radius:20px;background:" + bg + ";color:" + color + ";margin-top:5px\">" + arrow + " " + val + "% so tháng trước</span>";
     }
 %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Báo cáo doanh thu — MediCare</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -81,7 +85,7 @@
   --green:#059669;--red:#DC2626;--gold:#D97706;--amber:#F59E0B;--purple:#7C3AED;
   --sidebar:232px;--radius:14px;
 }
-html,body{height:100%;font-family:'Outfit',sans-serif}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif}
 body{display:flex;background:var(--surface);color:var(--ink)}
 
 /* SIDEBAR */
@@ -91,98 +95,131 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .logo-text span{color:var(--cyan)}
 .logo-sub{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1.2px;text-transform:uppercase;margin-top:1px}
 .nav-section{padding:12px 0 4px;flex-shrink:0}
-.nav-label{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:500;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
+.nav-label{font-size:9px;font-weight:750;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:750;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
 .nav-item:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.06)}
-.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:600}
+.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:750}
 .nav-item.active::before{content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:56%;background:var(--cyan);border-radius:2px}
 .nav-icon{width:18px;text-align:center;font-size:14px;flex-shrink:0;opacity:.8}
 .nav-item.active .nav-icon{opacity:1}
-.nav-badge{margin-left:auto;background:#DC2626;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;min-width:20px;text-align:center}
+.nav-badge{margin-left:auto;background:#DC2626;color:#fff;font-size:10px;font-weight:750;padding:1px 7px;border-radius:20px;min-width:20px;text-align:center}
 
 /* MAIN */
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0}
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50;flex-shrink:0}
-.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--ink)}
+.topbar-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:750;color:var(--ink)}
 .topbar-left{display:flex;align-items:center;gap:10px}
 .topbar-icon{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,rgba(21,88,168,.12),rgba(58,189,224,.12));display:flex;align-items:center;justify-content:center;font-size:15px}
 
     
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.topbar-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12.5px;font-weight:700;white-space:nowrap}
+.topbar-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12.5px;font-weight:750;white-space:nowrap}
 .pill-period{background:#EFF6FF;color:var(--blue)}
 .pill-invoice{background:#ECFDF5;color:var(--green)}
 .topbar-user{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 7px;border:1.5px solid var(--border);border-radius:20px;text-decoration:none;color:inherit;transition:all .18s}
 .topbar-user:hover{border-color:var(--cyan)}
 .topbar-av{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
-.topbar-name{font-size:13px;font-weight:600;color:var(--navy)}
+.topbar-name{font-size:13px;font-weight:750;color:var(--navy)}
 .content{padding:22px 26px;flex:1;min-width:0}
 
 /* PAGE HEAD + FILTER */
 .page-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
-.page-head-left .breadcrumb{font-size:11.5px;color:var(--muted);font-weight:500;margin-bottom:4px}
+.page-head-left .breadcrumb{font-size:11.5px;color:var(--muted);font-weight:750;margin-bottom:4px}
 .page-head-left h1{font-size:26px;color:var(--ink)}
-.month-filter{display:flex;gap:8px;align-items:center;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:6px;}
-.month-filter select{border:none;background:transparent;border-radius:8px;padding:7px 10px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--ink);outline:none;cursor:pointer}
-.month-filter select:hover{background:var(--surface)}
+.month-filter{display:flex;gap:6px;align-items:center}
+.cdd{position:relative;user-select:none}
+.cdd-btn{display:flex;align-items:center;gap:6px;padding:9px 14px;background:var(--white);border:1.5px solid var(--border);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;color:var(--ink);cursor:pointer;transition:all .18s;white-space:nowrap}
+.cdd-btn:hover{border-color:var(--cyan);background:var(--cyan-soft)}
+.cdd-btn.open{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(58,189,224,.12)}
+.cdd-arrow{font-size:9px;color:var(--muted);transition:transform .2s}
+.cdd-btn.open .cdd-arrow{transform:rotate(180deg)}
+.cdd-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:100%;background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:6px;box-shadow:0 12px 36px rgba(15,38,69,.15);z-index:200;opacity:0;transform:translateY(-6px);pointer-events:none;transition:all .18s ease;max-height:280px;overflow-y:auto}
+.cdd-menu.show{opacity:1;transform:translateY(0);pointer-events:auto}
+.cdd-menu::-webkit-scrollbar{width:4px}
+.cdd-menu::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.cdd-opt{padding:8px 14px;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;transition:all .12s;white-space:nowrap}
+.cdd-opt:hover{background:var(--surface);color:var(--blue)}
+.cdd-opt.active{background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;font-weight:750}
 
 /* ══════ KPI 3D CARDS ══════ */
 .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px;perspective:1200px}
 .kpi{
-  position:relative;border-radius:18px;padding:18px 20px;min-height:132px;
-  background:linear-gradient(145deg,#ffffff 0%,#f4f8ff 100%);
-  border:1px solid rgba(213,224,240,.7);
-  transform-style:preserve-3d;transition:transform .18s cubic-bezier(.2,.7,.3,1),box-shadow .18s;
-  box-shadow:0 1px 2px rgba(15,38,69,.06),0 8px 20px -12px rgba(15,38,69,.25);
+  position:relative;border-radius:16px;padding:18px 20px;min-height:132px;
+  background:#fff;border:1px solid rgba(213,224,240,.5);
+  transform-style:preserve-3d;transition:transform .3s cubic-bezier(.2,.7,.3,1),box-shadow .3s;
+  box-shadow:0 1px 3px rgba(15,38,69,.04),0 6px 16px -8px rgba(15,38,69,.12);
   cursor:default;overflow:hidden;will-change:transform}
-.kpi::before{content:'';position:absolute;inset:0;border-radius:18px;
-  background:radial-gradient(120px 80px at var(--mx,80%) var(--my,0%),rgba(58,189,224,.16),transparent 70%);
+.kpi::before{content:'';position:absolute;inset:0;border-radius:16px;
+  background:radial-gradient(120px 80px at var(--mx,80%) var(--my,0%),rgba(58,189,224,.12),transparent 70%);
   opacity:0;transition:opacity .2s;pointer-events:none}
-.kpi:hover{box-shadow:0 6px 12px rgba(15,38,69,.1),0 26px 46px -18px rgba(15,38,69,.45)}
+.kpi:hover{box-shadow:0 4px 10px rgba(15,38,69,.06),0 18px 36px -12px rgba(15,38,69,.2)}
 .kpi:hover::before{opacity:1}
 .kpi-top{display:flex;align-items:center;gap:12px;transform:translateZ(30px)}
-.kpi-icon{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;
-  box-shadow:0 6px 14px -6px rgba(15,38,69,.4);transform:translateZ(24px)}
+.kpi-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;
+  box-shadow:0 4px 10px -4px rgba(15,38,69,.2);transform:translateZ(24px)}
 .kpi-blue{background:linear-gradient(135deg,#dbeafe,#bfdbfe)}
 .kpi-green{background:linear-gradient(135deg,#d1fae5,#a7f3d0)}
 .kpi-amber{background:linear-gradient(135deg,#fef3c7,#fde68a)}
 .kpi-purple{background:linear-gradient(135deg,#ede9fe,#ddd6fe)}
 .kpi-red{background:linear-gradient(135deg,#fee2e2,#fecaca)}
-.kpi-num{font-size:23px;font-weight:900;line-height:1.1;white-space:nowrap;letter-spacing:-.5px}
-.kpi-lbl{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
+.kpi-num{font-size:22px;font-weight:700;line-height:1.1;white-space:nowrap;letter-spacing:-.5px}
+.kpi-lbl{font-size:10.5px;color:var(--muted);font-weight:650;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
 .kpi-badge-wrap{margin-top:10px;transform:translateZ(20px)}
-/* Detail panel trượt lên khi hover */
 .kpi-detail{margin-top:12px;padding-top:11px;border-top:1px dashed rgba(122,144,176,.35);
   display:flex;flex-direction:column;gap:5px;
   max-height:0;opacity:0;overflow:hidden;transform:translateZ(15px);
   transition:max-height .28s ease,opacity .22s ease,margin .28s,padding .28s}
 .kpi:hover .kpi-detail{max-height:120px;opacity:1}
 .kpi-drow{display:flex;justify-content:space-between;align-items:center;font-size:11.5px}
-.kpi-drow .dk{color:var(--muted);font-weight:600}
+.kpi-drow .dk{color:var(--muted);font-weight:750}
 .kpi-drow .dv{font-weight:800;color:var(--ink)}
-.kpi-hint{position:absolute;top:14px;right:16px;font-size:10px;color:#B8C4D9;font-weight:600;
-  opacity:1;transition:opacity .2s;transform:translateZ(10px)}
-.kpi:hover .kpi-hint{opacity:0}
+.kpi-hint{position:absolute;bottom:10px;right:14px;font-size:9.5px;color:#C5D0E0;font-weight:750;
+  opacity:0;transition:opacity .25s;transform:translateZ(10px);pointer-events:none}
+.kpi:hover .kpi-hint{opacity:1}
 @media(max-width:1100px){.kpi-strip{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.kpi-strip{grid-template-columns:1fr}}
 
 /* SECTION HEAD */
 .section-head{display:flex;align-items:center;gap:8px;margin:26px 0 14px}
-.section-head h2{font-size:15px;font-weight:800;color:var(--ink)}
+.section-head h2{font-size:15px;font-weight:700;color:var(--ink)}
 .section-head .line{flex:1;height:1px;background:var(--border)}
 
-/* CHART GRID */
-.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
-.chart-card{background:linear-gradient(180deg,#FFFFFF 0%,#FAFCFF 100%);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:0 6px 24px rgba(15,38,69,.06);transition:transform .18s ease,box-shadow .18s ease}
-.chart-card:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(15,38,69,.11)}
-.chart-card-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+/* ══════ 3D CHART GRID ══════ */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px;perspective:1800px}
+.chart-card{
+  position:relative;
+  background:#fff;border:1px solid rgba(213,224,240,.5);border-radius:16px;overflow:visible;
+  transform-style:preserve-3d;
+  transition:transform .4s cubic-bezier(.2,.7,.3,1),box-shadow .4s;
+  box-shadow:
+    0 1px 2px rgba(15,38,69,.03),
+    0 4px 12px rgba(15,38,69,.05),
+    0 12px 36px -8px rgba(15,38,69,.1);
+}
+.chart-card:hover{
+  transform:translateY(-6px) scale(1.008);
+  box-shadow:
+    0 2px 4px rgba(15,38,69,.04),
+    0 8px 20px rgba(15,38,69,.07),
+    0 28px 56px -12px rgba(15,38,69,.16);
+}
+.chart-card::after{
+  content:'';position:absolute;inset:6px 10px -6px;border-radius:16px;
+  background:rgba(21,88,168,.04);filter:blur(10px);z-index:-1;
+  transition:all .4s;pointer-events:none;
+}
+.chart-card:hover::after{
+  inset:10px 14px -10px;background:rgba(21,88,168,.06);filter:blur(16px);
+}
+.chart-card-head{padding:16px 20px;border-bottom:1px solid rgba(213,224,240,.4);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;
+  background:linear-gradient(180deg,rgba(241,245,251,.5) 0%,transparent 100%)}
 .chart-card-head h3{font-size:13.5px;font-weight:700;color:var(--ink)}
-.chart-card-body{padding:14px 18px 16px;height:240px}
-.chart-legend{display:flex;gap:14px;padding:8px 18px 12px;flex-wrap:wrap}
+.chart-card-body{padding:16px 20px 18px;height:240px}
+.chart-legend{display:flex;gap:14px;padding:10px 20px 14px;flex-wrap:wrap;border-top:1px solid rgba(213,224,240,.3)}
 .leg-item{display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--muted)}
 .leg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
 .view-toggle{display:flex;background:#F1F5FB;border-radius:8px;padding:3px;gap:2px}
-.vt-btn{padding:5px 12px;border-radius:6px;border:none;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted)}
+.vt-btn{padding:5px 12px;border-radius:6px;border:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:750;cursor:pointer;background:transparent;color:var(--muted)}
 .vt-btn.active{background:#fff;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.1)}
 
 /* INFO BOX (đối soát quỹ ca) */
@@ -200,7 +237,9 @@ tbody td{padding:11px 16px;font-size:13px;color:var(--ink);border-bottom:1px sol
 tbody tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:#F7FBFF}
 .empty-row{text-align:center;padding:40px;color:var(--muted)}
+select,option{font-family:inherit;font-size:inherit}
 </style>
+    
 </head>
 <body>
 
@@ -227,20 +266,36 @@ tbody tr:hover td{background:#F7FBFF}
 
     <div class="page-head">
       <div class="page-head-left">
-        <div class="breadcrumb">medicare › Phân tích › Báo cáo</div>
+        <div class="breadcrumb">MediCare  >>  Phân tích  >>  Báo cáo</div>
         <h1>Báo cáo doanh thu</h1>
       </div>
-      <form method="get" action="${pageContext.request.contextPath}/reports" class="month-filter">
-        <select name="month" onchange="this.form.submit()">
-          <c:forEach begin="1" end="12" var="m">
-            <option value="${m}" ${m == repMonth ? 'selected' : ''}>Tháng ${m}</option>
-          </c:forEach>
-        </select>
-        <select name="year" onchange="this.form.submit()">
-          <option value="2025" ${repYear == 2025 ? 'selected' : ''}>2025</option>
-          <option value="2026" ${repYear == 2026 ? 'selected' : ''}>2026</option>
-          <option value="2027" ${repYear == 2027 ? 'selected' : ''}>2027</option>
-        </select>
+      <form method="get" action="${pageContext.request.contextPath}/reports" class="month-filter" id="reportFilterForm">
+        <input type="hidden" name="month" id="hMonth" value="<%= repMonth %>">
+        <input type="hidden" name="year"  id="hYear"  value="<%= repYear %>">
+
+        <div class="cdd" id="cddMonth">
+          <div class="cdd-btn" onclick="toggleCdd('cddMonth')">
+            <span class="cdd-label">Tháng <%= repMonth %></span>
+            <span class="cdd-arrow">▼</span>
+          </div>
+          <div class="cdd-menu">
+            <c:forEach begin="1" end="12" var="m">
+              <div class="cdd-opt ${m == repMonth ? 'active' : ''}" data-val="${m}" onclick="pickCdd('cddMonth','hMonth',this)">Tháng ${m}</div>
+            </c:forEach>
+          </div>
+        </div>
+
+        <div class="cdd" id="cddYear">
+          <div class="cdd-btn" onclick="toggleCdd('cddYear')">
+            <span class="cdd-label"><%= repYear %></span>
+            <span class="cdd-arrow">▼</span>
+          </div>
+          <div class="cdd-menu">
+            <c:forEach begin="2025" end="2027" var="y">
+              <div class="cdd-opt ${y == repYear ? 'active' : ''}" data-val="${y}" onclick="pickCdd('cddYear','hYear',this)">${y}</div>
+            </c:forEach>
+          </div>
+        </div>
       </form>
     </div>
 
@@ -436,19 +491,19 @@ tbody tr:hover td{background:#F7FBFF}
               <c:if test="${not empty s.endTime}">
                 <tr>
                   <td style="color:var(--muted);font-size:12px">#${s.shiftId}</td>
-                  <td><div style="font-weight:700">${accountMap[s.accountId] != null ? accountMap[s.accountId].fullName : 'ID ' += s.accountId}</div></td>
+                  <td><div style="font-weight:750">${accountMap[s.accountId] != null ? accountMap[s.accountId].fullName : 'ID ' += s.accountId}</div></td>
                   <td style="font-size:12.5px;color:var(--muted)">${fn:substring(s.startTime.toString(),0,10)}</td>
-                  <td style="font-weight:600">${fn:substring(s.startTime.toString(),11,16)}</td>
-                  <td style="font-weight:600">${fn:substring(s.endTime.toString(),11,16)}</td>
+                  <td style="font-weight:750">${fn:substring(s.startTime.toString(),11,16)}</td>
+                  <td style="font-weight:750">${fn:substring(s.endTime.toString(),11,16)}</td>
                   <td>
                     <c:choose>
-                      <c:when test="${s.openingCash != null}"><span style="font-weight:600"><fmt:formatNumber value="${s.openingCash}" type="number" maxFractionDigits="0"/>đ</span></c:when>
+                      <c:when test="${s.openingCash != null}"><span style="font-weight:750"><fmt:formatNumber value="${s.openingCash}" type="number" maxFractionDigits="0"/>đ</span></c:when>
                       <c:otherwise><span style="color:var(--muted)">0đ</span></c:otherwise>
                     </c:choose>
                   </td>
                   <td>
                     <c:choose>
-                      <c:when test="${s.closingCash != null}"><span style="font-weight:600"><fmt:formatNumber value="${s.closingCash}" type="number" maxFractionDigits="0"/>đ</span></c:when>
+                      <c:when test="${s.closingCash != null}"><span style="font-weight:750"><fmt:formatNumber value="${s.closingCash}" type="number" maxFractionDigits="0"/>đ</span></c:when>
                       <c:otherwise><span style="color:var(--muted)">—</span></c:otherwise>
                     </c:choose>
                   </td>
@@ -475,6 +530,28 @@ tbody tr:hover td{background:#F7FBFF}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
+/* ── Custom dropdown ── */
+function toggleCdd(id){
+  const w=document.getElementById(id),m=w.querySelector('.cdd-menu'),b=w.querySelector('.cdd-btn');
+  const open=m.classList.contains('show');
+  document.querySelectorAll('.cdd-menu.show').forEach(x=>{x.classList.remove('show');x.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')});
+  if(!open){m.classList.add('show');b.classList.add('open');
+    const act=m.querySelector('.cdd-opt.active');if(act)act.scrollIntoView({block:'nearest'})}
+}
+function pickCdd(wId,hId,el){
+  document.getElementById(hId).value=el.dataset.val;
+  const w=document.getElementById(wId);
+  w.querySelector('.cdd-label').textContent=el.textContent;
+  w.querySelectorAll('.cdd-opt').forEach(o=>o.classList.remove('active'));
+  el.classList.add('active');
+  w.querySelector('.cdd-menu').classList.remove('show');
+  w.querySelector('.cdd-btn').classList.remove('open');
+  document.getElementById('reportFilterForm').submit();
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.cdd')){
+  document.querySelectorAll('.cdd-menu.show').forEach(m=>{m.classList.remove('show');m.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')})
+}});
+
 const ctx_path  = '${pageContext.request.contextPath}';
 const REP_MONTH = <%= repMonth %>;
 const REP_YEAR  = <%= repYear %>;
@@ -607,8 +684,8 @@ function renderWaterfallChart(data) {
       responsive:true, maintainAspectRatio:false,
       layout:{ padding:{ top:26 } },
       scales:{
-        x:{ stacked:true, ticks:{font:{family:'Outfit',size:11},color:'#7A90B0'}, grid:{display:false} },
-        y:{ stacked:true, ticks:{callback:v=>new Intl.NumberFormat('vi-VN',{notation:'compact'}).format(v)+'đ',font:{family:'Outfit',size:11},color:'#7A90B0'}, grid:{color:'rgba(0,0,0,0.04)'} }
+        x:{ stacked:true, ticks:{font:{family:'Plus Jakarta Sans',size:11},color:'#7A90B0'}, grid:{display:false} },
+        y:{ stacked:true, ticks:{callback:v=>new Intl.NumberFormat('vi-VN',{notation:'compact'}).format(v)+'đ',font:{family:'Plus Jakarta Sans',size:11},color:'#7A90B0'}, grid:{color:'rgba(0,0,0,0.04)'} }
       },
       plugins:{
         legend:{display:false},
@@ -662,8 +739,8 @@ function renderHorizontalBar(canvasId, existing, labels, values, setRef) {
         tooltip: niceTooltip({ yAlign:'center', callbacks:{label:c=>' '+fmt(c.raw)} })
       },
       scales:{
-        x:{ticks:{callback:v=>new Intl.NumberFormat('vi-VN',{notation:'compact'}).format(v)+'đ',font:{family:'Outfit',size:11},color:'#7A90B0'},grid:{color:'rgba(0,0,0,0.04)'}},
-        y:{ticks:{font:{family:'Outfit',size:11.5},color:'#334155'},grid:{display:false}}
+        x:{ticks:{callback:v=>new Intl.NumberFormat('vi-VN',{notation:'compact'}).format(v)+'đ',font:{family:'Plus Jakarta Sans',size:11},color:'#7A90B0'},grid:{color:'rgba(0,0,0,0.04)'}},
+        y:{ticks:{font:{family:'Plus Jakarta Sans',size:11.5},color:'#334155'},grid:{display:false}}
       }
     },
     plugins: [barShadow]
@@ -701,10 +778,10 @@ const doughnutCenterText = {
     ctx.save();
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = color;
-    ctx.font = '800 20px Outfit, sans-serif';
+    ctx.font = '800 20px Plus Jakarta Sans, sans-serif';
     ctx.fillText(big, cx, cy - 8);
     ctx.fillStyle = '#7A90B0';
-    ctx.font = '700 9px Outfit, sans-serif';
+    ctx.font = '700 9px Plus Jakarta Sans, sans-serif';
     let lbl = small; if (lbl.length > 20) lbl = lbl.slice(0, 19) + '…';
     ctx.fillText(lbl, cx, cy + 12);
     ctx.restore();
@@ -749,8 +826,8 @@ function buildDoughnutLegend(chart, labels, values) {
       + 'style="display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:9px;cursor:pointer;transition:.14s">'
       + '<span style="width:11px;height:11px;border-radius:50%;background:'+color+';flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>'
       + '<div style="flex:1;min-width:0">'
-      +   '<div style="font-size:12px;font-weight:700;color:#0F2645;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(r.l)+'</div>'
-      +   '<div style="font-size:11px;color:#7A90B0;font-weight:600">'+fmt(r.v)+'</div>'
+      +   '<div style="font-size:12px;font-weight:750;color:#0F2645;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(r.l)+'</div>'
+      +   '<div style="font-size:11px;color:#7A90B0;font-weight:750">'+fmt(r.v)+'</div>'
       + '</div>'
       + '<span style="font-size:12.5px;font-weight:800;color:'+color+'">'+pct+'%</span>'
       + '</div>';
@@ -777,8 +854,8 @@ function niceTooltip(extra) {
     backgroundColor:'rgba(11,22,40,.94)', titleColor:'#fff', bodyColor:'#E2E8F0',
     padding:12, cornerRadius:10, caretPadding:10, caretSize:6,
     borderColor:'rgba(58,189,224,.35)', borderWidth:1,
-    titleFont:{family:'Outfit',weight:'700',size:12.5},
-    bodyFont:{family:'Outfit',size:12.5},
+    titleFont:{family:'Plus Jakarta Sans',weight:'700',size:12.5},
+    bodyFont:{family:'Plus Jakarta Sans',size:12.5},
     usePointStyle:true, boxPadding:5, yAlign:'bottom'  // hiện PHÍA TRÊN điểm → không đè cột
   }, extra || {});
 }
@@ -792,8 +869,8 @@ function baseChartOptions() {
       tooltip: niceTooltip({ callbacks:{label:c=>' '+c.dataset.label+': '+fmt(c.raw)} })
     },
     scales:{
-      y:{ticks:{callback:v=>new Intl.NumberFormat('vi-VN',{notation:'compact'}).format(v)+'đ',font:{family:'Outfit',size:11},color:'#7A90B0'},grid:{color:'rgba(0,0,0,0.04)'}},
-      x:{ticks:{font:{family:'Outfit',size:11},color:'#7A90B0'},grid:{display:false}}
+      y:{ticks:{callback:v=>new Intl.NumberFormat('vi-VN',{notation:'compact'}).format(v)+'đ',font:{family:'Plus Jakarta Sans',size:11},color:'#7A90B0'},grid:{color:'rgba(0,0,0,0.04)'}},
+      x:{ticks:{font:{family:'Plus Jakarta Sans',size:11},color:'#7A90B0'},grid:{display:false}}
     }
   };
 }

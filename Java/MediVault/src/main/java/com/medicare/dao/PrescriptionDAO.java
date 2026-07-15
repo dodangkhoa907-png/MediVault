@@ -13,12 +13,12 @@ public class PrescriptionDAO implements IPrescriptionDAO {
         Prescription p = new Prescription();
         p.setPrescriptionId(rs.getInt("PrescriptionID"));
         p.setCustomerId(rs.getObject("CustomerID") != null ? rs.getInt("CustomerID") : null);
-        p.setDoctorName(rs.getNString("DoctorName"));
-        p.setHospitalName(rs.getNString("HospitalName"));
+        p.setDoctorName(rs.getString("DoctorName"));
+        p.setHospitalName(rs.getString("HospitalName"));
         if (rs.getDate("PrescriptionDate") != null)
             p.setPrescriptionDate(rs.getDate("PrescriptionDate").toLocalDate());
         p.setImagePath(rs.getString("ImagePath"));
-        p.setNotes(rs.getNString("Notes"));
+        p.setNotes(rs.getString("Notes"));
         return p;
     }
 

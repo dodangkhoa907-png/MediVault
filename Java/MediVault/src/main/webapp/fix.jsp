@@ -3,7 +3,8 @@
 <%@ page import="java.sql.*" %>
 <!DOCTYPE html>
 <html>
-<head><title>Fix Mojibake Tool</title><style>body{font-family:sans-serif;padding:20px;}</style></head>
+<head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet"><title>Fix Mojibake Tool</title><style>body{font-family:'Plus Jakarta Sans',sans-serif;padding:20px;}</style></head>
 <body>
     <h2>⚡ HỆ THỐNG ĐANG TỰ ĐỘNG KHÔI PHỤC TIẾNG VIỆT...</h2>
     <ul>

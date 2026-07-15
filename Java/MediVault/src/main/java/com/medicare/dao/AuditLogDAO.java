@@ -15,10 +15,10 @@ public class AuditLogDAO implements IAuditLogDAO {
         AuditLog log = new AuditLog();
         log.setLogId(rs.getLong("LogID"));
         log.setAccountId((Integer) rs.getObject("AccountID"));
-        log.setAction(rs.getNString("Action"));
-        log.setEntityType(rs.getNString("EntityType"));
+        log.setAction(rs.getString("Action"));
+        log.setEntityType(rs.getString("EntityType"));
         log.setEntityId((Integer) rs.getObject("EntityID"));
-        log.setDescription(rs.getNString("Description"));
+        log.setDescription(rs.getString("Description"));
         log.setIpAddress(rs.getString("IPAddress"));
         if (rs.getTimestamp("CreatedAt") != null)
             log.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());

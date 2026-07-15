@@ -21,7 +21,7 @@ public class MachineCommandDAO implements IMachineCommandDAO {
         if (rs.getTimestamp("ProcessedAt") != null)
             m.setProcessedAt(rs.getTimestamp("ProcessedAt").toLocalDateTime());
         m.setRetryCount(rs.getInt("RetryCount"));
-        m.setErrorMessage(rs.getNString("ErrorMessage"));
+        m.setErrorMessage(rs.getString("ErrorMessage"));
         return m;
     }
 

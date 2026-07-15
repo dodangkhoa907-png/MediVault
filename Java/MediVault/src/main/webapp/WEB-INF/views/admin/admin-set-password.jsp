@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8"  pageEncoding="UTF-8" %>
 <%
     com.medicare.entity.Account admin = (com.medicare.entity.Account) session.getAttribute("adminAccount");
     if (admin == null) { response.sendRedirect(request.getContextPath() + "/login"); return; }
@@ -30,11 +30,15 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Đặt mật khẩu mới — medicare</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -42,7 +46,7 @@
   --surface:#F1F5FB;--white:#fff;--muted:#7A90B0;--border:#D5E0F0;
   --green:#059669;--red:#DC2626;
 }
-html,body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--surface)}
+html,body{min-height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(--surface)}
 body{
   min-height:100vh;display:flex;align-items:center;justify-content:center;
   padding:32px 16px;
@@ -59,15 +63,15 @@ body{
 .page-header-top{display:flex;align-items:center;gap:12px;margin-bottom:4px}
 .back-btn{
   background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
-  border-radius:8px;padding:6px 12px;color:#fff;font-size:12px;font-weight:600;
+  border-radius:8px;padding:6px 12px;color:#fff;font-size:12px;font-weight:750;
   text-decoration:none;transition:background .2s;
 }
 .back-btn:hover{background:rgba(255,255,255,.2)}
 .step-badge{
   background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);
-  border-radius:20px;padding:4px 12px;font-size:11.5px;font-weight:600;
+  border-radius:20px;padding:4px 12px;font-size:11.5px;font-weight:750;
 }
-.page-title{font-family:'DM Serif Display',serif;font-size:24px;margin-top:8px}
+.page-title{font-family:'Lora',serif;font-size:24px;margin-top:8px}
 .page-sub{font-size:13px;opacity:.7;margin-top:4px}
 
 /* Main card */
@@ -82,7 +86,7 @@ body{
   background:linear-gradient(135deg,rgba(21,88,168,.04),rgba(58,189,224,.03));
   border-bottom:1px solid var(--border);padding:20px 28px;
 }
-.staff-info-title{font-size:11px;font-weight:700;letter-spacing:1.2px;
+.staff-info-title{font-size:11px;font-weight:750;letter-spacing:1.2px;
   text-transform:uppercase;color:var(--muted);margin-bottom:14px}
 .staff-profile-row{display:flex;align-items:center;gap:14px;margin-bottom:16px}
 .staff-av{
@@ -92,40 +96,40 @@ body{
   font-size:16px;font-weight:800;color:#fff;
   box-shadow:0 4px 14px rgba(21,88,168,.25);
 }
-.staff-name{font-size:16px;font-weight:700;color:var(--navy)}
+.staff-name{font-size:16px;font-weight:750;color:var(--navy)}
 .staff-username{font-size:12px;color:var(--muted);margin-top:2px}
 .staff-role-badge{
   display:inline-flex;align-items:center;gap:4px;
-  padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600;
+  padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:750;
   background:rgba(21,88,168,.08);color:var(--blue);margin-top:4px;
 }
 .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .info-item{background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 14px}
-.info-label{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px}
-.info-value{font-size:13px;font-weight:600;color:var(--ink)}
+.info-label{font-size:11px;font-weight:750;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px}
+.info-value{font-size:13px;font-weight:750;color:var(--ink)}
 
 /* Reset flow banner */
 .reset-banner{
   background:linear-gradient(90deg,rgba(245,158,11,.08),rgba(251,191,36,.05));
   border-left:3px solid #F59E0B;
-  padding:12px 20px;font-size:13px;color:#78350F;font-weight:500;
+  padding:12px 20px;font-size:13px;color:#78350F;font-weight:750;
   display:flex;align-items:center;gap:8px;
 }
 
 /* Form section */
 .form-section{padding:24px 28px}
-.form-section-title{font-size:13px;font-weight:700;color:var(--navy);
+.form-section-title{font-size:13px;font-weight:750;color:var(--navy);
   display:flex;align-items:center;gap:7px;margin-bottom:18px}
 .form-section-title::before{content:'';width:4px;height:16px;background:var(--blue);border-radius:2px}
 
 .field{margin-bottom:16px}
-.field-label{font-size:12.5px;font-weight:600;color:var(--navy);display:block;margin-bottom:6px}
+.field-label{font-size:12.5px;font-weight:750;color:var(--navy);display:block;margin-bottom:6px}
 .field-hint{font-size:11px;color:var(--muted);margin-top:4px}
 .pw-wrap{position:relative}
 .field-input{
   width:100%;padding:12px 44px 12px 14px;
   background:#fff;border:1.5px solid var(--border);border-radius:11px;
-  font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;color:var(--ink);
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:750;color:var(--ink);
   outline:none;transition:all .2s;
 }
 .field-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(21,88,168,.1)}
@@ -142,34 +146,35 @@ body{
   height:3px;border-radius:2px;transition:width .3s ease, background .3s ease;
   width:0;
 }
-.strength-text{font-size:11px;margin-top:4px;font-weight:600}
+.strength-text{font-size:11px;margin-top:4px;font-weight:750}
 
 /* Match indicator */
-.match-indicator{font-size:11.5px;margin-top:5px;font-weight:600;
+.match-indicator{font-size:11.5px;margin-top:5px;font-weight:750;
   display:flex;align-items:center;gap:4px}
 
 .err-box{
   background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;
   padding:11px 16px;margin-bottom:16px;font-size:13px;color:#991B1B;
-  font-weight:500;display:flex;align-items:center;gap:8px;
+  font-weight:750;display:flex;align-items:center;gap:8px;
 }
 
 .action-row{display:flex;gap:10px;margin-top:20px}
 .btn-submit{
   flex:1;padding:13px;background:linear-gradient(135deg,var(--blue),#0D3F85);
-  color:#fff;border:none;border-radius:11px;font-family:'Outfit',sans-serif;
-  font-size:15px;font-weight:700;cursor:pointer;transition:all .22s;
+  color:#fff;border:none;border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:15px;font-weight:750;cursor:pointer;transition:all .22s;
   box-shadow:0 4px 14px rgba(21,88,168,.25);
 }
 .btn-submit:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(21,88,168,.35)}
 .btn-submit:disabled{opacity:.6;cursor:not-allowed;transform:none}
 .btn-cancel{
   padding:13px 20px;background:#fff;color:var(--muted);border:1.5px solid var(--border);
-  border-radius:11px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;
+  border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:750;
   cursor:pointer;transition:all .2s;text-decoration:none;display:flex;align-items:center;
 }
 .btn-cancel:hover{border-color:var(--blue);color:var(--blue)}
 </style>
+    
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>

@@ -408,7 +408,7 @@ public class InvoiceDAO implements IInvoiceDAO {
             ps.setDate(1, Date.valueOf(from));
             ps.setDate(2, Date.valueOf(to));
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) result.put(rs.getNString("Label"), rs.getBigDecimal("Rev"));
+                while (rs.next()) result.put(rs.getString("Label"), rs.getBigDecimal("Rev"));
             }
         } catch (Exception e) { e.printStackTrace(); }
         return result;
@@ -430,7 +430,7 @@ public class InvoiceDAO implements IInvoiceDAO {
             ps.setDate(1, Date.valueOf(from));
             ps.setDate(2, Date.valueOf(to));
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) result.put(rs.getNString("Label"), rs.getBigDecimal("Rev"));
+                while (rs.next()) result.put(rs.getString("Label"), rs.getBigDecimal("Rev"));
             }
         } catch (Exception e) { e.printStackTrace(); }
         return result;
