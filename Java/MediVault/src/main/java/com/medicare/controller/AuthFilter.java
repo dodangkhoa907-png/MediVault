@@ -239,6 +239,10 @@ public class AuthFilter implements Filter {
                 || uri.startsWith(ctx + "/invoices")
                 || uri.startsWith(ctx + "/customers")
                 || uri.startsWith(ctx + "/medicines")
+                || uri.startsWith(ctx + "/purchase-orders")
+                || uri.startsWith(ctx + "/returns")
+                || uri.startsWith(ctx + "/suppliers")
+                || uri.startsWith(ctx + "/shelves")
                 || uri.startsWith(ctx + "/account-detail-api")
                 || uri.startsWith(ctx + "/audit-logs")
                 || uri.startsWith(ctx + "/admin/reset-requests")
@@ -248,7 +252,22 @@ public class AuthFilter implements Filter {
                 || uri.startsWith(ctx + "/shift-types");
 
         if (isAdminOnly) {
-            if (adminAcc == null) {
+            boolean hasAccess = false;
+            if (adminAcc != null && adminAcc.getRoleId() == 1) {
+                hasAccess = true;
+            } else if (staffAcc != null && staffAcc.getRoleId() == 3) {
+                boolean isStorekeeperAllowed = uri.startsWith(ctx + "/medicines")
+                        || uri.startsWith(ctx + "/categories")
+                        || uri.startsWith(ctx + "/shelves")
+                        || uri.startsWith(ctx + "/suppliers")
+                        || uri.startsWith(ctx + "/purchase-orders")
+                        || uri.startsWith(ctx + "/returns");
+                if (isStorekeeperAllowed) {
+                    hasAccess = true;
+                }
+            }
+
+            if (!hasAccess) {
                 // Nếu là AJAX request (polling online-status) → trả 401 thay vì redirect HTML
                 String xrw = req.getHeader("X-Requested-With");
                 if ("XMLHttpRequest".equals(xrw)) {
@@ -262,10 +281,6 @@ public class AuthFilter implements Filter {
                 String fullUri = uri + (qs != null ? "?" + qs : "");
                 req.getSession(true).setAttribute("redirectAfterLogin", fullUri);
                 resp.sendRedirect(ctx + "/login");
-                return;
-            }
-            if (adminAcc.getRoleId() != 1) {
-                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Không có quyền!");
                 return;
             }
             chain.doFilter(request, response);
