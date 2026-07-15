@@ -348,6 +348,7 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
 .price-wrap{position:relative}
 .price-wrap .dw-input{padding-right:30px}
 .price-sfx{position:absolute;right:11px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:750;color:var(--muted);pointer-events:none}
+.hsd-live{margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:750;display:none}
 .add-btn-xs{height:22px;padding:0 8px;background:rgba(58,189,224,.1);border:1.5px solid rgba(58,189,224,.3);border-radius:6px;font-size:11px;font-weight:750;color:#1558A8;cursor:pointer;flex-shrink:0}
 .checkbox-row-dw{display:flex;align-items:center;gap:14px;padding:11px 16px 11px 18px;background:rgba(245,158,11,.06);border:1.5px solid rgba(245,158,11,.2);border-radius:10px;cursor:pointer;grid-column:1/-1}
 .checkbox-row-dw input{width:18px;height:18px;cursor:pointer;accent-color:var(--gold);flex-shrink:0;margin:0}
@@ -900,7 +901,7 @@ select,option{font-family:inherit;font-size:inherit}
           <div class="dw-field">
             <label class="dw-label">Cảnh báo HH trước (ngày)</label>
             <input type="number" name="expiryAlertDays" id="dwExpDays" class="dw-input"
-                   value="30" min="1">
+                   value="30" min="1" oninput="checkDwHsd()">
           </div>
           <div class="dw-field">
             <label class="dw-label">Vị trí kệ</label>
@@ -925,7 +926,8 @@ select,option{font-family:inherit;font-size:inherit}
           </div>
           <div class="dw-field dw-initstock">
             <label class="dw-label">Ngày hết hạn lô <span id="dwInitExpReq" class="req" style="display:none">*</span></label>
-            <input type="date" name="initialExpiryDate" id="dwInitExpiry" class="dw-input">
+            <input type="date" name="initialExpiryDate" id="dwInitExpiry" class="dw-input" oninput="checkDwHsd()">
+            <div id="dwHsdWarn" class="hsd-live"></div>
           </div>
           <div class="dw-field dw-initstock">
             <label class="dw-label">Giá nhập kho (₫)</label>
@@ -1284,7 +1286,9 @@ function resetDwForm() {
   const dwInitExpReq = document.getElementById('dwInitExpReq');
   if (dwInitExpReq) dwInitExpReq.style.display = 'none';
   const dwInitExpiry = document.getElementById('dwInitExpiry');
-  if (dwInitExpiry) dwInitExpiry.required = false;
+  if (dwInitExpiry) { dwInitExpiry.required = false; dwInitExpiry.setCustomValidity(''); }
+  const dwHsdWarn = document.getElementById('dwHsdWarn');
+  if (dwHsdWarn) dwHsdWarn.style.display = 'none';
   // Reset image preview
   const preview = document.getElementById('dwImgPreview');
   if (preview && preview.tagName === 'IMG')
@@ -1396,6 +1400,35 @@ function onDwInitQty() {
   const req   = document.getElementById('dwInitExpReq');
   if (expIn) expIn.required = qty > 0;
   if (req)   req.style.display = qty > 0 ? 'inline' : 'none';
+  checkDwHsd();
+}
+
+// ── Cảnh báo HSD lô đầu so với ngưỡng "Cảnh báo HH trước (ngày)" của thuốc ──
+// Cùng logic với checkHsd() ở batch-form.jsp — cảnh báo ngay khi nhập, không
+// đợi tới lúc lưu mới biết HSD đã cận/hết hạn so với ngưỡng vừa cấu hình.
+function checkDwHsd() {
+  const warn = document.getElementById('dwHsdWarn');
+  const expIn = document.getElementById('dwInitExpiry');
+  if (!warn || !expIn) return;
+  if (!expIn.value) { warn.style.display = 'none'; expIn.setCustomValidity(''); return; }
+  const alertDays = parseInt(document.getElementById('dwExpDays').value) || 30;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const hsd = new Date(expIn.value);
+  const diffDays = Math.round((hsd - today) / 86400000);
+  const base = 'display:block;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:750;';
+  if (diffDays < 0) {
+    warn.style.cssText = base + 'background:#FEE2E2;color:#991B1B;border:1px solid #FECACA';
+    warn.textContent = '❌ HSD đã qua! Không thể nhập lô hết hạn.';
+    expIn.setCustomValidity('Ngày hết hạn đã qua');
+  } else if (diffDays <= alertDays) {
+    warn.style.cssText = base + 'background:#FFFBEB;color:#92400E;border:1px solid #FDE68A';
+    warn.textContent = '⚠️ HSD chỉ còn ' + diffDays + ' ngày — dưới ngưỡng cảnh báo ' + alertDays + ' ngày vừa cấu hình ở trên.';
+    expIn.setCustomValidity('');
+  } else {
+    warn.style.cssText = base + 'background:#F0FDF4;color:#166534;border:1px solid #BBF7D0';
+    warn.textContent = '✓ HSD còn ' + diffDays + ' ngày (~' + Math.round(diffDays/30) + ' tháng).';
+    expIn.setCustomValidity('');
+  }
 }
 
 // ── STAT CARD SWITCHING ───────────────────────────────────────────────────────

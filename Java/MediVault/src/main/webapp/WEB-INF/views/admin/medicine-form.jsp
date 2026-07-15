@@ -190,6 +190,7 @@ textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
 .toast-icon{font-size:16px;flex-shrink:0;margin-top:1px}
 .inline-err{font-size:11.5px;color:var(--red);font-weight:750;margin-top:4px;display:block}
 .inline-warn{font-size:11.5px;color:var(--gold);font-weight:750;margin-top:4px;display:block}
+.field-input.field-error{border-color:var(--red)!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)}
 /* ── NOT FOUND STATE ── */
 .not-found-wrap{display:flex;align-items:center;justify-content:center;min-height:60vh}
 .not-found-card{background:var(--white);border:1px solid var(--border);border-radius:20px;padding:48px 40px;text-align:center;max-width:480px;box-shadow:0 4px 20px rgba(21,88,168,.06)}
@@ -708,6 +709,7 @@ select,option{font-family:inherit;font-size:inherit}
       <input type="hidden" name="medicineId" value="<%= m.getMedicineId() %>">
       <input type="hidden" name="poMode" value="none">
       <input type="hidden" name="returnTo" value="edit">
+      <input type="hidden" name="forceShortExpiry" id="bmForceShortExpiry" value="false">
       <div class="bm-body">
         <div class="field span-2">
           <label class="field-label">Số lô hàng <span class="req">*</span>
@@ -715,11 +717,13 @@ select,option{font-family:inherit;font-size:inherit}
           </label>
           <input type="text" name="batchNumber" id="bmBatchNo" class="field-input"
                  placeholder="VD: BATCH-2024-001" required>
+          <span class="inline-err" id="bmBatchNoErr"></span>
         </div>
         <div class="field">
           <label class="field-label">Số lượng nhập <span class="req">*</span></label>
           <input type="number" name="initialQuantity" id="bmQty" class="field-input"
                  placeholder="VD: 100" min="1" required>
+          <span class="inline-err" id="bmQtyErr"></span>
         </div>
         <div class="field">
           <label class="field-label">Ngày hết hạn (HSD) <span class="req">*</span></label>
@@ -734,6 +738,7 @@ select,option{font-family:inherit;font-size:inherit}
             <span class="price-suffix">₫</span>
           </div>
           <span class="inline-warn" id="bmPriceWarn"></span>
+          <span class="inline-err" id="bmPriceErr"></span>
         </div>
         <div class="field">
           <label class="field-label">Ngày sản xuất <span style="font-size:11px;font-weight:400;color:var(--muted)">(tùy chọn)</span></label>
@@ -822,6 +827,7 @@ const CTX = '${pageContext.request.contextPath}';
 <%-- Giá nhập lần cuối để so sánh outlier — 0 nếu chưa có lô nào --%>
 <% java.math.BigDecimal _lp = (java.math.BigDecimal) request.getAttribute("lastImportPrice"); %>
 const LAST_IMPORT_PRICE = <%= _lp != null ? _lp.toPlainString() : "0" %>;
+const EXPIRY_ALERT_DAYS = <%= vExpDays %>;
 
 // ── TOAST ────────────────────────────────────────────────────────────────────
 function showToast(type, msg, duration) {
@@ -838,7 +844,13 @@ function showToast(type, msg, duration) {
   const msg = p.get('msg');
   const addedQty = p.get('addedQty');
   const batchErr = p.get('batchErr');
-  if (batchErr) {
+  const expiryWarn = p.get('expiryWarn');
+  if (expiryWarn) {
+    const parts = decodeURIComponent(expiryWarn).split(':');
+    const remainDays = parts[1] || '?';
+    const alertDays = parts[2] || '?';
+    showToast('warn', '⚠️ HSD chỉ còn ' + remainDays + ' ngày (ngưỡng: ' + alertDays + ' ngày). Mở lại modal và xác nhận để nhập lô.', 8000);
+  } else if (batchErr) {
     showToast('err', decodeURIComponent(batchErr), 6000);
   } else if (msg === 'batch-added') {
     showToast('ok', 'Nhập lô mới thành công!');
@@ -852,7 +864,7 @@ function showToast(type, msg, duration) {
     showToast('err', 'Có lỗi xảy ra, vui lòng thử lại.');
   }
   // Xóa query params khỏi URL (clean address bar)
-  if (msg || batchErr) {
+  if (msg || batchErr || expiryWarn) {
     const clean = window.location.pathname + (p.get('action') ? '?action=' + p.get('action') + (p.get('id') ? '&id=' + p.get('id') : '') : '');
     window.history.replaceState({}, '', clean);
   }
@@ -867,13 +879,19 @@ function openBatchModal() {
     const ts = new Date().toISOString().slice(2,10).replace(/-/g,'');
     bno.value = 'LO-<%= m != null ? m.getMedicineId() : 0 %>-' + ts;
   }
-  // Reset inline errors
-  ['bmExpiryErr','bmMfErr','bmPriceWarn'].forEach(id => {
+  // Reset inline errors and force flag
+  ['bmExpiryErr','bmMfErr','bmPriceWarn','bmBatchNoErr','bmQtyErr','bmPriceErr'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = '';
   });
+  ['bmBatchNo','bmQty','bmExpiry','bmPrice','bmMfDate'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('field-error');
+  });
+  const forceField = document.getElementById('bmForceShortExpiry');
+  if (forceField) forceField.value = 'false';
   const btn = document.getElementById('bmSubmitBtn');
-  if (btn) btn.disabled = false;
+  if (btn) { btn.disabled = false; btn.textContent = '📥 Nhập lô vào kho'; }
   modal.classList.add('open');
   setTimeout(() => { const q = document.getElementById('bmQty'); if (q) q.focus(); }, 120);
 }
@@ -890,20 +908,97 @@ document.addEventListener('keydown', e => {
 
 // Client-side validation cho batch modal
 const batchForm = document.getElementById('batchModalForm');
+
+// Ánh xạ tên field server trả về ↔ id input/lỗi trong modal — dùng để chỉ tô đỏ
+// đúng ô bị sai, KHÔNG đụng tới các ô khác đã nhập đúng.
+const BM_FIELD_TO_INPUT = {
+  batchNumber:'bmBatchNo', initialQuantity:'bmQty', expiryDate:'bmExpiry',
+  importPrice:'bmPrice', manufactureDate:'bmMfDate'
+};
+const BM_INPUT_TO_ERR = {
+  bmBatchNo:'bmBatchNoErr', bmQty:'bmQtyErr', bmExpiry:'bmExpiryErr',
+  bmPrice:'bmPriceErr', bmMfDate:'bmMfErr'
+};
+function clearBmFieldError(inputId) {
+  const input = document.getElementById(inputId);
+  if (input) input.classList.remove('field-error');
+  const errEl = document.getElementById(BM_INPUT_TO_ERR[inputId]);
+  if (errEl) errEl.textContent = '';
+}
+
 if (batchForm) {
   // Live: clear errors khi user sửa
   document.getElementById('bmExpiry').addEventListener('change', validateBatchDates);
   document.getElementById('bmMfDate').addEventListener('change', validateBatchDates);
   document.getElementById('bmPrice').addEventListener('input', checkPriceOutlier);
+  Object.keys(BM_INPUT_TO_ERR).forEach(inputId => {
+    const el = document.getElementById(inputId);
+    if (el) el.addEventListener('input', () => clearBmFieldError(inputId));
+  });
 
   batchForm.addEventListener('submit', function(e) {
+    e.preventDefault(); // luôn gửi qua AJAX — không để trình duyệt điều hướng trang
     const ok = validateBatchDates();
-    if (!ok) { e.preventDefault(); return; }
-    checkPriceOutlier(); // warn only, không chặn
-    // Disable button chống double-submit
-    const btn = document.getElementById('bmSubmitBtn');
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Đang xử lý...'; }
+    if (!ok) return;
+    checkPriceOutlier();
+
+    // Kiểm tra cảnh báo HSD dưới ngưỡng expiryAlertDays
+    const forceField = document.getElementById('bmForceShortExpiry');
+    if (forceField.value !== 'true') {
+      const expiryVal = document.getElementById('bmExpiry').value;
+      if (expiryVal && EXPIRY_ALERT_DAYS > 0) {
+        const today = new Date(); today.setHours(0,0,0,0);
+        const expDate = new Date(expiryVal);
+        const diffDays = Math.round((expDate - today) / 86400000);
+        if (diffDays > 0 && diffDays <= EXPIRY_ALERT_DAYS) {
+          if (confirm('⚠️ HSD chỉ còn ' + diffDays + ' ngày, dưới ngưỡng cảnh báo '
+              + EXPIRY_ALERT_DAYS + ' ngày đã cấu hình cho thuốc này.\n\n'
+              + 'Bạn có chắc chắn muốn nhập lô này không?')) {
+            forceField.value = 'true';
+            submitBatchForm();
+          }
+          return;
+        }
+      }
+    }
+    submitBatchForm();
   });
+}
+
+// Gửi form modal qua fetch (AJAX) thay vì submit thường — khi server báo lỗi,
+// trang KHÔNG reload nên mọi ô đã nhập đúng vẫn còn nguyên, chỉ ô sai bị tô đỏ.
+async function submitBatchForm() {
+  const btn = document.getElementById('bmSubmitBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Đang xử lý...'; }
+  try {
+    const fd = new FormData(batchForm);
+    const res = await fetch(batchForm.action, {
+      method: 'POST',
+      body: fd,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      window.location.href = data.redirect
+          || (CTX + '/medicines?action=edit&id=<%= m != null ? m.getMedicineId() : 0 %>&msg=batch-added');
+      return;
+    }
+
+    // LỖI: chỉ tô đỏ + hiện thông báo ở đúng ô sai — các ô còn lại giữ nguyên giá trị
+    showToast('err', data.msg || 'Có lỗi xảy ra, vui lòng thử lại.', 6000);
+    const inputId = BM_FIELD_TO_INPUT[data.field];
+    if (inputId) {
+      const input = document.getElementById(inputId);
+      const errEl = document.getElementById(BM_INPUT_TO_ERR[inputId]);
+      if (input) { input.classList.add('field-error'); input.focus(); }
+      if (errEl) errEl.textContent = data.msg;
+    }
+    if (btn) { btn.disabled = false; btn.textContent = '📥 Nhập lô vào kho'; }
+  } catch (err) {
+    showToast('err', 'Lỗi kết nối, vui lòng thử lại.', 6000);
+    if (btn) { btn.disabled = false; btn.textContent = '📥 Nhập lô vào kho'; }
+  }
 }
 
 function validateBatchDates() {
@@ -921,11 +1016,20 @@ function validateBatchDates() {
     if (expDate <= today) {
       expiryErr.textContent = '⛔ Ngày hết hạn phải sau hôm nay!';
       ok = false;
-    } else if (mfDateVal) {
-      const mfDate = new Date(mfDateVal);
-      if (mfDate >= expDate) {
-        mfErr.textContent = '⛔ Ngày sản xuất không thể bằng hoặc sau ngày hết hạn!';
-        ok = false;
+    } else {
+      const diffDays = Math.round((expDate - today) / 86400000);
+      if (diffDays <= EXPIRY_ALERT_DAYS) {
+        expiryErr.innerHTML = '⚠️ HSD chỉ còn ' + diffDays + ' ngày — dưới ngưỡng cảnh báo ' + EXPIRY_ALERT_DAYS + ' ngày. Sẽ cần xác nhận khi nhập.';
+        expiryErr.className = 'inline-warn';
+      } else {
+        expiryErr.className = 'inline-err';
+      }
+      if (mfDateVal) {
+        const mfDate = new Date(mfDateVal);
+        if (mfDate >= expDate) {
+          mfErr.textContent = '⛔ Ngày sản xuất không thể bằng hoặc sau ngày hết hạn!';
+          ok = false;
+        }
       }
     }
   }

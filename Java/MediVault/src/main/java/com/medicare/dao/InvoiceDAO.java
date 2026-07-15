@@ -71,9 +71,8 @@ public class InvoiceDAO implements IInvoiceDAO {
      * SP tự chọn lô cũ nhất → trừ kho → tạo InvoiceDetail → đẩy lệnh máy.
      */
     public boolean addItemByFIFO(int invoiceId, int medicineId, int quantity) {
-        String sql = "EXEC SP_AddSaleByFIFO ?, ?, ?";
         try (Connection cn = DBContext.getConnection();
-             CallableStatement cs = cn.prepareCall(sql)) {
+             CallableStatement cs = cn.prepareCall("{CALL SP_AddSaleByFIFO(?, ?, ?)}")) {
             cs.setInt(1, invoiceId);
             cs.setInt(2, medicineId);
             cs.setInt(3, quantity);
@@ -217,33 +216,39 @@ public class InvoiceDAO implements IInvoiceDAO {
      * @param shiftId  Ca làm việc hiện tại (null nếu không có ca đang mở)
      * @return invoiceId nếu thành công, -1 nếu lỗi
      */
+    private String lastSaleError;
+
+    public String getLastSaleError() { return lastSaleError; }
+
     public int completeSaleTransaction(int accountId, Integer shiftId, Integer customerId,
                                        String paymentMethod, java.math.BigDecimal discount,
                                        int[] medicineIds, int[] quantities) {
+        lastSaleError = null;
         Connection cn = null;
         try {
             cn = DBContext.getConnection();
-            cn.setAutoCommit(false);  // ── Bắt đầu transaction ──
+            cn.setAutoCommit(false);
 
             // Bước 1: Tạo Invoice PENDING — bao gồm ShiftID
+            int invoiceId;
             String sqlInsert = "INSERT INTO Invoices (AccountID, ShiftID, CustomerID, PaymentMethod) " +
-                    "VALUES (?,?,?,?); SELECT SCOPE_IDENTITY();";
-            int invoiceId = -1;
-            try (PreparedStatement ps = cn.prepareStatement(sqlInsert)) {
+                    "VALUES (?,?,?,?)";
+            try (PreparedStatement ps = cn.prepareStatement(sqlInsert, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setInt(1, accountId);
                 if (shiftId != null) ps.setInt(2, shiftId); else ps.setNull(2, Types.INTEGER);
                 if (customerId != null) ps.setInt(3, customerId); else ps.setNull(3, Types.INTEGER);
                 ps.setString(4, paymentMethod != null ? paymentMethod : "CASH");
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) invoiceId = rs.getInt(1);
+                ps.executeUpdate();
+                try (ResultSet keys = ps.getGeneratedKeys()) {
+                    if (keys.next()) invoiceId = keys.getInt(1);
+                    else throw new Exception("Không lấy được InvoiceID sau INSERT");
                 }
             }
-            if (invoiceId < 0) throw new Exception("Không tạo được hóa đơn");
+            if (invoiceId <= 0) throw new Exception("InvoiceID không hợp lệ: " + invoiceId);
 
             // Bước 2: Thêm từng sản phẩm qua SP (FIFO) — cùng connection, cùng transaction
-            String sqlSP = "EXEC SP_AddSaleByFIFO ?, ?, ?";
             for (int i = 0; i < medicineIds.length; i++) {
-                try (CallableStatement cs = cn.prepareCall(sqlSP)) {
+                try (CallableStatement cs = cn.prepareCall("{CALL SP_AddSaleByFIFO(?, ?, ?)}")) {
                     cs.setInt(1, invoiceId);
                     cs.setInt(2, medicineIds[i]);
                     cs.setInt(3, quantities[i]);
@@ -264,14 +269,16 @@ public class InvoiceDAO implements IInvoiceDAO {
                 ps.setInt(2, invoiceId);
                 ps.setBigDecimal(3, disc);
                 ps.setInt(4, invoiceId);
-                if (ps.executeUpdate() == 0) throw new Exception("Không complete được hóa đơn");
+                if (ps.executeUpdate() == 0) throw new Exception("Không complete được hóa đơn (ID=" + invoiceId + ")");
             }
 
             cn.commit();
             return invoiceId;
 
         } catch (Exception e) {
+            lastSaleError = e.getMessage();
             System.err.println("[InvoiceDAO] completeSaleTransaction rollback: " + e.getMessage());
+            e.printStackTrace();
             if (cn != null) {
                 try { cn.rollback(); } catch (SQLException rb) { rb.printStackTrace(); }
             }
