@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java"  pageEncoding="UTF-8" %>
 <% String activeNav = "attendance"; %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
@@ -10,47 +10,51 @@
     String initials = fullName.length()>=2 ? fullName.substring(0,1).toUpperCase()+fullName.substring(1,2).toUpperCase() : fullName.toUpperCase();
 %>
 <!DOCTYPE html><html lang="vi"><head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Điểm danh trực tiếp — medicare</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--ink:#0B1628;--blue:#1558A8;--cyan:#3ABDE0;--surface:#F1F5FB;--white:#fff;--muted:#7A90B0;--border:#D5E0F0;--green:#059669;--red:#DC2626;--amber:#F59E0B;--sidebar:232px;--radius:14px}
-html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--surface);color:var(--ink)}body{display:flex}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(--surface);color:var(--ink)}body{display:flex}
 .sidebar{width:var(--sidebar);min-height:100vh;background:linear-gradient(175deg,#071022 0%,#0F2645 45%,#1558A8 100%);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100}
 .sidebar-logo{height:66px;padding:0 20px;display:flex;align-items:center;gap:11px;border-bottom:1px solid rgba(255,255,255,.06)}
 .logo-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:16px}
 .logo-text{font-size:16px;font-weight:800;color:#fff}.logo-text span{color:var(--cyan)}
 .logo-sub{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1.2px;text-transform:uppercase;margin-top:1px}
-.nav-section{padding:12px 0 4px}.nav-label{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:500;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
+.nav-section{padding:12px 0 4px}.nav-label{font-size:9px;font-weight:750;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:750;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
 .nav-item:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.06)}
-.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:600}
+.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:750}
 .nav-item.active::before{content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:56%;background:var(--cyan);border-radius:2px}
 .sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid rgba(255,255,255,.06)}
 .sidebar-user{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
 .user-av{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
-.user-name{font-size:12.5px;font-weight:600;color:#fff;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.user-name{font-size:12.5px;font-weight:750;color:#fff;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .user-role{font-size:10px;color:rgba(255,255,255,.35);margin-top:1px}
 .logout-btn{margin-left:auto;width:28px;height:28px;border-radius:8px;background:rgba(220,38,38,.12);border:none;display:flex;align-items:center;justify-content:center;color:rgba(220,38,38,.7);font-size:13px;cursor:pointer;text-decoration:none}
 .logout-btn:hover{background:rgba(220,38,38,.2);color:var(--red)}
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh}
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50}
-.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--ink)}
+.topbar-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:750;color:var(--ink)}
 
     
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.topbar-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12.5px;font-weight:700}
+.topbar-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12.5px;font-weight:750}
 .pill-green{background:#ECFDF5;color:var(--green)}.pill-blue{background:#EFF6FF;color:var(--blue)}
 .tab-bar{display:flex;gap:4px;padding:0 26px;background:var(--white);border-bottom:1px solid var(--border)}
-.tab{padding:12px 18px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;border-bottom:2.5px solid transparent;transition:all .18s}
+.tab{padding:12px 18px;font-size:13px;font-weight:750;color:var(--muted);text-decoration:none;border-bottom:2.5px solid transparent;transition:all .18s}
 .tab:hover{color:var(--ink)}.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
 .content{padding:22px 26px;flex:1}
 .summary-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
 .sum-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:12px}
 .sum-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px}
 .sum-ic-green{background:#ECFDF5}.sum-ic-blue{background:#EFF6FF}.sum-ic-amber{background:#FFFBEB}
-.sum-num{font-size:22px;font-weight:900;line-height:1}.sum-lbl{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.sum-num{font-size:22px;font-weight:800;line-height:1}.sum-lbl{font-size:11px;color:var(--muted);font-weight:750;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
 /* Live cards */
 .live-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:24px}
 .live-card{background:linear-gradient(135deg,#ECFDF5,#F0FDF4);border:1.5px solid #A7F3D0;border-radius:var(--radius);padding:18px;position:relative;overflow:hidden}
@@ -58,41 +62,56 @@ html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--surface);
 .lc-badge{display:inline-flex;align-items:center;gap:6px;background:#D1FAE5;color:#065F46;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:800;margin-bottom:10px}
 .lc-dot{width:7px;height:7px;border-radius:50%;background:#10B981;animation:pulse 1.4s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.lc-name{font-size:16px;font-weight:900;color:var(--ink)}
+.lc-name{font-size:16px;font-weight:800;color:var(--ink)}
 .lc-role{font-size:12px;color:#6EE7B7;margin-top:2px}
-.lc-timer{font-size:28px;font-weight:900;color:var(--green);font-variant-numeric:tabular-nums;letter-spacing:-1px;margin:10px 0 4px}
-.lc-since{font-size:12px;color:#059669;font-weight:600}
+.lc-timer{font-size:28px;font-weight:800;color:var(--green);font-variant-numeric:tabular-nums;letter-spacing:-1px;margin:10px 0 4px}
+.lc-since{font-size:12px;color:#059669;font-weight:750}
 .lc-meta{display:flex;gap:10px;margin-top:12px}
 .lc-meta-item{flex:1;background:rgba(255,255,255,.7);border-radius:8px;padding:7px 10px}
-.lc-meta-label{font-size:10px;color:#6EE7B7;font-weight:700;text-transform:uppercase}
-.lc-meta-val{font-size:12px;font-weight:700;color:#065F46;margin-top:2px}
+.lc-meta-label{font-size:10px;color:#6EE7B7;font-weight:750;text-transform:uppercase}
+.lc-meta-val{font-size:12px;font-weight:750;color:#065F46;margin-top:2px}
 .lc-actions{margin-top:12px;display:flex;gap:6px}
-.btn-force-out{flex:1;padding:7px 0;background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.2);border-radius:8px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--red);cursor:pointer;transition:all .18s}
+.btn-force-out{flex:1;padding:7px 0;background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.2);border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:750;color:var(--red);cursor:pointer;transition:all .18s}
 .btn-force-out:hover{background:rgba(220,38,38,.2)}
-.btn-detail{padding:7px 14px;background:rgba(21,88,168,.1);border:1px solid rgba(21,88,168,.2);border-radius:8px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--blue);cursor:pointer;text-decoration:none;transition:all .18s}
+.btn-detail{padding:7px 14px;background:rgba(21,88,168,.1);border:1px solid rgba(21,88,168,.2);border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:750;color:var(--blue);cursor:pointer;text-decoration:none;transition:all .18s}
 .btn-detail:hover{background:rgba(21,88,168,.15)}
 /* Lịch hôm nay */
-.table-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.table-card{background:#fff;border:1px solid rgba(213,224,240,.45);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 3px rgba(15,38,69,.03),0 4px 12px rgba(15,38,69,.04)}
 .table-card-head{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .table-card-head h2{font-size:14px;font-weight:800;color:var(--ink)}
 table{width:100%;border-collapse:collapse}
 thead th{padding:9px 16px;background:#F8FAFC;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);text-align:left;border-bottom:1px solid var(--border)}
 tbody td{padding:11px 16px;font-size:13px;border-bottom:1px solid #F1F5F9;vertical-align:middle}
 tbody tr:last-child td{border-bottom:none}
-.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:750}
 .badge-working{background:#ECFDF5;color:#065F46}
 .badge-scheduled{background:#EFF6FF;color:#1E40AF}
 .badge-absent{background:#FEF2F2;color:#991B1B}
 .badge-leave{background:#FEF3C7;color:#92400E}
 .empty-box{padding:40px;text-align:center;color:var(--muted)}
-.toast{position:fixed;top:20px;right:24px;padding:12px 20px;border-radius:11px;font-size:13px;font-weight:700;color:#fff;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.15);animation:slideIn .3s ease}
+.toast{position:fixed;top:20px;right:24px;padding:12px 20px;border-radius:11px;font-size:13px;font-weight:750;color:#fff;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.15);animation:slideIn .3s ease}
 .toast-ok{background:#059669}.toast-err{background:#DC2626}
 @keyframes slideIn{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
 
 .badge-late{background:#FEF3C7;color:#92400E;border:1px solid #FDE68A}
 .badge-leave{background:#EDE9FE;color:#5B21B6;border:1px solid #DDD6FE}
 
-</style></head>
+select,option{font-family:inherit;font-size:inherit}
+.cdd{position:relative;user-select:none;display:inline-block}
+.cdd-btn{display:flex;align-items:center;gap:6px;padding:9px 14px;background:var(--white,#fff);border:1.5px solid var(--border,#D5E0F0);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;color:var(--ink,#0B1628);cursor:pointer;transition:all .18s;white-space:nowrap}
+.cdd-btn:hover{border-color:var(--cyan,#3ABDE0);background:var(--cyan-soft,#EBF8FD)}
+.cdd-btn.open{border-color:var(--cyan,#3ABDE0);box-shadow:0 0 0 3px rgba(58,189,224,.12)}
+.cdd-arrow{font-size:9px;color:var(--muted,#7A90B0);transition:transform .2s}
+.cdd-btn.open .cdd-arrow{transform:rotate(180deg)}
+.cdd-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:100%;background:var(--white,#fff);border:1.5px solid var(--border,#D5E0F0);border-radius:12px;padding:6px;box-shadow:0 12px 36px rgba(15,38,69,.15);z-index:200;opacity:0;transform:translateY(-6px);pointer-events:none;transition:all .18s ease;max-height:260px;overflow-y:auto}
+.cdd-menu.show{opacity:1;transform:translateY(0);pointer-events:auto}
+.cdd-menu::-webkit-scrollbar{width:4px}
+.cdd-menu::-webkit-scrollbar-thumb{background:var(--border,#D5E0F0);border-radius:4px}
+.cdd-opt{padding:8px 14px;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;color:var(--ink,#0B1628);cursor:pointer;transition:all .12s;white-space:nowrap}
+.cdd-opt:hover{background:var(--surface,#F1F5FB);color:var(--blue,#1558A8)}
+.cdd-opt.active{background:linear-gradient(135deg,var(--blue,#1558A8),#0D3F85);color:#fff;font-weight:750}
+</style>    
+</head>
 <body>
 <%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
 
@@ -181,7 +200,7 @@ tbody tr:last-child td{border-bottom:none}
     <div class="table-card">
       <div class="table-card-head">
         <h2>📋 Lịch ca hôm nay</h2>
-        <a href="${pageContext.request.contextPath}/shifts?tab=list" style="font-size:12px;color:var(--blue);text-decoration:none;font-weight:700">Quản lý lịch →</a>
+        <a href="${pageContext.request.contextPath}/shifts?tab=list" style="font-size:12px;color:var(--blue);text-decoration:none;font-weight:750">Quản lý lịch →</a>
       </div>
       <c:choose>
         <c:when test="${empty todaySchedules}">
@@ -195,7 +214,7 @@ tbody tr:last-child td{border-bottom:none}
             <tbody>
               <c:forEach var="sc" items="${todaySchedules}">
                 <tr>
-                  <td style="font-weight:700">${sc.staffName}</td>
+                  <td style="font-weight:750">${sc.staffName}</td>
                   <td>${sc.shiftTypeName}</td>
                   <td>${fn:substring(sc.plannedStart.toString(),11,16)} – ${fn:substring(sc.plannedEnd.toString(),11,16)}</td>
                   <td>
@@ -227,7 +246,7 @@ tbody tr:last-child td{border-bottom:none}
          ═══════════════════════════════════════════════════════════ --%>
     <div style="display:flex;align-items:center;gap:12px;margin:28px 0 16px">
       <div style="flex:1;height:1px;background:var(--border)"></div>
-      <span style="font-size:11.5px;font-weight:700;color:var(--muted);
+      <span style="font-size:11.5px;font-weight:750;color:var(--muted);
                    text-transform:uppercase;letter-spacing:.6px">
         📋 Lịch sử điểm danh
       </span>
@@ -242,42 +261,46 @@ tbody tr:last-child td{border-bottom:none}
               style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1">
           <input type="hidden" name="action" value="live">
           <div style="display:flex;flex-direction:column;gap:3px">
-            <label style="font-size:10px;font-weight:700;color:var(--muted);
+            <label style="font-size:10px;font-weight:750;color:var(--muted);
                           text-transform:uppercase;letter-spacing:.5px">Từ ngày</label>
             <input type="date" name="histFrom" value="${param.histFrom}"
                    style="border:1.5px solid var(--border);border-radius:8px;
-                          padding:6px 10px;font-family:'Outfit',sans-serif;
+                          padding:6px 10px;font-family:'Plus Jakarta Sans',sans-serif;
                           font-size:12.5px;height:34px;outline:none">
           </div>
           <div style="display:flex;flex-direction:column;gap:3px">
-            <label style="font-size:10px;font-weight:700;color:var(--muted);
+            <label style="font-size:10px;font-weight:750;color:var(--muted);
                           text-transform:uppercase;letter-spacing:.5px">Đến ngày</label>
             <input type="date" name="histTo" value="${param.histTo}"
                    style="border:1.5px solid var(--border);border-radius:8px;
-                          padding:6px 10px;font-family:'Outfit',sans-serif;
+                          padding:6px 10px;font-family:'Plus Jakarta Sans',sans-serif;
                           font-size:12.5px;height:34px;outline:none">
           </div>
           <div style="display:flex;flex-direction:column;gap:3px">
-            <label style="font-size:10px;font-weight:700;color:var(--muted);
+            <label style="font-size:10px;font-weight:750;color:var(--muted);
                           text-transform:uppercase;letter-spacing:.5px">Nhân viên</label>
-            <select name="histAcc"
+            <input type="hidden" name="histAcc" id="hHistAcc" value="${param.histAcc}">
+            <div class="cdd" id="cddHistAcc">
+              <div class="cdd-btn" onclick="toggleCdd('cddHistAcc')"
                     style="border:1.5px solid var(--border);border-radius:8px;
-                           padding:6px 10px;font-family:'Outfit',sans-serif;
-                           font-size:12.5px;height:34px;background:var(--white);outline:none">
-              <option value="">— Tất cả —</option>
-              <c:forEach var="s" items="${allStaff}">
-                <option value="${s.accountId}"
-                  ${param.histAcc == s.accountId.toString() ? 'selected' : ''}>
-                  ${s.fullName}
-                </option>
-              </c:forEach>
-            </select>
+                           padding:6px 10px;font-family:'Plus Jakarta Sans',sans-serif;
+                           font-size:12.5px;height:34px;background:var(--white)">
+                <span class="cdd-label"><c:choose><c:when test="${empty param.histAcc}">— Tất cả —</c:when><c:otherwise><c:forEach var="s" items="${allStaff}"><c:if test="${param.histAcc == s.accountId.toString()}">${s.fullName}</c:if></c:forEach></c:otherwise></c:choose></span>
+                <span class="cdd-arrow">▼</span>
+              </div>
+              <div class="cdd-menu">
+                <div class="cdd-opt ${empty param.histAcc?'active':''}" data-val="" onclick="pickCdd('cddHistAcc','hHistAcc',this,false)">— Tất cả —</div>
+                <c:forEach var="s" items="${allStaff}">
+                  <div class="cdd-opt ${param.histAcc == s.accountId.toString() ? 'active' : ''}" data-val="${s.accountId}" onclick="pickCdd('cddHistAcc','hHistAcc',this,false)">${s.fullName}</div>
+                </c:forEach>
+              </div>
+            </div>
           </div>
           <div style="align-self:flex-end">
             <button type="submit"
                     style="padding:7px 18px;background:var(--blue);color:#fff;
-                           border:none;border-radius:8px;font-family:'Outfit',sans-serif;
-                           font-size:13px;font-weight:600;cursor:pointer;height:34px;
+                           border:none;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;
+                           font-size:13px;font-weight:750;cursor:pointer;height:34px;
                            transition:background .18s"
                     onmouseover="this.style.background='#0D3F85'"
                     onmouseout="this.style.background='var(--blue)'">
@@ -313,7 +336,7 @@ tbody tr:last-child td{border-bottom:none}
               <c:otherwise>
                 <c:forEach var="att" items="${attendanceList}">
                   <tr>
-                    <td style="font-weight:700;color:var(--blue);font-size:12px">#${att.attendanceId}</td>
+                    <td style="font-weight:750;color:var(--blue);font-size:12px">#${att.attendanceId}</td>
                     <td>
                       <div style="display:flex;align-items:center;gap:8px">
                         <div style="width:30px;height:30px;border-radius:8px;flex-shrink:0;
@@ -322,11 +345,11 @@ tbody tr:last-child td{border-bottom:none}
                                     justify-content:center;font-size:10px;font-weight:800">
                           ${fn:toUpperCase(fn:substring(att.staffName,0,2))}
                         </div>
-                        <span style="font-weight:600;font-size:13px">${att.staffName}</span>
+                        <span style="font-weight:750;font-size:13px">${att.staffName}</span>
                       </div>
                     </td>
                     <td>
-                      <div style="font-weight:600;font-size:13px">
+                      <div style="font-weight:750;font-size:13px">
                         ${fn:substring(att.checkInTime.toString(),11,16)}
                       </div>
                       <div style="font-size:11px;color:var(--muted)">
@@ -336,7 +359,7 @@ tbody tr:last-child td{border-bottom:none}
                     <td>
                       <c:choose>
                         <c:when test="${not empty att.checkOutTime}">
-                          <div style="font-weight:600;font-size:13px">
+                          <div style="font-weight:750;font-size:13px">
                             ${fn:substring(att.checkOutTime.toString(),11,16)}
                           </div>
                           <div style="font-size:11px;color:var(--muted)">
@@ -344,13 +367,13 @@ tbody tr:last-child td{border-bottom:none}
                           </div>
                         </c:when>
                         <c:otherwise>
-                          <span style="color:#F59E0B;font-weight:700;font-size:12.5px">
+                          <span style="color:#F59E0B;font-weight:750;font-size:12.5px">
                             🟡 Đang làm
                           </span>
                         </c:otherwise>
                       </c:choose>
                     </td>
-                    <td style="font-weight:600;font-size:13px">
+                    <td style="font-weight:750;font-size:13px">
                       <c:choose>
                         <c:when test="${att.actualHours > 0}">
                           <fmt:formatNumber value="${att.actualHours}" maxFractionDigits="1"/>h
@@ -361,12 +384,12 @@ tbody tr:last-child td{border-bottom:none}
                     <td>
                       <c:choose>
                         <c:when test="${att.lateMinutes > 0}">
-                          <span style="color:#F59E0B;font-weight:700;font-size:12.5px">
+                          <span style="color:#F59E0B;font-weight:750;font-size:12.5px">
                             ${att.lateMinutes}p
                           </span>
                         </c:when>
                         <c:otherwise>
-                          <span style="color:var(--green);font-size:12px;font-weight:600">Đúng</span>
+                          <span style="color:var(--green);font-size:12px;font-weight:750">Đúng</span>
                         </c:otherwise>
                       </c:choose>
                     </td>
@@ -374,7 +397,7 @@ tbody tr:last-child td{border-bottom:none}
                       <c:choose>
                         <c:when test="${not empty att.checkInNote and fn:contains(att.checkInNote,'Bàn giao két:')}">
                           <c:set var="rawKet" value="${fn:trim(fn:substringBefore(fn:substringAfter(att.checkInNote,'Bàn giao két:'),']'))}"/>
-                          <span style="font-weight:700;color:var(--green);font-size:12.5px">
+                          <span style="font-weight:750;color:var(--green);font-size:12.5px">
                             ${fn:replace(rawKet,'đ','')}đ
                           </span>
                         </c:when>
@@ -433,6 +456,10 @@ tbody tr:last-child td{border-bottom:none}
 </div>
 
 <script>
+function toggleCdd(id){var w=document.getElementById(id),m=w.querySelector('.cdd-menu'),b=w.querySelector('.cdd-btn');var open=m.classList.contains('show');document.querySelectorAll('.cdd-menu.show').forEach(function(x){x.classList.remove('show');x.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')});if(!open){m.classList.add('show');b.classList.add('open');var act=m.querySelector('.cdd-opt.active');if(act)act.scrollIntoView({block:'nearest'})}}
+function pickCdd(wId,hId,el,autoSubmit){document.getElementById(hId).value=el.dataset.val;var w=document.getElementById(wId);w.querySelector('.cdd-label').textContent=el.textContent;w.querySelectorAll('.cdd-opt').forEach(function(o){o.classList.remove('active')});el.classList.add('active');w.querySelector('.cdd-menu').classList.remove('show');w.querySelector('.cdd-btn').classList.remove('open');if(autoSubmit){var f=w.closest('form');if(f)f.submit()}}
+document.addEventListener('click',function(e){if(!e.target.closest('.cdd')){document.querySelectorAll('.cdd-menu.show').forEach(function(m){m.classList.remove('show');m.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')})}});
+
 const toast = document.getElementById('toast');
 if (toast) setTimeout(()=>{toast.style.opacity='0';setTimeout(()=>toast.remove(),400)},3500);
 

@@ -39,8 +39,8 @@ public class StaffAuditLogDAO implements IStaffAuditLogDAO {
                     StaffAuditLog log = new StaffAuditLog();
                     log.setLogId(rs.getInt("LogID"));
                     log.setAccountId(rs.getInt("AccountID"));
-                    log.setAction(rs.getNString("Action"));
-                    log.setDetails(rs.getNString("Details"));
+                    log.setAction(rs.getString("Action"));
+                    log.setDetails(rs.getString("Details"));
                     log.setIpAddress(rs.getString("IPAddress"));
                     if (rs.getTimestamp("CreatedAt") != null)
                         log.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());

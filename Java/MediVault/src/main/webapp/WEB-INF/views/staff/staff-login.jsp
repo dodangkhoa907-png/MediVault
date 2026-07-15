@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8"  pageEncoding="UTF-8" %>
 <%
     com.medicare.entity.Account acc = (com.medicare.entity.Account) session.getAttribute("staffAccount");
     if (acc != null) { response.sendRedirect(request.getContextPath() + "/staff-dashboard"); return; }
@@ -16,11 +16,15 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>MediCare — Đăng nhập nhân viên</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -29,7 +33,7 @@
   --white:#fff;--muted:#7C6FAA;--border:#D8D0F5;
   --cyan:#5EEAD4;--gold:#FCD34D;
 }
-html,body{height:100%;font-family:'Outfit',sans-serif}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif}
 body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(--ink);overflow:hidden}
 
 .left{
@@ -60,7 +64,7 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
   display:inline-flex;align-items:center;gap:7px;
   border-radius:20px;border:1px solid rgba(167,139,250,.2);
   background:rgba(167,139,250,.07);
-  padding:6px 13px;font-size:11.5px;font-weight:500;color:rgba(255,255,255,.55);
+  padding:6px 13px;font-size:11.5px;font-weight:750;color:rgba(255,255,255,.55);
 }
 
 .brand{}
@@ -75,19 +79,19 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
   display:flex;align-items:center;justify-content:center;font-size:16px;
   box-shadow:0 4px 16px rgba(109,40,217,.35);
 }
-.brand-name{font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:#fff;letter-spacing:-.2px}
+.brand-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800;color:#fff;letter-spacing:-.2px}
 .brand-tag{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:1px;text-transform:uppercase}
 
 .left-headline{margin-bottom:auto;position:relative;z-index:2}
 .left-headline h1{
-  font-family:'Outfit',sans-serif;font-size:50px;font-weight:400;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:50px;font-weight:400;
   color:#fff;line-height:1.12;letter-spacing:-.3px;margin-bottom:16px;
 }
 .left-headline h1 em{color:var(--light);font-style:italic}
 .left-headline p{font-size:14.5px;color:rgba(255,255,255,.48);line-height:1.65;max-width:340px}
 
 .left-footer{position:relative;z-index:2;display:flex;gap:20px;flex-wrap:wrap}
-.feat{display:flex;align-items:center;gap:7px;color:rgba(255,255,255,.38);font-size:12px;font-weight:500}
+.feat{display:flex;align-items:center;gap:7px;color:rgba(255,255,255,.38);font-size:12px;font-weight:750}
 .feat-dot{width:5px;height:5px;border-radius:50%;background:var(--light);opacity:.7}
 
 /* Right panel */
@@ -106,29 +110,29 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
   display:inline-flex;align-items:center;gap:7px;
   background:#fff;border:1px solid var(--border);
   border-radius:20px;padding:5px 14px;margin-bottom:24px;
-  font-size:12px;font-weight:600;color:var(--main);letter-spacing:.3px;
+  font-size:12px;font-weight:750;color:var(--main);letter-spacing:.3px;
 }
 .form-eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--light)}
 
-.form-title{font-family:'Outfit',sans-serif;font-size:30px;color:var(--ink);margin-bottom:6px}
+.form-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:30px;color:var(--ink);margin-bottom:6px}
 .form-sub{font-size:14px;color:var(--muted);margin-bottom:32px;line-height:1.5}
 
 .err-box{
   display:flex;align-items:flex-start;gap:10px;padding:12px 16px;
   background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;
-  margin-bottom:20px;font-size:13px;color:#991B1B;font-weight:500;
+  margin-bottom:20px;font-size:13px;color:#991B1B;font-weight:750;
   animation:shake .4s ease;
 }
 @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
 
 .field{margin-bottom:18px}
-.field-label{font-size:12.5px;font-weight:600;color:var(--dp);letter-spacing:.3px;margin-bottom:7px;display:block}
+.field-label{font-size:12.5px;font-weight:750;color:var(--dp);letter-spacing:.3px;margin-bottom:7px;display:block}
 .field-wrap{position:relative}
 .field-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none;opacity:.5}
 .field-input{
   width:100%;padding:12px 16px 12px 42px;
   background:#fff;border:1.5px solid var(--border);border-radius:12px;
-  font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;color:var(--ink);
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:750;color:var(--ink);
   outline:none;transition:all .2s;
 }
 .field-input:focus{border-color:var(--light);box-shadow:0 0 0 3px rgba(167,139,250,.14)}
@@ -144,7 +148,7 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
   width:100%;padding:13px;margin-top:8px;
   background:linear-gradient(135deg,var(--main),#5B21B6);
   color:#fff;border:none;border-radius:12px;
-  font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:750;
   cursor:pointer;letter-spacing:.3px;transition:all .22s;
   position:relative;overflow:hidden;
 }
@@ -164,14 +168,14 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
   padding:16px 18px;margin-bottom:20px;
 }
 .lock-banner-icon{font-size:22px;margin-bottom:8px}
-.lock-banner-title{font-size:14px;font-weight:700;color:#92400E;margin-bottom:5px}
+.lock-banner-title{font-size:14px;font-weight:750;color:#92400E;margin-bottom:5px}
 .lock-banner-msg{font-size:13px;color:#78350F;line-height:1.6}
 .lock-banner-sub{font-size:11.5px;color:#B45309;margin-top:7px;display:flex;align-items:center;gap:5px}
 
 /* Forgot-password link */
 .forgot-link-wrap{text-align:center;margin-top:16px}
 .forgot-link{
-  font-size:12.5px;font-weight:600;color:var(--muted);
+  font-size:12.5px;font-weight:750;color:var(--muted);
   text-decoration:none;display:inline-flex;align-items:center;gap:5px;
   transition:color .2s;
 }
@@ -190,6 +194,7 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
   .form-box{max-width:100%}
 }
 </style>
+    
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>
@@ -248,7 +253,7 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
     <div style="background:linear-gradient(135deg,#064e3b,#065f46);color:#fff;
                 padding:14px 18px;border-radius:12px;margin-bottom:18px;
                 border:1px solid rgba(255,255,255,.1)">
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px">📬 Yêu cầu đã được gửi!</div>
+      <div style="font-size:15px;font-weight:750;margin-bottom:4px">📬 Yêu cầu đã được gửi!</div>
       <div style="font-size:12.5px;opacity:.9;line-height:1.6">
         <% if (successName != null && !successName.isEmpty()) { %>
         Xin chào <strong><%= successName %></strong> — yêu cầu đặt lại mật khẩu đã được ghi nhận.

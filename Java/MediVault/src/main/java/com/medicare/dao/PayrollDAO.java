@@ -33,11 +33,11 @@ public class PayrollDAO implements IPayrollDAO {
             p.setConfirmedAt(rs.getTimestamp("ConfirmedAt").toLocalDateTime());
         if (rs.getTimestamp("PaidAt") != null)
             p.setPaidAt(rs.getTimestamp("PaidAt").toLocalDateTime());
-        p.setNotes(rs.getNString("Notes"));
+        p.setNotes(rs.getString("Notes"));
         if (rs.getTimestamp("CreatedAt") != null)
             p.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
-        try { p.setStaffName(rs.getNString("StaffName")); }           catch (SQLException ignored) {}
-        try { p.setConfirmedByName(rs.getNString("ConfirmedByName")); } catch (SQLException ignored) {}
+        try { p.setStaffName(rs.getString("StaffName")); }           catch (SQLException ignored) {}
+        try { p.setConfirmedByName(rs.getString("ConfirmedByName")); } catch (SQLException ignored) {}
         return p;
     }
 

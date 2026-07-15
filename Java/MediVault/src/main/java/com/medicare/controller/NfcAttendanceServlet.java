@@ -112,7 +112,7 @@ public class NfcAttendanceServlet extends HttpServlet {
                 "SELECT FullName FROM Accounts WHERE AccountID=?")) {
             ps.setInt(1, accountId);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getNString("FullName");
+                if (rs.next()) return rs.getString("FullName");
             }
         } catch (Exception ignored) {}
         return "ID " + accountId;

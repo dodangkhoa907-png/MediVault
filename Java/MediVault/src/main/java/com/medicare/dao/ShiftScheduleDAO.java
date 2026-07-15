@@ -24,15 +24,15 @@ public class ShiftScheduleDAO implements IShiftScheduleDAO {
             s.setPlannedEnd(rs.getTimestamp("PlannedEnd").toLocalDateTime());
         s.setLateToleranceMinutes(rs.getInt("LateToleranceMinutes"));
         s.setStatus(rs.getString("Status"));
-        s.setNotes(rs.getNString("Notes"));
+        s.setNotes(rs.getString("Notes"));
         s.setCreatedBy(rs.getInt("CreatedBy"));
         if (rs.getTimestamp("CreatedAt") != null)
             s.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
         // ── NEW: OpeningCash + PenaltyRate do Admin set ──
         try { s.setOpeningCash(rs.getBigDecimal("OpeningCash")); }             catch (SQLException ignored) {}
         try { s.setPenaltyRatePerMinute(rs.getBigDecimal("PenaltyRatePerMinute")); } catch (SQLException ignored) {}
-        try { s.setStaffName(rs.getNString("StaffName")); }        catch (SQLException ignored) {}
-        try { s.setShiftTypeName(rs.getNString("ShiftTypeName")); } catch (SQLException ignored) {}
+        try { s.setStaffName(rs.getString("StaffName")); }        catch (SQLException ignored) {}
+        try { s.setShiftTypeName(rs.getString("ShiftTypeName")); } catch (SQLException ignored) {}
         try { s.setStartHour(rs.getInt("StartHour")); }             catch (SQLException ignored) {}
         try { s.setEndHour(rs.getInt("EndHour")); }                 catch (SQLException ignored) {}
         try { s.setPosStation(rs.getInt("PosStation")); }           catch (SQLException ignored) {}
@@ -388,7 +388,7 @@ public class ShiftScheduleDAO implements IShiftScheduleDAO {
                 while (rs.next()) {
                     com.medicare.entity.Account a = new com.medicare.entity.Account();
                     a.setAccountId(rs.getInt("AccountID"));
-                    a.setFullName(rs.getNString("FullName"));
+                    a.setFullName(rs.getString("FullName"));
                     a.setUsername(rs.getString("Username"));
                     a.setRoleId(rs.getInt("RoleID"));
                     a.setPhone(rs.getString("Phone"));

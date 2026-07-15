@@ -13,17 +13,17 @@ public class CustomerDAO implements ICustomerDAO {
     private Customer mapRow(ResultSet rs) throws SQLException {
         Customer c = new Customer();
         c.setCustomerId(rs.getInt("CustomerID"));
-        c.setCustomerName(MojibakeUtil.fix(rs.getNString("CustomerName")));
+        c.setCustomerName(MojibakeUtil.fix(rs.getString("CustomerName")));
         c.setPhone(rs.getString("Phone"));
         c.setEmail(rs.getString("Email"));
-        c.setAddress(MojibakeUtil.fix(rs.getNString("Address")));
+        c.setAddress(MojibakeUtil.fix(rs.getString("Address")));
         Date dob = rs.getDate("DateOfBirth");
         if (dob != null) c.setDateOfBirth(dob.toLocalDate());
         c.setGender(rs.getString("Gender"));
         c.setNationalId(rs.getString("NationalId"));
-        c.setOccupation(MojibakeUtil.fix(rs.getNString("Occupation")));
-        c.setAllergyHistory(MojibakeUtil.fix(rs.getNString("AllergyHistory")));
-        c.setChronicDisease(MojibakeUtil.fix(rs.getNString("ChronicDisease")));
+        c.setOccupation(MojibakeUtil.fix(rs.getString("Occupation")));
+        c.setAllergyHistory(MojibakeUtil.fix(rs.getString("AllergyHistory")));
+        c.setChronicDisease(MojibakeUtil.fix(rs.getString("ChronicDisease")));
         if (rs.getTimestamp("CreatedAt") != null)
             c.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
         try { c.setNfcCardUid(rs.getString("NfcCardUid")); } catch (SQLException ignored) {}

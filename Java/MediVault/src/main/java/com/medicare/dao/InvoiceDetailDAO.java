@@ -46,8 +46,8 @@ public class InvoiceDetailDAO implements IInvoiceDetailDAO {
                 while (rs.next()) {
                     InvoiceDetail d = mapRow(rs);
                     // Gắn thêm thông tin hiển thị
-                    d.setMedicineName(rs.getNString("MedicineName"));
-                    d.setUnit(rs.getNString("Unit"));
+                    d.setMedicineName(rs.getString("MedicineName"));
+                    d.setUnit(rs.getString("Unit"));
                     d.setBatchNumber(rs.getString("BatchNumber"));
                     if (rs.getDate("ExpiryDate") != null)
                         d.setExpiryDate(rs.getDate("ExpiryDate").toLocalDate());

@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8"  pageEncoding="UTF-8" %>
 <% String activeNav = "accounts"; %>
 <%@ taglib prefix="c"   uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
@@ -28,11 +28,15 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title><%= dn %> — Chi tiết — medicare</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -40,7 +44,7 @@
   --surface:#F1F5FB;--white:#fff;--muted:#7A90B0;--border:#D5E0F0;
   --green:#059669;--red:#DC2626;--gold:#D97706;--sidebar:232px;
 }
-html,body{height:100%;font-family:'Outfit',sans-serif}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif}
 body{display:flex;background:var(--surface);color:var(--ink)}
 
 /* ── SIDEBAR ── */
@@ -48,19 +52,19 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .sidebar::after{content:'';position:absolute;top:0;right:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,rgba(58,189,224,.12) 30%,rgba(58,189,224,.12) 70%,transparent)}
 .sidebar-logo{height:66px;padding:0 20px;display:flex;align-items:center;gap:11px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
 .logo-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;box-shadow:0 4px 16px rgba(58,189,224,.35)}
-.logo-text{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:#fff;letter-spacing:-.2px;line-height:1.1}
+.logo-text{font-family:'Lora',serif;font-size:16px;font-weight:800;color:#fff;letter-spacing:-.2px;line-height:1.1}
 .logo-text span{color:var(--cyan)}
 .logo-sub{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1.2px;text-transform:uppercase;margin-top:1px}
 .nav-section{padding:12px 0 4px;flex-shrink:0}
-.nav-label{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:500;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
+.nav-label{font-size:9px;font-weight:750;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:750;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
 .nav-item:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.06)}
-.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:600}
+.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:750}
 .nav-item.active::before{content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:56%;background:var(--cyan);border-radius:2px}
 .sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
 .sidebar-user{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
 .user-av{width:34px;height:34px;flex-shrink:0;border-radius:9px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
-.user-name{font-size:12.5px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}
+.user-name{font-size:12.5px;font-weight:750;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}
 .user-role{font-size:10px;color:rgba(255,255,255,.35);margin-top:1px}
 .logout-btn{margin-left:auto;width:28px;height:28px;flex-shrink:0;border-radius:8px;background:rgba(220,38,38,.12);border:none;display:flex;align-items:center;justify-content:center;color:rgba(220,38,38,.7);font-size:13px;cursor:pointer;text-decoration:none;transition:all .18s}
 .logout-btn:hover{background:rgba(220,38,38,.2);color:#DC2626}
@@ -70,28 +74,28 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 
 /* ── TOPBAR ── */
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50}
-.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--ink)}
+.topbar-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:750;color:var(--ink)}
 
     
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-shrink:0}
-.back-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;transition:all .18s}
+.back-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--surface);border:1.5px solid var(--border);border-radius:20px;font-size:13px;font-weight:750;color:var(--muted);text-decoration:none;transition:all .18s}
 .back-btn:hover{border-color:var(--cyan);color:var(--blue)}
 .topbar-user{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 7px;border:1.5px solid var(--border);border-radius:20px;text-decoration:none;color:inherit;transition:all .18s}
 .topbar-user:hover{border-color:var(--cyan);background:var(--cyan-soft)}
 .topbar-av{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
-.topbar-name{font-size:13px;font-weight:600;color:var(--navy);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar-name{font-size:13px;font-weight:750;color:var(--navy);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ── CONTENT ── */
 .content{padding:26px 28px;flex:1}
 .page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
-.page-head-left .breadcrumb{font-size:11.5px;color:var(--muted);font-weight:500;margin-bottom:4px}
-.page-head-left h1{font-family:'Outfit',sans-serif;font-size:28px;color:var(--ink)}
+.page-head-left .breadcrumb{font-size:11.5px;color:var(--muted);font-weight:750;margin-bottom:4px}
+.page-head-left h1{font-family:'Plus Jakarta Sans',sans-serif;font-size:28px;color:var(--ink)}
 .head-actions{display:flex;gap:10px;align-items:center}
 
 /* ── BUTTONS ── */
-.btn-primary{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;border:none;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .22s;box-shadow:0 4px 14px rgba(21,88,168,.22)}
+.btn-primary{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;border:none;border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:750;cursor:pointer;text-decoration:none;transition:all .22s;box-shadow:0 4px 14px rgba(21,88,168,.22)}
 .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(21,88,168,.35)}
-.btn-warn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;background:#fff;border:1.5px solid #FECACA;color:var(--red);border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .18s}
+.btn-warn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;background:#fff;border:1.5px solid #FECACA;color:var(--red);border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:750;cursor:pointer;text-decoration:none;transition:all .18s}
 .btn-warn:hover{background:#FEF2F2;border-color:var(--red)}
 
 /* ── LAYOUT ── */
@@ -109,7 +113,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
   width:64px;height:64px;border-radius:16px;
   background:linear-gradient(135deg,var(--cyan),var(--blue));
   display:flex;align-items:center;justify-content:center;
-  font-family:'Outfit',sans-serif;font-size:24px;color:#fff;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:24px;color:#fff;
   border:3px solid var(--white);overflow:hidden;
   box-shadow:0 4px 20px rgba(21,88,168,.3);
 }
@@ -127,23 +131,23 @@ body{display:flex;background:var(--surface);color:var(--ink)}
   display:flex;align-items:center;justify-content:center;gap:6px;
   width:100%;padding:8px 12px;margin-top:12px;
   background:var(--surface);border:1.5px dashed var(--border);border-radius:10px;
-  font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:600;color:var(--muted);
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:750;color:var(--muted);
   cursor:pointer;transition:all .2s;text-decoration:none;
 }
 .photo-upload-btn:hover{border-color:var(--cyan);color:var(--blue);background:var(--cyan-soft)}
 #photoInput{display:none}
 
-.profile-name{font-family:'Outfit',sans-serif;font-size:18px;color:var(--ink);margin-bottom:2px}
+.profile-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;color:var(--ink);margin-bottom:2px}
 .profile-username{font-size:12.5px;color:var(--muted);margin-bottom:8px}
 .profile-role-badge{
   display:inline-flex;align-items:center;gap:5px;
-  padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;margin-bottom:4px;
+  padding:4px 12px;border-radius:20px;font-size:12px;font-weight:750;margin-bottom:4px;
   white-space:nowrap;
 }
 .role-admin{background:rgba(220,38,38,.1);color:var(--red)}
 .role-pharmacist{background:rgba(21,88,168,.1);color:var(--blue)}
 .role-warehouse{background:rgba(217,119,6,.1);color:var(--gold)}
-.profile-status-text{font-size:12px;font-weight:500}
+.profile-status-text{font-size:12px;font-weight:750}
 .status-text-active{color:var(--green)}
 .status-text-locked{color:var(--muted)}
 
@@ -152,8 +156,8 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .profile-meta{display:flex;flex-direction:column;gap:10px;text-align:left}
 .meta-row{display:flex;align-items:flex-start;gap:10px}
 .meta-icon{font-size:13px;flex-shrink:0;margin-top:1px;opacity:.6}
-.meta-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
-.meta-val{font-size:13px;font-weight:500;color:var(--ink);margin-top:1px;word-break:break-all}
+.meta-lbl{font-size:10px;font-weight:750;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.meta-val{font-size:13px;font-weight:750;color:var(--ink);margin-top:1px;word-break:break-all}
 
 /* ── INFO COLUMNS ── */
 .info-col{display:flex;flex-direction:column;gap:16px}
@@ -163,17 +167,17 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .ici-blue{background:rgba(58,189,224,.12)}
 .ici-green{background:rgba(5,150,105,.1)}
 .ici-gold{background:rgba(217,119,6,.1)}
-.info-card-title{font-family:'Outfit',sans-serif;font-size:15px;color:var(--ink)}
+.info-card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;color:var(--ink)}
 .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
 .info-field{padding:13px 20px;border-bottom:1px solid #F2F6FC}
 .info-field:nth-last-child(-n+2){border-bottom:none}
 .info-field.full{grid-column:1/-1}
-.field-lbl{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
-.field-val{font-size:13.5px;font-weight:500;color:var(--ink)}
+.field-lbl{font-size:10.5px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.field-val{font-size:13.5px;font-weight:750;color:var(--ink)}
 .field-val.empty{color:var(--muted);font-style:italic;font-weight:400}
 
 /* ── BADGES ── */
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:750;white-space:nowrap}
 .b-green{background:rgba(5,150,105,.1);color:var(--green)}
 .b-red{background:rgba(220,38,38,.1);color:var(--red)}
 .b-blue{background:rgba(21,88,168,.1);color:var(--blue)}
@@ -189,13 +193,13 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .info-card:nth-child(3){animation:fadeUp .4s .18s ease both}
 
 /* Toast */
-.toast{position:fixed;top:20px;right:24px;padding:12px 20px;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,.2);z-index:999;transition:opacity .4s}
+.toast{position:fixed;top:20px;right:24px;padding:12px 20px;border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:750;display:flex;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,.2);z-index:999;transition:opacity .4s}
 .toast-ok{background:#064e3b;color:#fff}
 .toast-warn{background:#92400E;color:#fff}
 
 /* ── PHOTO PROFILE SECTION ── */
 .photo-section{margin-top:16px;border-top:1px solid var(--border);padding-top:16px}
-.photo-section-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:10px;text-align:center}
+.photo-section-label{font-size:10.5px;font-weight:750;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:10px;text-align:center}
 
 .photo-frame-wrap{position:relative;width:100px;height:100px;margin:0 auto 10px;cursor:pointer}
 .photo-frame{
@@ -219,12 +223,12 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 }
 .photo-frame-wrap:hover .photo-edit-overlay{opacity:1}
 .photo-edit-overlay span{font-size:18px}
-.photo-edit-overlay small{font-size:10px;font-weight:600;color:#fff;letter-spacing:.3px}
+.photo-edit-overlay small{font-size:10px;font-weight:750;color:#fff;letter-spacing:.3px}
 
 .photo-actions{display:flex;gap:7px;justify-content:center;margin-top:8px}
 .photo-btn{
   display:inline-flex;align-items:center;gap:5px;padding:6px 12px;
-  border-radius:8px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;
+  border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:750;
   cursor:pointer;border:none;transition:all .18s;text-decoration:none;
 }
 .photo-btn-upload{background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;box-shadow:0 3px 10px rgba(21,88,168,.25)}
@@ -249,7 +253,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
   padding:18px 22px 14px;border-bottom:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-between;
 }
-.crop-modal-title{font-family:'Outfit',sans-serif;font-size:17px;color:var(--ink)}
+.crop-modal-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;color:var(--ink)}
 .crop-modal-close{width:28px;height:28px;border-radius:7px;border:none;background:var(--surface);cursor:pointer;font-size:14px;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:all .15s}
 .crop-modal-close:hover{background:#FEE2E2;color:var(--red)}
 .crop-body{padding:20px 22px}
@@ -264,30 +268,31 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 /* Controls */
 .crop-controls{margin-top:14px;display:flex;flex-direction:column;gap:10px}
 .crop-ctrl-row{display:flex;align-items:center;gap:10px}
-.crop-ctrl-label{font-size:11.5px;font-weight:700;color:var(--muted);width:48px;text-align:right;flex-shrink:0}
+.crop-ctrl-label{font-size:11.5px;font-weight:750;color:var(--muted);width:48px;text-align:right;flex-shrink:0}
 .crop-slider{flex:1;height:4px;border-radius:4px;accent-color:var(--cyan);cursor:pointer}
 .crop-shape-btns{display:flex;gap:6px}
 .crop-shape-btn{
   flex:1;padding:7px;border-radius:8px;border:1.5px solid var(--border);
-  background:var(--surface);font-size:11px;font-weight:700;color:var(--muted);
+  background:var(--surface);font-size:11px;font-weight:750;color:var(--muted);
   cursor:pointer;transition:all .15s;text-align:center;
 }
 .crop-shape-btn.active{border-color:var(--cyan);background:var(--cyan-soft);color:var(--blue)}
 
 /* Preview strip */
 .crop-preview-strip{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface);border-radius:10px}
-.crop-preview-label{font-size:11px;font-weight:700;color:var(--muted);flex-shrink:0}
+.crop-preview-label{font-size:11px;font-weight:750;color:var(--muted);flex-shrink:0}
 .crop-preview-circle{width:52px;height:52px;border-radius:50%;overflow:hidden;border:2px solid var(--border);flex-shrink:0}
 .crop-preview-square{width:52px;height:52px;border-radius:10px;overflow:hidden;border:2px solid var(--border);flex-shrink:0}
 .crop-preview-circle img,.crop-preview-square img{width:100%;height:100%;object-fit:cover}
 
 .crop-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
-.crop-btn-cancel{padding:10px 18px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .18s}
+.crop-btn-cancel{padding:10px 18px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;color:var(--muted);cursor:pointer;transition:all .18s}
 .crop-btn-cancel:hover{border-color:var(--border);color:var(--navy)}
-.crop-btn-apply{padding:10px 20px;background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .22s;box-shadow:0 4px 14px rgba(21,88,168,.25)}
+.crop-btn-apply{padding:10px 20px;background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;border:none;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer;transition:all .22s;box-shadow:0 4px 14px rgba(21,88,168,.25)}
 .crop-btn-apply:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(21,88,168,.35)}
 
 </style>
+    
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>

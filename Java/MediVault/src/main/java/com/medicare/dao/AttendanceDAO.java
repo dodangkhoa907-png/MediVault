@@ -25,7 +25,7 @@ public class AttendanceDAO implements IAttendanceDAO {
         if (rs.getTimestamp("CheckOutTime") != null)
             a.setCheckOutTime(rs.getTimestamp("CheckOutTime").toLocalDateTime());
         a.setCheckInMethod(rs.getString("CheckInMethod"));
-        a.setCheckInNote(rs.getNString("CheckInNote"));
+        a.setCheckInNote(rs.getString("CheckInNote"));
         a.setLateMinutes(rs.getInt("LateMinutes"));
         a.setEarlyLeaveMinutes(rs.getInt("EarlyLeaveMinutes"));
         double actual = rs.getDouble("ActualHours");
@@ -44,8 +44,8 @@ public class AttendanceDAO implements IAttendanceDAO {
         }
 
         // Join fields
-        try { a.setStaffName(rs.getNString("StaffName")); }       catch (SQLException e) {}
-        try { a.setShiftTypeName(rs.getNString("ShiftTypeName")); } catch (SQLException e) {}
+        try { a.setStaffName(rs.getString("StaffName")); }       catch (SQLException e) {}
+        try { a.setShiftTypeName(rs.getString("ShiftTypeName")); } catch (SQLException e) {}
         try {
             Timestamp pe = rs.getTimestamp("PlannedEnd");
             if (pe != null) a.setPlannedEnd(pe.toLocalDateTime());

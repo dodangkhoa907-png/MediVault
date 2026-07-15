@@ -15,11 +15,15 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Ca làm việc — MediVault</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -31,7 +35,7 @@
   --ca-open:#D97706;--ca-absent:#DC2626;--ca-leave:#6366F1;
   --sidebar:232px;--radius:14px;
 }
-html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--surface);color:var(--ink)}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(--surface);color:var(--ink)}
 body{display:flex}
 
 /* ── SIDEBAR ── */
@@ -42,15 +46,15 @@ body{display:flex}
 .logo-text span{color:var(--cyan)}
 .logo-sub{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1.2px;text-transform:uppercase;margin-top:1px}
 .nav-section{padding:12px 0 4px;flex-shrink:0}
-.nav-label{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:500;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
+.nav-label{font-size:9px;font-weight:750;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:750;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
 .nav-item:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.06)}
-.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:600}
+.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:750}
 .nav-item.active::before{content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:56%;background:var(--cyan);border-radius:2px}
 .sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
 .sidebar-user{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
 .user-av{width:34px;height:34px;flex-shrink:0;border-radius:9px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
-.user-name{font-size:12.5px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}
+.user-name{font-size:12.5px;font-weight:750;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}
 .user-role{font-size:10px;color:rgba(255,255,255,.35);margin-top:1px}
 .logout-btn{margin-left:auto;width:28px;height:28px;flex-shrink:0;border-radius:8px;background:rgba(220,38,38,.12);border:none;display:flex;align-items:center;justify-content:center;color:rgba(220,38,38,.7);font-size:13px;cursor:pointer;text-decoration:none;transition:all .18s}
 .logout-btn:hover{background:rgba(220,38,38,.2);color:#DC2626}
@@ -58,20 +62,20 @@ body{display:flex}
 /* ── MAIN LAYOUT ── */
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0}
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50;flex-shrink:0}
-.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--ink)}
+.topbar-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:750;color:var(--ink)}
 .topbar-left{display:flex;align-items:center;gap:10px}
 .topbar-icon{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,rgba(21,88,168,.12),rgba(58,189,224,.12));display:flex;align-items:center;justify-content:center;font-size:15px}
 
     
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.topbar-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12.5px;font-weight:700}
+.topbar-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12.5px;font-weight:750}
 .pill-total{background:#EFF6FF;color:var(--blue)}
 .pill-open{background:#ECFDF5;color:var(--green)}
 .pill-staff{background:#F5F3FF;color:var(--purple)}
 .topbar-user{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 7px;border:1.5px solid var(--border);border-radius:20px;text-decoration:none;color:inherit;transition:all .18s}
 .topbar-user:hover{border-color:var(--cyan)}
 .topbar-av{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
-.topbar-name{font-size:13px;font-weight:600;color:var(--navy)}
+.topbar-name{font-size:13px;font-weight:750;color:var(--navy)}
 .content{padding:22px 26px;flex:1;min-width:0}
 
 /* ── KPI STRIP ── */
@@ -81,38 +85,53 @@ body{display:flex}
 .kpi-icon{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .kpi-blue{background:#EFF6FF}.kpi-green{background:#ECFDF5}
 .kpi-amber{background:#FFFBEB}.kpi-purple{background:#F5F3FF}
-.kpi-num{font-size:24px;font-weight:900;line-height:1}
-.kpi-lbl{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+.kpi-num{font-size:24px;font-weight:800;line-height:1}
+.kpi-lbl{font-size:11px;color:var(--muted);font-weight:750;text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
 
 /* ── TABS ── */
 .tab-bar{display:flex;gap:2px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:20px;width:fit-content}
-.tab-btn{padding:8px 20px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .18s;display:flex;align-items:center;gap:6px}
+.tab-btn{padding:8px 20px;border-radius:9px;font-size:13px;font-weight:750;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .18s;display:flex;align-items:center;gap:6px}
 .tab-btn:hover{color:var(--ink);background:var(--surface)}
 .tab-btn.active{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;box-shadow:0 3px 10px rgba(21,88,168,.25)}
 .tab-pane{display:none}
 .tab-pane.active{display:block}
 
 /* ── TOAST ── */
-.toast{position:fixed;top:18px;right:22px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:700;color:#fff;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 4px 18px rgba(0,0,0,.15);animation:slideIn .3s ease}
+.toast{position:fixed;top:18px;right:22px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:750;color:#fff;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 4px 18px rgba(0,0,0,.15);animation:slideIn .3s ease}
 .toast-ok{background:var(--green)}.toast-err{background:var(--red)}.toast-warn{background:var(--gold)}.toast-info{background:var(--blue)}
 @keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
 
 /* ── LEGEND & NAV ── */
 .legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-.leg-item{display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--muted)}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:750;color:var(--muted)}
 .leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .view-toggle{display:flex;background:#F1F5FB;border-radius:8px;padding:3px;gap:2px}
-.vt-btn{padding:5px 14px;border-radius:6px;border:none;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);transition:all .18s}
+.vt-btn{padding:5px 14px;border-radius:6px;border:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:750;cursor:pointer;background:transparent;color:var(--muted);transition:all .18s}
 .vt-btn.active{background:#fff;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.1)}
 .nav-arrow{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;background:var(--surface);border:1px solid var(--border);font-size:15px;color:var(--muted);cursor:pointer;transition:all .15s;text-decoration:none}
 .nav-arrow:hover{background:var(--border);color:var(--ink)}
-.btn-today{padding:5px 12px;border-radius:7px;background:var(--surface);border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;text-decoration:none}
+.btn-today{padding:5px 12px;border-radius:7px;background:var(--surface);border:1px solid var(--border);font-size:12px;font-weight:750;color:var(--muted);cursor:pointer;transition:all .15s;text-decoration:none}
 .btn-today:hover{background:var(--border)}
-.nav-period{font-size:14px;font-weight:700;color:var(--ink);min-width:110px;text-align:center}
+.nav-period{font-size:14px;font-weight:750;color:var(--ink);min-width:110px;text-align:center}
 
-/* ── CHART ── */
-.chart-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
-.chart-card-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+/* ── 3D CHART ── */
+.chart-card{
+  position:relative;background:#fff;border:1px solid rgba(213,224,240,.5);border-radius:16px;overflow:visible;margin-bottom:20px;
+  transform-style:preserve-3d;transition:transform .4s cubic-bezier(.2,.7,.3,1),box-shadow .4s;
+  box-shadow:0 1px 2px rgba(15,38,69,.03),0 4px 12px rgba(15,38,69,.05),0 12px 36px -8px rgba(15,38,69,.1);
+}
+.chart-card:hover{
+  transform:translateY(-4px) scale(1.005);
+  box-shadow:0 2px 4px rgba(15,38,69,.04),0 8px 20px rgba(15,38,69,.07),0 24px 48px -12px rgba(15,38,69,.14);
+}
+.chart-card::after{
+  content:'';position:absolute;inset:6px 10px -6px;border-radius:16px;
+  background:rgba(21,88,168,.04);filter:blur(10px);z-index:-1;
+  transition:all .4s;pointer-events:none;
+}
+.chart-card:hover::after{inset:10px 14px -10px;background:rgba(21,88,168,.06);filter:blur(16px)}
+.chart-card-head{padding:16px 20px;border-bottom:1px solid rgba(213,224,240,.4);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+  background:linear-gradient(180deg,rgba(241,245,251,.5) 0%,transparent 100%)}
 .chart-card-head h3{font-size:15px;font-weight:700;color:var(--ink)}
 .chart-sub{font-size:12px;color:var(--muted);margin-top:2px;display:block}
 .chart-legend{padding:10px 20px;display:flex;gap:16px;border-top:1px solid var(--border)}
@@ -129,9 +148,9 @@ body{display:flex}
 /* Grid: [label 140px] + [7 cols equal] */
 .dc-grid{min-width:680px;overflow-x:auto}
 .dc-head-row{display:grid;grid-template-columns:140px repeat(7,1fr);border-bottom:1px solid var(--border)}
-.dc-head-label{padding:10px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
-.dc-head-day{padding:10px 8px;text-align:center;font-size:10px;font-weight:700;color:var(--muted);border-left:1px solid var(--border)}
-.dc-head-day .dn{font-size:17px;font-weight:900;color:var(--ink);display:block;line-height:1.1;margin-top:2px}
+.dc-head-label{padding:10px 14px;font-size:10px;font-weight:750;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.dc-head-day{padding:10px 8px;text-align:center;font-size:10px;font-weight:750;color:var(--muted);border-left:1px solid var(--border)}
+.dc-head-day .dn{font-size:17px;font-weight:800;color:var(--ink);display:block;line-height:1.1;margin-top:2px}
 .dc-head-day.today-hd{background:rgba(21,88,168,.04)}
 .dc-head-day.today-hd .dn{color:var(--blue)}
 
@@ -143,7 +162,7 @@ body{display:flex}
 /* Staff label cell */
 .dc-staff-cell{padding:8px 14px;display:flex;align-items:center;gap:8px}
 .dc-av{width:30px;height:30px;border-radius:8px;flex-shrink:0;background:linear-gradient(135deg,#1558A8,#4F81D9);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
-.dc-staff-name{font-size:12.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:88px}
+.dc-staff-name{font-size:12.5px;font-weight:750;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:88px}
 .dc-staff-role{font-size:10px;color:var(--muted)}
 
 /* Day cell với dots */
@@ -176,11 +195,11 @@ body{display:flex}
   background:#0B1628;color:#fff;border-radius:10px;
   padding:10px 14px;min-width:190px;max-width:230px;
   box-shadow:0 8px 24px rgba(0,0,0,.25);pointer-events:none;
-  font-family:'Outfit',sans-serif;
+  font-family:'Plus Jakarta Sans',sans-serif;
 }
 .dc-tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#0B1628}
 .dc-dot-wrap:hover .dc-tooltip{display:block}
-.tt-name{font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid rgba(255,255,255,.15)}
+.tt-name{font-size:13px;font-weight:750;color:#fff;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid rgba(255,255,255,.15)}
 .tt-row{font-size:11.5px;color:rgba(255,255,255,.8);padding:2px 0;display:flex;align-items:center;gap:5px}
 
 /* Add dot button on empty cell */
@@ -200,8 +219,9 @@ body{display:flex}
 /* ─────────────────────────────────────────────────────────
    TABLE: Danh sách ca
    ───────────────────────────────────────────────────────── */
-.table-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-.table-card-head{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.table-card{background:#fff;border:1px solid rgba(213,224,240,.45);border-radius:16px;overflow:hidden;
+  box-shadow:0 1px 3px rgba(15,38,69,.03),0 4px 12px rgba(15,38,69,.04)}
+.table-card-head{padding:14px 20px;border-bottom:1px solid rgba(213,224,240,.4);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
 .table-card-head h2{font-size:14px;font-weight:800;color:var(--ink)}
 .table-card-sub{font-size:12px;color:var(--muted)}
 .tbl-wrap{overflow-x:auto}
@@ -213,20 +233,20 @@ tbody tr:hover td{background:#F7FBFF}
 tbody tr{cursor:pointer}
 .staff-cell{display:flex;align-items:center;gap:9px}
 .staff-av{width:30px;height:30px;border-radius:8px;flex-shrink:0;background:linear-gradient(135deg,#1558A8,#4F81D9);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
-.staff-name{font-weight:700;color:var(--ink);font-size:13px}
+.staff-name{font-weight:750;color:var(--ink);font-size:13px}
 .staff-role{font-size:11px;color:var(--muted)}
-.time-main{font-size:13px;font-weight:600;color:var(--ink)}
+.time-main{font-size:13px;font-weight:750;color:var(--ink)}
 .time-date{font-size:11px;color:var(--muted);margin-top:1px}
-.dur-active{color:var(--green);font-weight:700;font-size:12.5px;display:flex;align-items:center;gap:4px}
-.cash-val{font-size:12.5px;font-weight:700;color:var(--ink)}
+.dur-active{color:var(--green);font-weight:750;font-size:12.5px;display:flex;align-items:center;gap:4px}
+.cash-val{font-size:12.5px;font-weight:750;color:var(--ink)}
 .cash-empty{color:var(--muted)}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:700;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:750;white-space:nowrap}
 .badge-open{background:#ECFDF5;color:var(--green)}
 .badge-closed{background:#F1F5F9;color:#64748B}
 .badge-force{background:#FFF7ED;color:var(--gold)}
-.btn-detail{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;background:#EFF6FF;color:var(--blue);border:1.5px solid #BFDBFE;border-radius:7px;font-size:12px;font-weight:700;text-decoration:none;transition:all .18s;cursor:pointer}
+.btn-detail{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;background:#EFF6FF;color:var(--blue);border:1.5px solid #BFDBFE;border-radius:7px;font-size:12px;font-weight:750;text-decoration:none;transition:all .18s;cursor:pointer}
 .btn-detail:hover{background:#DBEAFE}
-.btn-close-shift{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;background:#FFFBEB;color:var(--gold);border:1.5px solid #FDE68A;border-radius:7px;font-size:12px;font-weight:700;text-decoration:none;transition:all .18s}
+.btn-close-shift{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;background:#FFFBEB;color:var(--gold);border:1.5px solid #FDE68A;border-radius:7px;font-size:12px;font-weight:750;text-decoration:none;transition:all .18s}
 .btn-close-shift:hover{background:#FEF3C7}
 .btn-del{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:7px;background:#FEF2F2;border:1.5px solid #FECACA;color:var(--red);font-size:13px;cursor:pointer;text-decoration:none;transition:all .18s}
 .btn-del:hover{background:#FEE2E2}
@@ -234,18 +254,18 @@ tbody tr{cursor:pointer}
 /* ── FILTER PANEL (compact, inline) ── */
 .filter-row{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:14px 20px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius)}
 .fi{display:flex;flex-direction:column;gap:4px;min-width:120px}
-.fi label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.fi input,.fi select{border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'Outfit',sans-serif;font-size:12.5px;color:var(--ink);background:var(--surface);outline:none;transition:border .18s;height:36px}
+.fi label{font-size:10px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.fi input,.fi select{border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;transition:border .18s;height:36px}
 .fi input:focus,.fi select:focus{border-color:var(--blue);background:#fff}
-.btn-filter{padding:7px 18px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;height:36px;transition:background .18s}
+.btn-filter{padding:7px 18px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer;height:36px;transition:background .18s}
 .btn-filter:hover{background:#0D3F85}
-.btn-reset{padding:7px 14px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;height:36px;transition:all .18s}
+.btn-reset{padding:7px 14px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;height:36px;transition:all .18s}
 .btn-reset:hover{border-color:var(--red);color:var(--red)}
 
 /* ── SHIFT TYPES TAB ── */
 .types-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .types-header h2{font-size:16px;font-weight:800;color:var(--ink)}
-.btn-add-type{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;border:none;border-radius:9px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;box-shadow:0 3px 10px rgba(21,88,168,.2);transition:all .18s}
+.btn-add-type{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;border:none;border-radius:9px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer;text-decoration:none;box-shadow:0 3px 10px rgba(21,88,168,.2);transition:all .18s}
 .btn-add-type:hover{opacity:.9;transform:translateY(-1px)}
 .types-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
 .type-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:box-shadow .2s,transform .18s}
@@ -253,30 +273,34 @@ tbody tr{cursor:pointer}
 .type-card-head{padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
 .type-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
 .type-name{font-size:14px;font-weight:800;color:var(--ink);flex:1}
-.type-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.type-badge{font-size:10px;font-weight:750;padding:2px 8px;border-radius:10px}
 .type-active{background:#ECFDF5;color:var(--green)}
 .type-inactive{background:#FEF2F2;color:var(--red)}
 .type-card-body{padding:14px 18px}
 .type-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .type-row:last-child{margin-bottom:0}
-.type-lbl{font-size:11.5px;color:var(--muted);font-weight:600}
-.type-val{font-size:13px;font-weight:700;color:var(--ink)}
-.type-dur{font-size:11px;color:var(--muted);font-weight:500;margin-top:2px}
+.type-lbl{font-size:11.5px;color:var(--muted);font-weight:750}
+.type-val{font-size:13px;font-weight:750;color:var(--ink)}
+.type-dur{font-size:11px;color:var(--muted);font-weight:750;margin-top:2px}
 .type-card-foot{padding:10px 18px;border-top:1px solid var(--border);display:flex;gap:8px}
-.btn-edit-type{flex:1;padding:7px 0;background:#EFF6FF;color:var(--blue);border:1.5px solid #BFDBFE;border-radius:8px;font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;transition:all .18s}
+.btn-edit-type{flex:1;padding:7px 0;background:#EFF6FF;color:var(--blue);border:1.5px solid #BFDBFE;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:750;cursor:pointer;transition:all .18s}
 .btn-edit-type:hover{background:#DBEAFE}
-.btn-toggle-type{padding:7px 14px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;transition:all .18s}
+.btn-toggle-type{padding:7px 14px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:750;cursor:pointer;transition:all .18s}
 .btn-toggle-type:hover{border-color:var(--amber);color:var(--gold)}
-.btn-del-type{padding:7px 12px;background:#FEF2F2;color:var(--red);border:1.5px solid #FECACA;border-radius:8px;font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;transition:all .18s}
+.btn-del-type{padding:7px 12px;background:#FEF2F2;color:var(--red);border:1.5px solid #FECACA;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:750;cursor:pointer;transition:all .18s}
 .btn-del-type:hover{background:#FEE2E2}
 .empty-state{text-align:center;padding:48px 20px;color:var(--muted)}
 .empty-state .es-icon{font-size:40px;margin-bottom:12px;display:block}
-.empty-state h3{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.empty-state h3{font-size:15px;font-weight:750;color:var(--ink);margin-bottom:6px}
 .empty-state p{font-size:13px}
 
 /* ── MODAL (dùng cho cả ShiftType + Quick-schedule) ── */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:9999;align-items:center;justify-content:center}
-.modal-overlay.open{display:flex}
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:3000;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.modal-overlay.open{opacity:1;pointer-events:auto}
 .modal{background:var(--white);border-radius:16px;width:520px;max-width:94vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.2);transform:translateY(20px);transition:transform .22s}
 .modal-overlay.open .modal{transform:translateY(0)}
 .modal-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--white);z-index:1}
@@ -285,19 +309,19 @@ tbody tr{cursor:pointer}
 .modal-close:hover{background:#FEE2E2;color:var(--red)}
 .modal-body{padding:22px}
 .mfg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
-.mfg label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.mfg input,.mfg select,.mfg textarea{border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-family:'Outfit',sans-serif;font-size:13.5px;color:var(--ink);background:var(--surface);outline:none;transition:border .18s;width:100%}
+.mfg label{font-size:11px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.mfg input,.mfg select,.mfg textarea{border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;color:var(--ink);background:var(--surface);outline:none;transition:border .18s;width:100%}
 .mfg input:focus,.mfg select:focus,.mfg textarea:focus{border-color:var(--blue);background:#fff}
 .mfg-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 /* ── Custom 24h time picker ── */
 .time24-wrap{display:flex;align-items:center;gap:4px}
-.time24-sel{flex:1;border:1.5px solid var(--border);border-radius:9px;padding:9px 8px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;color:var(--ink);background:var(--surface);outline:none;transition:border .18s;text-align:center;cursor:pointer;appearance:none;-webkit-appearance:none}
+.time24-sel{flex:1;border:1.5px solid var(--border);border-radius:9px;padding:9px 8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:750;color:var(--ink);background:var(--surface);outline:none;transition:border .18s;text-align:center;cursor:pointer;appearance:none;-webkit-appearance:none}
 .time24-sel:focus{border-color:var(--blue);background:#fff}
 .time24-colon{font-size:20px;font-weight:800;color:var(--ink);flex-shrink:0;line-height:1;padding:0 2px;margin-top:-1px}
 .modal-foot{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
-.btn-cancel-m{padding:8px 18px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s}
+.btn-cancel-m{padding:8px 18px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer;transition:all .18s}
 .btn-cancel-m:hover{border-color:var(--muted)}
-.btn-save-m{padding:8px 22px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(21,88,168,.2);transition:all .18s}
+.btn-save-m{padding:8px 22px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;border:none;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer;box-shadow:0 3px 10px rgba(21,88,168,.2);transition:all .18s}
 .btn-save-m:hover{opacity:.9}
 .field-hint{font-size:11px;color:var(--muted);margin-top:3px}
 .field-err{font-size:11px;color:var(--red);margin-top:3px;display:none}
@@ -310,23 +334,23 @@ tbody tr{cursor:pointer}
 .sch-chip:has(input:checked){border-color:var(--blue);background:#EFF6FF}
 .sch-chip input{position:absolute;opacity:0;width:0;height:0}
 .sch-chip-av{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#1558A8,#4F81D9);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;margin-bottom:4px}
-.sch-chip-name{font-size:12px;font-weight:700;color:var(--ink)}
+.sch-chip-name{font-size:12px;font-weight:750;color:var(--ink)}
 .sch-chip-role{font-size:10px;color:var(--muted)}
 /* ShiftType cards in modal */
 .stype-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
 .stype-card{border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .18s;position:relative;text-align:center}
 .stype-card:has(input:checked){border-color:var(--blue);background:#EFF6FF}
 .stype-card input{position:absolute;opacity:0;width:0;height:0}
-.stype-name{font-size:12.5px;font-weight:700;color:var(--ink);margin-top:4px}
+.stype-name{font-size:12.5px;font-weight:750;color:var(--ink);margin-top:4px}
 .stype-time{font-size:11px;color:var(--muted);margin-top:2px}
-.stype-rate{font-size:11px;color:var(--green);font-weight:700;margin-top:3px}
+.stype-rate{font-size:11px;color:var(--green);font-weight:750;margin-top:3px}
 .dur-preview{font-size:12px;color:var(--muted);padding:8px 12px;background:var(--surface);border-radius:8px;margin-top:-6px;margin-bottom:14px}
-.dur-warn{font-size:12px;font-weight:700;color:#991B1B;background:#FEF2F2;border:1.5px solid #FECACA;
+.dur-warn{font-size:12px;font-weight:750;color:#991B1B;background:#FEF2F2;border:1.5px solid #FECACA;
   border-radius:8px;padding:10px 12px;margin-top:-6px;margin-bottom:14px;line-height:1.5}
 
 /* ── MODAL XẾP CA ĐẦY ĐỦ ── */
-.sched-overlay{display:none;position:fixed;inset:0;background:rgba(11,22,40,.55);z-index:9999;align-items:center;justify-content:center}
-.sched-overlay.open{display:flex}
+.sched-overlay{position:fixed;inset:0;background:rgba(11,22,40,.55);z-index:600;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s}
+.sched-overlay.open{opacity:1;pointer-events:auto}
 .sched-modal{background:var(--white);border-radius:18px;width:640px;max-width:95vw;max-height:88vh;overflow-y:auto;box-shadow:0 28px 80px rgba(0,0,0,.22);transform:translateY(20px);transition:transform .24s;display:flex;flex-direction:column}
 .sched-overlay.open .sched-modal{transform:translateY(0)}
 .sched-modal-head{padding:18px 24px 14px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--white);z-index:1;border-radius:18px 18px 0 0}
@@ -335,30 +359,30 @@ tbody tr{cursor:pointer}
 .sched-modal-close:hover{background:#FEE2E2;color:var(--red)}
 .sched-modal-body{padding:20px 24px;flex:1}
 .sched-section{margin-bottom:20px}
-.sched-section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.sched-section-title{font-size:11px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
 /* Staff chips */
 .staff-chips-wrap{display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:var(--surface);border-radius:10px;border:1.5px solid var(--border);min-height:50px}
 .sc-chip{display:flex;align-items:center;gap:7px;padding:6px 12px;background:var(--white);border:1.5px solid var(--border);border-radius:20px;font-size:12.5px;cursor:pointer;transition:all .18s;user-select:none}
 .sc-chip input[type=checkbox]{accent-color:var(--blue);width:13px;height:13px}
 .sc-chip:has(input:checked){background:#EFF6FF;border-color:var(--blue)}
-.sc-chip-name{font-weight:600;color:var(--ink)}
+.sc-chip-name{font-weight:750;color:var(--ink)}
 .sc-chip-role{font-size:10px;color:var(--muted)}
-.sc-all-btn{font-size:11.5px;color:var(--blue);font-weight:600;cursor:pointer;background:none;border:none;padding:0;margin-bottom:6px}
+.sc-all-btn{font-size:11.5px;color:var(--blue);font-weight:750;cursor:pointer;background:none;border:none;padding:0;margin-bottom:6px}
 /* ShiftType cards — dạng checkbox multi-select */
 .stype-cards-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
 .stc{border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer;transition:all .18s;position:relative;text-align:center;user-select:none}
 .stc:has(input:checked){border-color:var(--blue);background:#EFF6FF}
 .stc input{position:absolute;opacity:0;width:0;height:0}
 .stc-icon{font-size:22px;margin-bottom:5px}
-.stc-name{font-size:12.5px;font-weight:700;color:var(--ink)}
+.stc-name{font-size:12.5px;font-weight:750;color:var(--ink)}
 .stc-time{font-size:10.5px;color:var(--muted);margin-top:2px}
-.stc-rate{font-size:11px;color:var(--green);font-weight:700;margin-top:4px}
+.stc-rate{font-size:11px;color:var(--green);font-weight:750;margin-top:4px}
 /* Ngày */
 .date-row{display:grid;grid-template-columns:1fr 28px 1fr;gap:8px;align-items:center}
-.date-sep{text-align:center;font-weight:700;color:var(--muted);font-size:15px}
+.date-sep{text-align:center;font-weight:750;color:var(--muted);font-size:15px}
 .sched-fi{display:flex;flex-direction:column;gap:4px}
-.sched-fi label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.sched-fi input,.sched-fi textarea{border:1.5px solid var(--border);border-radius:9px;padding:8px 11px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;transition:border .18s;width:100%}
+.sched-fi label{font-size:10px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.sched-fi input,.sched-fi textarea{border:1.5px solid var(--border);border-radius:9px;padding:8px 11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;transition:border .18s;width:100%}
 .sched-fi input:focus,.sched-fi textarea:focus{border-color:var(--blue);background:#fff}
 /* Preview box */
 .sched-preview{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 14px;font-size:12.5px;color:var(--muted);display:none;margin-top:10px}
@@ -366,55 +390,35 @@ tbody tr{cursor:pointer}
 .sched-preview .sched-preview-count{font-size:15px;font-weight:800;color:var(--blue)}
 /* Footer */
 .sched-modal-foot{padding:14px 24px;border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;bottom:0;background:var(--white);border-radius:0 0 18px 18px}
-.btn-sched-cancel{padding:8px 18px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s}
+.btn-sched-cancel{padding:8px 18px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer;transition:all .18s}
 .btn-sched-cancel:hover{border-color:var(--red);color:var(--red)}
-.btn-sched-submit{padding:8px 26px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 12px rgba(21,88,168,.25);transition:all .18s}
+.btn-sched-submit{padding:8px 26px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;border:none;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer;box-shadow:0 3px 12px rgba(21,88,168,.25);transition:all .18s}
 .btn-sched-submit:hover{opacity:.9;transform:translateY(-1px)}
 
 /* ── WEEK GRID CSS (bị thiếu) ── */
 .week-nav-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
 .week-period{font-size:15px;font-weight:800;color:var(--ink)}
 .week-sub{font-size:12px;color:var(--muted)}
-.btn-nav{padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--white);font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;text-decoration:none;transition:all .18s;display:inline-flex;align-items:center}
+.btn-nav{padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--white);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;color:var(--ink);cursor:pointer;text-decoration:none;transition:all .18s;display:inline-flex;align-items:center}
 .btn-nav:hover{border-color:var(--blue);color:var(--blue)}
-/* ══ LỊCH TUẦN 3D — cột không co dưới 150px: màn hẹp tự xuống hàng (4+3)
-      thay vì bóp méo chữ khi zoom 100%.
-      LƯU Ý: KHÔNG dùng perspective/will-change ở đây — chúng tạo 3D-context
-      làm hỏng hit-test click của các phần tử con (nút + Thêm ca, thẻ ca).
-      Hiệu ứng nâng dùng translateY thuần → an toàn tuyệt đối với click. ══ */
-.week-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin-bottom:20px}
-@media(max-width:1420px){.week-grid{grid-template-columns:repeat(4,minmax(150px,1fr))}}
-@media(max-width:900px){.week-grid{grid-template-columns:repeat(2,minmax(150px,1fr))}}
-.day-col{
-  background:linear-gradient(160deg,#ffffff 0%,#f6f9ff 100%);
-  border:1px solid rgba(213,224,240,.8);border-radius:16px;overflow:visible;min-height:96px;
-  box-shadow:0 1px 2px rgba(15,38,69,.05),0 10px 22px -14px rgba(15,38,69,.28);
-  transition:box-shadow .18s,border-color .18s;
-  position:relative;z-index:0}
-.day-col:hover{
-  border-color:#BFDBFE;
-  box-shadow:0 4px 8px rgba(15,38,69,.07),0 24px 38px -16px rgba(21,88,168,.35)}
-.day-col.today-col{
-  border-color:var(--blue);
-  background:linear-gradient(160deg,#ffffff 0%,#eef6ff 100%);
-  box-shadow:0 0 0 2px rgba(21,88,168,.14),0 14px 28px -14px rgba(21,88,168,.4)}
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:20px}
+.day-col{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:visible;min-height:80px}
+.day-col.today-col{border-color:var(--blue);box-shadow:0 0 0 2px rgba(21,88,168,.1)}
 .day-col.past-col{opacity:.55}
-.day-col.past-col:hover{opacity:.8}
 .day-col.past-col .day-head{background:var(--surface)}
-.day-head{padding:11px 8px;border-bottom:1px solid var(--border);text-align:center;border-radius:16px 16px 0 0}
-.day-name{font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.7px}
-.day-date{font-size:22px;font-weight:900;color:var(--ink);margin-top:2px;line-height:1}
+.day-head{padding:10px 8px;border-bottom:1px solid var(--border);text-align:center}
+.day-name{font-size:10px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.day-date{font-size:20px;font-weight:800;color:var(--ink);margin-top:1px;line-height:1}
 .day-col.today-col .day-date{color:var(--blue)}
-.day-col.today-col .day-name::after{content:' •';color:var(--cyan)}
 .day-body{padding:7px}
 .shift-chip{padding:6px 8px;border-radius:8px;margin-bottom:5px;font-size:11.5px;cursor:pointer;transition:opacity .15s;position:relative}
 .shift-chip:hover{opacity:.82}
 .chip-morning{background:#EFF6FF;border:1px solid #BFDBFE}
 .chip-afternoon{background:#FFF7ED;border:1px solid #FED7AA}
 .chip-night{background:#F5F3FF;border:1px solid #DDD6FE}
-.chip-name{font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;max-width:100%}
+.chip-name{font-weight:750;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;max-width:100%}
 .chip-time{font-size:10px;color:var(--muted);margin-top:1px}
-.chip-status{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;margin-top:3px;padding:1px 6px;border-radius:10px}
+.chip-status{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:750;margin-top:3px;padding:1px 6px;border-radius:10px}
 .st-scheduled{background:#DBEAFE;color:#1E40AF}
 .st-confirmed{background:#D1FAE5;color:#065F46}
 .st-absent{background:#FEE2E2;color:#991B1B}
@@ -422,7 +426,7 @@ tbody tr{cursor:pointer}
 .st-sys-closed{background:#EEF2FF;color:#4338CA}
 .chip-cancel{position:absolute;top:3px;right:3px;width:15px;height:15px;border-radius:50%;background:rgba(220,38,38,.1);border:none;color:var(--red);font-size:9px;cursor:pointer;display:none;align-items:center;justify-content:center;line-height:1}
 .shift-chip:hover .chip-cancel{display:flex}
-.day-add{display:flex;align-items:center;justify-content:center;padding:7px;color:var(--muted);font-size:11px;border:1.5px dashed var(--border);border-radius:8px;cursor:pointer;transition:all .18s;margin-top:4px;background:transparent;width:100%;box-sizing:border-box;font-family:'Outfit',sans-serif;outline:none}
+.day-add{display:flex;align-items:center;justify-content:center;padding:7px;color:var(--muted);font-size:11px;border:1.5px dashed var(--border);border-radius:8px;cursor:pointer;transition:all .18s;margin-top:4px;background:transparent;width:100%;box-sizing:border-box}
 .day-add:hover{border-color:var(--blue);color:var(--blue);background:#EFF6FF}
 .empty-day{color:var(--muted);font-size:11px;text-align:center;padding:18px 0}
 /* Quick form */
@@ -430,14 +434,14 @@ tbody tr{cursor:pointer}
 .quick-form-card h3{font-size:13px;font-weight:800;color:var(--ink);margin-bottom:12px;display:flex;align-items:center;gap:6px}
 .qf-grid{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:flex-end}
 .qfi{display:flex;flex-direction:column;gap:4px}
-.qfi label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.qfi select,.qfi input{border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;height:36px;width:100%}
+.qfi label{font-size:10px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.qfi select,.qfi input{border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;height:36px;width:100%}
 .qfi select:focus,.qfi input:focus{border-color:var(--blue);background:#fff}
-.btn-qf-submit{padding:7px 20px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;height:36px;white-space:nowrap;transition:background .18s}
+.btn-qf-submit{padding:7px 20px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer;height:36px;white-space:nowrap;transition:background .18s}
 .btn-qf-submit:hover{background:#0D3F85}
 /* Modal search staff */
 .staff-search-wrap{position:relative;margin-bottom:8px}
-.staff-search-input{width:100%;border:1.5px solid var(--border);border-radius:9px;padding:8px 12px 8px 36px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;transition:border .18s;box-sizing:border-box}
+.staff-search-input{width:100%;border:1.5px solid var(--border);border-radius:9px;padding:8px 12px 8px 36px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;transition:border .18s;box-sizing:border-box}
 .staff-search-input:focus{border-color:var(--blue);background:#fff}
 .staff-search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;pointer-events:none}
 .staff-chips-wrap{display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:var(--surface);border-radius:10px;border:1.5px solid var(--border);min-height:50px;max-height:180px;overflow-y:auto}
@@ -445,9 +449,9 @@ tbody tr{cursor:pointer}
 .sc-chip.hidden{display:none}
 .sc-chip input[type=checkbox]{accent-color:var(--blue);width:13px;height:13px;flex-shrink:0}
 .sc-chip:has(input:checked){background:#EFF6FF;border-color:var(--blue)}
-.sc-chip-name{font-weight:600;color:var(--ink)}
+.sc-chip-name{font-weight:750;color:var(--ink)}
 .sc-chip-role{font-size:10px;color:var(--muted)}
-.sc-all-btn{font-size:12px;color:var(--blue);font-weight:600;cursor:pointer;background:none;border:none;padding:0;margin-bottom:6px;display:inline-flex;align-items:center;gap:4px}
+.sc-all-btn{font-size:12px;color:var(--blue);font-weight:750;cursor:pointer;background:none;border:none;padding:0;margin-bottom:6px;display:inline-flex;align-items:center;gap:4px}
 
 /* ── CHIP TOOLTIP (hover info đầy đủ) ── */
 
@@ -458,7 +462,7 @@ tbody tr{cursor:pointer}
 .staff-card{
   background:var(--white);border:1px solid var(--border);border-radius:10px;
   margin-bottom:6px;cursor:pointer;transition:box-shadow .18s,border-color .18s;
-  position:relative;overflow:visible;z-index:1;
+  position:relative;overflow:visible;
 }
 .staff-card:hover{border-color:#93C5FD;box-shadow:0 3px 14px rgba(21,88,168,.13)}
 .staff-card-head{
@@ -471,12 +475,12 @@ tbody tr{cursor:pointer}
 .scard-av.av-morning  {background:linear-gradient(135deg,#3B82F6,#1D4ED8)}
 .scard-av.av-afternoon{background:linear-gradient(135deg,#F97316,#C2410C)}
 .scard-av.av-night    {background:linear-gradient(135deg,#7C3AED,#4C1D95)}
-.scard-name{font-size:11.5px;font-weight:700;color:var(--ink);
+.scard-name{font-size:11.5px;font-weight:750;color:var(--ink);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 60px)}
-.scard-count{margin-left:auto;flex-shrink:0;font-size:9.5px;font-weight:700;
+.scard-count{margin-left:auto;flex-shrink:0;font-size:9.5px;font-weight:750;
   padding:2px 6px;border-radius:10px;background:#EFF6FF;color:#1558A8}
 .scard-first{padding:0 9px 6px;font-size:10px;color:var(--muted);line-height:1.3}
-.scard-first-type{font-weight:600;color:var(--ink);font-size:11px}
+.scard-first-type{font-weight:750;color:var(--ink);font-size:11px}
 .scard-first-time{font-size:10px;color:var(--muted)}
 .scard-status-bar{
   margin:0 9px 7px;display:flex;align-items:center;gap:4px;flex-wrap:wrap
@@ -486,7 +490,7 @@ tbody tr{cursor:pointer}
 .scard-dot.st-warn {background:#F59E0B}
 .scard-dot.st-err  {background:#DC2626}
 .scard-dot.st-pend {background:#93C5FD}
-.scard-status-txt{font-size:10px;font-weight:600}
+.scard-status-txt{font-size:10px;font-weight:750}
 /* Cancel X button hiện khi hover */
 .scard-cancel-btn{
   position:absolute;top:5px;right:5px;width:16px;height:16px;border-radius:50%;
@@ -504,7 +508,7 @@ tbody tr{cursor:pointer}
   padding:10px 12px;min-width:180px;max-width:220px;
   box-shadow:0 6px 24px rgba(0,0,0,.3);
   pointer-events:auto;
-  font-family:'Outfit',sans-serif;
+  font-family:'Plus Jakarta Sans',sans-serif;
 }
 /* Nếu cột cuối → hiện bên trái */
 .day-col:nth-child(6) .scard-tooltip,
@@ -521,14 +525,14 @@ tbody tr{cursor:pointer}
   border-right:none;border-left-color:#0B1628;
 }
 /* tooltip đã thay bằng inline detail panel */
-.stt-name{font-size:11.5px;font-weight:700;color:#fff;margin-bottom:5px;
+.stt-name{font-size:11.5px;font-weight:750;color:#fff;margin-bottom:5px;
   padding-bottom:5px;border-bottom:1px solid rgba(255,255,255,.12)}
 .stt-shift{padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06)}
 .stt-shift:last-child{border-bottom:none}
-.stt-shift-name{font-size:10.5px;font-weight:700;color:#fff;margin-bottom:1px}
+.stt-shift-name{font-size:10.5px;font-weight:750;color:#fff;margin-bottom:1px}
 .stt-shift-time{font-size:9.5px;color:rgba(255,255,255,.6);margin-bottom:2px}
 .stt-badge{display:inline-flex;align-items:center;gap:2px;font-size:9px;
-  font-weight:700;padding:1px 6px;border-radius:6px;margin-top:1px}
+  font-weight:750;padding:1px 6px;border-radius:6px;margin-top:1px}
 .stt-badge.ok  {background:#D1FAE5;color:#065F46}
 .stt-badge.warn{background:#FEF9C3;color:#92400E}
 .stt-badge.err {background:#FEE2E2;color:#991B1B}
@@ -540,7 +544,7 @@ tbody tr{cursor:pointer}
 }
 .stt-btn{
   flex:1;padding:4px 2px;border-radius:5px;border:none;
-  font-family:'Outfit',sans-serif;font-size:9.5px;font-weight:700;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:9.5px;font-weight:750;
   cursor:pointer;transition:all .15s;text-align:center;
 }
 .stt-btn:hover{opacity:.82;transform:scale(1.03)}
@@ -552,8 +556,10 @@ tbody tr{cursor:pointer}
 /* ════════════════════════════════════════════════════
    DETAIL MODAL — overlay giống modal sửa/xóa
    ════════════════════════════════════════════════════ */
-.detail-overlay{display:none;position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:9999;align-items:center;justify-content:center}
-.detail-overlay.open{display:flex}
+.detail-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:3000;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s}
+.detail-overlay.open{opacity:1;pointer-events:auto}
 .detail-modal{background:var(--white);border-radius:16px;width:540px;max-width:94vw;
   box-shadow:0 24px 70px rgba(0,0,0,.22);
   transform:translateY(16px);transition:transform .22s;overflow:hidden}
@@ -564,9 +570,9 @@ tbody tr{cursor:pointer}
 }
 .sdp-av{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.15);
   display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0}
-.sdp-name{font-size:15px;font-weight:700}
+.sdp-name{font-size:15px;font-weight:750}
 .sdp-type{font-size:11.5px;opacity:.7;margin-top:1px}
-.sdp-badge{margin-left:auto;padding:3px 10px;border-radius:14px;font-size:10.5px;font-weight:700}
+.sdp-badge{margin-left:auto;padding:3px 10px;border-radius:14px;font-size:10.5px;font-weight:750}
 .sdp-badge.ok{background:rgba(110,231,183,.2);color:#6EE7B7}
 .sdp-badge.pend{background:rgba(147,197,253,.2);color:#93C5FD}
 .sdp-badge.err{background:rgba(252,165,165,.2);color:#FCA5A5}
@@ -576,11 +582,11 @@ tbody tr{cursor:pointer}
 .sdp-close:hover{background:rgba(255,255,255,.2)}
 .sdp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:16px 20px}
 .sdp-item{background:var(--surface);border-radius:8px;padding:9px 11px}
-.sdp-label{font-size:9.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
-.sdp-val{font-size:13px;font-weight:600;color:var(--ink)}
+.sdp-label{font-size:9.5px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.sdp-val{font-size:13px;font-weight:750;color:var(--ink)}
 /* ── Timeline ── */
 .sdp-timeline-wrap{padding:14px 20px 10px}
-.sdp-sec-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.sdp-sec-label{font-size:10px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
 .sdp-timeline{position:relative;height:62px;background:var(--surface);border-radius:10px;overflow:visible;padding:0 4px}
 .sdp-tl-track{position:absolute;top:34px;left:0;right:0;height:3px;background:var(--border);border-radius:2px}
 .sdp-tl-seg{position:absolute;height:5px;border-radius:3px;top:33px}
@@ -588,19 +594,19 @@ tbody tr{cursor:pointer}
 .sdp-tl-seg.afternoon{background:linear-gradient(90deg,#F97316,#FB923C)}
 .sdp-tl-seg.night{background:linear-gradient(90deg,#7C3AED,#A78BFA)}
 .sdp-tl-marker{position:absolute;top:6px;transform:translateX(-50%);text-align:center}
-.sdp-tl-time{font-size:12px;font-weight:700;color:var(--ink)}
+.sdp-tl-time{font-size:12px;font-weight:750;color:var(--ink)}
 .sdp-tl-label{font-size:8.5px;color:var(--muted);margin-top:1px;white-space:nowrap;max-width:60px;overflow:hidden;text-overflow:ellipsis}
 .sdp-tl-dot{position:absolute;top:31px;width:11px;height:11px;border-radius:50%;border:2px solid var(--white);transform:translateX(-50%);z-index:2}
 /* ── Info chips ── */
 .sdp-info-row{display:flex;gap:6px;padding:4px 20px 12px;flex-wrap:wrap}
 .sdp-chip{display:flex;align-items:center;gap:5px;background:var(--surface);border-radius:8px;padding:7px 11px}
 .sdp-chip-icon{font-size:12px;flex-shrink:0}
-.sdp-chip-val{font-size:12.5px;font-weight:600;color:var(--ink)}
+.sdp-chip-val{font-size:12.5px;font-weight:750;color:var(--ink)}
 .sdp-notes{padding:0 20px 12px}
 .sdp-notes-box{background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:9px 12px;font-size:12px;color:#78350F}
 .sdp-actions{display:flex;gap:8px;padding:0 20px 16px}
-.sdp-btn{flex:1;padding:9px;border-radius:8px;border:none;font-family:'Outfit',sans-serif;
-  font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;text-align:center}
+.sdp-btn{flex:1;padding:9px;border-radius:8px;border:none;font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:12px;font-weight:750;cursor:pointer;transition:all .18s;text-align:center}
 .sdp-btn:hover{transform:translateY(-1px)}
 .sdp-btn.edit{background:#EFF6FF;color:var(--blue);border:1.5px solid #BFDBFE}
 .sdp-btn.edit:hover{background:#DBEAFE}
@@ -616,7 +622,7 @@ tbody tr{cursor:pointer}
   background:#0B1628;color:#fff;border-radius:8px;
   padding:7px 10px;min-width:130px;max-width:180px;
   box-shadow:0 4px 16px rgba(0,0,0,.25);pointer-events:none;
-  font-family:'Outfit',sans-serif;text-align:center;white-space:nowrap;
+  font-family:'Plus Jakarta Sans',sans-serif;text-align:center;white-space:nowrap;
 }
 .scard-mini-tip::after{
   content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
@@ -633,7 +639,7 @@ tbody tr{cursor:pointer}
   background:#0B1628;color:#fff;border-radius:12px;
   padding:12px 16px;min-width:210px;max-width:260px;
   box-shadow:0 8px 28px rgba(0,0,0,.3);pointer-events:none;
-  font-family:'Outfit',sans-serif;
+  font-family:'Plus Jakarta Sans',sans-serif;
 }
 .chip-tooltip::after{
   content:'';position:absolute;top:100%;left:50%;
@@ -649,8 +655,8 @@ tbody tr{cursor:pointer}
 .tt-head{font-size:13px;font-weight:800;color:#fff;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid rgba(255,255,255,.15)}
 .tt-row{font-size:12px;color:rgba(255,255,255,.8);padding:3px 0;display:flex;align-items:flex-start;gap:7px;line-height:1.4}
 .tt-icon{flex-shrink:0;width:14px;text-align:center}
-.tt-val{color:#fff;font-weight:500}
-.tt-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700}
+.tt-val{color:#fff;font-weight:750}
+.tt-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:750}
 .tt-scheduled{background:#1E40AF;color:#DBEAFE}
 .tt-confirmed{background:#065F46;color:#D1FAE5}
 .tt-absent{background:#991B1B;color:#FEE2E2}
@@ -659,7 +665,7 @@ tbody tr{cursor:pointer}
 
 /* ── CHIP ACTION BUTTONS (edit/delete) ── */
 .chip-actions{display:flex;gap:4px;margin-top:5px}
-.chip-btn{display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:3px 8px;border-radius:6px;font-size:10.5px;font-weight:700;cursor:pointer;border:none;font-family:'Outfit',sans-serif;transition:all .15s;white-space:nowrap}
+.chip-btn{display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:3px 8px;border-radius:6px;font-size:10.5px;font-weight:750;cursor:pointer;border:none;font-family:'Plus Jakarta Sans',sans-serif;transition:all .15s;white-space:nowrap}
 .chip-btn-edit{background:#EFF6FF;color:#1558A8}
 .chip-btn-edit:hover{background:#DBEAFE}
 .chip-btn-del{background:#FEF2F2;color:#DC2626}
@@ -667,10 +673,10 @@ tbody tr{cursor:pointer}
 .chip-btn-add-next{background:#ECFDF5;color:#059669}
 .chip-btn-add-next:hover{background:#D1FAE5}
 /* Chip đang active (CONFIRMED) — không edit được */
-.chip-active-note{font-size:10px;color:#059669;font-weight:600;margin-top:4px;padding:2px 6px;background:#ECFDF5;border-radius:5px;display:inline-block}
+.chip-active-note{font-size:10px;color:#059669;font-weight:750;margin-top:4px;padding:2px 6px;background:#ECFDF5;border-radius:5px;display:inline-block}
 /* Edit modal */
-.edit-modal-overlay{display:none;position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:9999;align-items:center;justify-content:center}
-.edit-modal-overlay.open{display:flex}
+.edit-modal-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:3000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.edit-modal-overlay.open{opacity:1;pointer-events:auto}
 .edit-modal{background:var(--white);border-radius:16px;width:480px;max-width:94vw;box-shadow:0 24px 70px rgba(0,0,0,.22);transform:translateY(16px);transition:transform .22s}
 .edit-modal-overlay.open .edit-modal{transform:translateY(0)}
 .em-head{padding:16px 20px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between}
@@ -681,15 +687,15 @@ tbody tr{cursor:pointer}
 .em-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .em-fg{display:flex;flex-direction:column;gap:4px}
 .em-fg.full{grid-column:1/-1}
-.em-fg label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.em-fg select,.em-fg input,.em-fg textarea{border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;width:100%;transition:border .18s}
+.em-fg label{font-size:10px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.em-fg select,.em-fg input,.em-fg textarea{border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;width:100%;transition:border .18s}
 .em-fg select:focus,.em-fg input:focus,.em-fg textarea:focus{border-color:var(--blue);background:#fff}
 .em-foot{padding:12px 20px;border-top:0.5px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
-.em-cancel{padding:7px 16px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
-.em-submit{padding:7px 20px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.em-cancel{padding:7px 16px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer}
+.em-submit{padding:7px 20px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer}
 /* Delete modal */
-.del-modal-overlay{display:none;position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:9999;align-items:center;justify-content:center}
-.del-modal-overlay.open{display:flex}
+.del-modal-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:3000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.del-modal-overlay.open{opacity:1;pointer-events:auto}
 .del-modal{background:var(--white);border-radius:16px;width:560px;max-width:94vw;max-height:85vh;overflow-y:auto;box-shadow:0 24px 70px rgba(0,0,0,.22);transform:translateY(16px);transition:transform .22s}
 .del-modal-overlay.open .del-modal{transform:translateY(0)}
 .dm-head{padding:16px 20px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--white);z-index:1}
@@ -700,10 +706,10 @@ tbody tr{cursor:pointer}
 .dm-staff-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border-radius:10px;margin-bottom:14px}
 .dm-staff-av{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#1558A8,#4F81D9);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0}
 .dm-date-row{display:grid;grid-template-columns:1fr 24px 1fr;gap:8px;align-items:center;margin-bottom:12px}
-.dm-sep{text-align:center;color:var(--muted);font-weight:700}
+.dm-sep{text-align:center;color:var(--muted);font-weight:750}
 .dm-fg{display:flex;flex-direction:column;gap:4px}
-.dm-fg label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.dm-fg input,.dm-fg select{border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;width:100%}
+.dm-fg label{font-size:10px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.dm-fg input,.dm-fg select{border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;width:100%}
 .dm-preview{margin-top:10px;padding:10px 14px;background:var(--surface);border-radius:9px;font-size:12.5px;color:var(--muted);display:none}
 .dm-preview strong{color:var(--ink)}
 .dm-list{max-height:200px;overflow-y:auto;border:0.5px solid var(--border);border-radius:9px;margin-top:10px}
@@ -711,11 +717,11 @@ tbody tr{cursor:pointer}
 .dm-item:last-child{border-bottom:none}
 .dm-item-check{accent-color:var(--red)}
 .dm-item-info{flex:1;margin-left:8px}
-.dm-item-name{font-weight:600;color:var(--ink)}
+.dm-item-name{font-weight:750;color:var(--ink)}
 .dm-item-meta{font-size:11px;color:var(--muted)}
 .dm-foot{padding:12px 20px;border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;bottom:0;background:var(--white)}
-.dm-cancel{padding:7px 16px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
-.dm-confirm{padding:7px 20px;background:#DC2626;color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.dm-cancel{padding:7px 16px;background:var(--surface);color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer}
+.dm-confirm{padding:7px 20px;background:#DC2626;color:#fff;border:none;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer}
 .dm-count{font-size:12px;color:var(--muted)}
 
 /* ── SELECT MODE (edit/delete checkbox overlay) ── */
@@ -727,8 +733,10 @@ tbody tr{cursor:pointer}
 .shift-chip.chip-selected{outline:2.5px solid var(--blue);outline-offset:1px}
 .shift-chip.chip-selected-del{outline:2.5px solid #DC2626;outline-offset:1px}
 /* Modal chọn ca (edit/delete) — dùng lại sched-overlay CSS */
-.selmode-overlay{display:none;position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:9999;align-items:center;justify-content:center}
-.selmode-overlay.open{display:flex}
+.selmode-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:3000;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s}
+.selmode-overlay.open{opacity:1;pointer-events:auto}
 .selmode-modal{background:var(--white);border-radius:18px;width:900px;max-width:96vw;
   max-height:90vh;overflow-y:auto;box-shadow:0 28px 80px rgba(0,0,0,.25);
   transform:translateY(18px);transition:transform .24s;display:flex;flex-direction:column}
@@ -738,7 +746,7 @@ tbody tr{cursor:pointer}
   background:var(--white);z-index:2;border-radius:18px 18px 0 0;gap:12px}
 .sm-title{font-size:15px;font-weight:800;color:var(--ink);flex-shrink:0}
 .sm-selected-badge{background:#EFF6FF;color:#1558A8;padding:3px 12px;border-radius:20px;
-  font-size:12px;font-weight:700;display:none}
+  font-size:12px;font-weight:750;display:none}
 .sm-selected-badge.del-badge{background:#FEF2F2;color:#DC2626}
 .sm-selected-badge.show{display:inline-block}
 .sm-close{width:28px;height:28px;border-radius:8px;border:none;background:var(--surface);
@@ -754,8 +762,8 @@ tbody tr{cursor:pointer}
   overflow:visible;min-height:80px}
 .sm-day-col.sm-today{border-color:var(--blue)}
 .sm-day-head{padding:7px 6px;border-bottom:0.5px solid var(--border);text-align:center}
-.sm-day-name{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase}
-.sm-day-date{font-size:16px;font-weight:900;color:var(--ink);line-height:1}
+.sm-day-name{font-size:9px;font-weight:750;color:var(--muted);text-transform:uppercase}
+.sm-day-date{font-size:16px;font-weight:800;color:var(--ink);line-height:1}
 .sm-today .sm-day-date{color:var(--blue)}
 .sm-day-body{padding:5px}
 .sm-chip{padding:6px 8px;border-radius:7px;margin-bottom:4px;font-size:11px;
@@ -768,10 +776,10 @@ tbody tr{cursor:pointer}
 .sm-chip.sm-selected-edit{border-color:var(--blue)!important;background:#DBEAFE!important}
 .sm-chip.sm-selected-del{border-color:#DC2626!important;background:#FEE2E2!important}
 .sm-chip.sm-locked{opacity:.45;cursor:not-allowed}
-.sm-chip-name{font-weight:700;color:var(--ink);font-size:11px;
+.sm-chip-name{font-weight:750;color:var(--ink);font-size:11px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sm-chip-type{font-size:10px;color:var(--muted)}
-.sm-chip-status{font-size:9.5px;font-weight:700;margin-top:2px;
+.sm-chip-status{font-size:9.5px;font-weight:750;margin-top:2px;
   padding:1px 5px;border-radius:8px;display:inline-block}
 .sm-lock-badge{font-size:9px;color:var(--muted);font-style:italic;margin-top:2px;display:block}
 .sm-empty{font-size:10.5px;color:var(--muted);text-align:center;padding:12px 0}
@@ -784,10 +792,10 @@ tbody tr{cursor:pointer}
   background:var(--white);border-radius:0 0 18px 18px;gap:10px}
 .sm-foot-hint{font-size:12px;color:var(--muted);flex:1}
 .sm-cancel-btn{padding:8px 18px;background:var(--surface);color:var(--muted);
-  border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;
-  font-size:13px;font-weight:600;cursor:pointer}
-.sm-action-btn{padding:8px 22px;border:none;border-radius:8px;font-family:'Outfit',sans-serif;
-  font-size:13px;font-weight:700;cursor:pointer;transition:all .18s;opacity:.5;cursor:not-allowed}
+  border:1.5px solid var(--border);border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:13px;font-weight:750;cursor:pointer}
+.sm-action-btn{padding:8px 22px;border:none;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:13px;font-weight:750;cursor:pointer;transition:all .18s;opacity:.5;cursor:not-allowed}
 .sm-action-btn.enabled{opacity:1;cursor:pointer}
 .sm-action-edit{background:var(--blue);color:#fff}
 .sm-action-del{background:#DC2626;color:#fff}
@@ -795,13 +803,13 @@ tbody tr{cursor:pointer}
 .sm-edit-panel{background:var(--surface);border-radius:10px;padding:14px 16px;
   margin-top:14px;border:1px solid var(--border);display:none}
 .sm-edit-panel.show{display:block}
-.sm-edit-panel h4{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:10px}
+.sm-edit-panel h4{font-size:12px;font-weight:750;color:var(--ink);margin-bottom:10px}
 .sm-edit-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 .sm-efg{display:flex;flex-direction:column;gap:4px}
-.sm-efg label{font-size:10px;font-weight:700;color:var(--muted);
+.sm-efg label{font-size:10px;font-weight:750;color:var(--muted);
   text-transform:uppercase;letter-spacing:.5px}
 .sm-efg select,.sm-efg input{border:1.5px solid var(--border);border-radius:8px;
-  padding:7px 10px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);
+  padding:7px 10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:var(--ink);
   background:#fff;outline:none;width:100%}
 .sm-efg select:focus,.sm-efg input:focus{border-color:var(--blue)}
 .sm-efg.span2{grid-column:span 2}
@@ -810,7 +818,7 @@ tbody tr{cursor:pointer}
 /* ── Multi-select xóa loại ca ── */
 .btn-select-mode{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;
   background:var(--surface);color:var(--ink);border:1.5px solid var(--border);border-radius:9px;
-  font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-right:8px}
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer;margin-right:8px}
 .btn-select-mode.active{background:var(--blue);color:#fff;border-color:var(--blue)}
 .type-card{position:relative}
 .type-card-checkbox{display:none;position:absolute;top:14px;left:14px;width:20px;height:20px;
@@ -822,13 +830,13 @@ tbody tr{cursor:pointer}
 .bulk-delete-bar{display:none;align-items:center;justify-content:space-between;gap:14px;
   background:#FEF2F2;border:1.5px solid #FECACA;border-radius:12px;padding:12px 18px;margin-bottom:14px}
 .bulk-delete-bar.show{display:flex}
-.bulk-delete-count{font-size:13px;font-weight:700;color:#991B1B}
+.bulk-delete-count{font-size:13px;font-weight:750;color:#991B1B}
 .bulk-delete-actions{display:flex;gap:10px}
 .btn-bulk-delete{background:#DC2626;color:#fff;border:none;padding:8px 18px;border-radius:9px;
-  font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer}
 .btn-bulk-delete:disabled{opacity:.5;cursor:not-allowed}
 .btn-bulk-cancel{background:#fff;color:var(--muted);border:1.5px solid var(--border);padding:8px 18px;
-  border-radius:9px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+  border-radius:9px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer}
 
 /* ── POS MAP ── */
 .pos-station-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
@@ -854,11 +862,11 @@ tbody tr{cursor:pointer}
 .pos-st-av{width:32px;height:32px;border-radius:10px;font-size:11px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .pos-st-av.online{background:linear-gradient(135deg,var(--blue),var(--cyan))}
 .pos-st-av.offline{background:linear-gradient(135deg,var(--muted),#cbd5e1)}
-.pos-st-staff-name{font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pos-st-staff-name{font-size:12.5px;font-weight:750;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pos-st-staff-meta{font-size:10.5px;color:var(--muted);margin-top:1px}
 .pos-st-empty{font-size:12px;color:var(--muted);font-style:italic;padding:12px 0;text-align:center;background:rgba(21,88,168,0.01);border:1.5px dashed rgba(21,88,168,0.06);border-radius:10px}
 .pos-unassigned-list{display:flex;flex-wrap:wrap;gap:8px}
-.pos-unas-chip{padding:6px 12px;border-radius:8px;background:#fff;border:1.5px solid #fde68a;font-size:12px;font-weight:600;color:#92400e;box-shadow:0 2px 6px rgba(146,64,14,0.04)}
+.pos-unas-chip{padding:6px 12px;border-radius:8px;background:#fff;border:1.5px solid #fde68a;font-size:12px;font-weight:750;color:#92400e;box-shadow:0 2px 6px rgba(146,64,14,0.04)}
 .btn-pos-add-staff {
   padding: 5px 12px;
   border-radius: 8px;
@@ -866,7 +874,7 @@ tbody tr{cursor:pointer}
   background: linear-gradient(135deg, var(--blue), var(--cyan));
   font-family: inherit;
   font-size: 11px;
-  font-weight: 700;
+  font-weight:750;
   cursor: pointer;
   color: #fff;
   display: inline-flex;
@@ -900,7 +908,22 @@ tbody tr{cursor:pointer}
   background: rgba(220, 38, 38, 0.12);
   color: var(--red);
 }
+select,option{font-family:inherit;font-size:inherit}
+.cdd{position:relative;user-select:none;display:inline-block}
+.cdd-btn{display:flex;align-items:center;gap:6px;padding:9px 14px;background:var(--white,#fff);border:1.5px solid var(--border,#D5E0F0);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;color:var(--ink,#0B1628);cursor:pointer;transition:all .18s;white-space:nowrap}
+.cdd-btn:hover{border-color:var(--cyan,#3ABDE0);background:var(--cyan-soft,#EBF8FD)}
+.cdd-btn.open{border-color:var(--cyan,#3ABDE0);box-shadow:0 0 0 3px rgba(58,189,224,.12)}
+.cdd-arrow{font-size:9px;color:var(--muted,#7A90B0);transition:transform .2s}
+.cdd-btn.open .cdd-arrow{transform:rotate(180deg)}
+.cdd-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:100%;background:var(--white,#fff);border:1.5px solid var(--border,#D5E0F0);border-radius:12px;padding:6px;box-shadow:0 12px 36px rgba(15,38,69,.15);z-index:200;opacity:0;transform:translateY(-6px);pointer-events:none;transition:all .18s ease;max-height:260px;overflow-y:auto}
+.cdd-menu.show{opacity:1;transform:translateY(0);pointer-events:auto}
+.cdd-menu::-webkit-scrollbar{width:4px}
+.cdd-menu::-webkit-scrollbar-thumb{background:var(--border,#D5E0F0);border-radius:4px}
+.cdd-opt{padding:8px 14px;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;color:var(--ink,#0B1628);cursor:pointer;transition:all .12s;white-space:nowrap}
+.cdd-opt:hover{background:var(--surface,#F1F5FB);color:var(--blue,#1558A8)}
+.cdd-opt.active{background:linear-gradient(135deg,var(--blue,#1558A8),#0D3F85);color:#fff;font-weight:750}
 </style>
+    
 </head>
 <body>
 
@@ -915,8 +938,6 @@ tbody tr{cursor:pointer}
       <c:when test="${param.msg == 'counter-added'}">   <div class="toast toast-ok"   id="toast">✅ Thêm quầy thành công!</div></c:when>
       <c:when test="${param.msg == 'counter-updated'}"> <div class="toast toast-ok"   id="toast">✅ Cập nhật quầy thành công!</div></c:when>
       <c:when test="${param.msg == 'counter-deleted'}"> <div class="toast toast-ok"   id="toast">🗑️ Xóa quầy thành công!</div></c:when>
-      <c:when test="${param.msg == 'counter-in-use'}">  <div class="toast toast-err"  id="toast">🚫 Không thể xóa quầy — đang có nhân viên được xếp lịch/làm việc tại quầy này!</div></c:when>
-      <c:when test="${param.msg == 'shift-active'}">    <div class="toast toast-err"  id="toast">🚫 Không thể xóa/hủy — nhân viên ĐANG trong ca làm việc!</div></c:when>
       <c:when test="${param.msg == 'opened'}">       <div class="toast toast-ok"   id="toast">✅ Mở ca thành công!</div></c:when>
       <c:when test="${param.msg == 'closed'}">       <div class="toast toast-ok"   id="toast">✅ Đóng ca thành công!</div></c:when>
       <c:when test="${param.msg == 'force-closed'}"> <div class="toast toast-info" id="toast">🔒 Admin đã đóng ca.</div></c:when>
@@ -985,7 +1006,7 @@ tbody tr{cursor:pointer}
       <span class="topbar-pill pill-total">📋 ${totalCount} ca</span>
       <span class="topbar-pill pill-open">🟢 ${openCount} đang mở</span>
       <span class="topbar-pill pill-staff">👥 ${fn:length(allStaff)} nhân viên</span>
-      <a href="${pageContext.request.contextPath}/admin-profile" class="topbar-user">
+      <a href="${pageContext.request.contextPath}/dashboard" class="topbar-user">
         <div class="topbar-av"><%= initials %></div>
         <span class="topbar-name"><%= fullName %></span>
       </a>
@@ -1043,13 +1064,13 @@ tbody tr{cursor:pointer}
         <a href="${pageContext.request.contextPath}/shifts?tab=list" class="btn-nav">Hôm nay</a>
         <span class="week-sub">click = xem chi tiết + sửa/xóa • ✕ để hủy nhanh</span>
         <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-          <button onclick="openEditSelectModal()" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:#fff;color:#1558A8;border:1.5px solid #BFDBFE;border-radius:10px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .18s" onmouseover="this.style.background='#EFF6FF'" onmouseout="this.style.background='#fff'">
+          <button onclick="openEditSelectModal()" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:#fff;color:#1558A8;border:1.5px solid #BFDBFE;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer;transition:all .18s" onmouseover="this.style.background='#EFF6FF'" onmouseout="this.style.background='#fff'">
             ✏️ Sửa ca
           </button>
-          <button onclick="openDeleteSelectModal()" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:#fff;color:#DC2626;border:1.5px solid #FECACA;border-radius:10px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .18s" onmouseover="this.style.background='#FEF2F2'" onmouseout="this.style.background='#fff'">
+          <button onclick="openDeleteSelectModal()" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:#fff;color:#DC2626;border:1.5px solid #FECACA;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer;transition:all .18s" onmouseover="this.style.background='#FEF2F2'" onmouseout="this.style.background='#fff'">
             🗑️ Xóa ca
           </button>
-          <button onclick="openFullSchedModal()" style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 12px rgba(21,88,168,.25);transition:all .18s">
+          <button onclick="openFullSchedModal()" style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;border:none;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer;box-shadow:0 3px 12px rgba(21,88,168,.25);transition:all .18s">
             + Xếp ca mới
           </button>
         </div>
@@ -1170,13 +1191,13 @@ tbody tr{cursor:pointer}
                     <%-- ── STAFF CARD ── --%>
                     <div class="staff-card"
                          data-sched-id="${firstSc.scheduleId}"
-                         data-staff-name="${fn:escapeXml(firstSc.staffName)}"
-                         data-shift-type="${fn:escapeXml(firstSc.shiftTypeName)}"
+                         data-staff-name="${firstSc.staffName}"
+                         data-shift-type="${firstSc.shiftTypeName}"
                          data-shift-type-id="${firstSc.shiftTypeId}"
                          data-status="${firstSc.status}"
                          data-work-date="${firstSc.workDate}" data-is-past="${dayDate.isBefore(today)}"
                          data-late-tol="${firstSc.lateToleranceMinutes}"
-                         data-notes="${fn:escapeXml(firstSc.notes)}"
+                         data-notes="${firstSc.notes}"
                          data-pos-station="${firstSc.posStation}"
                          data-total="${totalShifts}"
                          data-planned-start="${not empty firstSc.plannedStart ? fn:substring(firstSc.plannedStart.toString(),11,16) : ''}"
@@ -1241,7 +1262,7 @@ tbody tr{cursor:pointer}
 
 <%-- Mini tooltip hover --%>
                       <div class="scard-mini-tip">
-                        <div style="font-size:10.5px;font-weight:700">${firstSc.shiftTypeName}</div>
+                        <div style="font-size:10.5px;font-weight:750">${firstSc.shiftTypeName}</div>
                         <c:if test="${not empty firstSc.plannedStart}">
                           <div style="font-size:9.5px;color:rgba(255,255,255,.65);margin-top:2px">
                             ${fn:substring(firstSc.plannedStart.toString(),11,16)} → ${fn:substring(firstSc.plannedEnd.toString(),11,16)}
@@ -1258,7 +1279,7 @@ tbody tr{cursor:pointer}
               </c:choose>
 
               <c:if test="${!dayDate.isBefore(today)}">
-                <button type="button" onclick="(function(d){var m=document.getElementById('fullSchedModal');if(!m)return;document.querySelectorAll('#fullStaffChips input,#fullStypeCards input').forEach(function(c){c.checked=false;});var f=document.getElementById('fsDateFrom');if(f)f.value=d;var t=document.getElementById('fsDateTo');if(t)t.value='';if(typeof updateFullPreview==='function')updateFullPreview();m.classList.add('open');m.style.display='flex';}('${dayDate}'))" class="day-add">＋ Thêm ca</button>
+                <a onclick="openSchedModalForDay('${dayDate}','')" class="day-add">＋ Thêm ca</a>
               </c:if>
             </div>
           </div>
@@ -1269,7 +1290,7 @@ tbody tr{cursor:pointer}
       <%-- ────────────────────────── DANH SÁCH CA ────────────────────────── --%>
       <div style="display:flex;align-items:center;gap:12px;margin:24px 0 16px">
         <div style="flex:1;height:1px;background:var(--border)"></div>
-        <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;padding:0 4px">📋 Danh sách ca làm việc</span>
+        <span style="font-size:12px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;padding:0 4px">📋 Danh sách ca làm việc</span>
         <div style="flex:1;height:1px;background:var(--border)"></div>
       </div>
 
@@ -1287,21 +1308,42 @@ tbody tr{cursor:pointer}
           </div>
           <div class="fi">
             <label>Nhân viên</label>
-            <select name="accountId">
-              <option value="">— Tất cả —</option>
-              <c:forEach var="staff" items="${allStaff}">
-                <option value="${staff.accountId}" ${filterAcc == staff.accountId.toString() ? 'selected' : ''}>${staff.fullName}</option>
-              </c:forEach>
-            </select>
+            <input type="hidden" name="accountId" id="hfilterAccountId" value="${filterAcc}">
+            <div class="cdd" id="cddFilterAccountId">
+              <div class="cdd-btn" onclick="toggleCdd('cddFilterAccountId')">
+                <span class="cdd-label"><c:choose><c:when test="${empty filterAcc}">— Tất cả —</c:when><c:otherwise><c:forEach var="staff" items="${allStaff}"><c:if test="${filterAcc == staff.accountId.toString()}">${staff.fullName}</c:if></c:forEach></c:otherwise></c:choose></span>
+                <span class="cdd-arrow">▼</span>
+              </div>
+              <div class="cdd-menu">
+                <div class="cdd-opt ${empty filterAcc ? 'active' : ''}" data-val="" onclick="pickCdd('cddFilterAccountId','hfilterAccountId',this,false)">— Tất cả —</div>
+                <c:forEach var="staff" items="${allStaff}">
+                  <div class="cdd-opt ${filterAcc == staff.accountId.toString() ? 'active' : ''}" data-val="${staff.accountId}" onclick="pickCdd('cddFilterAccountId','hfilterAccountId',this,false)">${staff.fullName}</div>
+                </c:forEach>
+              </div>
+            </div>
           </div>
           <div class="fi">
             <label>Trạng thái</label>
-            <select name="status">
-              <option value="">— Tất cả —</option>
-              <option value="open"         ${'open'         == filterStatus ? 'selected' : ''}>Đang mở</option>
-              <option value="closed"       ${'closed'       == filterStatus ? 'selected' : ''}>Đã đóng</option>
-              <option value="force-closed" ${'force-closed' == filterStatus ? 'selected' : ''}>Đóng muộn</option>
-            </select>
+            <input type="hidden" name="status" id="hfilterStatus" value="${filterStatus}">
+            <div class="cdd" id="cddFilterStatus">
+              <div class="cdd-btn" onclick="toggleCdd('cddFilterStatus')">
+                <span class="cdd-label">
+                  <c:choose>
+                    <c:when test="${filterStatus == 'open'}">Đang mở</c:when>
+                    <c:when test="${filterStatus == 'closed'}">Đã đóng</c:when>
+                    <c:when test="${filterStatus == 'force-closed'}">Đóng muộn</c:when>
+                    <c:otherwise>— Tất cả —</c:otherwise>
+                  </c:choose>
+                </span>
+                <span class="cdd-arrow">▼</span>
+              </div>
+              <div class="cdd-menu">
+                <div class="cdd-opt ${empty filterStatus ? 'active' : ''}" data-val="" onclick="pickCdd('cddFilterStatus','hfilterStatus',this,false)">— Tất cả —</div>
+                <div class="cdd-opt ${filterStatus == 'open' ? 'active' : ''}" data-val="open" onclick="pickCdd('cddFilterStatus','hfilterStatus',this,false)">Đang mở</div>
+                <div class="cdd-opt ${filterStatus == 'closed' ? 'active' : ''}" data-val="closed" onclick="pickCdd('cddFilterStatus','hfilterStatus',this,false)">Đã đóng</div>
+                <div class="cdd-opt ${filterStatus == 'force-closed' ? 'active' : ''}" data-val="force-closed" onclick="pickCdd('cddFilterStatus','hfilterStatus',this,false)">Đóng muộn</div>
+              </div>
+            </div>
           </div>
           <button type="submit" class="btn-filter">🔍 Lọc</button>
           <a href="${pageContext.request.contextPath}/shifts?tab=list" class="btn-reset">↺ Reset</a>
@@ -1319,7 +1361,7 @@ tbody tr{cursor:pointer}
             <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:12px;opacity:.4;pointer-events:none">🔍</span>
             <input type="text" id="shiftSearch" placeholder="Tìm nhân viên, trạng thái..."
               autocomplete="off"
-              style="width:100%;height:34px;padding:0 12px 0 32px;border:1.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:12.5px;outline:none;background:#fff"
+              style="width:100%;height:34px;padding:0 12px 0 32px;border:1.5px solid var(--border);border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;outline:none;background:#fff"
               oninput="filterShiftTable(this.value)">
           </div>
         </div>
@@ -1372,7 +1414,7 @@ tbody tr{cursor:pointer}
                   <td>
                     <c:choose>
                       <c:when test="${s.open}"><span class="dur-active">⏱️ ${s.durationDisplay}</span></c:when>
-                      <c:otherwise><span style="font-size:13px;font-weight:600">${s.durationDisplay}</span></c:otherwise>
+                      <c:otherwise><span style="font-size:13px;font-weight:750">${s.durationDisplay}</span></c:otherwise>
                     </c:choose>
                   </td>
                   <td>
@@ -1503,7 +1545,7 @@ tbody tr{cursor:pointer}
           <p style="font-size:12.5px;color:var(--muted);margin-top:3px">Duyệt hoặc từ chối đơn xin nghỉ của nhân viên</p>
         </div>
         <a href="${pageContext.request.contextPath}/leave-requests?action=list"
-           style="font-size:13px;font-weight:600;color:var(--blue);text-decoration:none;
+           style="font-size:13px;font-weight:750;color:var(--blue);text-decoration:none;
                   padding:7px 14px;border:1.5px solid var(--blue);border-radius:9px;
                   transition:all .18s"
            onmouseover="this.style.background='#EFF6FF'" onmouseout="this.style.background=''">
@@ -1520,7 +1562,7 @@ tbody tr{cursor:pointer}
           <c:when test="${empty pendingLeaves}">
             <div style="text-align:center;padding:48px 24px;color:var(--muted)">
               <div style="font-size:44px;margin-bottom:12px">✅</div>
-              <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:4px">Không có đơn nào chờ duyệt</div>
+              <div style="font-size:14px;font-weight:750;color:var(--ink);margin-bottom:4px">Không có đơn nào chờ duyệt</div>
               <div style="font-size:13px">Tất cả đơn đã được xử lý!</div>
             </div>
           </c:when>
@@ -1540,9 +1582,9 @@ tbody tr{cursor:pointer}
                 <c:forEach var="lr" items="${pendingLeaves}">
                   <tr>
                     <td><strong>${lr.staffName}</strong></td>
-                    <td style="font-weight:700;color:var(--ink)">${lr.leaveDate}</td>
+                    <td style="font-weight:750;color:var(--ink)">${lr.leaveDate}</td>
                     <td>
-                      <span style="padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;
+                      <span style="padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:750;
                         background:<c:choose>
                           <c:when test="${lr.leaveType=='ANNUAL'}">#ECFDF5;color:#065F46</c:when>
                           <c:when test="${lr.leaveType=='SICK'}">#FFF7ED;color:#92400E</c:when>
@@ -1569,7 +1611,7 @@ tbody tr{cursor:pointer}
                           <input type="hidden" name="deductAmount" value="0">
                           <button type="submit"
                                   style="padding:5px 12px;background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0;
-                                         border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;
+                                         border-radius:7px;font-size:12px;font-weight:750;cursor:pointer;
                                          transition:all .18s"
                                   onmouseover="this.style.background='#A7F3D0'"
                                   onmouseout="this.style.background='#ECFDF5'">
@@ -1582,7 +1624,7 @@ tbody tr{cursor:pointer}
                           <button type="submit"
                                   onclick="return confirm('Từ chối đơn nghỉ của ${lr.staffName}?')"
                                   style="padding:5px 12px;background:#FEF2F2;color:#991B1B;border:1px solid #FECACA;
-                                         border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;
+                                         border-radius:7px;font-size:12px;font-weight:750;cursor:pointer;
                                          transition:all .18s"
                                   onmouseover="this.style.background='#FECACA'"
                                   onmouseout="this.style.background='#FEF2F2'">
@@ -1610,7 +1652,7 @@ tbody tr{cursor:pointer}
         <div class="pos-guide-header" onclick="togglePosGuide()" style="padding:14px 20px; background:linear-gradient(135deg,rgba(21,88,168,0.05),rgba(58,189,224,0.05)); display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none;">
           <div style="display:flex; align-items:center; gap:10px;">
             <span style="font-size:18px;">💡</span>
-            <span style="font-weight:700; color:var(--navy); font-size:14px; font-family:'Outfit',sans-serif;">Hướng Dẫn Thao Tác Ca & Quầy POS (C-R-U-D)</span>
+            <span style="font-weight:750; color:var(--navy); font-size:14px; font-family:'Plus Jakarta Sans',sans-serif;">Hướng Dẫn Thao Tác Ca & Quầy POS (C-R-U-D)</span>
           </div>
           <span id="posGuideIcon" style="font-size:12px; color:var(--muted); transition:transform 0.2s;">▼</span>
         </div>
@@ -1662,8 +1704,8 @@ tbody tr{cursor:pointer}
               <span style="width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#059669,#10b981);display:inline-block"></span>Online
               <span style="width:10px;height:10px;border-radius:50%;background:#CBD5E1;display:inline-block;margin-left:8px"></span>Offline
             </div>
-            <button onclick="openPosManagerModal()" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--white);font-size:12px;font-weight:600;cursor:pointer;color:var(--blue);display:inline-flex;align-items:center;gap:4px">🖥️ Quản lý quầy</button>
-            <button onclick="refreshPosMap()" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--white);font-size:12px;font-weight:600;cursor:pointer;color:var(--blue)">↻ Làm mới</button>
+            <button onclick="openPosManagerModal()" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--white);font-size:12px;font-weight:750;cursor:pointer;color:var(--blue);display:inline-flex;align-items:center;gap:4px">🖥️ Quản lý quầy</button>
+            <button onclick="refreshPosMap()" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--white);font-size:12px;font-weight:750;cursor:pointer;color:var(--blue)">↻ Làm mới</button>
           </div>
         </div>
         <div style="padding:20px">
@@ -1671,7 +1713,7 @@ tbody tr{cursor:pointer}
             <%-- render bằng JS --%>
           </div>
           <div id="posUnassigned" style="margin-top:18px;display:none">
-            <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Chưa gán quầy hôm nay</div>
+            <div style="font-size:12px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Chưa gán quầy hôm nay</div>
             <div class="pos-unassigned-list" id="posUnassignedList"></div>
           </div>
         </div>
@@ -1696,7 +1738,7 @@ tbody tr{cursor:pointer}
         <input type="hidden" name="action" value="pos-counter-add">
         <div style="display: flex; gap: 10px; align-items: flex-end;">
           <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
-            <label style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px;">Tên quầy mới</label>
+            <label style="font-size: 10px; font-weight:750; color: var(--muted); text-transform: uppercase; letter-spacing: .5px;">Tên quầy mới</label>
             <input type="text" name="stationName" placeholder="Ví dụ: Quầy số 6" required style="border: 1.5px solid var(--border); border-radius: 8px; padding: 7px 10px; font-family: inherit; font-size: 13px; background: #fff; outline: none; height: 36px; width: 100%; box-sizing: border-box;">
           </div>
           <button type="submit" class="btn-save-m" style="height: 36px; padding: 0 16px; border-radius: 8px;">➕ Thêm quầy</button>
@@ -1708,9 +1750,9 @@ tbody tr{cursor:pointer}
         <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
           <thead>
             <tr>
-              <th style="padding: 8px; text-align: left; background: var(--surface); font-weight: 700; border-bottom: 1.5px solid var(--border);">Mã</th>
-              <th style="padding: 8px; text-align: left; background: var(--surface); font-weight: 700; border-bottom: 1.5px solid var(--border);">Tên Quầy</th>
-              <th style="padding: 8px; text-align: center; background: var(--surface); font-weight: 700; border-bottom: 1.5px solid var(--border); width: 120px;">Thao tác</th>
+              <th style="padding: 8px; text-align: left; background: var(--surface); font-weight:750; border-bottom: 1.5px solid var(--border);">Mã</th>
+              <th style="padding: 8px; text-align: left; background: var(--surface); font-weight:750; border-bottom: 1.5px solid var(--border);">Tên Quầy</th>
+              <th style="padding: 8px; text-align: center; background: var(--surface); font-weight:750; border-bottom: 1.5px solid var(--border); width: 120px;">Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -1722,9 +1764,9 @@ tbody tr{cursor:pointer}
                 </c:if>
               </c:forEach>
               <tr style="border-bottom: 1px solid var(--border);">
-                <td style="padding: 10px 8px; font-weight: 600; color: var(--muted);">#${lp.index + 1}</td>
+                <td style="padding: 10px 8px; font-weight:750; color: var(--muted);">#${lp.index + 1}</td>
                 <td style="padding: 10px 8px;">
-                  <span id="lblStation-${ps.posStationId}" style="font-weight: 700; color: var(--navy);">${fn:escapeXml(ps.stationName)}</span>
+                  <span id="lblStation-${ps.posStationId}" style="font-weight:750; color: var(--navy);">${fn:escapeXml(ps.stationName)}</span>
                   <form id="editForm-${ps.posStationId}" method="post" action="${pageContext.request.contextPath}/shifts" style="display: none; margin: 0;">
                     <input type="hidden" name="action" value="pos-counter-update">
                     <input type="hidden" name="posStationId" value="${ps.posStationId}">
@@ -1735,8 +1777,8 @@ tbody tr{cursor:pointer}
                   <div style="display: flex; gap: 4px; justify-content: center; align-items: center;">
                     <!-- Edit Button -->
                     <button id="btnEdit-${ps.posStationId}" onclick="showEditCounterRow(${ps.posStationId})" style="border: none; background: transparent; cursor: pointer; font-size: 13px; padding: 4px 8px; border-radius: 6px; color: var(--gold);" title="Sửa tên">✏️</button>
-                    <button id="btnSave-${ps.posStationId}" onclick="submitEditCounterRow(${ps.posStationId})" style="display: none; border: none; background: var(--green); color: #fff; cursor: pointer; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px;" title="Lưu">Lưu</button>
-                    <button id="btnCancel-${ps.posStationId}" onclick="hideEditCounterRow(${ps.posStationId})" style="display: none; border: 1px solid var(--border); background: #fff; cursor: pointer; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; color: var(--muted);" title="Hủy">Hủy</button>
+                    <button id="btnSave-${ps.posStationId}" onclick="submitEditCounterRow(${ps.posStationId})" style="display: none; border: none; background: var(--green); color: #fff; cursor: pointer; font-size: 11px; font-weight:750; padding: 4px 8px; border-radius: 6px;" title="Lưu">Lưu</button>
+                    <button id="btnCancel-${ps.posStationId}" onclick="hideEditCounterRow(${ps.posStationId})" style="display: none; border: 1px solid var(--border); background: #fff; cursor: pointer; font-size: 11px; font-weight:750; padding: 4px 8px; border-radius: 6px; color: var(--muted);" title="Hủy">Hủy</button>
 
                     <!-- Delete Form -->
                     <c:choose>
@@ -1915,8 +1957,8 @@ tbody tr{cursor:pointer}
       <button class="btn-cancel-m" onclick="closeTypeModal()">Hủy</button>
       <button class="btn-save-m" onclick="submitTypeForm()">💾 Lưu loại ca</button>
     </div>
-  </div><%-- end .modal --%>
-</div><%-- end #typeModal .modal-overlay --%>
+  </div>
+</div>
 
 <!-- ==========================================
      MODAL POS 1: Xếp lịch & Gán quầy POS (Create)
@@ -1941,7 +1983,7 @@ tbody tr{cursor:pointer}
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
           <!-- Dropdown chọn nhân viên (ẩn khi sửa) -->
           <div style="display: flex; flex-direction: column; gap: 4px;" id="posFormAccGroup">
-            <label style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Chọn nhân viên <span style="color:var(--red)">*</span></label>
+            <label style="font-size: 10px; font-weight:750; color: var(--muted); text-transform: uppercase;">Chọn nhân viên <span style="color:var(--red)">*</span></label>
             <select name="accountId" id="posFormAccountId" style="border: 1.5px solid var(--border); border-radius: 8px; padding: 7px 10px; font-family: inherit; font-size: 13px; background: #fff; outline: none; height: 36px; box-sizing: border-box; width: 100%;">
               <option value="">-- Chọn nhân viên --</option>
               <c:forEach var="s" items="${allStaff}">
@@ -1951,12 +1993,12 @@ tbody tr{cursor:pointer}
           </div>
           <!-- Tên nhân viên ở dạng text (chỉ hiển thị khi sửa) -->
           <div style="display: none; flex-direction: column; gap: 4px;" id="posFormStaffNameGroup">
-            <label style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Nhân viên</label>
-            <input type="text" id="posFormStaffName" readonly style="border: 1.5px solid var(--border); border-radius: 8px; padding: 7px 10px; font-family: inherit; font-size: 13px; background: #f1f5f9; outline: none; height: 36px; box-sizing: border-box; width: 100%; font-weight:700; color:var(--navy);">
+            <label style="font-size: 10px; font-weight:750; color: var(--muted); text-transform: uppercase;">Nhân viên</label>
+            <input type="text" id="posFormStaffName" readonly style="border: 1.5px solid var(--border); border-radius: 8px; padding: 7px 10px; font-family: inherit; font-size: 13px; background: #f1f5f9; outline: none; height: 36px; box-sizing: border-box; width: 100%; font-weight:750; color:var(--navy);">
           </div>
           
           <div style="display: flex; flex-direction: column; gap: 4px;">
-            <label style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Chọn loại ca <span style="color:var(--red)">*</span></label>
+            <label style="font-size: 10px; font-weight:750; color: var(--muted); text-transform: uppercase;">Chọn loại ca <span style="color:var(--red)">*</span></label>
             <select name="shiftTypeId" id="posFormShiftTypeId" style="border: 1.5px solid var(--border); border-radius: 8px; padding: 7px 10px; font-family: inherit; font-size: 13px; background: #fff; outline: none; height: 36px; box-sizing: border-box; width: 100%;">
               <option value="">-- Chọn loại ca --</option>
               <c:forEach var="st" items="${shiftTypes}">
@@ -1971,33 +2013,33 @@ tbody tr{cursor:pointer}
         <!-- Các trường tùy chọn (Đi trễ, Ghi chú) -->
         <div style="display: none; grid-template-columns: 1fr 2fr; gap: 10px; margin-bottom: 10px;" id="posFormOptionalFields">
           <div style="display: flex; flex-direction: column; gap: 4px;">
-            <label style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Đi trễ tối đa (phút)</label>
+            <label style="font-size: 10px; font-weight:750; color: var(--muted); text-transform: uppercase;">Đi trễ tối đa (phút)</label>
             <input type="number" name="lateToleranceMinutes" id="posFormLateTol" value="10" min="0" max="60" style="border: 1.5px solid var(--border); border-radius: 8px; padding: 7px 10px; font-family: inherit; font-size: 13px; background: #fff; outline: none; height: 36px; box-sizing: border-box; width: 100%;">
           </div>
           <div style="display: flex; flex-direction: column; gap: 4px;">
-            <label style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Ghi chú ca làm</label>
+            <label style="font-size: 10px; font-weight:750; color: var(--muted); text-transform: uppercase;">Ghi chú ca làm</label>
             <input type="text" name="notes" id="posFormNotes" placeholder="Ví dụ: Đóng quầy lúc 17:00" style="border: 1.5px solid var(--border); border-radius: 8px; padding: 7px 10px; font-family: inherit; font-size: 13px; background: #fff; outline: none; height: 36px; box-sizing: border-box; width: 100%;">
           </div>
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-          <a href="javascript:void(0)" id="btnToggleOptions" onclick="toggleFormOptions()" style="font-size: 11.5px; font-weight: 700; color: var(--blue); text-decoration: none;">⚙️ Hiện tùy chọn nâng cao</a>
+          <a href="javascript:void(0)" id="btnToggleOptions" onclick="toggleFormOptions()" style="font-size: 11.5px; font-weight:750; color: var(--blue); text-decoration: none;">⚙️ Hiện tùy chọn nâng cao</a>
           <div style="display: flex; gap: 8px;">
-            <button type="button" id="btnCancelEdit" onclick="cancelEditMode()" style="display: none; height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--border); background: #fff; color: var(--muted); cursor: pointer; font-size: 12.5px; font-weight: 700;">Hủy</button>
+            <button type="button" id="btnCancelEdit" onclick="cancelEditMode()" style="display: none; height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--border); background: #fff; color: var(--muted); cursor: pointer; font-size: 12.5px; font-weight:750;">Hủy</button>
             <button type="submit" class="btn-save-m" id="btnSubmitForm" style="height: 36px; padding: 0 16px; border-radius: 8px;">➕ Thêm NV</button>
           </div>
         </div>
       </form>
 
       <!-- Danh sách nhân viên đang làm việc hôm nay tại quầy này -->
-      <label style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 8px;">Nhân viên tại quầy hôm nay</label>
+      <label style="font-size: 11px; font-weight:750; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 8px;">Nhân viên tại quầy hôm nay</label>
       <div style="max-height: 250px; overflow-y: auto; background: #fff; border: 1px solid var(--border); border-radius: 8px;">
         <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
           <thead>
             <tr>
-              <th style="padding: 8px; text-align: left; background: var(--surface); font-weight: 700; border-bottom: 1.5px solid var(--border);">Nhân viên</th>
-              <th style="padding: 8px; text-align: left; background: var(--surface); font-weight: 700; border-bottom: 1.5px solid var(--border);">Ca làm</th>
-              <th style="padding: 8px; text-align: center; background: var(--surface); font-weight: 700; border-bottom: 1.5px solid var(--border); width: 120px;">Thao tác</th>
+              <th style="padding: 8px; text-align: left; background: var(--surface); font-weight:750; border-bottom: 1.5px solid var(--border);">Nhân viên</th>
+              <th style="padding: 8px; text-align: left; background: var(--surface); font-weight:750; border-bottom: 1.5px solid var(--border);">Ca làm</th>
+              <th style="padding: 8px; text-align: center; background: var(--surface); font-weight:750; border-bottom: 1.5px solid var(--border); width: 120px;">Thao tác</th>
             </tr>
           </thead>
           <tbody id="posAddCurrentStaffTableBody">
@@ -2029,12 +2071,12 @@ tbody tr{cursor:pointer}
 
         <div class="mfg" style="margin-bottom:12px;">
           <label>Nhân viên</label>
-          <input type="text" id="posEditStaffName" readonly style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; background:var(--surface); font-family:'Outfit',sans-serif; font-size:13px; color:var(--ink); font-weight:600; margin-top:6px;">
+          <input type="text" id="posEditStaffName" readonly style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; background:var(--surface); font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; color:var(--ink); font-weight:750; margin-top:6px;">
         </div>
 
         <div class="mfg" style="margin-bottom:12px;">
           <label>Quầy làm việc</label>
-          <select name="posStation" id="posEditStationSelect" style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:'Outfit',sans-serif; font-size:13px; margin-top:6px;">
+          <select name="posStation" id="posEditStationSelect" style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; margin-top:6px;">
             <option value="0">-- Chưa gán quầy --</option>
             <c:forEach var="ps" items="${posStations}">
               <option value="${ps.posStationId}">${fn:escapeXml(ps.stationName)}</option>
@@ -2044,7 +2086,7 @@ tbody tr{cursor:pointer}
 
         <div class="mfg" style="margin-bottom:12px;">
           <label>Loại ca</label>
-          <select name="shiftTypeId" id="posEditShiftTypeSelect" style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:'Outfit',sans-serif; font-size:13px; margin-top:6px;">
+          <select name="shiftTypeId" id="posEditShiftTypeSelect" style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; margin-top:6px;">
             <c:forEach var="st" items="${shiftTypes}">
               <c:if test="${st.active}">
                 <option value="${st.shiftTypeId}">${st.name} (${st.startHour}:${st.startMinute<10?'0':''}${st.startMinute} - ${st.endHour}:${st.endMinute<10?'0':''}${st.endMinute})</option>
@@ -2056,13 +2098,13 @@ tbody tr{cursor:pointer}
         <div class="mfg-row" style="margin-bottom:12px;">
           <div class="mfg" style="flex:1;">
             <label>Phút trễ cho phép</label>
-            <input type="number" name="lateToleranceMinutes" id="posEditLateTol" min="0" max="60" style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:'Outfit',sans-serif; font-size:13px; margin-top:6px;">
+            <input type="number" name="lateToleranceMinutes" id="posEditLateTol" min="0" max="60" style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; margin-top:6px;">
           </div>
         </div>
 
         <div class="mfg">
           <label>Ghi chú</label>
-          <textarea name="notes" id="posEditNotes" rows="2" style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:'Outfit',sans-serif; font-size:13px; margin-top:6px; resize:vertical;"></textarea>
+          <textarea name="notes" id="posEditNotes" rows="2" style="width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; margin-top:6px; resize:vertical;"></textarea>
         </div>
       </form>
     </div>
@@ -2083,7 +2125,7 @@ tbody tr{cursor:pointer}
       <button class="modal-close" onclick="closePosDeleteModal()">✕</button>
     </div>
     <div class="modal-body" style="padding-top:10px;">
-      <div style="font-size:13px; color:var(--ink); font-weight:600; margin-bottom:16px;">
+      <div style="font-size:13px; color:var(--ink); font-weight:750; margin-bottom:16px;">
         Hệ thống hỗ trợ các hình thức gỡ bỏ nhân viên <span id="posDeleteStaffName" style="color:var(--blue);"></span> khỏi quầy làm việc hôm nay:
       </div>
       
@@ -2095,7 +2137,7 @@ tbody tr{cursor:pointer}
           <button type="submit" style="width:100%; display:flex; align-items:flex-start; gap:10px; padding:12px; border:1.5px solid var(--border); border-radius:10px; background:#fff; text-align:left; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.borderColor='var(--blue)'; this.style.background='rgba(21,88,168,0.02)'" onmouseout="this.style.borderColor='var(--border)'; this.style.background='#fff'">
             <span style="font-size:18px; line-height:1;">🔄</span>
             <div>
-              <div style="font-weight:700; color:var(--blue); font-size:13px;">Gỡ nhân viên khỏi quầy</div>
+              <div style="font-weight:750; color:var(--blue); font-size:13px;">Gỡ nhân viên khỏi quầy</div>
               <div style="font-size:11px; color:var(--muted); margin-top:2px;">Vẫn giữ ca làm việc hôm nay của nhân viên nhưng đưa về trạng thái "Chưa gán quầy".</div>
             </div>
           </button>
@@ -2110,7 +2152,7 @@ tbody tr{cursor:pointer}
           <button type="submit" style="width:100%; display:flex; align-items:flex-start; gap:10px; padding:12px; border:1.5px solid var(--border); border-radius:10px; background:#fff; text-align:left; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.borderColor='var(--gold)'; this.style.background='rgba(217,119,6,0.02)'" onmouseout="this.style.borderColor='var(--border)'; this.style.background='#fff'">
             <span style="font-size:18px; line-height:1;">🚫</span>
             <div>
-              <div style="font-weight:700; color:var(--gold); font-size:13px;">Hủy lịch ca (Cancel)</div>
+              <div style="font-weight:750; color:var(--gold); font-size:13px;">Hủy lịch ca (Cancel)</div>
               <div style="font-size:11px; color:var(--muted); margin-top:2px;">Chuyển ca làm việc của nhân viên thành trạng thái "Đã hủy" (vẫn lưu vết lịch sử).</div>
             </div>
           </button>
@@ -2125,7 +2167,7 @@ tbody tr{cursor:pointer}
           <button type="submit" style="width:100%; display:flex; align-items:flex-start; gap:10px; padding:12px; border:1.5px solid var(--border); border-radius:10px; background:#fff; text-align:left; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.borderColor='var(--red)'; this.style.background='rgba(220,38,38,0.02)'" onmouseout="this.style.borderColor='var(--border)'; this.style.background='#fff'">
             <span style="font-size:18px; line-height:1;">🗑️</span>
             <div>
-              <div style="font-weight:700; color:var(--red); font-size:13px;">Xóa vĩnh viễn ca</div>
+              <div style="font-weight:750; color:var(--red); font-size:13px;">Xóa vĩnh viễn ca</div>
               <div style="font-size:11px; color:var(--muted); margin-top:2px;">Xóa hoàn toàn lịch ca khỏi cơ sở dữ liệu. Lưu ý: Chỉ thực hiện được nếu nhân viên chưa check-in.</div>
             </div>
           </button>
@@ -2150,11 +2192,11 @@ tbody tr{cursor:pointer}
       <button class="modal-close" onclick="closeSecureDeleteModal()">✕</button>
     </div>
     <div class="modal-body" style="padding-top:10px;">
-      <div style="font-size:13.5px; color:var(--ink); font-weight:600; line-height:1.5; margin-bottom:12px;">
+      <div style="font-size:13.5px; color:var(--ink); font-weight:750; line-height:1.5; margin-bottom:12px;">
         Quầy <span id="secDeleteStationName" style="color:var(--red); font-weight:800;"></span> đang có nhân viên phân công làm việc hôm nay!
       </div>
       <div style="font-size:12.5px; color:var(--muted); line-height:1.5; margin-bottom:16px;">
-        Hành động này sẽ gỡ bỏ tất cả ca làm việc hôm nay khỏi quầy này và đưa về trạng thái "Chưa gán quầy". Nếu bạn chắc chắn muốn thực hiện, hãy nhập từ <strong style="color:var(--red); font-weight:700;">delete</strong> vào ô dưới đây để xác nhận:
+        Hành động này sẽ gỡ bỏ tất cả ca làm việc hôm nay khỏi quầy này và đưa về trạng thái "Chưa gán quầy". Nếu bạn chắc chắn muốn thực hiện, hãy nhập từ <strong style="color:var(--red); font-weight:750;">delete</strong> vào ô dưới đây để xác nhận:
       </div>
       
       <div class="mfg" style="margin-bottom:16px;">
@@ -2163,7 +2205,7 @@ tbody tr{cursor:pointer}
     </div>
     <div class="modal-foot" style="border-top:none; padding-top:0; display:flex; gap:10px;">
       <button type="button" class="btn-cancel-m" onclick="closeSecureDeleteModal()" style="flex:1; height:38px; border-radius:8px;">Hủy bỏ</button>
-      <button type="button" id="btnConfirmSecureDelete" onclick="submitSecureDelete()" disabled style="flex:1; height:38px; border-radius:8px; background:#cbd5e1; color:#fff; border:none; font-weight:700; cursor:not-allowed; transition:all 0.2s;">Xác nhận xóa</button>
+      <button type="button" id="btnConfirmSecureDelete" onclick="submitSecureDelete()" disabled style="flex:1; height:38px; border-radius:8px; background:#cbd5e1; color:#fff; border:none; font-weight:750; cursor:not-allowed; transition:all 0.2s;">Xác nhận xóa</button>
     </div>
   </div>
 </div>
@@ -2260,14 +2302,19 @@ tbody tr{cursor:pointer}
         <div class="sched-section">
           <div class="sched-section-title">🖥️ Quầy POS <span style="color:var(--red)">*</span></div>
           <div class="sched-fi">
-            <select name="posStation" id="fsPosStation"
-                    style="width:100%;max-width:240px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--navy);background:#fff"
-                    onchange="clearFsErr('errPosStation','fsPosStation')">
-              <option value="0">— Chưa gán quầy —</option>
-              <c:forEach var="ps" items="${posStations}">
-                <option value="${ps.posStationId}">🖥️ ${fn:escapeXml(ps.stationName)}</option>
-              </c:forEach>
-            </select>
+            <input type="hidden" name="posStation" id="fsPosStation" value="0">
+            <div class="cdd" id="cddFsPosStation" style="width:100%;max-width:240px">
+              <div class="cdd-btn" onclick="toggleCdd('cddFsPosStation')">
+                <span class="cdd-label">— Chưa gán quầy —</span>
+                <span class="cdd-arrow">▼</span>
+              </div>
+              <div class="cdd-menu">
+                <div class="cdd-opt active" data-val="0" onclick="pickCdd('cddFsPosStation','fsPosStation',this,false);clearFsErr('errPosStation','fsPosStation')">— Chưa gán quầy —</div>
+                <c:forEach var="ps" items="${posStations}">
+                  <div class="cdd-opt" data-val="${ps.posStationId}" onclick="pickCdd('cddFsPosStation','fsPosStation',this,false);clearFsErr('errPosStation','fsPosStation')">🖥️ ${fn:escapeXml(ps.stationName)}</div>
+                </c:forEach>
+              </div>
+            </div>
             <span class="field-err" id="errPosStation"></span>
             <span style="font-size:11px;color:var(--muted);margin-top:4px;display:block">Nhân viên sẽ làm tại quầy POS này trong ca</span>
           </div>
@@ -2298,70 +2345,6 @@ tbody tr{cursor:pointer}
     <div class="sched-modal-foot">
       <button type="button" class="btn-sched-cancel" onclick="closeFullSchedModal()">Hủy</button>
       <button type="button" class="btn-sched-submit" onclick="submitFullSched()">📅 Xếp lịch ca</button>
-    </div>
-  </div>
-</div>
-
-<%-- ════════════════════════════════════════════════════
-     MODAL THÊM 1 CA NHANH cho 1 ngày (bấm "+ Thêm ca" ở ô ngày)
-     POST /shifts?action=schedule-bulk (1 NV × 1 loại ca × 1 ngày)
-     ════════════════════════════════════════════════════ --%>
-<div class="edit-modal-overlay" id="quickShiftModal">
-  <div class="edit-modal">
-    <div class="em-head">
-      <span class="em-title" id="quickShiftTitle">➕ Thêm ca làm mới</span>
-      <button class="em-close" onclick="closeQuickShift()">✕</button>
-    </div>
-    <div class="em-body">
-      <form id="quickShiftForm" method="post" action="${pageContext.request.contextPath}/shifts">
-        <input type="hidden" name="action" value="schedule-bulk">
-        <input type="hidden" name="dateFrom" id="qsDate">
-
-        <div class="em-fg" style="margin-bottom:12px">
-          <label>Nhân viên <span style="color:var(--red)">*</span></label>
-          <select name="accountId" id="qsStaff" required
-                  style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--navy);background:#fff">
-            <option value="">— Chọn nhân viên —</option>
-            <c:forEach var="s" items="${allStaff}">
-              <option value="${s.accountId}">${not empty s.fullName ? s.fullName : s.username} · ${s.roleId==2?'Dược sĩ':'Thủ kho'}</option>
-            </c:forEach>
-          </select>
-        </div>
-
-        <div class="em-fg" style="margin-bottom:12px">
-          <label>Loại ca <span style="color:var(--red)">*</span></label>
-          <select name="shiftTypeId" id="qsType" required
-                  style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--navy);background:#fff">
-            <option value="">— Chọn loại ca —</option>
-            <c:forEach var="st" items="${shiftTypes}">
-              <c:if test="${st.active}">
-                <option value="${st.shiftTypeId}">${st.name} (${st.startHour}:${st.startMinute<10?'0':''}${st.startMinute}–${st.endHour}:${st.endMinute<10?'0':''}${st.endMinute})</option>
-              </c:if>
-            </c:forEach>
-          </select>
-        </div>
-
-        <div class="em-fg" style="margin-bottom:12px">
-          <label>Quầy POS <span style="color:var(--muted);font-weight:400">(tùy chọn)</span></label>
-          <select name="posStation" id="qsPos"
-                  style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--navy);background:#fff">
-            <option value="0">— Chưa gán quầy —</option>
-            <c:forEach var="ps" items="${posStations}">
-              <option value="${ps.posStationId}">🖥️ ${fn:escapeXml(ps.stationName)}</option>
-            </c:forEach>
-          </select>
-        </div>
-
-        <div class="em-fg">
-          <label>Ghi chú <span style="color:var(--muted);font-weight:400">(tùy chọn)</span></label>
-          <textarea name="note" rows="2" placeholder="Ghi chú cho ca này..."
-                    style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
-        </div>
-      </form>
-    </div>
-    <div class="em-foot" style="display:flex;gap:10px;padding:14px 20px;border-top:1px solid var(--border)">
-      <button type="button" onclick="closeQuickShift()" style="flex:1;padding:10px;background:#f1f5f9;color:#475569;border:none;border-radius:9px;font-weight:700;cursor:pointer;font-family:inherit">Hủy</button>
-      <button type="button" onclick="submitQuickShift()" style="flex:2;padding:10px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;border:none;border-radius:9px;font-weight:800;cursor:pointer;font-family:inherit">✓ Thêm ca</button>
     </div>
   </div>
 </div>
@@ -2455,7 +2438,7 @@ tbody tr{cursor:pointer}
       <div class="dm-staff-row">
         <div class="dm-staff-av" id="delStaffAv">NV</div>
         <div>
-          <div style="font-size:13px;font-weight:700;color:var(--ink)" id="delStaffName">—</div>
+          <div style="font-size:13px;font-weight:750;color:var(--ink)" id="delStaffName">—</div>
           <div style="font-size:11.5px;color:var(--muted)">Chỉ xóa lịch ca chưa check-in (SCHEDULED)</div>
         </div>
       </div>
@@ -2482,7 +2465,7 @@ tbody tr{cursor:pointer}
 
       <%-- Preview: hiện danh sách ca sẽ bị xóa --%>
       <div id="delPreviewBox" style="display:none">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">
+        <div style="font-size:11px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">
           Các lịch ca sẽ bị xóa (<span id="delCount">0</span>)
         </div>
         <div class="dm-list" id="delItemsList"></div>
@@ -2529,7 +2512,7 @@ tbody tr{cursor:pointer}
       <%-- Week nav mini --%>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
         <a href="${pageContext.request.contextPath}/shifts?tab=list&w=${param.w != null ? param.w - 1 : -1}" class="btn-nav" style="font-size:12px;padding:4px 10px">‹</a>
-        <span style="font-size:13px;font-weight:700;color:var(--ink)">📅 ${weekStart} → ${weekEnd}</span>
+        <span style="font-size:13px;font-weight:750;color:var(--ink)">📅 ${weekStart} → ${weekEnd}</span>
         <a href="${pageContext.request.contextPath}/shifts?tab=list&w=${param.w != null ? param.w + 1 : 1}" class="btn-nav" style="font-size:12px;padding:4px 10px">›</a>
       </div>
       <%-- Grid chọn ca --%>
@@ -2660,7 +2643,7 @@ tbody tr{cursor:pointer}
     <div class="sm-body">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
         <a href="${pageContext.request.contextPath}/shifts?tab=list&delMonth=${prevDelMonth}" class="btn-nav" style="font-size:12px;padding:4px 10px">‹</a>
-        <span style="font-size:13px;font-weight:700;color:var(--ink)">📅 ${delMonthLabel}</span>
+        <span style="font-size:13px;font-weight:750;color:var(--ink)">📅 ${delMonthLabel}</span>
         <a href="${pageContext.request.contextPath}/shifts?tab=list&delMonth=${nextDelMonth}" class="btn-nav" style="font-size:12px;padding:4px 10px">›</a>
       </div>
       
@@ -2668,7 +2651,7 @@ tbody tr{cursor:pointer}
       <div style="display:grid;grid-template-columns:repeat(7, 1fr);gap:6px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)">
         <%-- Header (T2 - CN) --%>
         <c:forEach var="dn" items="${weekDayNames}">
-          <div style="text-align:center;padding:8px 0;font-size:11px;font-weight:700;color:var(--muted);background:#F8FAFC;border-bottom:1px solid var(--border)">
+          <div style="text-align:center;padding:8px 0;font-size:11px;font-weight:750;color:var(--muted);background:#F8FAFC;border-bottom:1px solid var(--border)">
             ${dn}
           </div>
         </c:forEach>
@@ -2711,7 +2694,7 @@ tbody tr{cursor:pointer}
       <%-- Danh sách ca đã chọn để xóa --%>
       <div id="delSelSummary" style="display:none;margin-top:14px;background:#FEF2F2;
            border:1px solid #FECACA;border-radius:10px;padding:12px 16px">
-        <div style="font-size:12px;font-weight:700;color:#991B1B;margin-bottom:8px">
+        <div style="font-size:12px;font-weight:750;color:#991B1B;margin-bottom:8px">
           🗑️ Ca sẽ bị xóa (<span id="delSelCount">0</span>):
         </div>
         <div id="delSelList" style="display:flex;flex-wrap:wrap;gap:6px"></div>
@@ -2791,92 +2774,13 @@ const SCHED_LIST = [
   </div>
 </div>
 
-<%-- ══ SAFETY FUNCTIONS — defined before main script; main script overrides with full versions if it loads ══ --%>
-<script id="safetyFns">
-function openFullSchedModal(preDate, preAccountId) {
-  var today = new Date().toISOString().split('T')[0];
-  var m = document.getElementById('fullSchedModal');
-  if (!m) return;
-  var f = document.getElementById('fsDateFrom'); if (f) f.value = preDate || today;
-  var t = document.getElementById('fsDateTo');   if (t) t.value = '';
-  document.querySelectorAll('#fullStaffChips input,#fullStypeCards input').forEach(function(c){c.checked=false;});
-  if (preAccountId) { var cb=document.querySelector('#fullStaffChips input[value="'+preAccountId+'"]'); if(cb)cb.checked=true; }
-  m.classList.add('open'); m.style.display='flex';
-}
-function closeFullSchedModal()  { var m=document.getElementById('fullSchedModal');    if(m){m.classList.remove('open');m.style.display='';} }
-function openSchedModal(d,id)   { openFullSchedModal(d,id); }
-function openSchedModalForDay(d,id){ openFullSchedModal(d,id); }
-function closeSchedModal()      { var m=document.getElementById('schedModal');         if(m){m.classList.remove('open');m.style.display='';} }
-function openEditSelectModal()  { var m=document.getElementById('editSelectModal');    if(m){m.classList.add('open');m.style.display='flex';} }
-function closeEditSelectModal() { var m=document.getElementById('editSelectModal');    if(m){m.classList.remove('open');m.style.display='';} }
-function openDeleteSelectModal(){ var m=document.getElementById('deleteSelectModal');  if(m){m.classList.add('open');m.style.display='flex';} }
-function closeDeleteSelectModal(){ var m=document.getElementById('deleteSelectModal'); if(m){m.classList.remove('open');m.style.display='';} }
-function closeDetailPanel()     { var m=document.getElementById('detailOverlay');      if(m){m.classList.remove('open');m.style.display='';} }
-function closeEditModal()       { var m=document.getElementById('editSchedModal');     if(m){m.classList.remove('open');m.style.display='';} }
-function closeDeleteModal()     { var m=document.getElementById('deleteStaffModal');   if(m){m.classList.remove('open');m.style.display='';} }
-function closeQuickShift()      { var m=document.getElementById('quickShiftModal');    if(m){m.classList.remove('open');m.style.display='';} }
-function closeTypeModal()       { var m=document.getElementById('typeModal');          if(m){m.classList.remove('open');m.style.display='';} }
-function switchTab(tab, btn) {
-  document.querySelectorAll('.tab-pane').forEach(function(p){p.classList.remove('active');});
-  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
-  var tp=document.getElementById('tab-'+tab); if(tp)tp.classList.add('active');
-  if(btn)btn.classList.add('active');
-}
-</script>
-<%-- POS data block in its own <script> — isolated so a data syntax error can't kill the main functions --%>
-<script>
-var _posCtx = '${pageContext.request.contextPath}';
-var _todaySchedules = <%
-  StringBuilder _tsb = new StringBuilder("[");
-  java.util.List<com.medicare.entity.ShiftSchedule> _todayList =
-      (java.util.List<com.medicare.entity.ShiftSchedule>) request.getAttribute("todaySchedules");
-  if (_todayList != null) {
-    boolean _fts = true;
-    for (com.medicare.entity.ShiftSchedule _ts : _todayList) {
-      if (!_fts) _tsb.append(",");
-      _fts = false;
-      String _sn = _ts.getStaffName()    != null ? _ts.getStaffName().replace("\\","\\\\").replace("'","\\'").replace("\n","\\n").replace("\r","") : "";
-      String _sp = _ts.getShiftTypeName()!= null ? _ts.getShiftTypeName().replace("\\","\\\\").replace("'","\\'").replace("\n","\\n").replace("\r","") : "";
-      String _ss = _ts.getStatus()       != null ? _ts.getStatus() : "";
-      String _sn2= _ts.getNotes()        != null ? _ts.getNotes().replace("\\","\\\\").replace("'","\\'").replace("\n","\\n").replace("\r","") : "";
-      _tsb.append("{")
-          .append("scheduleId:").append(_ts.getScheduleId()).append(",")
-          .append("staffName:'").append(_sn).append("',")
-          .append("posStation:").append(_ts.getPosStation()).append(",")
-          .append("status:'").append(_ss).append("',")
-          .append("shiftType:'").append(_sp).append("',")
-          .append("startHour:").append(_ts.getStartHour()).append(",")
-          .append("endHour:").append(_ts.getEndHour()).append(",")
-          .append("shiftTypeId:").append(_ts.getShiftTypeId()).append(",")
-          .append("lateToleranceMinutes:").append(_ts.getLateToleranceMinutes()).append(",")
-          .append("notes:'").append(_sn2).append("'")
-          .append("}");
-    }
-  }
-  _tsb.append("]");
-  out.print(_tsb.toString());
-%>;
-var _posStations = <%
-  StringBuilder _psb = new StringBuilder("[");
-  java.util.List<com.medicare.entity.PosStation> _psList =
-      (java.util.List<com.medicare.entity.PosStation>) request.getAttribute("posStations");
-  if (_psList != null) {
-    boolean _fps = true;
-    for (com.medicare.entity.PosStation _ps : _psList) {
-      if (!_fps) _psb.append(",");
-      _fps = false;
-      String _pn = _ps.getStationName() != null ? _ps.getStationName().replace("\\","\\\\").replace("'","\\'").replace("\n","\\n").replace("\r","") : "";
-      _psb.append("{id:").append(_ps.getPosStationId()).append(",name:'").append(_pn).append("'}");
-    }
-  }
-  _psb.append("]");
-  out.print(_psb.toString());
-%>;
-</script>
 
 <script>
+function toggleCdd(id){var w=document.getElementById(id),m=w.querySelector('.cdd-menu'),b=w.querySelector('.cdd-btn');var open=m.classList.contains('show');document.querySelectorAll('.cdd-menu.show').forEach(function(x){x.classList.remove('show');x.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')});if(!open){m.classList.add('show');b.classList.add('open');var act=m.querySelector('.cdd-opt.active');if(act)act.scrollIntoView({block:'nearest'})}}
+function pickCdd(wId,hId,el,autoSubmit){document.getElementById(hId).value=el.dataset.val;var w=document.getElementById(wId);w.querySelector('.cdd-label').textContent=el.textContent;w.querySelectorAll('.cdd-opt').forEach(function(o){o.classList.remove('active')});el.classList.add('active');w.querySelector('.cdd-menu').classList.remove('show');w.querySelector('.cdd-btn').classList.remove('open');if(autoSubmit){var f=w.closest('form');if(f)f.submit()}}
+document.addEventListener('click',function(e){if(!e.target.closest('.cdd')){document.querySelectorAll('.cdd-menu.show').forEach(function(m){m.classList.remove('show');m.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')})}});
+
 const ctx_path = '${pageContext.request.contextPath}';
-console.log('[MediVault] Main script block loaded OK — ctx_path=' + ctx_path);
 
 // ── Tab switching ─────────────────────────────────
 function switchTab(tab, btn) {
@@ -2926,8 +2830,7 @@ function openSchedModal(preDate, preAccountId) {
   // Uncheck all radio
   document.querySelectorAll('#schedForm input[name="shiftTypeId"]').forEach(r => r.checked = false);
   updateSchedPreview();
-  const sm = document.getElementById('schedModal');
-  if (sm) { sm.classList.add('open'); sm.style.display = 'flex'; }
+  document.getElementById('schedModal').classList.add('open');
 }
 function openSchedModalForDay(date, accountId) {
   const today = new Date().toISOString().split('T')[0];
@@ -2938,8 +2841,7 @@ function openSchedModalForDay(date, accountId) {
   openSchedModal(date, accountId);
 }
 function closeSchedModal() {
-  const sm = document.getElementById('schedModal');
-  if (sm) { sm.classList.remove('open'); sm.style.display = ''; }
+  document.getElementById('schedModal').classList.remove('open');
 }
 function updateSchedPreview() {
   const from = document.getElementById('schedFrom').value;
@@ -3036,8 +2938,7 @@ function openTypeModal() {
   setTime24('End',   '14:00');
   document.getElementById('typeRate').value = '60000';
   updateDurPreview();
-  const tm1 = document.getElementById('typeModal');
-  if (tm1) { tm1.classList.add('open'); tm1.style.display = 'flex'; }
+  document.getElementById('typeModal').classList.add('open');
 }
 function editType(id, name, sh, sm, eh, em, rate, allow) {
   document.getElementById('modalTitle').textContent = 'Sửa loại ca';
@@ -3049,13 +2950,9 @@ function editType(id, name, sh, sm, eh, em, rate, allow) {
   document.getElementById('typeRate').value      = rate;
   document.getElementById('typeAllowance').value = allow;
   updateDurPreview();
-  const tm2 = document.getElementById('typeModal');
-  if (tm2) { tm2.classList.add('open'); tm2.style.display = 'flex'; }
+  document.getElementById('typeModal').classList.add('open');
 }
-function closeTypeModal() {
-  const tm = document.getElementById('typeModal');
-  if (tm) { tm.classList.remove('open'); tm.style.display = ''; }
-}
+function closeTypeModal() { document.getElementById('typeModal').classList.remove('open'); }
 document.getElementById('typeModal').addEventListener('click', function(e) {
   if (e.target === this) closeTypeModal();
 });
@@ -3226,7 +3123,6 @@ let _activeStatus = null;
 let _activePosStation = 0;
 
 function showDetailPanel(cardEl) {
-  try {
   if (_activeCard) _activeCard.classList.remove('selected');
   if (_activeCard === cardEl) { closeDetailPanel(); return; }
 
@@ -3302,9 +3198,7 @@ function showDetailPanel(cardEl) {
   document.getElementById('sdpEditBtn').style.display = canEdit ? '' : 'none';
   document.getElementById('sdpDelBtn').style.display  = canEdit ? '' : 'none';
 
-  const dov = document.getElementById('detailOverlay');
-  if (dov) { dov.classList.add('open'); dov.style.display = 'flex'; }
-  } catch(err) { console.error('[showDetailPanel]', err); }
+  document.getElementById('detailOverlay').classList.add('open');
 }
 
 // ── Render timeline bar ──
@@ -3358,8 +3252,7 @@ function renderTimeline(shifts) {
 function closeDetailPanel() {
   if (_activeCard) _activeCard.classList.remove('selected');
   _activeCard = null;
-  const dov = document.getElementById('detailOverlay');
-  if (dov) { dov.classList.remove('open'); dov.style.display = ''; }
+  document.getElementById('detailOverlay').classList.remove('open');
 }
 
 function formatDate(dateStr) {
@@ -3415,7 +3308,6 @@ function cancelSchedule(scheduleId) {
 //  FULL SCHEDULE MODAL — nhiều NV + nhiều ca + range ngày
 // ══════════════════════════════════════════════════════
 function openFullSchedModal(preDate, preAccountId) {
-  console.log('[openFullSchedModal] called with', preDate, preAccountId);
   const today = new Date().toISOString().split('T')[0];
   const fromEl = document.getElementById('fsDateFrom');
   const toEl   = document.getElementById('fsDateTo');
@@ -3433,16 +3325,14 @@ function openFullSchedModal(preDate, preAccountId) {
   }
 
   updateFullPreview();
-  const m = document.getElementById('fullSchedModal');
-  if (m) { m.classList.add('open'); m.style.display = 'flex'; }
+  document.getElementById('fullSchedModal').classList.add('open');
   // Đóng modal xếp ca cũ nếu đang mở
   const old = document.getElementById('schedModal');
-  if (old) { old.classList.remove('open'); old.style.display = ''; }
+  if (old) old.classList.remove('open');
 }
 
 function closeFullSchedModal() {
-  const m = document.getElementById('fullSchedModal');
-  if (m) { m.classList.remove('open'); m.style.display = ''; }
+  document.getElementById('fullSchedModal').classList.remove('open');
 }
 
 function toggleAllStaff() {
@@ -3541,47 +3431,13 @@ document.querySelectorAll('#fullStaffChips input, #fullStypeCards input').forEac
   cb.addEventListener('change', updateFullPreview);
 });
 
-// Nút "Xếp ca mới" (top) vẫn dùng modal xếp hàng loạt
+// Đổi hàm openSchedModal và openSchedModalForDay → gọi modal mới
 function openSchedModal(preDate, preAccountId) {
   openFullSchedModal(preDate, preAccountId);
 }
 function openSchedModalForDay(date, accountId) {
   openFullSchedModal(date, accountId);
 }
-
-// ── THÊM 1 CA NHANH cho 1 ngày (nút "+ Thêm ca" ở ô ngày) ──────────────────
-function openQuickShift(date) {
-  const today = new Date().toISOString().split('T')[0];
-  if (date && date < today) {
-    alert('⛔ Không thể xếp ca cho ngày ' + date + ' — ngày này đã qua!');
-    return;
-  }
-  const f = document.getElementById('quickShiftForm');
-  if (f) f.reset();
-  document.getElementById('qsDate').value = date;
-  // Hiển thị ngày (dd/mm/yyyy) trên tiêu đề
-  let label = date;
-  const p = (date || '').split('-');
-  if (p.length === 3) label = p[2] + '/' + p[1] + '/' + p[0];
-  document.getElementById('quickShiftTitle').textContent = '➕ Thêm ca — ' + label;
-  const qsm = document.getElementById('quickShiftModal');
-  if (qsm) { qsm.classList.add('open'); qsm.style.display = 'flex'; }
-}
-function closeQuickShift() {
-  const qsm = document.getElementById('quickShiftModal');
-  if (qsm) { qsm.classList.remove('open'); qsm.style.display = ''; }
-}
-function submitQuickShift() {
-  const staff = document.getElementById('qsStaff').value;
-  const type  = document.getElementById('qsType').value;
-  if (!staff) { alert('Vui lòng chọn nhân viên!'); return; }
-  if (!type)  { alert('Vui lòng chọn loại ca!');   return; }
-  document.getElementById('quickShiftForm').submit();
-}
-// Click nền ngoài để đóng
-document.getElementById('quickShiftModal').addEventListener('click', function(e) {
-  if (e.target === this) closeQuickShift();
-});
 
 
 // ── Tìm kiếm nhân viên trong modal ───────────────────────────────────────
@@ -3625,12 +3481,10 @@ function openEditModal(schedId, shiftTypeId, shiftTypeName, lateTol, notes, staf
   document.getElementById('editPosStation').value   = posStation || 0;
   document.getElementById('editModalTitle').textContent =
     (isConfirmed ? '🟢 Đang ca — ' : '✏️ ') + 'Sửa ca ' + staffName + ' — ' + workDate;
-  const ems = document.getElementById('editSchedModal');
-  if (ems) { ems.classList.add('open'); ems.style.display = 'flex'; }
+  document.getElementById('editSchedModal').classList.add('open');
 }
 function closeEditModal() {
-  const ems = document.getElementById('editSchedModal');
-  if (ems) { ems.classList.remove('open'); ems.style.display = ''; }
+  document.getElementById('editSchedModal').classList.remove('open');
 }
 function submitEditSched() {
   const stSel = document.getElementById('editShiftType');
@@ -3682,16 +3536,14 @@ function openDeleteStaffModal(accountId, staffName, refDate) {
   document.getElementById('delTotalCount').textContent    = '';
   document.getElementById('delItemsList').innerHTML       = '';
 
-  const dsModal = document.getElementById('deleteStaffModal');
-  if (dsModal) { dsModal.classList.add('open'); dsModal.style.display = 'flex'; }
+  document.getElementById('deleteStaffModal').classList.add('open');
 
   // Load preview ngay
   loadDelPreview();
 }
 
 function closeDeleteModal() {
-  const dsModal = document.getElementById('deleteStaffModal');
-  if (dsModal) { dsModal.classList.remove('open'); dsModal.style.display = ''; }
+  document.getElementById('deleteStaffModal').classList.remove('open');
 }
 
 function loadDelPreview() {
@@ -3750,7 +3602,7 @@ function loadDelPreview() {
         <div class="dm-item-name">${sc.shiftTypeName}</div>
         <div class="dm-item-meta">${sc.workDate} ${timeStr}</div>
       </div>
-      <span style="font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:6px;background:${statusBg};color:${statusColor}">${sc.status}</span>
+      <span style="font-size:10.5px;font-weight:750;padding:2px 8px;border-radius:6px;background:${statusBg};color:${statusColor}">${sc.status}</span>
     `;
     listEl.appendChild(row);
   });
@@ -3793,17 +3645,16 @@ let _editSelIds = new Set(); // scheduleId đã chọn
 
 function openEditSelectModal() {
   _editSelIds.clear();
+  // Reset tất cả chip
   document.querySelectorAll('#editWeekGrid .sm-chip').forEach(ch => {
     ch.classList.remove('sm-selected-edit');
   });
   document.getElementById('editPanel').classList.remove('show');
   updateEditSelUI();
-  const esm = document.getElementById('editSelectModal');
-  if (esm) { esm.classList.add('open'); esm.style.display = 'flex'; }
+  document.getElementById('editSelectModal').classList.add('open');
 }
 function closeEditSelectModal() {
-  const esm = document.getElementById('editSelectModal');
-  if (esm) { esm.classList.remove('open'); esm.style.display = ''; }
+  document.getElementById('editSelectModal').classList.remove('open');
 }
 
 function toggleEditChip(el) {
@@ -3918,12 +3769,10 @@ function openDeleteSelectModal() {
   document.getElementById('delSelSummary').style.display = 'none';
   document.getElementById('delSelList').innerHTML = '';
   updateDelSelUI();
-  const dsm = document.getElementById('deleteSelectModal');
-  if (dsm) { dsm.classList.add('open'); dsm.style.display = 'flex'; }
+  document.getElementById('deleteSelectModal').classList.add('open');
 }
 function closeDeleteSelectModal() {
-  const dsm = document.getElementById('deleteSelectModal');
-  if (dsm) { dsm.classList.remove('open'); dsm.style.display = ''; }
+  document.getElementById('deleteSelectModal').classList.remove('open');
 }
 
 function toggleDelChip(el) {
@@ -3975,7 +3824,7 @@ function updateDelSelUI() {
     const name = chip.querySelector('.sm-chip-name')?.textContent || '';
     const type = chip.querySelector('.sm-chip-type')?.textContent || '';
     const tag = document.createElement('span');
-    tag.style.cssText = 'background:#fff;border:1px solid #FECACA;border-radius:6px;padding:3px 8px;font-size:11.5px;font-weight:600;color:#991B1B';
+    tag.style.cssText = 'background:#fff;border:1px solid #FECACA;border-radius:6px;padding:3px 8px;font-size:11.5px;font-weight:750;color:#991B1B';
     tag.textContent = name + ' · ' + type;
     listEl.appendChild(tag);
   });
@@ -4011,12 +3860,42 @@ function openChipEditModal(scheduleId, staffName, workDate, currentTypeId) {
   // Pre-select loại ca
   const sel = document.getElementById('editSchedTypeId');
   if (sel) sel.value = currentTypeId;
-  modal.classList.add('open'); modal.style.display = 'flex';
+  modal.classList.add('open');
 }
 
 // ════════════════════════════════════════════════════════════
-//  POS MAP — Sơ đồ quầy POS  (_posCtx/_todaySchedules/_posStations defined in separate data block above)
+//  POS MAP — Sơ đồ quầy POS
 // ════════════════════════════════════════════════════════════
+const _posCtx = '${pageContext.request.contextPath}';
+
+// Dữ liệu lịch ca hôm nay từ server (truyền qua JSP)
+const _todaySchedules = [
+  <c:forEach var="ts" items="${todaySchedules}" varStatus="st">
+    {
+      scheduleId: ${ts.scheduleId},
+      staffName:  '${fn:escapeXml(ts.staffName)}',
+      posStation: ${ts.posStation},
+      status:     '${ts.status}',
+      shiftType:  '${fn:escapeXml(ts.shiftTypeName)}',
+      startHour:  ${ts.startHour},
+      endHour:    ${ts.endHour},
+      shiftTypeId: ${ts.shiftTypeId},
+      lateToleranceMinutes: ${ts.lateToleranceMinutes},
+      notes:      '${fn:escapeXml(ts.notes != null ? ts.notes : "")}'
+    }<c:if test="${!st.last}">,</c:if>
+  </c:forEach>
+];
+
+// Danh sách quầy POS từ database
+const _posStations = [
+  <c:forEach var="ps" items="${posStations}" varStatus="st">
+    {
+      id: ${ps.posStationId},
+      name: '${fn:escapeXml(ps.stationName)}'
+    }<c:if test="${!st.last}">,</c:if>
+  </c:forEach>
+];
+
 let _posOnlineIds = [];  // accountIds đang online ở POS (từ polling)
 let _posMapInterval = null;
 
@@ -4060,7 +3939,7 @@ function renderPosMap() {
   // Render các quầy từ database
   let html = '';
   if (_posStations.length === 0) {
-    html = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--muted); font-size: 14.5px; font-weight: 500; background: rgba(21,88,168,0.01); border: 2px dashed rgba(21,88,168,0.08); border-radius: 14px;">⚠️ Chưa có quầy POS nào được thiết lập. Hãy nhấn nút "Quản lý quầy" để thêm.</div>';
+    html = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--muted); font-size: 14.5px; font-weight:750; background: rgba(21,88,168,0.01); border: 2px dashed rgba(21,88,168,0.08); border-radius: 14px;">⚠️ Chưa có quầy POS nào được thiết lập. Hãy nhấn nút "Quản lý quầy" để thêm.</div>';
   } else {
     _posStations.forEach(station => {
       const st = station.id;
@@ -4141,7 +4020,7 @@ function renderPosMap() {
   // Render unassigned
   if (unassigned.length > 0) {
     unasList.innerHTML = unassigned.map(s => {
-      return '<div class="pos-unas-chip" onclick="openQuickAssignModal(' + s.scheduleId + ', \'' + escHtml(s.staffName) + '\', \'' + escHtml(s.shiftType) + '\')" style="cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background=\'#fef08a\'; this.style.transform=\'translateY(-1px)\'" onmouseout="this.style.background=\'#fff\'; this.style.transform=\'translateY(0)\'">⚠️ ' + escHtml(s.staffName) + ' (' + escHtml(s.shiftType) + ') <span style="font-size:9.5px;color:var(--blue);font-weight:700;margin-left:4px;">Gán nhanh ➔</span></div>';
+      return '<div class="pos-unas-chip" onclick="openQuickAssignModal(' + s.scheduleId + ', \'' + escHtml(s.staffName) + '\', \'' + escHtml(s.shiftType) + '\')" style="cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background=\'#fef08a\'; this.style.transform=\'translateY(-1px)\'" onmouseout="this.style.background=\'#fff\'; this.style.transform=\'translateY(0)\'">⚠️ ' + escHtml(s.staffName) + ' (' + escHtml(s.shiftType) + ') <span style="font-size:9.5px;color:var(--blue);font-weight:750;margin-left:4px;">Gán nhanh ➔</span></div>';
     }).join('');
     unasWrap.style.display = '';
   } else {
@@ -4215,7 +4094,7 @@ function openPosAddModal(stationNum) {
       } else {
         tbody.innerHTML = assigned.map(s => {
           return '<tr style="border-bottom: 1px solid var(--border);">' +
-            '<td style="padding:10px 8px; font-weight:600; color:var(--navy);">' + escHtml(s.staffName) + '</td>' +
+            '<td style="padding:10px 8px; font-weight:750; color:var(--navy);">' + escHtml(s.staffName) + '</td>' +
             '<td style="padding:10px 8px; color:var(--muted);">' + escHtml(s.shiftType) + ' (' + s.startHour + ':00 - ' + s.endHour + ':00)</td>' +
             '<td style="padding:10px 8px; text-align:center;">' +
               '<div style="display:flex; gap:6px; justify-content:center; align-items:center;">' +
@@ -4499,19 +4378,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // Nếu tab pos-map là active tab khi load
   if ('<%= activeTab %>'.indexOf('pos-map') >= 0) initPosMap();
 });
-</script>
-<%-- Parse diagnostic: shows green/red badge for 6s after page load --%>
-<script>
-(function(){
-  var ok = typeof updateFullPreview === 'function';
-  var b = document.createElement('div');
-  b.style.cssText = 'position:fixed;bottom:6px;left:50%;transform:translateX(-50%);z-index:99999;padding:4px 12px;border-radius:20px;font-size:11.5px;font-weight:700;font-family:Outfit,sans-serif;';
-  b.style.background = ok ? '#10b981' : '#dc2626';
-  b.style.color = '#fff';
-  b.textContent = ok ? '✓ Main JS loaded OK' : '✗ Main JS FAILED (using safety fns)';
-  document.body.appendChild(b);
-  setTimeout(function(){b.remove();},6000);
-})();
 </script>
 </body>
 </html>

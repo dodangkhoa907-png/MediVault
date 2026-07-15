@@ -18,7 +18,7 @@ public class LeaveRequestDAO implements ILeaveRequestDAO {
         if (rs.getDate("LeaveDate") != null)
             lr.setLeaveDate(rs.getDate("LeaveDate").toLocalDate());
         lr.setLeaveType(rs.getString("LeaveType"));
-        lr.setReason(rs.getNString("Reason"));
+        lr.setReason(rs.getString("Reason"));
         lr.setStatus(rs.getString("Status"));
         int ab = rs.getInt("ApprovedBy");
         lr.setApprovedBy(rs.wasNull() ? null : ab);
@@ -28,15 +28,15 @@ public class LeaveRequestDAO implements ILeaveRequestDAO {
         lr.setDeductAmount(rs.getBigDecimal("DeductAmount"));
         if (rs.getTimestamp("RequestedAt") != null)
             lr.setRequestedAt(rs.getTimestamp("RequestedAt").toLocalDateTime());
-        lr.setNotes(rs.getNString("Notes"));
-        try { lr.setEvidencePath(rs.getNString("EvidencePath")); } catch (SQLException ignored) {}
+        lr.setNotes(rs.getString("Notes"));
+        try { lr.setEvidencePath(rs.getString("EvidencePath")); } catch (SQLException ignored) {}
         try {
             int sub = rs.getInt("SubstituteAccountID");
             lr.setSubstituteAccountId(rs.wasNull() ? null : sub);
         } catch (SQLException ignored) {}
-        try { lr.setStaffName(rs.getNString("StaffName")); }       catch (SQLException ignored) {}
-        try { lr.setApprovedByName(rs.getNString("ApprovedByName")); } catch (SQLException ignored) {}
-        try { lr.setSubstituteName(rs.getNString("SubstituteName")); } catch (SQLException ignored) {}
+        try { lr.setStaffName(rs.getString("StaffName")); }       catch (SQLException ignored) {}
+        try { lr.setApprovedByName(rs.getString("ApprovedByName")); } catch (SQLException ignored) {}
+        try { lr.setSubstituteName(rs.getString("SubstituteName")); } catch (SQLException ignored) {}
         return lr;
     }
 

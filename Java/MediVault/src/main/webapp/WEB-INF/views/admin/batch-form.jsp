@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8"  pageEncoding="UTF-8" %>
 <% String activeNav = "medicines"; %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
@@ -15,11 +15,15 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title><%= isNew ? "Nhập lô mới" : "Sửa lô hàng" %> — MediCare</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -27,7 +31,7 @@
   --surface:#F1F5FB;--white:#fff;--muted:#7A90B0;--border:#D5E0F0;
   --green:#059669;--red:#DC2626;--gold:#D97706;--sidebar:232px;
 }
-html,body{height:100%;font-family:'Outfit',sans-serif}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif}
 body{display:flex;background:var(--surface);color:var(--ink)}
 
 /* ── Sidebar (dùng chung admin) ── */
@@ -37,25 +41,25 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .logo-text span{color:var(--cyan)}
 .logo-sub{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1.2px;text-transform:uppercase;margin-top:1px}
 .nav-section{padding:12px 0 4px;flex-shrink:0}
-.nav-label{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:500;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
+.nav-label{font-size:9px;font-weight:750;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:750;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
 .nav-item:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.06)}
-.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:600}
+.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:750}
 .nav-item.active::before{content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:56%;background:var(--cyan);border-radius:2px}
-.nav-badge{margin-left:auto;background:#DC2626;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;min-width:20px;text-align:center}
+.nav-badge{margin-left:auto;background:#DC2626;color:#fff;font-size:10px;font-weight:750;padding:1px 7px;border-radius:20px;min-width:20px;text-align:center}
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0}
 
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50;flex-shrink:0}
-.topbar-title{font-size:16px;font-weight:700;color:var(--ink)}
-.btn-back{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:9px;border:1.5px solid var(--border);background:var(--white);color:var(--ink);font-size:13px;font-weight:600;text-decoration:none}
+.topbar-title{font-size:16px;font-weight:750;color:var(--ink)}
+.btn-back{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:9px;border:1.5px solid var(--border);background:var(--white);color:var(--ink);font-size:13px;font-weight:750;text-decoration:none}
 .btn-back:hover{border-color:var(--blue);color:var(--blue)}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px}
-.clock{display:inline-flex;align-items:center;gap:8px;padding:6px 13px;border-radius:20px;background:#EFF6FF;color:var(--blue);font-size:12.5px;font-weight:700;white-space:nowrap}
+.clock{display:inline-flex;align-items:center;gap:8px;padding:6px 13px;border-radius:20px;background:#EFF6FF;color:var(--blue);font-size:12.5px;font-weight:750;white-space:nowrap}
 .clock .cl-time{font-variant-numeric:tabular-nums;font-weight:800}
 .user-av-sm{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#3ABDE0,#1558A8);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
 
 .content{max-width:720px;margin:26px auto;padding:0 22px 48px}
-.page-title{font-size:23px;font-weight:900;margin-bottom:4px}
+.page-title{font-size:23px;font-weight:800;margin-bottom:4px}
 .page-sub{font-size:13px;color:var(--muted);margin-bottom:18px}
 .med-chip{display:flex;align-items:center;gap:12px;padding:13px 16px;background:linear-gradient(120deg,#0F2645,#1558A8);border-radius:14px;margin-bottom:18px;color:#fff}
 .med-chip-ico{width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
@@ -70,7 +74,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .form-full{grid-column:1/-1}
 .form-group{display:flex;flex-direction:column;gap:5px}
-.form-label{font-size:12.5px;font-weight:700;color:var(--ink)}
+.form-label{font-size:12.5px;font-weight:750;color:var(--ink)}
 .form-label span{color:var(--red)}
 .form-input,.form-select{height:42px;padding:0 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;font-family:inherit;color:var(--ink);background:var(--white);outline:none;transition:.15s}
 .form-input:focus,.form-select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(21,88,168,.08)}
@@ -79,16 +83,31 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .form-actions{display:flex;gap:10px;margin-top:20px}
 .btn-save{flex:1;height:46px;background:linear-gradient(135deg,#1558A8,#0d3d63);color:#fff;border:none;border-radius:11px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
 .btn-save:hover{filter:brightness(1.08)}
-.btn-cancel{height:46px;padding:0 22px;border:1.5px solid var(--border);border-radius:11px;background:var(--white);color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-flex;align-items:center}
+.btn-cancel{height:46px;padding:0 22px;border:1.5px solid var(--border);border-radius:11px;background:var(--white);color:var(--muted);font-size:14px;font-weight:750;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-flex;align-items:center}
 .btn-cancel:hover{border-color:var(--red);color:var(--red)}
 .po-toggle{display:flex;gap:10px;margin-bottom:16px}
-.po-toggle-opt{flex:1;display:flex;align-items:center;gap:8px;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;transition:.15s}
+.po-toggle-opt{flex:1;display:flex;align-items:center;gap:8px;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:750;color:var(--ink);cursor:pointer;transition:.15s}
 .po-toggle-opt:has(input:checked){border-color:var(--blue);background:#EFF6FF;color:var(--blue)}
 .po-toggle-opt input{accent-color:var(--blue)}
 .po-toggle-opt input:disabled{cursor:not-allowed}
 .po-toggle-opt:has(input:disabled){opacity:.45;cursor:not-allowed}
-.hsd-live{margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:600;display:none}
+.hsd-live{margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:750;display:none}
+select,option{font-family:inherit;font-size:inherit}
+.cdd{position:relative;user-select:none;display:inline-block}
+.cdd-btn{display:flex;align-items:center;gap:6px;padding:9px 14px;background:var(--white,#fff);border:1.5px solid var(--border,#D5E0F0);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;color:var(--ink,#0B1628);cursor:pointer;transition:all .18s;white-space:nowrap}
+.cdd-btn:hover{border-color:var(--cyan,#3ABDE0);background:var(--cyan-soft,#EBF8FD)}
+.cdd-btn.open{border-color:var(--cyan,#3ABDE0);box-shadow:0 0 0 3px rgba(58,189,224,.12)}
+.cdd-arrow{font-size:9px;color:var(--muted,#7A90B0);transition:transform .2s}
+.cdd-btn.open .cdd-arrow{transform:rotate(180deg)}
+.cdd-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:100%;background:var(--white,#fff);border:1.5px solid var(--border,#D5E0F0);border-radius:12px;padding:6px;box-shadow:0 12px 36px rgba(15,38,69,.15);z-index:200;opacity:0;transform:translateY(-6px);pointer-events:none;transition:all .18s ease;max-height:260px;overflow-y:auto}
+.cdd-menu.show{opacity:1;transform:translateY(0);pointer-events:auto}
+.cdd-menu::-webkit-scrollbar{width:4px}
+.cdd-menu::-webkit-scrollbar-thumb{background:var(--border,#D5E0F0);border-radius:4px}
+.cdd-opt{padding:8px 14px;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;color:var(--ink,#0B1628);cursor:pointer;transition:all .12s;white-space:nowrap}
+.cdd-opt:hover{background:var(--surface,#F1F5FB);color:var(--blue,#1558A8)}
+.cdd-opt.active{background:linear-gradient(135deg,var(--blue,#1558A8),#0D3F85);color:#fff;font-weight:750}
 </style>
+    
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>
@@ -149,24 +168,38 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 
       <div id="poExistingBlock" class="form-group" style="display:none">
         <label class="form-label">Đơn đặt hàng <span>*</span></label>
-        <select name="poId" class="form-select">
-          <option value="">-- Chọn đơn --</option>
-          <c:forEach var="p" items="${recentPOs}">
-            <option value="${p.poId}">${p.poCode} · ${poSupplierMap[p.supplierId] != null ? poSupplierMap[p.supplierId].supplierName : ''} · ${fn:substring(p.orderDate.toString(),0,10)}</option>
-          </c:forEach>
-        </select>
+        <input type="hidden" name="poId" id="hPoId" value="">
+        <div class="cdd" id="cddPoId">
+          <div class="cdd-btn" onclick="toggleCdd('cddPoId')">
+            <span class="cdd-label">-- Chọn đơn --</span>
+            <span class="cdd-arrow">▼</span>
+          </div>
+          <div class="cdd-menu">
+            <div class="cdd-opt active" data-val="" onclick="pickCdd('cddPoId','hPoId',this,false)">-- Chọn đơn --</div>
+            <c:forEach var="p" items="${recentPOs}">
+              <div class="cdd-opt" data-val="${p.poId}" onclick="pickCdd('cddPoId','hPoId',this,false)">${p.poCode} · ${poSupplierMap[p.supplierId] != null ? poSupplierMap[p.supplierId].supplierName : ''} · ${fn:substring(p.orderDate.toString(),0,10)}</div>
+            </c:forEach>
+          </div>
+        </div>
         <span class="form-hint">Chỉ hiện 15 đơn gần nhất. Xem tất cả ở tab <b>Đơn đặt hàng</b>.</span>
       </div>
 
       <div id="poNewBlock">
         <div class="form-group">
           <label class="form-label">Nhà cung cấp <span>*</span></label>
-          <select name="newPoSupplierId" class="form-select">
-            <option value="">-- Chọn nhà cung cấp --</option>
-            <c:forEach var="s" items="${suppliers}">
-              <option value="${s.supplierId}">${s.supplierName}</option>
-            </c:forEach>
-          </select>
+          <input type="hidden" name="newPoSupplierId" id="hNewPoSupplierId" value="">
+          <div class="cdd" id="cddNewPoSupplierId">
+            <div class="cdd-btn" onclick="toggleCdd('cddNewPoSupplierId')">
+              <span class="cdd-label">-- Chọn nhà cung cấp --</span>
+              <span class="cdd-arrow">▼</span>
+            </div>
+            <div class="cdd-menu">
+              <div class="cdd-opt active" data-val="" onclick="pickCdd('cddNewPoSupplierId','hNewPoSupplierId',this,false)">-- Chọn nhà cung cấp --</div>
+              <c:forEach var="s" items="${suppliers}">
+                <div class="cdd-opt" data-val="${s.supplierId}" onclick="pickCdd('cddNewPoSupplierId','hNewPoSupplierId',this,false)">${s.supplierName}</div>
+              </c:forEach>
+            </div>
+          </div>
           <span class="form-hint">Nơi bạn mua/lấy lô hàng này về.</span>
         </div>
         <div class="form-group">
@@ -264,7 +297,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
           <span class="form-hint">Giá vốn cho <b>1 <span id="packUnitLbl5">${medicine.unit}</span></b>.</span>
         </div>
         <div class="form-group form-full">
-          <div id="packSummary" style="display:none;background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:11px;padding:12px 15px;font-size:13.5px;color:#1558A8;font-weight:700"></div>
+          <div id="packSummary" style="display:none;background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:11px;padding:12px 15px;font-size:13.5px;color:#1558A8;font-weight:750"></div>
         </div>
       </div>
     </div>
@@ -304,6 +337,10 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 </div><%-- .main --%>
 
 <script>
+function toggleCdd(id){var w=document.getElementById(id),m=w.querySelector('.cdd-menu'),b=w.querySelector('.cdd-btn');var open=m.classList.contains('show');document.querySelectorAll('.cdd-menu.show').forEach(function(x){x.classList.remove('show');x.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')});if(!open){m.classList.add('show');b.classList.add('open');var act=m.querySelector('.cdd-opt.active');if(act)act.scrollIntoView({block:'nearest'})}}
+function pickCdd(wId,hId,el,autoSubmit){document.getElementById(hId).value=el.dataset.val;var w=document.getElementById(wId);w.querySelector('.cdd-label').textContent=el.textContent;w.querySelectorAll('.cdd-opt').forEach(function(o){o.classList.remove('active')});el.classList.add('active');w.querySelector('.cdd-menu').classList.remove('show');w.querySelector('.cdd-btn').classList.remove('open');if(autoSubmit){var f=w.closest('form');if(f)f.submit()}}
+document.addEventListener('click',function(e){if(!e.target.closest('.cdd')){document.querySelectorAll('.cdd-menu.show').forEach(function(m){m.classList.remove('show');m.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')})}});
+
 const IS_NEW_BATCH = <%= isNew %>;
 
 // ── Đồng hồ realtime trên topbar ──
@@ -379,7 +416,7 @@ function checkHsd(inp) {
   const today = new Date(); today.setHours(0,0,0,0);
   const hsd = new Date(inp.value);
   const diffDays = Math.round((hsd - today) / 86400000);
-  const base = 'display:block;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:600;';
+  const base = 'display:block;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:750;';
   if (diffDays < 0) {
     warn.style.cssText = base + 'background:#FEE2E2;color:#991B1B;border:1px solid #FECACA';
     warn.textContent = IS_NEW_BATCH ? '❌ HSD đã qua! Không thể nhập lô hết hạn.' : '⚠️ Lô này đã hết hạn.';
