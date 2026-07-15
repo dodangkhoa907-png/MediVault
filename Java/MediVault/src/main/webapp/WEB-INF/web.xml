@@ -10,6 +10,8 @@
     <filter>
         <filter-name>encodingFilter</filter-name>
         <filter-class>org.apache.catalina.filters.SetCharacterEncodingFilter</filter-class>
+        <!-- BẮT BUỘC cho SSE (/medicines/live): mọi filter trong chain phải hỗ trợ async -->
+        <async-supported>true</async-supported>
         <init-param>
             <param-name>encoding</param-name>
             <param-value>UTF-8</param-value>
@@ -77,6 +79,11 @@
         <extension>woff</extension>
         <mime-type>font/woff</mime-type>
     </mime-mapping>
+
+    <!-- Root URL redirect -->
+    <welcome-file-list>
+        <welcome-file>index.jsp</welcome-file>
+    </welcome-file-list>
 
     <!-- Error pages -->
     <error-page>

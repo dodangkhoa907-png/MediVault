@@ -29,11 +29,15 @@ public class SidebarHelper {
     private static final IPasswordResetDAO resetDAO  = new PasswordResetDAO();
 
     public static void load(HttpServletRequest req) {
-        // Mỗi badge được wrap riêng — 1 bảng chưa tạo không crash cả sidebar
+        // Mỗi badge được wrap riêng — 1 bảng chưa tạo không crash cả sidebar.
+        // Cache 30s (CacheManager.getShort): chuyển trang liên tục dùng cache thay vì
+        // query lại 4 lần/trang → hết lag, nhẹ pool. Trễ tối đa 30s là chấp nhận được.
 
         if (req.getAttribute("pendingLeaveCount") == null) {
             try {
-                req.setAttribute("pendingLeaveCount", leaveDAO.findPending().size());
+                req.setAttribute("pendingLeaveCount",
+                        com.medicare.config.CacheManager.getShort("sidebar.pendingLeave",
+                                () -> leaveDAO.findPending().size()));
             } catch (Exception e) {
                 req.setAttribute("pendingLeaveCount", 0);
                 System.err.println("[SidebarHelper] pendingLeave: " + e.getMessage());
@@ -42,7 +46,9 @@ public class SidebarHelper {
 
         if (req.getAttribute("pendingLateCount") == null) {
             try {
-                req.setAttribute("pendingLateCount", attDAO.countByStatus("LATE_UNEXCUSED"));
+                req.setAttribute("pendingLateCount",
+                        com.medicare.config.CacheManager.getShort("sidebar.pendingLate",
+                                () -> attDAO.countByStatus("LATE_UNEXCUSED")));
             } catch (Exception e) {
                 req.setAttribute("pendingLateCount", 0);
                 System.err.println("[SidebarHelper] pendingLate: " + e.getMessage());
@@ -51,7 +57,9 @@ public class SidebarHelper {
 
         if (req.getAttribute("expiryCount") == null) {
             try {
-                req.setAttribute("expiryCount", batchDAO.findExpiringSoon().size());
+                req.setAttribute("expiryCount",
+                        com.medicare.config.CacheManager.getShort("sidebar.expiryCount",
+                                () -> batchDAO.findExpiringSoon().size()));
             } catch (Exception e) {
                 req.setAttribute("expiryCount", 0);
                 System.err.println("[SidebarHelper] expiryCount: " + e.getMessage());
@@ -60,7 +68,9 @@ public class SidebarHelper {
 
         if (req.getAttribute("pendingResetCount") == null) {
             try {
-                req.setAttribute("pendingResetCount", resetDAO.findAllPending().size());
+                req.setAttribute("pendingResetCount",
+                        com.medicare.config.CacheManager.getShort("sidebar.pendingReset",
+                                () -> resetDAO.findAllPending().size()));
             } catch (Exception e) {
                 // Bảng PasswordResetRequests chưa tạo → set 0, không crash
                 req.setAttribute("pendingResetCount", 0);

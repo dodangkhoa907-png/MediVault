@@ -11,6 +11,9 @@ public class PurchaseOrders {
     private LocalDateTime orderDate;
     private BigDecimal totalValue;
     private String notes;
+    private String status;          // PENDING | COMPLETED
+    private String paymentMethod;   // CASH | TRANSFER | DEBT
+    private BigDecimal discountAmount;
 
     public PurchaseOrders() {}
 
@@ -38,4 +41,10 @@ public class PurchaseOrders {
     public void setTotalValue(BigDecimal totalValue) { this.totalValue = totalValue; }
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+    public BigDecimal getDiscountAmount() { return discountAmount; }
+    public void setDiscountAmount(BigDecimal discountAmount) { this.discountAmount = discountAmount; }
 }

@@ -62,14 +62,19 @@ public class AccountService implements IAccountService {
         a.setFullName(fullName.trim());
         a.setEmail(email    != null ? email.trim()    : null);
         a.setPhone(phone    != null ? phone.trim()    : null);
-        a.setCitizenId(citizenId != null && !citizenId.trim().isEmpty() ? citizenId.trim() : "");
+        a.setCitizenId(citizenId != null && !citizenId.trim().isEmpty() ? citizenId.trim() : null);
         a.setPosition(position  != null ? position.trim() : null);
         a.setRoleId(roleId);
         a.setPasswordHash(PasswordUtil.hashPassword(password));
 
         // ── Bước 4: Insert DB ─────────────────────────────────────────────
-        boolean ok = accountDAO.insert(a);
-        if (!ok) return ServiceResult.fail("Tạo tài khoản thất bại — kiểm tra log Tomcat!");
+        boolean ok;
+        try {
+            ok = accountDAO.insert(a);
+        } catch (RuntimeException ex) {
+            return ServiceResult.fail("DB lỗi: " + ex.getMessage());
+        }
+        if (!ok) return ServiceResult.fail("Lưu tài khoản thất bại — insert trả về 0 rows (không có exception).");
 
         // ── Bước 5: Gửi email chào mừng (async nếu có email) ─────────────
         if (email != null && !email.trim().isEmpty()) {

@@ -79,8 +79,11 @@ public class AppFilter implements Filter {
 
         if (supportsGzip && isHtmlOrJson) {
             GzipResponseWrapper gzipResp = new GzipResponseWrapper(resp);
-            chain.doFilter(req, gzipResp);
-            gzipResp.finish(); // flush GZIP stream
+            try {
+                chain.doFilter(req, gzipResp);
+            } finally {
+                gzipResp.finish(); // luôn flush/đóng GZIP, kể cả khi servlet ném lỗi
+            }
         } else {
             chain.doFilter(req, resp);
         }
@@ -141,11 +144,17 @@ public class AppFilter implements Filter {
         @Override public void setContentLength(int len)      {}
         @Override public void setContentLengthLong(long len) {}
 
+        private boolean finished = false;
+
         void finish() throws IOException {
-            // flush writer nhưng KHÔNG close (writer.close() → stream.close() → Deflater.close())
-            // Để GzipOutputStream tự close khi gzipOut.close() được gọi bên dưới
-            if (gzipWriter != null) { gzipWriter.flush(); }
-            if (gzipOut   != null)  { gzipOut.finish(); gzipOut.close(); }
+            if (finished) return;   // chống gọi finish() 2 lần (double-finish → Deflater đã đóng)
+            finished = true;
+            // Nếu servlet đã ném lỗi giữa chừng, deflater có thể đã đóng → nuốt lỗi,
+            // tránh IllegalStateException "Deflater has been closed" nổi lên thành SEVERE 500.
+            try {
+                if (gzipWriter != null) { gzipWriter.flush(); }
+                if (gzipOut   != null)  { gzipOut.finish(); gzipOut.close(); }
+            } catch (IOException | IllegalStateException ignored) {}
         }
     }
 

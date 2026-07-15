@@ -113,6 +113,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .info-card-head{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,#FAFAFA,var(--soft))}
 .info-card-icon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
 .ici-purple{background:rgba(109,40,217,.1)}
+.ici-blue{background:rgba(58,189,224,.14)}
 .ici-green{background:rgba(5,150,105,.1)}
 .ici-gold{background:rgba(217,119,6,.1)}
 .info-card-title{font-family:'Outfit',sans-serif;font-size:15px;color:var(--ink)}
@@ -386,10 +387,131 @@ body{display:flex;background:var(--soft);color:var(--ink)}
           </div>
         </div>
 
+        <!-- Khuôn mặt điểm danh -->
+        <div class="info-card">
+          <div class="info-card-head">
+            <div class="info-card-icon ici-blue">🙂</div>
+            <div class="info-card-title">Khuôn mặt điểm danh</div>
+          </div>
+          <div style="padding:18px 20px">
+            <% if (a.isFaceReenrollPending()) { %>
+              <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start">
+                <div style="font-size:22px">⏳</div>
+                <div>
+                  <div style="font-weight:700;color:#b45309;margin-bottom:3px">Yêu cầu đổi khuôn mặt đang chờ duyệt</div>
+                  <div style="font-size:13px;color:#92400e;line-height:1.5">
+                    Trong lúc chờ quản trị viên duyệt, bạn <b>không thể quét khuôn mặt để điểm danh</b>
+                    (vẫn đăng nhập & bán hàng bình thường). Bạn sẽ nhận email khi được duyệt.
+                  </div>
+                  <% if (a.getFaceReenrollReason()!=null && !a.getFaceReenrollReason().isEmpty()) { %>
+                    <div style="font-size:12px;color:#92400e;margin-top:6px"><b>Lý do đã gửi:</b> <%= a.getFaceReenrollReason() %></div>
+                  <% } %>
+                </div>
+              </div>
+            <% } else if (a.isFaceEnrolled()) { %>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+                <span class="badge b-green">● Đã đăng ký khuôn mặt</span>
+                <% if (a.getFaceEnrolledAt()!=null) { %>
+                  <span style="font-size:12px;color:var(--muted)">từ <%= a.getFaceEnrolledAt().getDayOfMonth()+"/"+a.getFaceEnrolledAt().getMonthValue()+"/"+a.getFaceEnrolledAt().getYear() %></span>
+                <% } %>
+              </div>
+              <p style="font-size:13px;color:var(--muted);line-height:1.5;margin:0 0 14px">
+                Khuôn mặt sai (đổi kiểu tóc, kính, ảnh cũ mờ…) khiến điểm danh không nhận ra?
+                Gửi yêu cầu <b>đăng ký lại khuôn mặt</b> — quản trị viên duyệt xong bạn sẽ quét lại từ đầu.
+              </p>
+              <button type="button" onclick="openReenrollModal()"
+                      style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:10px;padding:11px 20px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">
+                🔄 Xin đăng ký lại khuôn mặt
+              </button>
+            <% } else { %>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="badge b-gray">● Chưa đăng ký khuôn mặt</span>
+              </div>
+              <p style="font-size:13px;color:var(--muted);line-height:1.5;margin:10px 0 0">
+                Bạn chưa có khuôn mặt điểm danh. Vào <b>Trang chủ nhân viên</b> để đăng ký lần đầu — không cần xin duyệt.
+              </p>
+            <% } %>
+          </div>
+        </div>
+
       </div><%-- /info-col --%>
     </div><%-- /detail-grid --%>
   </div>
 </div>
+
+<!-- Modal: Xin đăng ký lại khuôn mặt -->
+<div id="reenrollModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9600;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:16px;max-width:440px;width:100%;padding:26px 26px 22px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <span style="font-size:24px">🔄</span>
+      <h3 style="margin:0;font-size:18px;color:#0f172a">Xin đăng ký lại khuôn mặt</h3>
+    </div>
+    <p style="font-size:13px;color:#64748b;line-height:1.5;margin:0 0 16px">
+      Yêu cầu sẽ gửi tới quản trị viên qua email. Sau khi duyệt, khuôn mặt cũ bị xóa và bạn đăng ký lại từ đầu.
+      Trong lúc chờ, bạn vẫn đăng nhập bình thường nhưng <b>tạm thời không quét mặt điểm danh được</b>.
+    </p>
+    <label style="font-size:13px;font-weight:600;color:#334155;display:block;margin-bottom:6px">Lý do <span style="color:#dc2626">*</span></label>
+    <textarea id="reenrollReason" rows="3" placeholder="VD: đổi kiểu tóc / đeo kính mới / khuôn mặt cũ nhận diện không ra…"
+              style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-family:inherit;font-size:14px;resize:vertical;box-sizing:border-box"></textarea>
+    <div id="reenrollErr" style="color:#dc2626;font-size:12.5px;margin-top:6px;display:none"></div>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button type="button" onclick="closeReenrollModal()"
+              style="flex:1;background:#f1f5f9;color:#475569;border:none;border-radius:10px;padding:11px;font-weight:700;cursor:pointer;font-family:inherit">Hủy</button>
+      <button type="button" id="reenrollSubmitBtn" onclick="submitReenroll()"
+              style="flex:1;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:10px;padding:11px;font-weight:700;cursor:pointer;font-family:inherit">Gửi yêu cầu</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const REENROLL_CTX = document.querySelector('meta[name="ctx"]').content;
+const REENROLL_UID = '<%= _staffUid %>';
+function openReenrollModal() {
+  document.getElementById('reenrollReason').value = '';
+  document.getElementById('reenrollErr').style.display = 'none';
+  document.getElementById('reenrollModal').style.display = 'flex';
+}
+function closeReenrollModal() {
+  document.getElementById('reenrollModal').style.display = 'none';
+}
+async function submitReenroll() {
+  const reason = document.getElementById('reenrollReason').value.trim();
+  const errEl = document.getElementById('reenrollErr');
+  if (reason.length < 5) {
+    errEl.textContent = 'Vui lòng nhập lý do (tối thiểu 5 ký tự).';
+    errEl.style.display = 'block';
+    return;
+  }
+  const btn = document.getElementById('reenrollSubmitBtn');
+  btn.disabled = true; btn.textContent = '⏳ Đang gửi…';
+  try {
+    const res = await fetch(REENROLL_CTX + '/face-reenroll', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ action: 'request', uid: REENROLL_UID, reason: reason })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      alert('✅ Đã gửi yêu cầu! Quản trị viên sẽ nhận email và duyệt. Bạn sẽ được thông báo qua email.');
+      window.location.reload();
+    } else {
+      const map = {
+        'already_pending': 'Bạn đã có một yêu cầu đang chờ duyệt.',
+        'no_face_to_reenroll': 'Bạn chưa đăng ký khuôn mặt nào để đổi.',
+        'unauthorized': 'Phiên đăng nhập hết hạn, vui lòng đăng nhập lại.',
+        'db_error': 'Lỗi lưu dữ liệu, thử lại sau.'
+      };
+      errEl.textContent = map[data.reason] || ('Lỗi: ' + data.reason);
+      errEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Gửi yêu cầu';
+    }
+  } catch (e) {
+    errEl.textContent = 'Lỗi kết nối: ' + e.message;
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Gửi yêu cầu';
+  }
+}
+</script>
 
 <script>
 /* ── Single Session Enforcement ──────────────────────────────

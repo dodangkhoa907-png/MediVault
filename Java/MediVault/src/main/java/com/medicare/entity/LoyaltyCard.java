@@ -13,6 +13,12 @@ public class LoyaltyCard {
     private LocalDateTime expiredAt;
     private boolean isActive;
 
+    // ── Join fields (từ LoyaltyTiers) ──
+    private String tierName;
+    private java.math.BigDecimal discountPct;
+    private String nextTierName;      // hạng kế tiếp (null nếu đã max)
+    private int nextTierMinPoints;    // mốc điểm hạng kế tiếp
+
     public LoyaltyCard() {}
 
     public LoyaltyCard(int cardId, String cardCode, int customerId, int tierId, int totalPoints, int usedPoints, LocalDateTime issuedAt, LocalDateTime expiredAt, boolean isActive) {
@@ -45,4 +51,16 @@ public class LoyaltyCard {
     public void setExpiredAt(LocalDateTime expiredAt) { this.expiredAt = expiredAt; }
     public boolean isActive() { return isActive; }
     public void setActive(boolean active) { isActive = active; }
+
+    public String getTierName() { return tierName; }
+    public void setTierName(String v) { this.tierName = v; }
+    public java.math.BigDecimal getDiscountPct() { return discountPct; }
+    public void setDiscountPct(java.math.BigDecimal v) { this.discountPct = v; }
+    public String getNextTierName() { return nextTierName; }
+    public void setNextTierName(String v) { this.nextTierName = v; }
+    public int getNextTierMinPoints() { return nextTierMinPoints; }
+    public void setNextTierMinPoints(int v) { this.nextTierMinPoints = v; }
+
+    /** Điểm khả dụng = tổng tích − đã dùng */
+    public int getAvailablePoints() { return totalPoints - usedPoints; }
 }

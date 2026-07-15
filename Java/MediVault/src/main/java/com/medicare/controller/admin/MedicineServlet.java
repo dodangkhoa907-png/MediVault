@@ -53,6 +53,7 @@ public class MedicineServlet extends HttpServlet {
             }
             case "api-med"       -> apiGetMedicine(req, resp);
             case "api-batches"   -> apiGetBatches(req, resp);
+            case "check-duplicate" -> apiCheckDuplicate(req, resp);
             case "api-stats"     -> apiGetStats(resp);
             case "api-stock-map" -> apiGetStockMap(resp);
             case "detail" -> showDetail(req, resp);
@@ -83,6 +84,9 @@ public class MedicineServlet extends HttpServlet {
             case "delete-batch" -> deleteBatch(req, resp);
             case "destroy-batch" -> destroyBatch(req, resp);
             case "create-category-ajax"    -> createCategoryAjax(req, resp);
+            case "create-shelf-ajax"       -> createShelfAjax(req, resp);
+            case "update-shelf-ajax"       -> updateShelfAjax(req, resp);
+            case "delete-shelf-ajax"       -> deleteShelfAjax(req, resp);
             case "create-manufacturer-ajax" -> createManufacturerAjax(req, resp);
             case "delete-manufacturer-ajax" -> deleteManufacturerAjax(req, resp);
             case "create-po-ajax"           -> createPoAjax(req, resp);
@@ -118,8 +122,9 @@ public class MedicineServlet extends HttpServlet {
 
         List<Medicines> list = medicineDAO.findPaged(keyword, catId, page, pageSize);
 
-        // 1 query cho toàn bộ tồn kho — nhanh hơn N queries per trang
-        Map<Integer, Integer> stockMap = batchesDAO.getTotalQuantityMap();
+        // 1 query cho toàn bộ tồn kho — cache 30s để chuyển trang liên tục không query lại
+        Map<Integer, Integer> stockMap =
+                com.medicare.config.CacheManager.getShort("med.stockMap", batchesDAO::getTotalQuantityMap);
 
         // Batch summaries cho hover card + tab badge counts
         Map<Integer, Integer> activeBatchCountMap  = new HashMap<>();
@@ -136,10 +141,11 @@ public class MedicineServlet extends HttpServlet {
         String statusFilter = req.getParameter("statusFilter");
         req.setAttribute("medicines", list);
         req.setAttribute("stockMap", stockMap);
-        req.setAttribute("categories", categoryDAO.findAll());
-        req.setAttribute("manufacturers", manufacturerDAO.findAll());
-        req.setAttribute("shelves", shelfDAO.findAll());
-        req.setAttribute("suppliers", supplierDAO.findAllActive());
+        // Dropdown ít thay đổi → cache 30s (khỏi query lại mỗi lần vào trang)
+        req.setAttribute("categories",    com.medicare.config.CacheManager.getShort("ref.categories",     categoryDAO::findAll));
+        req.setAttribute("manufacturers", com.medicare.config.CacheManager.getShort("ref.manufacturers",  manufacturerDAO::findAll));
+        req.setAttribute("shelves",       com.medicare.config.CacheManager.getShort("ref.shelves",        shelfDAO::findAll));
+        req.setAttribute("suppliers",     com.medicare.config.CacheManager.getShort("ref.suppliersActive", supplierDAO::findAllActive));
         req.setAttribute("statusFilter", statusFilter != null ? statusFilter : "");
         req.setAttribute("activeBatchCountMap", activeBatchCountMap);
         req.setAttribute("expiringSoonCountMap", expiringSoonCountMap);
@@ -234,6 +240,49 @@ public class MedicineServlet extends HttpServlet {
         req.getRequestDispatcher("/WEB-INF/views/admin/batch-form.jsp").forward(req, resp);
     }
 
+    // ── API: CHECK TRÙNG THUỐC (AJAX debounce khi đang gõ tên/mã vạch) ────────
+    // GET /medicines?action=check-duplicate&name=...&barcode=...&regNo=...&excludeId=...
+    // Trả {found:false} hoặc {found:true, ...toàn bộ thông tin thuốc + tồn kho + số lô}
+    private void apiCheckDuplicate(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        PrintWriter out = resp.getWriter();
+        String name    = req.getParameter("name");
+        String barcode = req.getParameter("barcode");
+        String regNo   = req.getParameter("regNo");
+        int excludeId  = 0;
+        try { excludeId = Integer.parseInt(req.getParameter("excludeId")); } catch (Exception ignored) {}
+
+        Medicines dup = ((com.medicare.dao.MedicineDAO) medicineDAO).findDuplicate(barcode, regNo, name);
+        if (dup == null || dup.getMedicineId() == excludeId) { // sửa chính nó → không tính trùng
+            out.print("{\"found\":false}");
+            return;
+        }
+        int stock = batchesDAO.getTotalQuantity(dup.getMedicineId());
+        String catName = "";
+        try {
+            com.medicare.entity.Category c = categoryDAO.findById(dup.getCategoryId() != null ? dup.getCategoryId() : 0);
+            if (c != null) catName = c.getCategoryName();
+        } catch (Exception ignored) {}
+        out.print("{\"found\":true"
+                + ",\"id\":" + dup.getMedicineId()
+                + ",\"code\":\"" + jsEsc(dup.getMedicineCode()) + "\""
+                + ",\"name\":\"" + jsEsc(dup.getMedicineName()) + "\""
+                + ",\"generic\":\"" + jsEsc(dup.getGenericName()) + "\""
+                + ",\"barcode\":\"" + jsEsc(dup.getBarcode()) + "\""
+                + ",\"unit\":\"" + jsEsc(dup.getUnit()) + "\""
+                + ",\"category\":\"" + jsEsc(catName) + "\""
+                + ",\"price\":" + (dup.getSellingPrice() != null ? dup.getSellingPrice().toPlainString() : "0")
+                + ",\"stock\":" + stock
+                + ",\"active\":" + dup.isStatus()
+                + "}");
+    }
+
+    private String jsEsc(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
     // ── SAVE THUỐC ────────────────────────────────────────────────────────────
     private void saveMedicine(HttpServletRequest req, HttpServletResponse resp)
             throws IOException, ServletException {
@@ -258,7 +307,7 @@ public class MedicineServlet extends HttpServlet {
         if (ValidationUtil.isBlank(mfrId))
             errors.add("Vui lòng chọn nhà sản xuất!");
 
-        // Validate initial stock (only for new medicine when admin declares existing qty)
+        // Validate initial stock (only for new medicine when admin adds initial qty)
         int initialQty = 0;
         LocalDate initialExpiry = null;
         if (isNew) {
@@ -267,16 +316,29 @@ public class MedicineServlet extends HttpServlet {
             try { initialQty = Integer.parseInt(initQtyStr); } catch (Exception ignored) {}
             if (initialQty > 0) {
                 if (ValidationUtil.isBlank(initExpiryStr)) {
-                    errors.add("Ngày hết hạn lô đầu tiên bắt buộc khi có số lượng ban đầu!");
+                    errors.add("Ngày hết hạn lô bắt buộc khi có số lượng thêm vào!");
                 } else {
                     try {
                         initialExpiry = LocalDate.parse(initExpiryStr);
                         if (!initialExpiry.isAfter(LocalDate.now()))
-                            errors.add("Ngày hết hạn lô ban đầu phải sau ngày hôm nay!");
+                            errors.add("Ngày hết hạn lô phải sau ngày hôm nay!");
                     } catch (Exception e) {
-                        errors.add("Ngày hết hạn lô ban đầu không hợp lệ!");
+                        errors.add("Ngày hết hạn lô không hợp lệ!");
                     }
                 }
+            }
+        }
+
+        // ── BẮT TRÙNG khi tạo mới: Barcode / Số đăng ký / trùng tên chính xác ──
+        if (isNew && errors.isEmpty()) {
+            Medicines dup = ((com.medicare.dao.MedicineDAO) medicineDAO).findDuplicate(
+                    req.getParameter("barcode"),
+                    req.getParameter("registrationNumber"),
+                    name);
+            if (dup != null) {
+                errors.add("Thuốc này đã có trong hệ thống: \"" + dup.getMedicineName()
+                        + "\" (" + dup.getMedicineCode() + ").");
+                req.setAttribute("dupMedicine", dup);   // JSP hiện nút "Nhập lô mới cho thuốc này →"
             }
         }
 
@@ -450,7 +512,18 @@ public class MedicineServlet extends HttpServlet {
         b.setImportPrice(new BigDecimal(price));
         b.setInitialQuantity(isNew ? Integer.parseInt(qty) : 0);
         if (parsedMfDate != null) b.setManufactureDate(parsedMfDate);
-        if (isNew) b.setImportDate(LocalDate.now());
+        if (isNew) {
+            // Ngày nhập kho: cho phép chọn (default hôm nay). Không nhận ngày trong tương lai.
+            LocalDate impDate = LocalDate.now();
+            String impStr = req.getParameter("importDate");
+            if (!ValidationUtil.isBlank(impStr)) {
+                try {
+                    LocalDate d = LocalDate.parse(impStr);
+                    if (!d.isAfter(LocalDate.now())) impDate = d; // chặn ngày nhập ở tương lai
+                } catch (Exception ignored) {}
+            }
+            b.setImportDate(impDate);
+        }
         if (!isNew) b.setBatchId(Integer.parseInt(bidStr));
 
         Account adminAcc = (Account) req.getSession(false).getAttribute("adminAccount");
@@ -474,9 +547,21 @@ public class MedicineServlet extends HttpServlet {
             return;
         }
 
-        AuditHelper.log(req, isNew ? "Nhập lô thuốc" : "Sửa lô thuốc", "Batch",
-                (isNew ? "Nhập lô " : "Sửa lô ") + batchNo + (isNew ? " — SL: " + qty : ""));
-        resp.sendRedirect(base + "&msg=" + (isNew ? "batch-added" : "batch-updated"));
+        if (isNew) {
+            // Nhập lô mới → đã ghi vào PHIẾU NHẬP dạng PENDING (chưa cộng kho).
+            // Chuyển sang chi tiết đơn để admin bấm "Xác nhận Hàng Đã Tới".
+            int poId = result.getData() != null ? result.getData().getPoId() : 0;
+            AuditHelper.log(req, "Tạo phiếu nhập (chờ hàng)", "PurchaseOrder", poId,
+                    "Nhập lô " + batchNo + " — SL: " + qty + " (PENDING, chưa cộng kho)");
+            if (poId > 0) {
+                resp.sendRedirect(req.getContextPath() + "/purchase-orders?action=detail&id=" + poId + "&msg=po-pending");
+            } else {
+                resp.sendRedirect(base + "&msg=batch-added");
+            }
+            return;
+        }
+        AuditHelper.log(req, "Sửa lô thuốc", "Batch", "Sửa lô " + batchNo);
+        resp.sendRedirect(base + "&msg=batch-updated");
     }
 
     // ── HỦY LÔ (CANCELLED) ───────────────────────────────────────────────────
@@ -766,6 +851,78 @@ public class MedicineServlet extends HttpServlet {
 
     // ── AJAX: Tạo danh mục mới inline
     // ──────────────────────────────────────────────────────
+    // ── CRUD VỊ TRÍ KỆ (AJAX — dùng ngay trong form thuốc) ────────────────────
+
+    private void createShelfAjax(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        PrintWriter out = resp.getWriter();
+        String name  = req.getParameter("shelfName");
+        String notes = req.getParameter("locationNotes");
+        if (name == null || name.trim().isEmpty()) {
+            out.print("{\"ok\":false,\"error\":\"Tên kệ không được để trống!\"}"); return;
+        }
+        // Bắt trùng tên kệ (ShelfName UNIQUE trong DB — check trước cho thông báo đẹp)
+        for (com.medicare.entity.Shelf s : shelfDAO.findAll()) {
+            if (s.getShelfName() != null && s.getShelfName().equalsIgnoreCase(name.trim())) {
+                out.print("{\"ok\":false,\"error\":\"Kệ này đã tồn tại!\"}"); return;
+            }
+        }
+        com.medicare.entity.Shelf shelf = new com.medicare.entity.Shelf();
+        shelf.setShelfName(name.trim());
+        shelf.setLocationNotes(notes != null ? notes.trim() : null);
+        boolean ok = shelfDAO.insert(shelf);
+        if (ok) {
+            AuditHelper.log(req, "Tạo vị trí kệ", "Shelf", "Thêm kệ: " + name.trim());
+            // Lấy lại ID vừa tạo (insert không trả ID) — tìm theo tên unique
+            int newId = 0;
+            for (com.medicare.entity.Shelf s : shelfDAO.findAll()) {
+                if (s.getShelfName().equalsIgnoreCase(name.trim())) { newId = s.getShelfId(); break; }
+            }
+            out.print("{\"ok\":true,\"id\":" + newId + ",\"name\":\""
+                    + name.trim().replace("\"", "&quot;") + "\"}");
+        } else {
+            out.print("{\"ok\":false,\"error\":\"Lỗi khi lưu kệ!\"}");
+        }
+    }
+
+    private void updateShelfAjax(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        PrintWriter out = resp.getWriter();
+        int id = 0;
+        try { id = Integer.parseInt(req.getParameter("shelfId")); } catch (Exception ignored) {}
+        String name = req.getParameter("shelfName");
+        com.medicare.entity.Shelf shelf = shelfDAO.findById(id);
+        if (shelf == null || name == null || name.trim().isEmpty()) {
+            out.print("{\"ok\":false,\"error\":\"Dữ liệu không hợp lệ!\"}"); return;
+        }
+        shelf.setShelfName(name.trim());
+        String notes = req.getParameter("locationNotes");
+        if (notes != null) shelf.setLocationNotes(notes.trim());
+        boolean ok = shelfDAO.update(shelf);
+        if (ok) AuditHelper.log(req, "Sửa vị trí kệ", "Shelf", "Đổi tên kệ ID " + id + " → " + name.trim());
+        out.print(ok ? "{\"ok\":true}" : "{\"ok\":false,\"error\":\"Lỗi khi cập nhật (tên kệ có thể bị trùng)!\"}");
+    }
+
+    private void deleteShelfAjax(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        PrintWriter out = resp.getWriter();
+        int id = 0;
+        try { id = Integer.parseInt(req.getParameter("shelfId")); } catch (Exception ignored) {}
+        com.medicare.entity.Shelf shelf = shelfDAO.findById(id);
+        if (shelf == null) { out.print("{\"ok\":false,\"error\":\"Không tìm thấy kệ!\"}"); return; }
+        int inUse = shelfDAO.countMedicinesOnShelf(id);
+        if (inUse > 0) {
+            out.print("{\"ok\":false,\"error\":\"Không thể xóa — còn " + inUse
+                    + " thuốc đang đặt trên kệ này. Hãy chuyển thuốc sang kệ khác trước!\"}"); return;
+        }
+        boolean ok = shelfDAO.delete(id);
+        if (ok) AuditHelper.log(req, "Xóa vị trí kệ", "Shelf", "Xóa kệ: " + shelf.getShelfName());
+        out.print(ok ? "{\"ok\":true}" : "{\"ok\":false,\"error\":\"Lỗi khi xóa kệ!\"}");
+    }
+
     private void createCategoryAjax(HttpServletRequest req, HttpServletResponse resp)
             throws IOException {
         resp.setContentType("application/json;charset=UTF-8");

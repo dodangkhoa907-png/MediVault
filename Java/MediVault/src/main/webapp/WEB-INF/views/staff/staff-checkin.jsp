@@ -637,6 +637,8 @@ async function openFaceCameraModal() {
 function startFaceCiAutoDetect() {
     const video = document.getElementById('faceCheckinVideo');
     const canvas = document.getElementById('faceCheckinCanvas');
+    const REQUIRED_SAMPLES = 3;   // thu 3 khung liên tiếp → descriptor trung bình ổn định hơn 1 khung đơn
+    let samples = [];
 
     async function loop() {
         if (!faceCiStream) return;
@@ -648,17 +650,30 @@ function startFaceCiAutoDetect() {
             const ctx = canvas.getContext('2d');
 
             const result = await faceapi
-                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
                 .withFaceLandmarks()
                 .withFaceDescriptor();
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (result) {
                 faceapi.draw.drawDetections(canvas, [result.detection]);
-                // Phát hiện ổn định → tự động xác minh luôn (không cần bấm nút)
-                faceCiBusy = true;
-                await verifyAndSubmit(Array.from(result.descriptor));
-                faceCiBusy = false;
+                samples.push(Array.from(result.descriptor));
+                const statusEl = document.getElementById('faceCheckinStatus');
+                if (samples.length < REQUIRED_SAMPLES) {
+                    statusEl.textContent = 'Đang quét khuôn mặt… (' + samples.length + '/' + REQUIRED_SAMPLES + ')';
+                } else {
+                    // Đủ mẫu → tính descriptor trung bình rồi gửi verify
+                    const dim = samples[0].length;
+                    const avg = new Array(dim).fill(0);
+                    for (const s of samples) for (let i = 0; i < dim; i++) avg[i] += s[i];
+                    for (let i = 0; i < dim; i++) avg[i] /= samples.length;
+                    samples = [];
+                    faceCiBusy = true;
+                    await verifyAndSubmit(avg);
+                    faceCiBusy = false;
+                }
+            } else {
+                samples = [];  // mất mặt giữa chừng → thu lại từ đầu
             }
         }
         faceCiDetectLoopId = requestAnimationFrame(loop);
@@ -703,6 +718,9 @@ async function verifyAndSubmit(descriptor) {
         } else {
             const reasonMap = {
                 'no_match': '⚠️ Không khớp khuôn mặt. Vui lòng thử lại.',
+                'reenroll_pending': '⏳ Bạn đang có yêu cầu đổi khuôn mặt chờ duyệt — chưa thể điểm danh bằng khuôn mặt.',
+                'impersonation': '🚫 Khuôn mặt không phải chủ tài khoản này!',
+                'ambiguous': '⚠️ Khuôn mặt quá giống người khác — nhìn thẳng camera, đủ sáng và thử lại.',
                 'no_face_enrolled': '❌ Chưa đăng ký khuôn mặt.',
                 'missing_descriptor': '⚠️ Không nhận diện được khuôn mặt.',
                 'invalid_descriptor': '❌ Dữ liệu khuôn mặt lỗi.'

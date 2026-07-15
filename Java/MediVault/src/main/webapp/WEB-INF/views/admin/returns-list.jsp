@@ -94,7 +94,7 @@ tbody tr:hover td{background:#F7FBFF}
     <div class="topbar-title">↩️ Trả hàng</div>
     <div class="topbar-right">
       <span class="topbar-pill">📋 ${totalCount} phiếu</span>
-      <a href="${pageContext.request.contextPath}/dashboard" class="topbar-user">
+      <a href="${pageContext.request.contextPath}/admin-profile" class="topbar-user">
         <div class="topbar-av"><%= initials %></div>
         <span class="topbar-name"><%= fullName %></span>
       </a>

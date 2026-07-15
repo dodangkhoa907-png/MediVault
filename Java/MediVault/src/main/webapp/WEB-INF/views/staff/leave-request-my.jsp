@@ -36,6 +36,27 @@ body{display:flex}
 .topbar-right{margin-left:auto}
 .btn-new{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:var(--main);color:#fff;border:none;border-radius:9px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;box-shadow:0 3px 10px rgba(109,40,217,.25);transition:all .18s}
 .btn-new:hover{background:#5B21B6;transform:translateY(-1px)}
+.btn-emergency{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:linear-gradient(135deg,#f97316,#dc2626);color:#fff;border:none;border-radius:9px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 3px 12px rgba(220,38,38,.3);transition:all .18s}
+.btn-emergency:hover{transform:translateY(-1px);filter:brightness(1.05)}
+/* Emergency modal */
+.em-overlay{display:none;position:fixed;inset:0;background:rgba(18,8,42,.55);z-index:9700;align-items:center;justify-content:center;padding:20px}
+.em-overlay.open{display:flex}
+.em-modal{background:#fff;border-radius:16px;max-width:480px;width:100%;max-height:92vh;overflow:auto;box-shadow:0 24px 70px rgba(0,0,0,.3)}
+.em-head{background:linear-gradient(135deg,#f97316,#dc2626);color:#fff;padding:18px 24px;border-radius:16px 16px 0 0}
+.em-head h3{margin:0;font-size:18px;font-weight:800}
+.em-head p{margin:4px 0 0;font-size:12.5px;opacity:.9}
+.em-body{padding:20px 24px}
+.em-lbl{font-size:13px;font-weight:700;color:var(--ink);display:block;margin:14px 0 6px}
+.em-lbl:first-child{margin-top:0}
+.em-input,.em-select,.em-textarea{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-family:inherit;font-size:14px;box-sizing:border-box}
+.em-textarea{resize:vertical;min-height:64px}
+.em-file-drop{border:2px dashed var(--border);border-radius:10px;padding:16px;text-align:center;cursor:pointer;color:var(--muted);font-size:13px}
+.em-file-drop:hover{border-color:var(--main);background:var(--soft)}
+.em-preview{max-width:100%;max-height:160px;border-radius:8px;margin-top:10px;display:none}
+.em-err{color:var(--red);font-size:12.5px;margin-top:8px;display:none}
+.em-actions{display:flex;gap:10px;margin-top:20px}
+.em-btn-cancel{flex:1;background:#f1f5f9;color:#475569;border:none;border-radius:10px;padding:11px;font-weight:700;cursor:pointer;font-family:inherit}
+.em-btn-submit{flex:1;background:linear-gradient(135deg,#f97316,#dc2626);color:#fff;border:none;border-radius:10px;padding:11px;font-weight:800;cursor:pointer;font-family:inherit}
 .content{padding:24px 28px;flex:1}
 
 /* ── TOAST ── */
@@ -130,15 +151,21 @@ tbody tr:hover td{background:#F8F5FF}
   <c:if test="${not empty param.msg}">
     <c:choose>
       <c:when test="${param.msg=='submitted'}"><div class="toast toast-ok"  id="toast">✅ Đã gửi đơn xin nghỉ!</div></c:when>
+      <c:when test="${param.msg=='emergency-submitted'}"><div class="toast toast-ok" id="toast">✅ Đã gửi đơn nghỉ đột xuất! Vui lòng liên hệ trực tiếp Cửa hàng trưởng.</div></c:when>
       <c:when test="${param.msg=='error'}">    <div class="toast toast-err" id="toast">❌ Có lỗi xảy ra!</div></c:when>
       <c:when test="${param.msg=='exists'}">   <div class="toast toast-warn"id="toast">⚠️ Đã có đơn nghỉ ngày này!</div></c:when>
+      <c:when test="${param.msg=='not-emergency'}"><div class="toast toast-warn" id="toast">⚠️ Ca này không nằm trong 48h tới — dùng "Xin nghỉ mới" thông thường.</div></c:when>
+      <c:when test="${param.msg=='invalid'}">  <div class="toast toast-warn" id="toast">⚠️ Thiếu thông tin đơn nghỉ!</div></c:when>
     </c:choose>
   </c:if>
 
   <header class="topbar">
     <div class="topbar-icon">🏖️</div>
     <span class="topbar-title">Đơn nghỉ của tôi</span>
-    <div class="topbar-right">
+    <div class="topbar-right" style="display:flex;gap:10px;align-items:center">
+      <button type="button" class="btn-emergency" onclick="openEmergencyModal()">
+        🚨 Xin nghỉ đột xuất
+      </button>
       <a href="${pageContext.request.contextPath}/leave-requests?action=new&uid=<%= uid %>" class="btn-new">
         ➕ Xin nghỉ mới
       </a>
@@ -208,9 +235,130 @@ tbody tr:hover td{background:#F8F5FF}
   </div>
 </div>
 
+<!-- ── Modal: Xin nghỉ đột xuất ── -->
+<div class="em-overlay" id="emOverlay">
+  <div class="em-modal">
+    <div class="em-head">
+      <h3>🚨 Xin nghỉ đột xuất</h3>
+      <p>Chỉ dành cho ca làm việc trong vòng 48h tới. Nghỉ xa hơn hãy dùng "Xin nghỉ mới".</p>
+    </div>
+    <div class="em-body">
+      <form id="emForm">
+        <input type="hidden" name="action" value="submit-emergency">
+        <input type="hidden" name="uid" value="<%= uid %>">
+        <input type="hidden" name="evidenceData" id="emEvidenceData">
+
+        <label class="em-lbl">Chọn ca cần nghỉ <span style="color:var(--red)">*</span></label>
+        <c:choose>
+          <c:when test="${empty emergencyShifts}">
+            <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px;font-size:13px;color:#9a3412">
+              Bạn không có ca nào trong 48h tới để xin nghỉ đột xuất.
+            </div>
+          </c:when>
+          <c:otherwise>
+            <select class="em-select" name="scheduleId" id="emSchedule" required>
+              <option value="">— Chọn ca —</option>
+              <c:forEach var="s" items="${emergencyShifts}">
+                <option value="${s.scheduleId}">
+                  ${s.workDate} · ${s.shiftTypeName} (${s.startHour}h–${s.endHour}h)<c:if test="${s.posStation>0}"> · Quầy ${s.posStation}</c:if>
+                </option>
+              </c:forEach>
+            </select>
+          </c:otherwise>
+        </c:choose>
+
+        <label class="em-lbl">Lý do nhanh <span style="color:var(--red)">*</span></label>
+        <select class="em-select" id="emReasonQuick" onchange="emSyncReason()">
+          <option value="">— Chọn lý do —</option>
+          <option value="Ốm đau">🤒 Ốm đau</option>
+          <option value="Có tang">🕯️ Có tang</option>
+          <option value="Tai nạn">🚑 Tai nạn</option>
+          <option value="Việc gia đình khẩn cấp">🏠 Việc gia đình khẩn</option>
+          <option value="Khác">✏️ Khác</option>
+        </select>
+
+        <label class="em-lbl">Chi tiết <span style="color:var(--red)">*</span></label>
+        <textarea class="em-textarea" name="reason" id="emReason" placeholder="Mô tả cụ thể tình huống…" required></textarea>
+
+        <label class="em-lbl">Ảnh minh chứng (tùy chọn)</label>
+        <div class="em-file-drop" onclick="document.getElementById('emFile').click()">
+          📷 Bấm để tải ảnh (đơn thuốc, ảnh sốt…)
+        </div>
+        <input type="file" id="emFile" accept="image/*" style="display:none" onchange="emHandleFile(this)">
+        <img id="emPreview" class="em-preview" alt="preview">
+
+        <div class="em-err" id="emErr"></div>
+
+        <div class="em-actions">
+          <button type="button" class="em-btn-cancel" onclick="closeEmergencyModal()">Hủy</button>
+          <button type="submit" class="em-btn-submit" id="emSubmitBtn"
+                  <c:if test="${empty emergencyShifts}">disabled</c:if>>Gửi yêu cầu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script>
 const t = document.getElementById('toast');
 if (t) setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3500);
+
+const EM_CTX = document.querySelector('meta[name="ctx"]').content;
+function openEmergencyModal(){ document.getElementById('emOverlay').classList.add('open'); }
+function closeEmergencyModal(){ document.getElementById('emOverlay').classList.remove('open'); }
+document.getElementById('emOverlay').addEventListener('click', e => {
+  if (e.target.id === 'emOverlay') closeEmergencyModal();
+});
+
+function emSyncReason(){
+  const q = document.getElementById('emReasonQuick').value;
+  const ta = document.getElementById('emReason');
+  if (q && q !== 'Khác' && !ta.value.trim()) ta.value = q + ': ';
+  ta.focus();
+}
+
+// Resize ảnh client-side rồi lưu base64 để gửi kèm (tránh payload lớn)
+function emHandleFile(input){
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 900;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX){ if (w > h){ h = h*MAX/w; w = MAX; } else { w = w*MAX/h; h = MAX; } }
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(img, 0, 0, w, h);
+      const dataUrl = cv.toDataURL('image/jpeg', 0.72);
+      document.getElementById('emEvidenceData').value = dataUrl;
+      const pv = document.getElementById('emPreview');
+      pv.src = dataUrl; pv.style.display = 'block';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+document.getElementById('emForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const err = document.getElementById('emErr');
+  const sched = document.getElementById('emSchedule');
+  const reason = document.getElementById('emReason').value.trim();
+  if (!sched || !sched.value){ err.textContent='Vui lòng chọn ca cần nghỉ.'; err.style.display='block'; return; }
+  if (reason.length < 5){ err.textContent='Vui lòng nhập chi tiết lý do (≥5 ký tự).'; err.style.display='block'; return; }
+  err.style.display='none';
+  const btn = document.getElementById('emSubmitBtn');
+  btn.disabled = true; btn.textContent = '⏳ Đang gửi…';
+  // Submit thật qua form POST (giữ redirect + toast từ server)
+  const f = document.createElement('form');
+  f.method = 'POST'; f.action = EM_CTX + '/leave-requests';
+  new FormData(this).forEach((v,k) => {
+    const inp = document.createElement('input'); inp.type='hidden'; inp.name=k; inp.value=v; f.appendChild(inp);
+  });
+  document.body.appendChild(f); f.submit();
+});
 </script>
 </body>
 </html>

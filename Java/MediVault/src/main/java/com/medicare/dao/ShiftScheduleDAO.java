@@ -295,9 +295,23 @@ public class ShiftScheduleDAO implements IShiftScheduleDAO {
     }
 
     // ── DELETE ────────────────────────────────────────────────────────────────
+    /**
+     * Hủy ca — CHỈ khi nhân viên CHƯA vào ca. Ca đã check-in (CONFIRMED/LATE)
+     * hoặc đã có bản ghi điểm danh thì KHÔNG được hủy (chống mất dấu ca đang chạy
+     * và giữ nguyên lịch sử chấm công).
+     */
     @Override
     public boolean cancel(int scheduleId) {
-        return updateStatus(scheduleId, "CANCELLED");
+        String sql = "UPDATE ShiftSchedules SET Status='CANCELLED' "
+                + "WHERE ScheduleID=? "
+                + "AND Status IN ('SCHEDULED','LEAVE_PENDING') "
+                + "AND NOT EXISTS (SELECT 1 FROM Attendance WHERE ScheduleID=?)";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, scheduleId);
+            ps.setInt(2, scheduleId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
     }
 
     @Override
@@ -345,5 +359,77 @@ public class ShiftScheduleDAO implements IShiftScheduleDAO {
             e.printStackTrace();
             return true; // an toàn: nếu lỗi DB thì chặn xóa
         }
+    }
+
+    // ── ĐIỀU PHỐI NGƯỜI THAY (nghỉ đột xuất) ──────────────────────────────────
+
+    /**
+     * Danh sách nhân viên "Off" ngày đó — có thể được điều phối làm thay.
+     * Điều kiện: active, không phải admin, không bị xóa, và KHÔNG có lịch ca
+     * (non-cancelled) nào trong ngày đó. Loại trừ chính người xin nghỉ.
+     */
+    public List<com.medicare.entity.Account> findAvailableSubstitutes(LocalDate date, int excludeAccountId) {
+        List<com.medicare.entity.Account> list = new ArrayList<>();
+        String sql =
+                "SELECT a.AccountID, a.FullName, a.Username, a.RoleID, a.Phone "
+              + "FROM Accounts a "
+              + "WHERE a.RoleID <> 1 AND a.IsActive = 1 AND a.IsDeleted = 0 "
+              + "AND a.AccountID <> ? "
+              + "AND NOT EXISTS ("
+              + "   SELECT 1 FROM ShiftSchedules ss "
+              + "   WHERE ss.AccountID = a.AccountID AND ss.WorkDate = ? "
+              + "   AND ss.Status <> 'CANCELLED') "
+              + "ORDER BY a.FullName";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, excludeAccountId);
+            ps.setDate(2, Date.valueOf(date));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    com.medicare.entity.Account a = new com.medicare.entity.Account();
+                    a.setAccountId(rs.getInt("AccountID"));
+                    a.setFullName(rs.getNString("FullName"));
+                    a.setUsername(rs.getString("Username"));
+                    a.setRoleId(rs.getInt("RoleID"));
+                    a.setPhone(rs.getString("Phone"));
+                    list.add(a);
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
+    }
+
+    /**
+     * Tạo lịch ca cho người làm thay — copy nguyên ca gốc (giờ giấc, quầy POS,
+     * tiền đầu ca, mức phạt) sang tài khoản người thay, status SCHEDULED.
+     * @return ScheduleID mới, hoặc -1 nếu lỗi (VD người thay đã có ca trùng).
+     */
+    public int assignSubstitute(ShiftSchedule original, int substituteAccountId, int createdBy) {
+        String sql =
+                "INSERT INTO ShiftSchedules "
+              + "(AccountID, ShiftTypeID, WorkDate, PlannedStart, PlannedEnd, "
+              + " LateToleranceMinutes, Status, Notes, CreatedBy, OpeningCash, "
+              + " PenaltyRatePerMinute, PosStation) "
+              + "VALUES (?,?,?,?,?,?, 'SCHEDULED', ?, ?, ?, ?, ?)";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setInt(1, substituteAccountId);
+            ps.setInt(2, original.getShiftTypeId());
+            ps.setDate(3, Date.valueOf(original.getWorkDate()));
+            ps.setTimestamp(4, Timestamp.valueOf(original.getPlannedStart()));
+            ps.setTimestamp(5, Timestamp.valueOf(original.getPlannedEnd()));
+            ps.setInt(6, original.getLateToleranceMinutes());
+            ps.setNString(7, "[Làm thay ca nghỉ đột xuất]");
+            ps.setInt(8, createdBy);
+            if (original.getOpeningCash() != null) ps.setBigDecimal(9, original.getOpeningCash());
+            else ps.setNull(9, Types.DECIMAL);
+            ps.setBigDecimal(10, original.getPenaltyRatePerMinute());
+            ps.setInt(11, original.getPosStation());
+            if (ps.executeUpdate() == 0) return -1;
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return -1;
     }
 }

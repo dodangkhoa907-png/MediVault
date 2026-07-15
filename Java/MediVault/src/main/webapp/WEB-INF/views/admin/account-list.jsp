@@ -147,7 +147,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
   <header class="topbar">
     <span class="topbar-title">👤 Quản lý tài khoản</span>
     <div class="topbar-right">
-      <a href="${pageContext.request.contextPath}/dashboard" class="topbar-user" style="font-size:13px;font-weight:500;color:var(--muted);text-decoration:none;padding:6px 12px;border:1.5px solid var(--border);border-radius:8px;">← Dashboard</a>
+      <a href="${pageContext.request.contextPath}/admin-profile" class="topbar-user" style="font-size:13px;font-weight:500;color:var(--muted);text-decoration:none;padding:6px 12px;border:1.5px solid var(--border);border-radius:8px;">← Dashboard</a>
       <div class="topbar-user">
         <div class="topbar-av"><%= initials %></div>
         <span class="topbar-name"><%= fullName %></span>
@@ -171,6 +171,42 @@ body{display:flex;background:var(--surface);color:var(--ink)}
       <a href="${pageContext.request.contextPath}/accounts" class="section-tab active">👤 Quản lý nhân viên</a>
       <a href="${pageContext.request.contextPath}/customers" class="section-tab">👥 Khách hàng</a>
     </div>
+
+    <%-- YÊU CẦU ĐĂNG KÝ LẠI KHUÔN MẶT --%>
+    <%
+      java.util.List<com.medicare.entity.Account> pendingRe =
+          (java.util.List<com.medicare.entity.Account>) request.getAttribute("pendingReenroll");
+      if (pendingRe != null && !pendingRe.isEmpty()) {
+    %>
+    <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:14px;padding:18px 20px;margin-bottom:22px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <span style="font-size:20px">🔄</span>
+        <b style="font-size:15px;color:#b45309">Yêu cầu đăng ký lại khuôn mặt (<%= pendingRe.size() %>)</b>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <% for (com.medicare.entity.Account rq : pendingRe) {
+             String rn = rq.getFullName()!=null? rq.getFullName() : rq.getUsername();
+             String rreason = rq.getFaceReenrollReason()!=null? rq.getFaceReenrollReason() : "(không nêu)";
+        %>
+        <div style="background:#fff;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
+          <div style="min-width:220px;flex:1">
+            <div style="font-weight:700;color:#0f172a"><%= rn %> <span style="font-weight:400;color:#94a3b8;font-size:12px">@<%= rq.getUsername() %> · ID <%= rq.getAccountId() %></span></div>
+            <div style="font-size:13px;color:#78716c;margin-top:3px"><b>Lý do:</b> <%= rreason %></div>
+            <% if (rq.getFaceReenrollRequestedAt()!=null) { %>
+            <div style="font-size:11.5px;color:#a8a29e;margin-top:2px">Gửi lúc: <%= rq.getFaceReenrollRequestedAt().getDayOfMonth()+"/"+rq.getFaceReenrollRequestedAt().getMonthValue()+"/"+rq.getFaceReenrollRequestedAt().getYear()+" "+String.format("%02d:%02d", rq.getFaceReenrollRequestedAt().getHour(), rq.getFaceReenrollRequestedAt().getMinute()) %></div>
+            <% } %>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button type="button" onclick="reenrollDecision(<%= rq.getAccountId() %>,'approve','<%= rn.replace("'","\\'") %>')"
+                    style="background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">✅ Duyệt</button>
+            <button type="button" onclick="reenrollDecision(<%= rq.getAccountId() %>,'reject','<%= rn.replace("'","\\'") %>')"
+                    style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:8px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">✕ Từ chối</button>
+          </div>
+        </div>
+        <% } %>
+      </div>
+    </div>
+    <% } %>
 
     <%-- STATS --%>
     <%
@@ -373,6 +409,36 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 <script>
 const t = document.querySelector('.toast');
 if (t) setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .4s'; setTimeout(()=>t.remove(),400); }, 3000);
+
+// ── DUYỆT / TỪ CHỐI yêu cầu đăng ký lại khuôn mặt ──
+async function reenrollDecision(accountId, action, name) {
+  let note = '';
+  if (action === 'approve') {
+    if (!confirm('Duyệt yêu cầu đổi khuôn mặt của "' + name + '"?\n\nKhuôn mặt cũ sẽ bị XÓA và nhân viên phải đăng ký lại từ đầu. Hệ thống sẽ gửi email thông báo.')) return;
+  } else {
+    note = prompt('Từ chối yêu cầu của "' + name + '".\nNhập lý do (gửi kèm email cho nhân viên):', '');
+    if (note === null) return; // hủy
+  }
+  try {
+    const res = await fetch('${pageContext.request.contextPath}/face-reenroll', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ action: action, accountId: accountId, note: note })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      alert(action === 'approve'
+        ? '✅ Đã duyệt. Đã xóa khuôn mặt cũ và gửi email cho nhân viên đăng ký lại.'
+        : '✕ Đã từ chối và gửi email thông báo cho nhân viên.');
+      window.location.reload();
+    } else {
+      const map = { 'no_pending_request':'Yêu cầu không còn tồn tại (có thể đã xử lý).', 'unauthorized':'Phiên đăng nhập hết hạn.', 'account_not_found':'Không tìm thấy tài khoản.' };
+      alert('❌ ' + (map[data.reason] || ('Lỗi: ' + data.reason)));
+    }
+  } catch (e) {
+    alert('❌ Lỗi kết nối: ' + e.message);
+  }
+}
 
 // ── REALTIME FILTER ──────────────────────────────────────────
 function applyFilter() {

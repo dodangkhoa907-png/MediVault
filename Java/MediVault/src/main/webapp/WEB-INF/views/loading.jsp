@@ -156,25 +156,41 @@
   }
 
   // Hiện lại loading khi navigate sang trang mới
+  var navigating = false;   // chống hiện overlay nhiều lần khi bấm liên tục
+  var safetyTo   = null;    // tự ẩn overlay nếu điều hướng không xảy ra
   document.addEventListener('click', function(e) {
+    // Nếu click đã bị chặn (VD: bấm tab đang active) → KHÔNG hiện loading (tránh kẹt)
+    if (e.defaultPrevented) return;
     var a = e.target.closest('a[href]');
     if (!a) return;
-    var href = a.href;
+    var href = a.getAttribute('href');
     if (!href || href.startsWith('#') || href.startsWith('javascript')
-        || a.target === '_blank' || e.ctrlKey || e.metaKey) return;
-    // Chỉ hiện lại cho internal links
-    if (href.indexOf(window.location.hostname) !== -1 || href.startsWith('/')) {
+        || a.target === '_blank' || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+
+    var full = a.href;
+    var samePage = full.split('#')[0] === window.location.href.split('#')[0];
+    if (samePage) return; // cùng URL → không điều hướng thật → không hiện loading
+
+    if (full.indexOf(window.location.hostname) !== -1 || href.startsWith('/')) {
+      if (navigating) return;   // đang điều hướng rồi → bỏ qua các click sau
+      navigating = true;
+      clearInterval(iv);        // QUAN TRỌNG: xóa interval cũ trước khi tạo mới
       overlay.classList.remove('hide');
       overlay.style.opacity = '1';
       bar.style.opacity = '1';
       bar.style.width = '0%';
-      w = 0;
-      mi = 0;
+      w = 0; mi = 0;
       msg.textContent = 'Đang tải dữ liệu...';
       iv = setInterval(function() {
         if (w < 85) { w += (85 - w) * 0.08 + 0.5; bar.style.width = w + '%'; }
       }, 60);
+      // An toàn: nếu 6s chưa điều hướng xong (bị hủy, lỗi…) thì ẩn overlay, mở khóa
+      clearTimeout(safetyTo);
+      safetyTo = setTimeout(function() { navigating = false; done(); }, 6000);
     }
   });
+
+  // Trở lại trang bằng nút Back của trình duyệt (bfcache) → luôn ẩn overlay
+  window.addEventListener('pageshow', function() { navigating = false; clearInterval(iv); done(); });
 })();
 </script>

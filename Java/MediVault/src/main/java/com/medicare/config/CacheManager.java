@@ -21,24 +21,33 @@ import java.util.function.Supplier;
 public class CacheManager {
 
     // ── Caches với các TTL khác nhau ───────────────────────────────────────
+    // maximumSize giảm bớt để nhẹ RAM hơn (giá trị cache nhỏ, key ít) mà vẫn đủ dùng.
+
+    /** Cache 30 giây — badge sidebar (chuyển trang liên tục dùng cache, trễ 30s chấp nhận được) */
+    private static final Cache<String, Object> CACHE_SHORT = Caffeine.newBuilder()
+            .expireAfterWrite(30, TimeUnit.SECONDS)
+            .maximumSize(48)
+            .recordStats()
+            .build();
+
     /** Cache 3 phút — KPI counts, expiry lists (thay đổi khi có POS transaction) */
     private static final Cache<String, Object> CACHE_3MIN = Caffeine.newBuilder()
             .expireAfterWrite(3, TimeUnit.MINUTES)
-            .maximumSize(200)
+            .maximumSize(120)
             .recordStats()  // bật stats để debug
             .build();
 
     /** Cache 5 phút — Dashboard aggregations, payroll summary */
     private static final Cache<String, Object> CACHE_5MIN = Caffeine.newBuilder()
             .expireAfterWrite(5, TimeUnit.MINUTES)
-            .maximumSize(100)
+            .maximumSize(64)
             .recordStats()
             .build();
 
     /** Cache 15 phút — Audit log counts, report data */
     private static final Cache<String, Object> CACHE_15MIN = Caffeine.newBuilder()
             .expireAfterWrite(15, TimeUnit.MINUTES)
-            .maximumSize(50)
+            .maximumSize(32)
             .recordStats()
             .build();
 
@@ -51,6 +60,12 @@ public class CacheManager {
      * @param key     unique cache key, vd "dashboard.lowStock"
      * @param loader  lambda trả về giá trị cần cache
      */
+    /** Cache 30 giây — dùng cho badge sidebar (chống lag khi chuyển trang liên tục). */
+    @SuppressWarnings("unchecked")
+    public static <T> T getShort(String key, Supplier<T> loader) {
+        return (T) CACHE_SHORT.get(key, k -> loader.get());
+    }
+
     @SuppressWarnings("unchecked")
     public static <T> T get(String key, Supplier<T> loader) {
         return (T) CACHE_3MIN.get(key, k -> loader.get());
@@ -76,13 +91,15 @@ public class CacheManager {
 
     /** Xóa 1 key cụ thể khỏi tất cả caches */
     public static void invalidate(String key) {
+        CACHE_SHORT.invalidate(key);
         CACHE_3MIN.invalidate(key);
         CACHE_5MIN.invalidate(key);
         CACHE_15MIN.invalidate(key);
     }
 
-    /** Xóa tất cả keys bắt đầu bằng prefix (vd "dashboard.") */
+    /** Xóa tất cả keys bắt đầu bằng prefix (vd "dashboard.", "sidebar.") */
     public static void invalidatePrefix(String prefix) {
+        CACHE_SHORT.asMap().keySet().removeIf(k -> k.startsWith(prefix));
         CACHE_3MIN.asMap().keySet().removeIf(k -> k.startsWith(prefix));
         CACHE_5MIN.asMap().keySet().removeIf(k -> k.startsWith(prefix));
         CACHE_15MIN.asMap().keySet().removeIf(k -> k.startsWith(prefix));
@@ -90,6 +107,7 @@ public class CacheManager {
 
     /** Xóa toàn bộ cache */
     public static void invalidateAll() {
+        CACHE_SHORT.invalidateAll();
         CACHE_3MIN.invalidateAll();
         CACHE_5MIN.invalidateAll();
         CACHE_15MIN.invalidateAll();

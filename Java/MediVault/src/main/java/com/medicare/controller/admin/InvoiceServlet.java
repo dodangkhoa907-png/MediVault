@@ -51,9 +51,61 @@ public class InvoiceServlet extends HttpServlet {
         String action = req.getParameter("action");
         if ("detail".equals(action)) {
             showDetail(req, resp);
+        } else if ("detail-json".equals(action)) {
+            detailJson(req, resp);
         } else {
             showList(req, resp);
         }
+    }
+
+    // ── DETAIL JSON (cho offcanvas — xem tại chỗ không chuyển trang) ─────────
+    private void detailJson(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        java.io.PrintWriter out = resp.getWriter();
+        int id = parseIntOr(req.getParameter("id"), 0);
+        Invoice inv = invoiceDAO.findById(id);
+        if (inv == null) { out.print("{\"ok\":false}"); return; }
+
+        List<InvoiceDetail> details = detailDAO.findByInvoice(id);
+        BigDecimal grossTotal = BigDecimal.ZERO;
+        for (InvoiceDetail d : details)
+            if (d.getSubTotal() != null) grossTotal = grossTotal.add(d.getSubTotal());
+
+        Account  staff    = accountDAO.findById(inv.getAccountId());
+        Customer customer = inv.getCustomerId() != null ? customerDAO.findById(inv.getCustomerId()) : null;
+
+        StringBuilder items = new StringBuilder();
+        for (int i = 0; i < details.size(); i++) {
+            InvoiceDetail d = details.get(i);
+            if (i > 0) items.append(",");
+            items.append("{\"name\":\"").append(jsonEsc(d.getMedicineName()))
+                 .append("\",\"batch\":\"").append(jsonEsc(d.getBatchNumber()))
+                 .append("\",\"qty\":").append(d.getQuantity())
+                 .append(",\"price\":").append(d.getUnitPrice() != null ? d.getUnitPrice().toPlainString() : "0")
+                 .append(",\"subtotal\":").append(d.getSubTotal() != null ? d.getSubTotal().toPlainString() : "0")
+                 .append("}");
+        }
+
+        out.print("{\"ok\":true"
+                + ",\"id\":" + inv.getInvoiceId()
+                + ",\"code\":\"" + jsonEsc(inv.getInvoiceCode()) + "\""
+                + ",\"time\":\"" + (inv.getCreatedAt() != null
+                        ? inv.getCreatedAt().toString().replace("T", " ").substring(0, 16) : "") + "\""
+                + ",\"staff\":\"" + jsonEsc(staff != null ? staff.getFullName() : "ID " + inv.getAccountId()) + "\""
+                + ",\"customer\":\"" + jsonEsc(customer != null ? customer.getCustomerName() : "") + "\""
+                + ",\"customerPhone\":\"" + jsonEsc(customer != null && customer.getPhone() != null ? customer.getPhone() : "") + "\""
+                + ",\"method\":\"" + jsonEsc(inv.getPaymentMethod()) + "\""
+                + ",\"status\":\"" + jsonEsc(inv.getStatus()) + "\""
+                + ",\"station\":" + (inv.getPosStation() != null ? inv.getPosStation() : 0)
+                + ",\"gross\":" + grossTotal.toPlainString()
+                + ",\"discount\":" + (inv.getDiscountAmount() != null ? inv.getDiscountAmount().toPlainString() : "0")
+                + ",\"total\":" + (inv.getFinalAmount() != null ? inv.getFinalAmount().toPlainString() : "0")
+                + ",\"items\":[" + items + "]}");
+    }
+
+    private String jsonEsc(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     // ── LIST (lọc + phân trang) ─────────────────────────────────────────────

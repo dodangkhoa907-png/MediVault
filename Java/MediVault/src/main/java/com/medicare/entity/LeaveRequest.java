@@ -17,10 +17,13 @@ public class LeaveRequest {
     private BigDecimal deductAmount;
     private LocalDateTime requestedAt;
     private String notes;       // Ghi chú của admin khi duyệt
+    private String evidencePath;          // Ảnh minh chứng (nghỉ đột xuất)
+    private Integer substituteAccountId;  // Người làm thay (admin điều phối khi duyệt)
 
     // ── Fields join ──
     private String staffName;
     private String approvedByName;
+    private String substituteName;
 
     public LeaveRequest() {}
 
@@ -28,6 +31,7 @@ public class LeaveRequest {
     public boolean isPending()   { return "PENDING".equals(status); }
     public boolean isApproved()  { return "APPROVED".equals(status); }
     public boolean isRejected()  { return "REJECTED".equals(status); }
+    public boolean isSudden()    { return "SUDDEN".equals(leaveType); }
 
     public String getLeaveTypeLabel() {
         if (leaveType == null) return "";
@@ -69,4 +73,10 @@ public class LeaveRequest {
     public void setStaffName(String v)             { this.staffName = v; }
     public String getApprovedByName()              { return approvedByName; }
     public void setApprovedByName(String v)        { this.approvedByName = v; }
+    public String getEvidencePath()                { return evidencePath; }
+    public void setEvidencePath(String v)          { this.evidencePath = v; }
+    public Integer getSubstituteAccountId()        { return substituteAccountId; }
+    public void setSubstituteAccountId(Integer v)  { this.substituteAccountId = v; }
+    public String getSubstituteName()              { return substituteName; }
+    public void setSubstituteName(String v)        { this.substituteName = v; }
 }

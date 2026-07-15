@@ -120,6 +120,26 @@ public class AttendanceDAO implements IAttendanceDAO {
     }
 
     @Override
+    public Attendance findActiveByStation(int posStation) {
+        // SELECT_FULL đã LEFT JOIN ShiftSchedules ss — dùng luôn alias ss.PosStation.
+        // Tìm nhân viên đang check-in (chưa checkout) hôm nay tại quầy POS chỉ định.
+        String sql = SELECT_FULL +
+                "WHERE att.CheckOutTime IS NULL " +
+                "  AND ss.PosStation = ? " +
+                "  AND CAST(att.CheckInTime AS DATE) = CAST(GETDATE() AS DATE) " +
+                "ORDER BY att.CheckInTime DESC";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, posStation);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapRow(rs);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return null;
+    }
+
+
+    @Override
     public List<Attendance> findByAccountAndMonth(int accountId, int month, int year) {
         List<Attendance> list = new ArrayList<>();
         String sql = SELECT_FULL +

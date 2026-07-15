@@ -96,7 +96,7 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
             <thead><tr><th>Nhân viên</th><th>Ngày nghỉ</th><th>Loại</th><th>Lý do</th><th>Gửi lúc</th><th>Thao tác</th></tr></thead>
             <tbody>
               <c:forEach var="lr" items="${pending}">
-                <tr>
+                <tr <c:if test="${lr.leaveType=='SUDDEN'}">style="background:#fff7ed"</c:if>>
                   <td><strong>${lr.staffName}</strong></td>
                   <td style="font-weight:700">${lr.leaveDate}</td>
                   <td>
@@ -105,22 +105,38 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
                       <c:when test="${lr.leaveType=='SICK'}">badge-sick</c:when>
                       <c:when test="${lr.leaveType=='UNPAID'}">badge-unpaid</c:when>
                       <c:otherwise>badge-sudden</c:otherwise></c:choose>">
-                      ${lr.leaveType=='ANNUAL'?'Phép năm':lr.leaveType=='SICK'?'Ốm':lr.leaveType=='UNPAID'?'Không lương':'Đột xuất'}
+                      <c:if test="${lr.leaveType=='SUDDEN'}">🚨 </c:if>${lr.leaveType=='ANNUAL'?'Phép năm':lr.leaveType=='SICK'?'Ốm':lr.leaveType=='UNPAID'?'Không lương':'Đột xuất'}
                     </span>
                   </td>
-                  <td style="max-width:200px;font-size:12px;color:var(--muted)">${lr.reason}</td>
+                  <td style="max-width:220px;font-size:12px;color:var(--muted)">
+                    ${lr.reason}
+                    <c:if test="${not empty lr.evidencePath}">
+                      <br><a href="${pageContext.request.contextPath}/${lr.evidencePath}" target="_blank"
+                             style="color:var(--blue);font-weight:700;font-size:11.5px">📎 Xem ảnh minh chứng</a>
+                    </c:if>
+                  </td>
                   <td style="font-size:12px;color:var(--muted)">${fn:substring(lr.requestedAt.toString(),0,16)}</td>
-                  <td>
-                    <form method="post" action="${pageContext.request.contextPath}/leave-requests" style="display:inline">
-                      <input type="hidden" name="action" value="approve">
-                      <input type="hidden" name="id" value="${lr.leaveId}">
-                      <input type="hidden" name="deductAmount" value="0">
-                      <button type="submit" class="btn-sm btn-approve">✅ Duyệt</button>
-                    </form>
+                  <td style="white-space:nowrap">
+                    <c:choose>
+                      <c:when test="${lr.leaveType=='SUDDEN'}">
+                        <button type="button" class="btn-sm btn-primary"
+                                onclick="openSubstitute(${lr.leaveId}, '${fn:escapeXml(lr.staffName)}', '${lr.leaveDate}')">
+                          🔀 Duyệt &amp; tìm người thay
+                        </button>
+                      </c:when>
+                      <c:otherwise>
+                        <form method="post" action="${pageContext.request.contextPath}/leave-requests" style="display:inline">
+                          <input type="hidden" name="action" value="approve">
+                          <input type="hidden" name="id" value="${lr.leaveId}">
+                          <input type="hidden" name="deductAmount" value="0">
+                          <button type="submit" class="btn-sm btn-approve">✅ Duyệt</button>
+                        </form>
+                      </c:otherwise>
+                    </c:choose>
                     <form method="post" action="${pageContext.request.contextPath}/leave-requests" style="display:inline;margin-left:4px">
                       <input type="hidden" name="action" value="reject">
                       <input type="hidden" name="id" value="${lr.leaveId}">
-                      <button type="submit" class="btn-sm btn-reject" onclick="return confirm('Từ chối đơn này?')">✕ Từ chối</button>
+                      <button type="submit" class="btn-sm btn-reject" onclick="return confirm('Từ chối đơn này? Nếu nhân viên vẫn không đi làm sẽ bị tính vắng không phép.')">✕ Từ chối</button>
                     </form>
                   </td>
                 </tr>
@@ -131,7 +147,97 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
       </c:choose>
     </div>
   </div>
-</div><script>
+</div>
+
+<!-- Modal: Điều phối người thay -->
+<div id="subOverlay" style="display:none;position:fixed;inset:0;background:rgba(11,22,40,.55);z-index:9700;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:16px;max-width:520px;width:100%;max-height:92vh;overflow:auto;box-shadow:0 24px 70px rgba(0,0,0,.3)">
+    <div style="background:linear-gradient(135deg,#1558A8,#3ABDE0);color:#fff;padding:18px 24px;border-radius:16px 16px 0 0">
+      <h3 style="margin:0;font-size:18px;font-weight:800">🔀 Duyệt nghỉ đột xuất &amp; điều phối</h3>
+      <p id="subSubtitle" style="margin:4px 0 0;font-size:12.5px;opacity:.9"></p>
+    </div>
+    <div style="padding:20px 24px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px">Chọn người làm thay (nhân viên đang nghỉ hôm đó)</div>
+      <div id="subList" style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow:auto">
+        <div style="color:#7A90B0;font-size:13px">Đang tải danh sách…</div>
+      </div>
+      <label style="font-size:13px;font-weight:700;display:block;margin:16px 0 6px">Ghi chú (tùy chọn)</label>
+      <textarea id="subNote" rows="2" placeholder="VD: đã gọi điện xác nhận với người thay…"
+                style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-family:inherit;font-size:14px;box-sizing:border-box;resize:vertical"></textarea>
+      <div style="display:flex;gap:10px;margin-top:18px">
+        <button type="button" onclick="closeSubstitute()"
+                style="flex:1;background:#f1f5f9;color:#475569;border:none;border-radius:10px;padding:11px;font-weight:700;cursor:pointer;font-family:inherit">Hủy</button>
+        <button type="button" id="subApproveBtn" onclick="submitSubstitute()"
+                style="flex:2;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;border-radius:10px;padding:11px;font-weight:800;cursor:pointer;font-family:inherit">✅ Xác nhận duyệt</button>
+      </div>
+      <div style="font-size:11.5px;color:#94a3b8;margin-top:10px">Có thể duyệt mà không chọn người thay — khi đó ca sẽ trống, bạn tự sắp xếp sau.</div>
+    </div>
+  </div>
+</div>
+
+<script>
 const t=document.getElementById('toast');
 if(t) setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),400)},3500);
+
+const SUB_CTX = '${pageContext.request.contextPath}';
+let _subLeaveId = 0, _subSelected = 0;
+
+function openSubstitute(leaveId, staffName, date){
+  _subLeaveId = leaveId; _subSelected = 0;
+  document.getElementById('subSubtitle').textContent = staffName + ' · nghỉ ngày ' + date;
+  document.getElementById('subNote').value = '';
+  document.getElementById('subApproveBtn').textContent = '✅ Xác nhận duyệt';
+  const list = document.getElementById('subList');
+  list.innerHTML = '<div style="color:#7A90B0;font-size:13px">Đang tải danh sách…</div>';
+  document.getElementById('subOverlay').style.display = 'flex';
+
+  fetch(SUB_CTX + '/leave-requests?action=substitutes&id=' + leaveId)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.ok){ list.innerHTML = '<div style="color:#DC2626;font-size:13px">Lỗi tải danh sách.</div>'; return; }
+      if (!data.substitutes.length){
+        list.innerHTML = '<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px;font-size:13px;color:#9a3412">Không có nhân viên nào rảnh hôm đó. Bạn vẫn có thể duyệt (ca để trống).</div>';
+        return;
+      }
+      list.innerHTML = '';
+      data.substitutes.forEach(s => {
+        const div = document.createElement('div');
+        div.style.cssText = 'border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:.15s';
+        div.dataset.id = s.accountId;
+        div.innerHTML = '<div><div style="font-weight:700;color:#0B1628">' + s.name +
+          '</div><div style="font-size:12px;color:#7A90B0">' + s.role +
+          (s.phone ? ' · ' + s.phone : '') + '</div></div>' +
+          '<div class="sub-check" style="font-size:18px;color:#059669;visibility:hidden">✓</div>';
+        div.onclick = () => {
+          document.querySelectorAll('#subList > div').forEach(d => {
+            d.style.borderColor = 'var(--border)'; d.style.background = '#fff';
+            const c = d.querySelector('.sub-check'); if (c) c.style.visibility = 'hidden';
+          });
+          div.style.borderColor = '#059669'; div.style.background = '#ECFDF5';
+          const c = div.querySelector('.sub-check'); if (c) c.style.visibility = 'visible';
+          _subSelected = s.accountId;
+          document.getElementById('subApproveBtn').textContent = '✅ Duyệt & gán ' + s.name;
+        };
+        list.appendChild(div);
+      });
+    })
+    .catch(() => { list.innerHTML = '<div style="color:#DC2626;font-size:13px">Lỗi kết nối.</div>'; });
+}
+
+function closeSubstitute(){ document.getElementById('subOverlay').style.display = 'none'; }
+document.getElementById('subOverlay').addEventListener('click', e => {
+  if (e.target.id === 'subOverlay') closeSubstitute();
+});
+
+function submitSubstitute(){
+  const btn = document.getElementById('subApproveBtn');
+  btn.disabled = true; btn.textContent = '⏳ Đang xử lý…';
+  const f = document.createElement('form');
+  f.method = 'POST'; f.action = SUB_CTX + '/leave-requests';
+  const fields = { action:'approve-sudden', id:_subLeaveId, substituteId:_subSelected, notes:document.getElementById('subNote').value };
+  Object.keys(fields).forEach(k => {
+    const i = document.createElement('input'); i.type='hidden'; i.name=k; i.value=fields[k]; f.appendChild(i);
+  });
+  document.body.appendChild(f); f.submit();
+}
 </script></body></html>

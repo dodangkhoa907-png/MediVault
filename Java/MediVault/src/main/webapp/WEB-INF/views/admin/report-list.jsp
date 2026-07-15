@@ -40,6 +40,17 @@
     Double deductPct      = (Double) request.getAttribute("deductPct");
 
     boolean profitPositive = grossProfit.compareTo(java.math.BigDecimal.ZERO) >= 0;
+
+    // ── Giá trị dẫn xuất cho card 3D (hover chi tiết) ──
+    java.util.function.Function<java.math.BigDecimal,String> vnd = v ->
+        java.text.NumberFormat.getInstance(new java.util.Locale("vi","VN"))
+            .format(v != null ? v.longValue() : 0L) + "đ";
+    long   _avgOrderL   = invoiceCount > 0 ? netRevenue.longValue() / invoiceCount : 0L;
+    String avgOrder     = java.text.NumberFormat.getInstance(new java.util.Locale("vi","VN")).format(_avgOrderL) + "đ";
+    double profitMargin = netRevenue.compareTo(java.math.BigDecimal.ZERO) > 0
+        ? grossProfit.doubleValue() / netRevenue.doubleValue() * 100 : 0;
+    double cogsPctOfNet = netRevenue.compareTo(java.math.BigDecimal.ZERO) > 0
+        ? cogs.doubleValue() / netRevenue.doubleValue() * 100 : 0;
 %>
 <%!
     /** Badge nhỏ "▲ 12.4% so tháng trước" — null nếu tháng trước không có dữ liệu để so sánh. */
@@ -115,13 +126,45 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .month-filter select{border:none;background:transparent;border-radius:8px;padding:7px 10px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--ink);outline:none;cursor:pointer}
 .month-filter select:hover{background:var(--surface)}
 
-/* KPI STRIP */
-.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
-.kpi{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden}
-.kpi-icon{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.kpi-blue{background:#EFF6FF}.kpi-green{background:#ECFDF5}.kpi-amber{background:#FFFBEB}.kpi-purple{background:#F5F3FF}.kpi-red{background:#FEF2F2}
-.kpi-num{font-size:21px;font-weight:900;line-height:1.15;white-space:nowrap}
-.kpi-lbl{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
+/* ══════ KPI 3D CARDS ══════ */
+.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px;perspective:1200px}
+.kpi{
+  position:relative;border-radius:18px;padding:18px 20px;min-height:132px;
+  background:linear-gradient(145deg,#ffffff 0%,#f4f8ff 100%);
+  border:1px solid rgba(213,224,240,.7);
+  transform-style:preserve-3d;transition:transform .18s cubic-bezier(.2,.7,.3,1),box-shadow .18s;
+  box-shadow:0 1px 2px rgba(15,38,69,.06),0 8px 20px -12px rgba(15,38,69,.25);
+  cursor:default;overflow:hidden;will-change:transform}
+.kpi::before{content:'';position:absolute;inset:0;border-radius:18px;
+  background:radial-gradient(120px 80px at var(--mx,80%) var(--my,0%),rgba(58,189,224,.16),transparent 70%);
+  opacity:0;transition:opacity .2s;pointer-events:none}
+.kpi:hover{box-shadow:0 6px 12px rgba(15,38,69,.1),0 26px 46px -18px rgba(15,38,69,.45)}
+.kpi:hover::before{opacity:1}
+.kpi-top{display:flex;align-items:center;gap:12px;transform:translateZ(30px)}
+.kpi-icon{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;
+  box-shadow:0 6px 14px -6px rgba(15,38,69,.4);transform:translateZ(24px)}
+.kpi-blue{background:linear-gradient(135deg,#dbeafe,#bfdbfe)}
+.kpi-green{background:linear-gradient(135deg,#d1fae5,#a7f3d0)}
+.kpi-amber{background:linear-gradient(135deg,#fef3c7,#fde68a)}
+.kpi-purple{background:linear-gradient(135deg,#ede9fe,#ddd6fe)}
+.kpi-red{background:linear-gradient(135deg,#fee2e2,#fecaca)}
+.kpi-num{font-size:23px;font-weight:900;line-height:1.1;white-space:nowrap;letter-spacing:-.5px}
+.kpi-lbl{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
+.kpi-badge-wrap{margin-top:10px;transform:translateZ(20px)}
+/* Detail panel trượt lên khi hover */
+.kpi-detail{margin-top:12px;padding-top:11px;border-top:1px dashed rgba(122,144,176,.35);
+  display:flex;flex-direction:column;gap:5px;
+  max-height:0;opacity:0;overflow:hidden;transform:translateZ(15px);
+  transition:max-height .28s ease,opacity .22s ease,margin .28s,padding .28s}
+.kpi:hover .kpi-detail{max-height:120px;opacity:1}
+.kpi-drow{display:flex;justify-content:space-between;align-items:center;font-size:11.5px}
+.kpi-drow .dk{color:var(--muted);font-weight:600}
+.kpi-drow .dv{font-weight:800;color:var(--ink)}
+.kpi-hint{position:absolute;top:14px;right:16px;font-size:10px;color:#B8C4D9;font-weight:600;
+  opacity:1;transition:opacity .2s;transform:translateZ(10px)}
+.kpi:hover .kpi-hint{opacity:0}
+@media(max-width:1100px){.kpi-strip{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.kpi-strip{grid-template-columns:1fr}}
 
 /* SECTION HEAD */
 .section-head{display:flex;align-items:center;gap:8px;margin:26px 0 14px}
@@ -130,10 +173,11 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 
 /* CHART GRID */
 .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
-.chart-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.chart-card{background:linear-gradient(180deg,#FFFFFF 0%,#FAFCFF 100%);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:0 6px 24px rgba(15,38,69,.06);transition:transform .18s ease,box-shadow .18s ease}
+.chart-card:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(15,38,69,.11)}
 .chart-card-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .chart-card-head h3{font-size:13.5px;font-weight:700;color:var(--ink)}
-.chart-card-body{padding:14px 18px;height:240px}
+.chart-card-body{padding:14px 18px 16px;height:240px}
 .chart-legend{display:flex;gap:14px;padding:8px 18px 12px;flex-wrap:wrap}
 .leg-item{display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--muted)}
 .leg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
@@ -172,7 +216,7 @@ tbody tr:hover td{background:#F7FBFF}
     <div class="topbar-right">
       <span class="topbar-pill pill-period">🗓️ Tháng <%= repMonth %>/<%= repYear %></span>
       <span class="topbar-pill pill-invoice">🧾 <%= invoiceCount %> hóa đơn</span>
-      <a href="${pageContext.request.contextPath}/dashboard" class="topbar-user">
+      <a href="${pageContext.request.contextPath}/admin-profile" class="topbar-user">
         <div class="topbar-av"><%= initials %></div>
         <span class="topbar-name"><%= fullName %></span>
       </a>
@@ -200,30 +244,48 @@ tbody tr:hover td{background:#F7FBFF}
       </form>
     </div>
 
-    <%-- ════════════════ KPI TÀI CHÍNH ════════════════ --%>
-    <div class="kpi-strip">
-      <div class="kpi" style="flex-direction:column;align-items:flex-start;gap:2px">
-        <div style="display:flex;align-items:center;gap:12px;width:100%">
+    <%-- ════════════════ KPI TÀI CHÍNH — CARD 3D ════════════════ --%>
+    <div class="kpi-strip" id="kpiStrip">
+      <%-- 1. Doanh thu thuần --%>
+      <div class="kpi" data-tilt>
+        <span class="kpi-hint">Di chuột để xem chi tiết</span>
+        <div class="kpi-top">
           <div class="kpi-icon kpi-blue">💵</div>
           <div>
             <div class="kpi-num"><fmt:formatNumber value="${netRevenue}" type="number" maxFractionDigits="0"/>đ</div>
             <div class="kpi-lbl">Doanh thu thuần</div>
           </div>
         </div>
-        <%= trendBadgeHtml(netRevenuePct, false) %>
+        <div class="kpi-badge-wrap"><%= trendBadgeHtml(netRevenuePct, false) %></div>
+        <div class="kpi-detail">
+          <div class="kpi-drow"><span class="dk">Doanh thu gộp</span><span class="dv"><%= vnd.apply(grossRevenue) %></span></div>
+          <div class="kpi-drow"><span class="dk">Số hóa đơn</span><span class="dv"><fmt:formatNumber value="${invoiceCount}"/></span></div>
+          <div class="kpi-drow"><span class="dk">TB / hóa đơn</span><span class="dv"><%= avgOrder %></span></div>
+        </div>
       </div>
-      <div class="kpi" style="flex-direction:column;align-items:flex-start;gap:2px">
-        <div style="display:flex;align-items:center;gap:12px;width:100%">
+
+      <%-- 2. Giá vốn --%>
+      <div class="kpi" data-tilt>
+        <span class="kpi-hint">Di chuột để xem chi tiết</span>
+        <div class="kpi-top">
           <div class="kpi-icon kpi-amber">📦</div>
           <div>
             <div class="kpi-num"><fmt:formatNumber value="${cogs}" type="number" maxFractionDigits="0"/>đ</div>
             <div class="kpi-lbl">Giá vốn hàng bán</div>
           </div>
         </div>
-        <%= trendBadgeHtml(cogsPct, true) %>
+        <div class="kpi-badge-wrap"><%= trendBadgeHtml(cogsPct, true) %></div>
+        <div class="kpi-detail">
+          <div class="kpi-drow"><span class="dk">% trên DT thuần</span><span class="dv"><%= String.format("%.1f", cogsPctOfNet) %>%</span></div>
+          <div class="kpi-drow"><span class="dk">Doanh thu thuần</span><span class="dv"><%= vnd.apply(netRevenue) %></span></div>
+          <div class="kpi-drow"><span class="dk">Còn lại (LN gộp)</span><span class="dv" style="color:<%= profitPositive ? "#059669" : "#DC2626" %>"><%= vnd.apply(grossProfit) %></span></div>
+        </div>
       </div>
-      <div class="kpi" style="flex-direction:column;align-items:flex-start;gap:2px">
-        <div style="display:flex;align-items:center;gap:12px;width:100%">
+
+      <%-- 3. Lợi nhuận gộp --%>
+      <div class="kpi" data-tilt>
+        <span class="kpi-hint">Di chuột để xem chi tiết</span>
+        <div class="kpi-top">
           <div class="kpi-icon <%= profitPositive ? "kpi-green" : "kpi-red" %>">📈</div>
           <div>
             <div class="kpi-num" style="color:<%= profitPositive ? "#059669" : "#DC2626" %>">
@@ -232,17 +294,32 @@ tbody tr:hover td{background:#F7FBFF}
             <div class="kpi-lbl">Lợi nhuận gộp</div>
           </div>
         </div>
-        <%= trendBadgeHtml(grossProfitPct, false) %>
+        <div class="kpi-badge-wrap"><%= trendBadgeHtml(grossProfitPct, false) %></div>
+        <div class="kpi-detail">
+          <div class="kpi-drow"><span class="dk">Biên lợi nhuận</span><span class="dv" style="color:<%= profitPositive ? "#059669" : "#DC2626" %>"><%= String.format("%.1f", profitMargin) %>%</span></div>
+          <div class="kpi-drow"><span class="dk">Doanh thu thuần</span><span class="dv"><%= vnd.apply(netRevenue) %></span></div>
+          <div class="kpi-drow"><span class="dk">Trừ giá vốn</span><span class="dv" style="color:#DC2626">−<%= vnd.apply(cogs) %></span></div>
+        </div>
       </div>
-      <div class="kpi" style="flex-direction:column;align-items:flex-start;gap:2px">
-        <div style="display:flex;align-items:center;gap:12px;width:100%">
+
+      <%-- 4. Giảm giá & trả hàng --%>
+      <div class="kpi" data-tilt>
+        <span class="kpi-hint">Di chuột để xem chi tiết</span>
+        <div class="kpi-top">
           <div class="kpi-icon kpi-purple">🔻</div>
           <div>
             <div class="kpi-num"><fmt:formatNumber value="${discount + refund}" type="number" maxFractionDigits="0"/>đ</div>
             <div class="kpi-lbl">Giảm giá &amp; trả hàng</div>
           </div>
         </div>
-        <span style="font-size:10.5px;color:var(--muted);margin-top:5px"><% if (deductPct != null) { %><%= String.format("%.1f", deductPct) %>% doanh thu gộp<% } else { %>—<% } %></span>
+        <div class="kpi-badge-wrap">
+          <span style="font-size:10.5px;color:var(--muted)"><% if (deductPct != null) { %><%= String.format("%.1f", deductPct) %>% doanh thu gộp<% } else { %>—<% } %></span>
+        </div>
+        <div class="kpi-detail">
+          <div class="kpi-drow"><span class="dk">Giảm giá</span><span class="dv"><%= vnd.apply(discount) %></span></div>
+          <div class="kpi-drow"><span class="dk">Trả hàng</span><span class="dv"><%= vnd.apply(refund) %></span></div>
+          <div class="kpi-drow"><span class="dk">Doanh thu gộp</span><span class="dv"><%= vnd.apply(grossRevenue) %></span></div>
+        </div>
       </div>
     </div>
 
@@ -285,7 +362,10 @@ tbody tr:hover td{background:#F7FBFF}
       </div>
       <div class="chart-card">
         <div class="chart-card-head"><h3>💊 Doanh thu theo Nhóm thuốc</h3></div>
-        <div class="chart-card-body"><canvas id="catChart"></canvas></div>
+        <div class="chart-card-body" style="height:330px;display:flex;gap:14px;align-items:center;padding:16px 20px">
+          <div style="flex:1;min-width:0;height:100%;position:relative"><canvas id="catChart"></canvas></div>
+          <div id="catLegend" style="width:210px;flex-shrink:0;max-height:100%;overflow-y:auto;display:flex;flex-direction:column;gap:4px"></div>
+        </div>
       </div>
     </div>
 
@@ -302,21 +382,21 @@ tbody tr:hover td{background:#F7FBFF}
     </div>
 
     <div class="kpi-strip">
-      <div class="kpi">
-        <div class="kpi-icon kpi-blue">📥</div>
-        <div><div class="kpi-num" id="kpiOpening">—</div><div class="kpi-lbl">Tổng tiền đầu ca</div></div>
+      <div class="kpi" data-tilt>
+        <div class="kpi-top"><div class="kpi-icon kpi-blue">📥</div>
+        <div><div class="kpi-num" id="kpiOpening">—</div><div class="kpi-lbl">Tổng tiền đầu ca</div></div></div>
       </div>
-      <div class="kpi">
-        <div class="kpi-icon kpi-green">📤</div>
-        <div><div class="kpi-num" id="kpiClosing">—</div><div class="kpi-lbl">Tổng tiền cuối ca</div></div>
+      <div class="kpi" data-tilt>
+        <div class="kpi-top"><div class="kpi-icon kpi-green">📤</div>
+        <div><div class="kpi-num" id="kpiClosing">—</div><div class="kpi-lbl">Tổng tiền cuối ca</div></div></div>
       </div>
-      <div class="kpi">
-        <div class="kpi-icon kpi-amber">💰</div>
-        <div><div class="kpi-num" id="kpiDiff">—</div><div class="kpi-lbl">Chênh lệch</div></div>
+      <div class="kpi" data-tilt>
+        <div class="kpi-top"><div class="kpi-icon kpi-amber">💰</div>
+        <div><div class="kpi-num" id="kpiDiff">—</div><div class="kpi-lbl">Chênh lệch</div></div></div>
       </div>
-      <div class="kpi">
-        <div class="kpi-icon kpi-purple">📅</div>
-        <div><div class="kpi-num" id="kpiDays">—</div><div class="kpi-lbl">Ngày có ca</div></div>
+      <div class="kpi" data-tilt>
+        <div class="kpi-top"><div class="kpi-icon kpi-purple">📅</div>
+        <div><div class="kpi-num" id="kpiDays">—</div><div class="kpi-lbl">Ngày có ca</div></div></div>
       </div>
     </div>
 
@@ -463,21 +543,43 @@ function renderCashChart(data) {
 }
 
 // 📊 Grouped Column Chart — Doanh thu / Giá vốn / Lợi nhuận gộp theo ngày
+function vGrad(ctx, top, bottom) {
+  const g = ctx.createLinearGradient(0, 0, 0, 240);
+  g.addColorStop(0, top); g.addColorStop(1, bottom);
+  return g;
+}
+function hGrad(ctx, left, right, w) {
+  const g = ctx.createLinearGradient(0, 0, w || 600, 0);
+  g.addColorStop(0, left); g.addColorStop(1, right);
+  return g;
+}
+// Plugin: bóng đổ dưới cột → cảm giác 3D lơ lửng, dễ nhìn (không thô như khối 3D cứng)
+const barShadow = {
+  id: 'barShadow',
+  beforeDatasetsDraw(chart) {
+    const ctx = chart.ctx; ctx.save();
+    ctx.shadowColor = 'rgba(15,38,69,.22)';
+    ctx.shadowBlur = 9; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 5;
+  },
+  afterDatasetsDraw(chart) { chart.ctx.restore(); }
+};
 function renderFinanceChart(data) {
   const canvas = document.getElementById('financeChart');
   if (!canvas) return;
   if (financeChart) financeChart.destroy();
-  financeChart = new Chart(canvas.getContext('2d'), {
+  const ctx = canvas.getContext('2d');
+  financeChart = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: data.finLabels||[],
       datasets: [
-        { label:'Doanh thu',      data:data.finRevenue||[], backgroundColor:'#1558A8', borderRadius:4, maxBarThickness:18 },
-        { label:'Giá vốn',        data:data.finCogs||[],    backgroundColor:'#CBD5E1', borderRadius:4, maxBarThickness:18 },
-        { label:'Lợi nhuận gộp',  data:data.finProfit||[],  backgroundColor:'#059669', borderRadius:4, maxBarThickness:18 }
+        { label:'Doanh thu',      data:data.finRevenue||[], backgroundColor:vGrad(ctx,'#2B7BE0','#0E3E78'), borderRadius:5, maxBarThickness:18 },
+        { label:'Giá vốn',        data:data.finCogs||[],    backgroundColor:vGrad(ctx,'#E2E8F0','#B8C4D6'), borderRadius:5, maxBarThickness:18 },
+        { label:'Lợi nhuận gộp',  data:data.finProfit||[],  backgroundColor:vGrad(ctx,'#12B981','#047857'), borderRadius:5, maxBarThickness:18 }
       ]
     },
-    options: { ...baseChartOptions(), plugins:{ ...baseChartOptions().plugins, legend:{display:false} } }
+    options: { ...baseChartOptions(), plugins:{ ...baseChartOptions().plugins, legend:{display:false} } },
+    plugins: [barShadow]
   });
 }
 
@@ -503,17 +605,14 @@ function renderWaterfallChart(data) {
     },
     options: {
       responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ top:26 } },
       scales:{
         x:{ stacked:true, ticks:{font:{family:'Outfit',size:11},color:'#7A90B0'}, grid:{display:false} },
         y:{ stacked:true, ticks:{callback:v=>new Intl.NumberFormat('vi-VN',{notation:'compact'}).format(v)+'đ',font:{family:'Outfit',size:11},color:'#7A90B0'}, grid:{color:'rgba(0,0,0,0.04)'} }
       },
       plugins:{
         legend:{display:false},
-        tooltip:{
-          backgroundColor:'rgba(11,22,40,.92)',titleColor:'#fff',bodyColor:'#ccc',padding:10,cornerRadius:8,
-          filter: item => item.datasetIndex === 1,
-          callbacks:{ label: c => ' ' + fmt(c.raw) }
-        }
+        tooltip: niceTooltip({ filter: item => item.datasetIndex === 1, callbacks:{ label: c => ' ' + fmt(c.raw) } })
       }
     }
   });
@@ -544,28 +643,73 @@ function renderHorizontalBar(canvasId, existing, labels, values, setRef) {
   if (existing) existing.destroy();
   // Sắp giảm dần để cột cao nhất nằm trên cùng
   const items = (labels||[]).map((l,i)=>({l, v:(values||[])[i]||0})).sort((a,b)=>b.v-a.v);
-  const chart = new Chart(canvas.getContext('2d'), {
+  const ctx = canvas.getContext('2d');
+  const chart = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: items.map(it=>it.l),
-      datasets: [{ data: items.map(it=>it.v), backgroundColor:'#1558A8', borderRadius:5, maxBarThickness:20 }]
+      datasets: [{ data: items.map(it=>it.v),
+        backgroundColor: hGrad(ctx, '#3ABDE0', '#1558A8', canvas.width || 600),
+        hoverBackgroundColor: hGrad(ctx, '#5AD0EE', '#1E6FD0', canvas.width || 600),
+        borderRadius:6, maxBarThickness:22 }]
     },
     options: {
       indexAxis: 'y',
       responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ right:14 } },
       plugins:{
         legend:{display:false},
-        tooltip:{backgroundColor:'rgba(11,22,40,.92)',titleColor:'#fff',bodyColor:'#ccc',padding:10,cornerRadius:8,
-          callbacks:{label:c=>' '+fmt(c.raw)}}
+        tooltip: niceTooltip({ yAlign:'center', callbacks:{label:c=>' '+fmt(c.raw)} })
       },
       scales:{
         x:{ticks:{callback:v=>new Intl.NumberFormat('vi-VN',{notation:'compact'}).format(v)+'đ',font:{family:'Outfit',size:11},color:'#7A90B0'},grid:{color:'rgba(0,0,0,0.04)'}},
         y:{ticks:{font:{family:'Outfit',size:11.5},color:'#334155'},grid:{display:false}}
       }
-    }
+    },
+    plugins: [barShadow]
   });
   setRef(chart);
 }
+
+const fmtCompact = v => new Intl.NumberFormat('vi-VN',{notation:'compact'}).format(+v||0)+'đ';
+
+// Plugin: chữ giữa doughnut — MẶC ĐỊNH hiện TỔNG, khi HOVER lát nào thì
+// hiện tên + tiền + % của lát đó NGAY GIỮA vòng (không cần tooltip nổi che chắn).
+const doughnutCenterText = {
+  id: 'doughnutCenterText',
+  afterDraw(chart) {
+    if (chart.config.type !== 'doughnut') return;
+    const ds = chart.data.datasets[0]; if (!ds) return;
+    const data = ds.data || [];
+    const total = data.reduce((a,b)=>a+(+b||0), 0);
+    const area = chart.chartArea; if (!area) return;
+    const ctx = chart.ctx;
+    const cx = (area.left + area.right) / 2, cy = (area.top + area.bottom) / 2;
+
+    const active = chart.getActiveElements ? chart.getActiveElements() : [];
+    let big, small, color = '#0F2645';
+    if (active.length) {
+      const i = active[0].index;
+      const val = +data[i] || 0;
+      big = fmtCompact(val);
+      small = ((chart.data.labels[i] || '') + ' · ' + Math.round(val/(total||1)*100) + '%').toUpperCase();
+      color = Array.isArray(ds.backgroundColor) ? ds.backgroundColor[i] : '#0F2645';
+    } else {
+      big = fmtCompact(total);
+      small = 'TỔNG DOANH THU';
+    }
+    ctx.save();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = color;
+    ctx.font = '800 20px Outfit, sans-serif';
+    ctx.fillText(big, cx, cy - 8);
+    ctx.fillStyle = '#7A90B0';
+    ctx.font = '700 9px Outfit, sans-serif';
+    let lbl = small; if (lbl.length > 20) lbl = lbl.slice(0, 19) + '…';
+    ctx.fillText(lbl, cx, cy + 12);
+    ctx.restore();
+  }
+};
 
 function renderDoughnut(canvasId, existing, labels, values, setRef) {
   const canvas = document.getElementById(canvasId);
@@ -575,28 +719,77 @@ function renderDoughnut(canvasId, existing, labels, values, setRef) {
     type: 'doughnut',
     data: {
       labels: labels||[],
-      datasets: [{ data: values||[], backgroundColor: PALETTE, borderWidth: 2, borderColor: '#fff' }]
+      datasets: [{ data: values||[], backgroundColor: PALETTE, borderWidth: 3, borderColor: '#fff', hoverOffset: 16, hoverBorderColor:'#fff' }]
     },
     options: {
       responsive:true, maintainAspectRatio:false,
-      cutout: '62%',
+      cutout: '68%',
+      layout:{ padding: 8 },
       plugins:{
-        legend:{ position:'right', labels:{ boxWidth:10, font:{family:'Outfit',size:11}, color:'#7A90B0' } },
-        tooltip:{ callbacks:{ label:c => ' ' + c.label + ': ' + fmt(c.raw) } }
+        legend:{ display:false },   // dùng legend HTML tùy chỉnh giàu thông tin bên cạnh
+        tooltip:{ enabled:false }    // đã hiện thông tin ở GIỮA vòng → không có hộp nổi che
       }
-    }
+    },
+    plugins: [doughnutCenterText]
   });
   setRef(chart);
+  buildDoughnutLegend(chart, labels||[], values||[]);
 }
 
+// Legend HTML giàu thông tin: chấm màu · tên · tiền · % — hover để làm nổi lát tương ứng
+function buildDoughnutLegend(chart, labels, values) {
+  const box = document.getElementById('catLegend');
+  if (!box) return;
+  const total = values.reduce((a,b)=>a+(+b||0), 0) || 1;
+  const rows = labels.map((l,i)=>({ l, v:+values[i]||0, i })).sort((a,b)=>b.v-a.v);
+  box.innerHTML = rows.map(r => {
+    const pct = Math.round(r.v/total*100);
+    const color = PALETTE[r.i % PALETTE.length];
+    return '<div class="dleg" data-idx="'+r.i+'" '
+      + 'style="display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:9px;cursor:pointer;transition:.14s">'
+      + '<span style="width:11px;height:11px;border-radius:50%;background:'+color+';flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>'
+      + '<div style="flex:1;min-width:0">'
+      +   '<div style="font-size:12px;font-weight:700;color:#0F2645;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(r.l)+'</div>'
+      +   '<div style="font-size:11px;color:#7A90B0;font-weight:600">'+fmt(r.v)+'</div>'
+      + '</div>'
+      + '<span style="font-size:12.5px;font-weight:800;color:'+color+'">'+pct+'%</span>'
+      + '</div>';
+  }).join('');
+  // Hover legend → highlight lát + cập nhật chữ giữa vòng
+  box.querySelectorAll('.dleg').forEach(el => {
+    const idx = +el.dataset.idx;
+    el.addEventListener('mouseenter', () => {
+      el.style.background = '#F1F5FB';
+      chart.setActiveElements([{ datasetIndex:0, index:idx }]);
+      chart.update('none');
+    });
+    el.addEventListener('mouseleave', () => {
+      el.style.background = '';
+      chart.setActiveElements([]);
+      chart.update('none');
+    });
+  });
+}
+function escH(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function niceTooltip(extra) {
+  return Object.assign({
+    backgroundColor:'rgba(11,22,40,.94)', titleColor:'#fff', bodyColor:'#E2E8F0',
+    padding:12, cornerRadius:10, caretPadding:10, caretSize:6,
+    borderColor:'rgba(58,189,224,.35)', borderWidth:1,
+    titleFont:{family:'Outfit',weight:'700',size:12.5},
+    bodyFont:{family:'Outfit',size:12.5},
+    usePointStyle:true, boxPadding:5, yAlign:'bottom'  // hiện PHÍA TRÊN điểm → không đè cột
+  }, extra || {});
+}
 function baseChartOptions() {
   return {
     responsive:true, maintainAspectRatio:false,
+    layout:{ padding:{ top:26 } },   // chừa chỗ cho tooltip nổi lên trên
     interaction:{mode:'index',intersect:false},
     plugins:{
       legend:{display:false},
-      tooltip:{backgroundColor:'rgba(11,22,40,.92)',titleColor:'#fff',bodyColor:'#ccc',padding:10,cornerRadius:8,
-        callbacks:{label:c=>' '+c.dataset.label+': '+fmt(c.raw)}}
+      tooltip: niceTooltip({ callbacks:{label:c=>' '+c.dataset.label+': '+fmt(c.raw)} })
     },
     scales:{
       y:{ticks:{callback:v=>new Intl.NumberFormat('vi-VN',{notation:'compact'}).format(v)+'đ',font:{family:'Outfit',size:11},color:'#7A90B0'},grid:{color:'rgba(0,0,0,0.04)'}},
@@ -606,6 +799,26 @@ function baseChartOptions() {
 }
 
 loadAllCharts();
+
+// ── Hiệu ứng nghiêng 3D theo con trỏ cho card KPI ──
+(function(){
+  const MAX = 8; // độ nghiêng tối đa (deg)
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll('.kpi[data-tilt]').forEach(card => {
+    if (reduce) return;
+    card.addEventListener('mousemove', e => {
+      const r = card.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width;
+      const py = (e.clientY - r.top) / r.height;
+      const rx = (0.5 - py) * MAX * 2;
+      const ry = (px - 0.5) * MAX * 2;
+      card.style.transform = 'rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg) translateY(-3px)';
+      card.style.setProperty('--mx', (px*100).toFixed(1) + '%');
+      card.style.setProperty('--my', (py*100).toFixed(1) + '%');
+    });
+    card.addEventListener('mouseleave', () => { card.style.transform = ''; });
+  });
+})();
 </script>
 </body>
 </html>

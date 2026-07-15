@@ -702,17 +702,22 @@ if (toast) setTimeout(() => { toast.style.opacity='0'; setTimeout(()=>toast.remo
 // ── Highlight lỗi ──
 <% if (hasErrors) { %>
 const errorText = `<%= errs != null ? java.lang.String.join("|", errs).toLowerCase() : "" %>`;
-const fieldMap = {
-    username: ['tên đăng nhập','username'], email: ['email'],
-    phone: ['điện thoại','phone'], citizenId: ['cmnd','cccd'],
-    fullName: ['họ tên','họ và tên'], password: ['mật khẩu']
-};
-Object.entries(fieldMap).forEach(([id, kws]) => {
-    if (kws.some(kw => errorText.includes(kw))) {
-        const el = document.getElementById(id);
-        if (el) { el.style.borderColor='#ef4444'; el.style.boxShadow='0 0 0 3px rgba(239,68,68,.12)'; el.focus(); }
-    }
-});
+// Chỉ highlight field nếu lỗi chứa từ khóa RÕ RÀNG chỉ đến field đó
+// Không highlight khi lỗi là lỗi DB chung (chứa "db lỗi", "sql", "thất bại")
+const isDbError = errorText.includes('db lỗi') || errorText.includes('sql') || errorText.includes('insert') || errorText.includes('0 rows');
+if (!isDbError) {
+    const fieldMap = {
+        username: ['tên đăng nhập đã tồn tại','username đã'], email: ['email không đúng','email đã được'],
+        phone: ['số điện thoại không hợp lệ','điện thoại đã được dùng'], citizenId: ['cmnd/cccd không hợp lệ','số cccd đã'],
+        fullName: ['họ tên không được'], password: ['mật khẩu phải','mật khẩu không']
+    };
+    Object.entries(fieldMap).forEach(([id, kws]) => {
+        if (kws.some(kw => errorText.includes(kw))) {
+            const el = document.getElementById(id);
+            if (el) { el.style.borderColor='#ef4444'; el.style.boxShadow='0 0 0 3px rgba(239,68,68,.12)'; el.focus(); }
+        }
+    });
+}
 <% } %>
 
 // ── Inline field validation ──
@@ -907,6 +912,18 @@ document.getElementById('mainForm').addEventListener('submit', function(e) {
         document.getElementById('confirmPw').focus();
         return;
     }
+    // Validate CMND/CCCD nếu có nhập
+    const cidEl = document.getElementById('citizenId');
+    if (cidEl && cidEl.value.trim()) {
+        const cid = cidEl.value.trim();
+        if (!/^[0-9]{9}$|^[0-9]{12}$/.test(cid)) {
+            e.preventDefault();
+            validateField('citizenId');
+            cidEl.focus();
+            alert('CMND/CCCD phải có đúng 9 hoặc 12 chữ số!');
+            return;
+        }
+    }
     const btn = document.getElementById('submitBtn');
     if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Đang tạo…'; }
 });
@@ -1053,7 +1070,12 @@ async function submitFaceVector() {
             statusEl.textContent = '✅ Đăng ký khuôn mặt thành công!';
             setTimeout(() => { window.location.reload(); }, 900);
         } else {
-            statusEl.textContent = '❌ Lỗi: ' + (data.reason || 'unknown');
+            if (data.reason === 'face_already_used') {
+                statusEl.textContent = '🚫 Khuôn mặt này đã được đăng ký cho: '
+                    + (data.usedBy || 'tài khoản khác') + '!';
+            } else {
+                statusEl.textContent = '❌ Lỗi: ' + (data.reason || 'unknown');
+            }
             document.getElementById('faceCaptureBtn').disabled = false;
         }
     } catch (err) {

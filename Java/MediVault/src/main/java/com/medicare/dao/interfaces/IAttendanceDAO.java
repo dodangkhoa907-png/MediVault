@@ -16,6 +16,12 @@ public interface IAttendanceDAO {
     /** Ca đang active (chưa check-out) của nhân viên */
     Attendance findActiveByAccount(int accountId);
 
+    /**
+     * Nhân viên đang check-in active tại quầy POS chỉ định hôm nay.
+     * Dùng để tra "ai đang đứng quầy số X" khi session không có staffAccount.
+     */
+    Attendance findActiveByStation(int posStation);
+
     /** Lịch sử theo tháng */
     List<Attendance> findByAccountAndMonth(int accountId, int month, int year);
 
