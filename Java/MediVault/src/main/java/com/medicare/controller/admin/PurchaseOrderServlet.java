@@ -170,6 +170,8 @@ public class PurchaseOrderServlet extends HttpServlet {
         // Hạn dùng THỰC TẾ (ngày) tính từ lịch sử lô đã nhập — ưu tiên hơn số tháng cấu hình
         // tay, vì phản ánh đúng hạn dùng thật của thuốc đó trong kho.
         req.setAttribute("avgShelfLifeDays", batchesDAO.getAvgShelfLifeDaysMap());
+        // Giá nhập TRUNG BÌNH thực tế từ lịch sử lô — đối chiếu giá nhập mới, cùng cơ chế với HSD.
+        req.setAttribute("avgImportPrice", batchesDAO.getAvgImportPriceMap());
         // Nhảy từ màn "thuốc đã tồn tại" sang: preselect thuốc vào dòng đầu tiên
         req.setAttribute("preselectMedicineId", parseIntOr(req.getParameter("medicineId"), 0));
         SidebarHelper.load(req);

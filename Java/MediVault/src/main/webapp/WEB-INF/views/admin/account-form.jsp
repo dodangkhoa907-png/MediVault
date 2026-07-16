@@ -1,7 +1,7 @@
 
 <%@ page contentType="text/html;charset=UTF-8"  pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ page import="java.lang.String"  pageEncoding="UTF-8" %>
+<%@ page import="java.lang.String" %>
 <%
     com.medicare.entity.Account acc =
         (com.medicare.entity.Account) session.getAttribute("adminAccount");

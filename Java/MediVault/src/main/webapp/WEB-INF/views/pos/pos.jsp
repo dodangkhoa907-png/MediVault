@@ -1101,6 +1101,9 @@ let cart = [];
 let selectedCustomer = null;
 let selectedPayment = 'CASH';
 let allMedicines = [];
+// Chặn submitSale() chạy chồng lẫn nhau — vd. khi 2 lượt poll QR cùng thấy PAID gần như đồng
+// thời (do lag mạng) và mỗi lượt tự lên lịch gọi submitSale() riêng → trừ kho 2 lần cho 1 đơn.
+let _saleInFlight = false;
 
 // ── Multi-POS state ──
 let currentStation = <%= posStation %>;  // 0 = belum pilih
@@ -1756,7 +1759,7 @@ function nfcLinkSubmit() {
 
 // ── Checkout ──
 function doCheckout() {
-  if (cart.length === 0) return;
+  if (cart.length === 0 || _saleInFlight) return;
   const total = calcTotal();
   if (selectedPayment === 'CASH') {
     const cashEl = document.getElementById('cashInput');
@@ -1780,11 +1783,17 @@ function doCheckout() {
 }
 
 function submitSale() {
+  if (_saleInFlight) return; // đang có 1 lượt thanh toán chạy dở — không cho gọi chồng
+  _saleInFlight = true;
   const btn = document.getElementById('checkoutBtn');
   btn.disabled = true;
   btn.innerHTML = '⏳ Đang xử lý…';
+  const clientRequestId = (window.crypto && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : (Date.now() + '-' + Math.random().toString(36).slice(2));
   const fd = new URLSearchParams();
   fd.append('action', 'complete-sale');
+  fd.append('clientRequestId', clientRequestId);
   fd.append('paymentMethod', selectedPayment);
   fd.append('discount', document.getElementById('discountInput').value || '0');
   if (selectedCustomer) fd.append('customerId', selectedCustomer.id);
@@ -1855,14 +1864,17 @@ function submitSale() {
         document.getElementById('successModal').classList.add('show');
         showToast('✅ Thanh toán thành công!'
           + (data.earnedPoints > 0 ? ' Khách +' + data.earnedPoints + ' điểm ⭐' : ''), 'ok');
+        _saleInFlight = false;
       } else {
         showToast('❌ ' + (data.msg || 'Lỗi xử lý!'), 'err');
         btn.disabled = false; btn.innerHTML = '🛒 THANH TOÁN';
+        _saleInFlight = false;
       }
     })
     .catch(err => {
       showToast('❌ Lỗi kết nối!', 'err');
       btn.disabled = false; btn.innerHTML = '🛒 THANH TOÁN';
+      _saleInFlight = false;
       console.error(err);
     });
 }
@@ -1983,11 +1995,7 @@ function printReceipt() {
   });
 
   var html = '<!DOCTYPE html>'
-    + '<html lang="vi"><head>
-    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
-    
-    
-    '
+    + '<html lang="vi"><head>'
     + '<meta charset="UTF-8">'
     + '<title>Hóa đơn ' + escHtml(inv.code) + '</title>'
     + '<style>'
@@ -2008,8 +2016,7 @@ function printReceipt() {
     + '.kv { display: flex; justify-content: space-between; font-size: 11.5px; padding: 2px 0; }'
     + '@media print { body { padding: 0; } button { display: none; } }'
     + '</style>'
-    + '    
-</head><body>'
+    + '</head><body>'
     + '<div class="center">'
     + '<div class="bold" style="font-size:14px">NHÀ THUỐC Medicare</div>'
     + '<div>Địa chỉ: 123 Đường Ba Cu, P.4, TP. Vũng Tàu</div>'
@@ -2050,8 +2057,8 @@ function printReceipt() {
     + '</div>'
     + '<div style="height:16px"></div>'
     + '<div class="center" style="margin-top:8px">'
-    + '<button onclick="window.print()" style="padding:8px 20px;background:#1a56db;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:750;font-family:'Plus Jakarta Sans',sans-serif">🖶 In hóa đơn</button>'
-    + '<button onclick="window.close()" style="padding:8px 16px;background:#e5e7eb;color:#111;border:none;border-radius:6px;cursor:pointer;font-size:13px;margin-left:6px;font-family:'Plus Jakarta Sans',sans-serif">✕ Đóng</button>'
+    + '<button onclick="window.print()" style="padding:8px 20px;background:#1a56db;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:750;font-family:&quot;Plus Jakarta Sans&quot;,sans-serif">🖶 In hóa đơn</button>'
+    + '<button onclick="window.close()" style="padding:8px 16px;background:#e5e7eb;color:#111;border:none;border-radius:6px;cursor:pointer;font-size:13px;margin-left:6px;font-family:&quot;Plus Jakarta Sans&quot;,sans-serif">✕ Đóng</button>'
     + '</div>'
     + '</body></html>';
 
@@ -2628,8 +2635,13 @@ let _qrOrderCode    = null;
 let _qrPollIv       = null;
 let _qrCountdownIv  = null;
 let _qrQrInstance   = null;
+// Nhiều lượt poll (mỗi 2.5s) có thể đang CHỜ fetch cùng lúc nếu mạng/PayOS lag — nếu 2 lượt
+// cùng thấy PAID trước khi lượt đầu kịp clearInterval, mỗi lượt sẽ tự lên lịch submitSale()
+// riêng → trừ kho 2 lần. Cờ này đảm bảo chỉ lượt PHÁT HIỆN PAID ĐẦU TIÊN được xử lý.
+let _qrPaidHandled  = false;
 
 async function openQrModal(total) {
+  _qrPaidHandled = false;
   const btn = document.getElementById('checkoutBtn');
   btn.disabled = true;
   btn.innerHTML = '⏳ Tạo mã QR…';
@@ -2696,6 +2708,7 @@ async function openQrModal(total) {
 }
 
 async function pollQrStatus(orderCode, total) {
+  if (_qrPaidHandled) return; // đã có 1 lượt poll khác xử lý PAID rồi — bỏ qua lượt này
   try {
     const res  = await fetch(ctx + '/pos', {
       method: 'POST',
@@ -2703,8 +2716,10 @@ async function pollQrStatus(orderCode, total) {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     });
     const data = await res.json();
+    if (_qrPaidHandled) return; // 1 lượt poll khác đã xử lý xong PAID trong lúc chờ fetch này
 
     if (data.status === 'PAID') {
+      _qrPaidHandled = true;
       // Stop polling & countdown
       clearInterval(_qrPollIv);     _qrPollIv = null;
       clearInterval(_qrCountdownIv);_qrCountdownIv = null;

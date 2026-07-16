@@ -356,6 +356,31 @@ public class BatchesDAO implements IBatchesDAO {
         return map;
     }
 
+    /**
+     * Giá nhập TRUNG BÌNH thực tế của từng thuốc — tính trên các lô ĐÃ TỪNG nhập trong quá khứ,
+     * dùng để đối chiếu giá nhập khi tạo phiếu nhập mới (purchase-order-form.jsp), giống hệt cách
+     * getAvgShelfLifeDaysMap() đối chiếu HSD: nếu thuốc X luôn nhập ~5.000đ mà lô mới gõ 50.000đ,
+     * khả năng gõ nhầm số 0 hoặc sai đơn vị. Bỏ qua lô CANCELLED (không phản ánh giá nhập thật).
+     */
+    public Map<Integer, java.math.BigDecimal> getAvgImportPriceMap() {
+        Map<Integer, java.math.BigDecimal> map = new HashMap<>();
+        String sql = "SELECT MedicineID, AVG(ImportPrice) AS AvgPrice" +
+                " FROM Batches" +
+                " WHERE Status != 'CANCELLED' AND ImportPrice IS NOT NULL" +
+                " GROUP BY MedicineID";
+        try (Connection cn = DBContext.getConnection();
+                PreparedStatement ps = cn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                java.math.BigDecimal avg = rs.getBigDecimal("AvgPrice");
+                if (avg != null) map.put(rs.getInt("MedicineID"), avg);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return map;
+    }
+
     /** Tóm tắt lô cho tất cả thuốc trong 1 query — dùng cho medicine-list hover card + tab badges */
     public void loadBatchSummary(
             Map<Integer, Integer> activeCountOut,
