@@ -728,6 +728,10 @@ public class MedicineServlet extends HttpServlet {
             m.setExpiryAlertDays(Integer.parseInt(req.getParameter("expiryAlertDays")));
         } catch (Exception ignored) {
         }
+        String shelfLifeStr = req.getParameter("shelfLifeMonths");
+        if (shelfLifeStr != null && !shelfLifeStr.isBlank()) {
+            try { m.setShelfLifeMonths(Integer.parseInt(shelfLifeStr)); } catch (Exception ignored) {}
+        }
         m.setPackagingSpec(req.getParameter("packagingSpec"));
         // Existing image URL is passed as hidden field; preserved unless a new image is uploaded
         m.setImageUrl(req.getParameter("existingImageUrl"));
@@ -813,6 +817,7 @@ public class MedicineServlet extends HttpServlet {
             sb.append("\"sellingPrice\":").append(m.getSellingPrice() != null ? m.getSellingPrice().toPlainString() : "0").append(',');
             sb.append("\"minInventory\":").append(m.getMinInventory()).append(',');
             sb.append("\"expiryAlertDays\":").append(m.getExpiryAlertDays()).append(',');
+            sb.append("\"shelfLifeMonths\":").append(m.getShelfLifeMonths() != null ? m.getShelfLifeMonths() : "null").append(',');
             sb.append("\"isPrescriptionRequired\":").append(m.isPrescriptionRequired()).append(',');
             sb.append("\"status\":").append(m.isStatus()).append(',');
             sb.append("\"totalStock\":").append(totalStock).append(',');

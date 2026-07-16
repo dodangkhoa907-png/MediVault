@@ -11,7 +11,7 @@ import java.util.List;
  * InvoiceDetailDAO — Chi tiết từng dòng hóa đơn
  *
  * Lưu ý: Trong flow bán hàng bình thường, InvoiceDetails được tạo
- * tự động bởi SP_AddSaleByFIFO — KHÔNG insert thủ công.
+ * tự động bởi SP_AddSaleByFEFO — KHÔNG insert thủ công.
  * DAO này chủ yếu dùng để ĐỌC dữ liệu (hiển thị hóa đơn, báo cáo).
  */
 public class InvoiceDetailDAO implements IInvoiceDetailDAO {
@@ -59,7 +59,7 @@ public class InvoiceDetailDAO implements IInvoiceDetailDAO {
     }
 
     /**
-     * Insert thủ công 1 dòng — chỉ dùng khi KHÔNG qua SP_AddSaleByFIFO.
+     * Insert thủ công 1 dòng — chỉ dùng khi KHÔNG qua SP_AddSaleByFEFO.
      * Ví dụ: nhập hàng trả lại, điều chỉnh tồn kho thủ công.
      */
     public boolean insert(InvoiceDetail d) {

@@ -904,6 +904,11 @@ select,option{font-family:inherit;font-size:inherit}
                    value="30" min="1" oninput="checkDwHsd()">
           </div>
           <div class="dw-field">
+            <label class="dw-label">Hạn dùng chuẩn (tháng) <span style="font-weight:400;color:var(--muted)">(tùy chọn)</span></label>
+            <input type="number" name="shelfLifeMonths" id="dwShelfLife" class="dw-input"
+                   min="1" placeholder="VD: 24">
+          </div>
+          <div class="dw-field">
             <label class="dw-label">Vị trí kệ</label>
             <select name="shelfId" id="dwShelfId" class="dw-input">
               <option value="">-- Chọn kệ (tùy chọn) --</option>
@@ -1253,6 +1258,7 @@ function populateDwForm(d) {
   document.getElementById('dwPrice').value          = d.sellingPrice  || '';
   document.getElementById('dwMinInv').value         = d.minInventory  || 0;
   document.getElementById('dwExpDays').value        = d.expiryAlertDays || 30;
+  document.getElementById('dwShelfLife').value      = d.shelfLifeMonths || '';
   document.getElementById('dwDosage').value         = d.dosage        || '';
   document.getElementById('dwContra').value         = d.contraindications || '';
   document.getElementById('dwStorage').value        = d.storageConditions || '';

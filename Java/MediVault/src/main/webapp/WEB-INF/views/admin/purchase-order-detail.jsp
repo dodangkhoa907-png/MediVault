@@ -79,7 +79,15 @@ tbody tr:last-child td{border-bottom:none}
   </c:if>
   <c:if test="${param.msg == 'receive-fail'}">
     <div style="background:#FEE2E2;border:1px solid #FECACA;color:#991B1B;border-radius:11px;padding:12px 18px;margin-bottom:16px;font-size:13.5px;font-weight:750">
-      ❌ Không thể xác nhận (đơn không ở trạng thái Chờ xử lý hoặc không có dòng hàng).
+      ❌ Không thể xác nhận hàng về.
+      <c:choose>
+        <c:when test="${not empty param.receiveErr}">
+          <div style="margin-top:6px;font-weight:600;font-size:12.5px">Lý do: <c:out value="${param.receiveErr}"/></div>
+        </c:when>
+        <c:otherwise>
+          Đơn không ở trạng thái Chờ xử lý hoặc không có dòng hàng.
+        </c:otherwise>
+      </c:choose>
     </div>
   </c:if>
 

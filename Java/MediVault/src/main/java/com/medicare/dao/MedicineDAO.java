@@ -30,6 +30,7 @@ public class MedicineDAO implements IMedicineDAO {
         m.setStorageConditions(MojibakeUtil.fix(rs.getString("StorageConditions")));
         m.setStatus(rs.getBoolean("Status"));
         m.setExpiryAlertDays(rs.getInt("ExpiryAlertDays"));
+        try { m.setShelfLifeMonths((Integer) rs.getObject("ShelfLifeMonths")); } catch (Exception ignored) {}
         if (rs.getTimestamp("CreatedAt") != null)
             m.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
         try { m.setPackagingSpec(rs.getString("PackagingSpec")); } catch (Exception ignored) {}
@@ -196,7 +197,7 @@ public class MedicineDAO implements IMedicineDAO {
         String sql = "INSERT INTO Medicines (MedicineName, GenericName, Barcode, RegistrationNumber, " +
                 "CategoryID, ManufacturerID, Unit, ShelfID, Dosage, Contraindications, " +
                 "StorageConditions, IsPrescriptionRequired, SellingPrice, MinInventory, ExpiryAlertDays, " +
-                "PackagingSpec) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                "PackagingSpec, ShelfLifeMonths) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try (Connection cn = DBContext.getConnection();
                 PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setNString(1, m.getMedicineName());
@@ -215,6 +216,7 @@ public class MedicineDAO implements IMedicineDAO {
             ps.setInt(14, m.getMinInventory());
             ps.setInt(15, m.getExpiryAlertDays());
             ps.setNString(16, m.getPackagingSpec());
+            setIntOrNull(ps, 17, m.getShelfLifeMonths());
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
             e.printStackTrace();
@@ -226,7 +228,7 @@ public class MedicineDAO implements IMedicineDAO {
         String sql = "INSERT INTO Medicines (MedicineName, GenericName, Barcode, RegistrationNumber, " +
                 "CategoryID, ManufacturerID, Unit, ShelfID, Dosage, Contraindications, " +
                 "StorageConditions, IsPrescriptionRequired, SellingPrice, MinInventory, ExpiryAlertDays, " +
-                "PackagingSpec) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                "PackagingSpec, ShelfLifeMonths) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try (Connection cn = DBContext.getConnection();
                 PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setNString(1, m.getMedicineName());
@@ -245,6 +247,7 @@ public class MedicineDAO implements IMedicineDAO {
             ps.setInt(14, m.getMinInventory());
             ps.setInt(15, m.getExpiryAlertDays());
             ps.setNString(16, m.getPackagingSpec());
+            setIntOrNull(ps, 17, m.getShelfLifeMonths());
             if (ps.executeUpdate() > 0) {
                 try (ResultSet keys = ps.getGeneratedKeys()) {
                     if (keys.next()) return keys.getInt(1);
@@ -260,7 +263,8 @@ public class MedicineDAO implements IMedicineDAO {
         String sql = "UPDATE Medicines SET MedicineName=?, GenericName=?, Barcode=?, " +
                 "RegistrationNumber=?, CategoryID=?, ManufacturerID=?, Unit=?, ShelfID=?, " +
                 "Dosage=?, Contraindications=?, StorageConditions=?, IsPrescriptionRequired=?, " +
-                "SellingPrice=?, MinInventory=?, ExpiryAlertDays=?, PackagingSpec=?, ImageUrl=? " +
+                "SellingPrice=?, MinInventory=?, ExpiryAlertDays=?, PackagingSpec=?, ImageUrl=?, " +
+                "ShelfLifeMonths=? " +
                 "WHERE MedicineID=?";
         try (Connection cn = DBContext.getConnection();
                 PreparedStatement ps = cn.prepareStatement(sql)) {
@@ -281,7 +285,8 @@ public class MedicineDAO implements IMedicineDAO {
             ps.setInt(15, m.getExpiryAlertDays());
             ps.setNString(16, m.getPackagingSpec());
             ps.setString(17, m.getImageUrl());
-            ps.setInt(18, m.getMedicineId());
+            setIntOrNull(ps, 18, m.getShelfLifeMonths());
+            ps.setInt(19, m.getMedicineId());
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
             e.printStackTrace();

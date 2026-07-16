@@ -27,6 +27,7 @@
     int    vShelfId = m != null && m.getShelfId()           != null ? m.getShelfId()           : 0;
     int    vMinInv  = m != null ? m.getMinInventory()    : 0;
     int    vExpDays = m != null ? m.getExpiryAlertDays() : 30;
+    String vShelfLifeMonths = m != null && m.getShelfLifeMonths() != null ? m.getShelfLifeMonths().toString() : "";
     boolean vRx     = m != null && m.isPrescriptionRequired();
 
     @SuppressWarnings("unchecked")
@@ -395,6 +396,13 @@ select,option{font-family:inherit;font-size:inherit}
               <div class="field">
                 <label class="field-label">Cảnh báo HH trước (ngày)</label>
                 <input type="number" name="expiryAlertDays" class="field-input" value="<%= vExpDays %>" min="1">
+              </div>
+              <div class="field">
+                <label class="field-label">Hạn dùng chuẩn (tháng)
+                  <span style="font-size:11px;font-weight:400;color:var(--muted)">(tùy chọn)</span>
+                </label>
+                <input type="number" name="shelfLifeMonths" class="field-input" value="<%= vShelfLifeMonths %>" min="1" placeholder="VD: 24">
+                <span class="field-hint">Dùng để đối chiếu HSD khi nhập lô — bỏ trống nếu không cần kiểm tra.</span>
               </div>
               <div class="field">
                 <label class="field-label">Vị trí kệ
