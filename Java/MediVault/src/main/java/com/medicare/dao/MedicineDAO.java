@@ -139,9 +139,12 @@ public class MedicineDAO implements IMedicineDAO {
     // Thuốc sắp hết hàng (CurrentQuantity <= MinInventory)
     public List<Medicines> findLowStock() {
         List<Medicines> list = new ArrayList<>();
+        // Lọc Status='ACTIVE' + còn hạn — khớp BatchesDAO#getTotalQuantityMap(), tránh đếm
+        // nhầm lô CANCELLED/hết hạn vào tồn kho khiến "sắp hết hàng" lệch với số thật.
         String sql = "SELECT m.* FROM Medicines m " +
                 "LEFT JOIN (SELECT MedicineID, SUM(CurrentQuantity) AS TotalQty " +
-                "           FROM Batches GROUP BY MedicineID) b ON m.MedicineID = b.MedicineID " +
+                "           FROM Batches WHERE Status = 'ACTIVE' AND ExpiryDate > CAST(GETDATE() AS DATE) " +
+                "           GROUP BY MedicineID) b ON m.MedicineID = b.MedicineID " +
                 "WHERE m.Status = 1 AND ISNULL(b.TotalQty, 0) > 0 " +
                 "  AND ISNULL(b.TotalQty, 0) <= m.MinInventory AND m.MinInventory > 0 " +
                 "ORDER BY ISNULL(b.TotalQty, 0) ASC";
@@ -172,7 +175,8 @@ public class MedicineDAO implements IMedicineDAO {
     public int countLowStock() {
         String sql = "SELECT COUNT(*) FROM Medicines m " +
                 "LEFT JOIN (SELECT MedicineID, SUM(CurrentQuantity) AS TotalQty " +
-                "           FROM Batches GROUP BY MedicineID) b ON m.MedicineID = b.MedicineID " +
+                "           FROM Batches WHERE Status = 'ACTIVE' AND ExpiryDate > CAST(GETDATE() AS DATE) " +
+                "           GROUP BY MedicineID) b ON m.MedicineID = b.MedicineID " +
                 "WHERE m.Status = 1 AND ISNULL(b.TotalQty, 0) > 0 " +
                 "  AND ISNULL(b.TotalQty, 0) <= m.MinInventory AND m.MinInventory > 0";
         try (Connection cn = DBContext.getConnection();
@@ -364,16 +368,20 @@ public class MedicineDAO implements IMedicineDAO {
 
     // ── Single-query methods replacing N+1 patterns ──────────────────────────
 
+    // PHẢI lọc Status = 'ACTIVE' — khớp với BatchesDAO#getTotalQuantityMap() (dùng cho SSE
+    // live-push sau mỗi đơn bán). Thiếu điều kiện này khiến tồn kho lúc load trang POS (query
+    // này) và tồn kho lúc push realtime (getTotalQuantityMap) tính RA 2 CON SỐ KHÁC NHAU cho
+    // cùng 1 thuốc — vì query này còn cộng cả lô CANCELLED/khác trạng thái vào tổng.
     private static final String STOCK_CTE = "WITH bs AS (" +
             "  SELECT MedicineID, SUM(CurrentQuantity) AS TotalStock" +
-            "  FROM Batches WHERE ExpiryDate > CAST(GETDATE() AS DATE)" +
+            "  FROM Batches WHERE ExpiryDate > CAST(GETDATE() AS DATE) AND Status = 'ACTIVE'" +
             "  GROUP BY MedicineID" +
             ")," +
             "nb AS (" +
             "  SELECT MedicineID, ExpiryDate AS NearestExpiry, BatchNumber AS NearestBatchNo," +
             "         ROW_NUMBER() OVER (PARTITION BY MedicineID ORDER BY ExpiryDate ASC) AS rn" +
             "  FROM Batches" +
-            "  WHERE CurrentQuantity > 0 AND ExpiryDate > CAST(GETDATE() AS DATE)" +
+            "  WHERE CurrentQuantity > 0 AND ExpiryDate > CAST(GETDATE() AS DATE) AND Status = 'ACTIVE'" +
             ") ";
 
     private Medicines mapRowWithStock(ResultSet rs) throws SQLException {
