@@ -101,6 +101,11 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .hsd-check.block{display:block;color:#991B1B;background:#FFF5F5}
 .batch-check{font-size:11px;font-weight:600;margin-top:5px;line-height:1.4;display:none;color:#991B1B;padding:5px 8px;border-radius:6px;background:#FFF5F5}
 .batch-check.show{display:block}
+.qty-hint{font-size:11px;font-weight:600;margin-top:5px;line-height:1.4;display:none;color:var(--blue);padding:5px 8px;border-radius:6px;background:#EFF6FF}
+.qty-hint.show{display:block}
+.price-check{font-size:11px;font-weight:600;margin-top:5px;line-height:1.4;display:none;padding:5px 8px;border-radius:6px}
+.price-check.warn{display:block;color:#92400E;background:#FFFBEB}
+.price-check.ok{display:block;color:#166534;background:#F0FDF4}
 .cell.field-error{border-color:#DC2626!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)}
 
 /* ── Row controls ── */
@@ -303,15 +308,21 @@ select,option{font-family:inherit;font-size:inherit}
            by addRow(); recalc()/delRow()/PRESELECT_MED logic below reads/writes tr.querySelector('select').value
            directly and relies on each cloned row getting a fresh, independent <select>. Converting
            to .cdd would require unique per-row IDs generated at clone time, so left native. --%>
-      <select class="cell" name="lineMedicineId" onchange="recalc();checkLineExpiryForRow(this.closest('tr'));checkBatchDuplicateForRow(this.closest('tr'))">
+      <select class="cell" name="lineMedicineId" onchange="recalc();checkLineExpiryForRow(this.closest('tr'));checkBatchDuplicateForRow(this.closest('tr'));checkQtyUnitForRow(this.closest('tr'));checkLinePriceForRow(this.closest('tr'))">
         <option value="">-- Chọn thuốc --</option>
         <c:forEach var="m" items="${medicines}">
           <option value="${m.medicineId}">${fn:escapeXml(m.medicineName)} (${m.medicineCode})</option>
         </c:forEach>
       </select>
     </td>
-    <td><input class="cell num" type="number" name="lineQty" min="1" placeholder="0" oninput="recalc()"/></td>
-    <td><input class="cell num" type="number" name="linePrice" min="0" step="100" placeholder="0" oninput="recalc()"/></td>
+    <td>
+      <input class="cell num" type="number" name="lineQty" min="1" placeholder="0" oninput="recalc()"/>
+      <span class="qty-hint"></span>
+    </td>
+    <td>
+      <input class="cell num" type="number" name="linePrice" min="0" step="100" placeholder="0" oninput="recalc();checkLinePriceForRow(this.closest('tr'))"/>
+      <span class="price-check"></span>
+    </td>
     <td><span class="subtotal">0đ</span></td>
     <td>
       <input class="cell" type="text" name="lineBatchNo" placeholder="LOT-…" onblur="checkBatchDuplicateForRow(this.closest('tr'))"/>
@@ -342,11 +353,24 @@ const SHELF_LIFE_MONTHS = {
 </c:forEach>
 };
 
+// medicineId -> đơn vị tính (chai/hộp/lọ/vỉ/ống…) — hiển thị gợi ý cạnh ô SL sau khi chọn thuốc,
+// tránh nhầm SL là "viên" trong khi thuốc thực ra nhập theo hộp/chai.
+const MEDICINE_UNITS = {
+<c:forEach var="m" items="${medicines}" varStatus="st">${m.medicineId}: "${fn:escapeXml(m.unit)}"<c:if test="${!st.last}">,</c:if></c:forEach>
+};
+
 // ── Hạn dùng THỰC TẾ (ngày) — tính từ trung bình (ExpiryDate - ImportDate) của các lô ĐÃ
 // TỪNG nhập cho thuốc đó trong bảng Batches. Nguồn dữ liệu THẬT, ưu tiên hơn hẳn số tháng
 // gõ tay ở trên — chỉ fallback về SHELF_LIFE_MONTHS khi thuốc chưa có lô nào (map rỗng).
 const AVG_SHELF_LIFE_DAYS = {
 <c:forEach var="entry" items="${avgShelfLifeDays}" varStatus="st">${entry.key}: ${entry.value}<c:if test="${!st.last}">,</c:if></c:forEach>
+};
+
+// ── Giá nhập TRUNG BÌNH thực tế — tính từ lịch sử lô đã nhập cho thuốc đó (Batches.ImportPrice),
+// cùng cơ chế với AVG_SHELF_LIFE_DAYS ở trên. Đối chiếu giá nhập mới để bắt lỗi gõ nhầm số 0 /
+// sai đơn vị (vd. gõ 50.000 thay vì 5.000) — chỉ CẢNH BÁO, không chặn lưu (giá có thể biến động thật).
+const AVG_IMPORT_PRICE = {
+<c:forEach var="entry" items="${avgImportPrice}" varStatus="st">${entry.key}: ${entry.value}<c:if test="${!st.last}">,</c:if></c:forEach>
 };
 
 const fmtD = d => String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
@@ -365,6 +389,10 @@ function checkLineExpiryForRow(tr) {
   const expInp   = tr.querySelector('[name=lineExpiry]');
   const warnEl   = tr.querySelector('.hsd-check');
   if (!medSel || !expInp || !warnEl) return;
+
+  // Chưa chọn thuốc thì chưa có gì để đối chiếu — không báo "TỪ CHỐI" khi người dùng lỡ
+  // gõ HSD trước khi chọn thuốc (trước đây báo nhầm ngay cả lúc ô "Thuốc" còn để trống).
+  if (!medSel.value) { warnEl.className = 'hsd-check'; warnEl.textContent = ''; expInp.classList.remove('field-error'); return; }
 
   if (!expInp.value) { warnEl.className = 'hsd-check'; warnEl.textContent = ''; expInp.classList.remove('field-error'); return; }
 
@@ -421,6 +449,60 @@ function checkLineExpiryForRow(tr) {
 }
 function checkLineExpiry(inp) {
   checkLineExpiryForRow(inp.closest('tr'));
+}
+
+// Gợi ý đơn vị tính (chai/hộp/lọ/vỉ/ống…) ngay cạnh ô SL sau khi chọn thuốc — tránh nhầm
+// "SL = 5" là 5 viên trong khi thuốc đó thực ra nhập kho theo hộp/chai.
+function checkQtyUnitForRow(tr) {
+  if (!tr) return;
+  const medSel = tr.querySelector('[name=lineMedicineId]');
+  const hintEl = tr.querySelector('.qty-hint');
+  if (!medSel || !hintEl) return;
+
+  const unit = MEDICINE_UNITS[medSel.value];
+  if (medSel.value && unit) {
+    hintEl.className = 'qty-hint show';
+    hintEl.textContent = 'Đơn vị: ' + unit;
+  } else {
+    hintEl.className = 'qty-hint';
+    hintEl.textContent = '';
+  }
+}
+
+// Đối chiếu giá nhập với giá nhập TRUNG BÌNH thực tế của thuốc (từ lịch sử lô đã nhập) — bắt
+// lỗi gõ nhầm số 0 / sai đơn vị (vd. gõ 50.000 thay vì 5.000). CHỈ CẢNH BÁO (vàng), không chặn
+// lưu như HSD — giá nhập có thể biến động thật theo thị trường/NCC, không phải luật cứng như hạn dùng.
+// Ngưỡng sai lệch = 5% giá TB, nhưng luôn kẹp trong [2.500đ, 20.000đ] — thuốc rẻ vẫn có sàn dung sai
+// hợp lý, thuốc đắt không bị cảnh báo vặt vì chỉ lệch vài % đã vượt quá vài nghìn đồng.
+const PRICE_TOLERANCE_MIN = 2500;
+const PRICE_TOLERANCE_MAX = 20000;
+const PRICE_TOLERANCE_PCT = 0.05;
+function checkLinePriceForRow(tr) {
+  if (!tr) return;
+  const medSel  = tr.querySelector('[name=lineMedicineId]');
+  const priceInp = tr.querySelector('[name=linePrice]');
+  const warnEl  = tr.querySelector('.price-check');
+  if (!medSel || !priceInp || !warnEl) return;
+
+  const avgPrice = AVG_IMPORT_PRICE[medSel.value];
+  const entered  = parseFloat(priceInp.value);
+
+  if (!medSel.value || avgPrice == null || !entered || entered <= 0) {
+    warnEl.className = 'price-check'; warnEl.textContent = ''; return;
+  }
+
+  const tolerance = Math.min(PRICE_TOLERANCE_MAX, Math.max(PRICE_TOLERANCE_MIN, avgPrice * PRICE_TOLERANCE_PCT));
+  const diff = entered - avgPrice;
+
+  if (Math.abs(diff) > tolerance) {
+    warnEl.className = 'price-check warn';
+    warnEl.textContent = '⚠️ Lệch nhiều so với giá nhập trung bình (' + fmt(avgPrice) + ') — bạn nhập '
+        + (diff > 0 ? 'cao hơn ' + fmt(diff) : 'thấp hơn ' + fmt(Math.abs(diff)))
+        + '. Kiểm tra lại đơn giá — có thể gõ nhầm số 0!';
+  } else {
+    warnEl.className = 'price-check ok';
+    warnEl.textContent = '✓ Khớp giá nhập trung bình (~' + fmt(avgPrice) + ')';
+  }
 }
 
 // ── Check trùng số lô qua AJAX — báo NGAY khi rời khỏi ô "Số lô", thay vì đợi tới lúc
@@ -484,6 +566,10 @@ function delRow(btn){
     if(warnEl){ warnEl.className='hsd-check'; warnEl.textContent=''; }
     const batchErrEl=tr.querySelector('.batch-check');
     if(batchErrEl){ batchErrEl.className='batch-check'; batchErrEl.textContent=''; }
+    const qtyHintEl=tr.querySelector('.qty-hint');
+    if(qtyHintEl){ qtyHintEl.className='qty-hint'; qtyHintEl.textContent=''; }
+    const priceCheckEl=tr.querySelector('.price-check');
+    if(priceCheckEl){ priceCheckEl.className='price-check'; priceCheckEl.textContent=''; }
     tr.querySelectorAll('.cell').forEach(c=>c.classList.remove('field-error'));
   } else {
     btn.closest('tr').remove();
@@ -523,8 +609,15 @@ function beforeSubmit(){
   // CHỈ CẢNH BÁO — lệch so với hạn dùng chuẩn cấu hình riêng, admin có thể chủ động bỏ qua.
   const warnRows = document.querySelectorAll('#lineBody .hsd-check.warn');
   if (warnRows.length > 0) {
-    return confirm('⚠️ Có ' + warnRows.length + ' dòng HSD lệch nhiều so với hạn dùng chuẩn của thuốc.\n\n'
-        + 'Kiểm tra lại HSD trên bao bì thực tế trước khi tiếp tục. Vẫn lưu phiếu này?');
+    if (!confirm('⚠️ Có ' + warnRows.length + ' dòng HSD lệch nhiều so với hạn dùng chuẩn của thuốc.\n\n'
+        + 'Kiểm tra lại HSD trên bao bì thực tế trước khi tiếp tục. Vẫn lưu phiếu này?')) return false;
+  }
+
+  // CHỈ CẢNH BÁO — lệch so với giá nhập trung bình, admin có thể chủ động bỏ qua (giá biến động thật).
+  const priceWarnRows = document.querySelectorAll('#lineBody .price-check.warn');
+  if (priceWarnRows.length > 0) {
+    return confirm('⚠️ Có ' + priceWarnRows.length + ' dòng giá nhập lệch nhiều so với giá nhập trung bình của thuốc.\n\n'
+        + 'Kiểm tra lại đơn giá — có thể gõ nhầm số 0. Vẫn lưu phiếu này?');
   }
   return true;
 }
@@ -533,7 +626,7 @@ addRow();
 const PRESELECT_MED = ${preselectMedicineId != null ? preselectMedicineId : 0};
 if (PRESELECT_MED > 0) {
   const sel = document.querySelector('#lineBody [name=lineMedicineId]');
-  if (sel) { sel.value = String(PRESELECT_MED); recalc(); }
+  if (sel) { sel.value = String(PRESELECT_MED); recalc(); checkQtyUnitForRow(sel.closest('tr')); checkLinePriceForRow(sel.closest('tr')); }
 }
 </script>
 </body>
