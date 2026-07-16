@@ -14,7 +14,7 @@ public interface ISaleService {
     /**
      * Hoàn tất giao dịch bán hàng:
      *   - Tự lấy ca làm việc hiện tại của nhân viên
-     *   - Tạo hóa đơn + trừ kho theo FIFO (qua SP_AddSaleByFIFO)
+     *   - Tạo hóa đơn + trừ kho theo FEFO (qua SP_AddSaleByFEFO — hạn dùng gần nhất trước)
      *   - Ghi log audit
      *
      * @param accountId    ID nhân viên thực hiện
