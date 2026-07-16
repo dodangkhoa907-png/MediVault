@@ -28,6 +28,15 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <script>
+      if (window.self !== window.top) {
+        document.documentElement.classList.add('in-iframe');
+        window.addEventListener('DOMContentLoaded', function() {
+          document.body.classList.add('in-iframe');
+          document.documentElement.classList.add('in-iframe');
+        });
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
     
     
@@ -37,6 +46,15 @@
 <title>Medicare POS — Bán hàng</title>
 
 <style>
+/* iframe compatibility for POS */
+.in-iframe .sidebar,
+.in-iframe #mainSidebar {
+  display: none !important;
+}
+.in-iframe .main {
+  margin-left: 0 !important;
+  width: 100% !important;
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --blue:#1a56db;--blue2:#1e3a5f;--sky:#3f83f8;
@@ -768,6 +786,7 @@ body{display:flex}
         <div class="mc-price-row">
           <span class="mc-price"><fmt:formatNumber value="${m.sellingPrice}" pattern="#,###"/>đ</span>
         </div>
+
         <%-- Info button — bottom right corner --%>
         <button class="mc-info-btn" onclick="event.stopPropagation();showMedInfo(${m.medicineId})" title="Xem thông tin thuốc">
           <svg width="11" height="11" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -961,16 +980,22 @@ body{display:flex}
 
 <!-- SUCCESS MODAL -->
 <div class="success-modal" id="successModal">
-  <div class="sm-backdrop" onclick="newInvoice()"></div>
-  <div class="sm-panel">
+  <div class="sm-backdrop" onclick="closeInvoiceModalAndShowList()"></div>
+  <div class="sm-panel" style="width: 420px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; padding: 20px;">
     <span class="sm-icon">✅</span>
-    <div class="sm-title">Thanh toán thành công!</div>
-    <div class="sm-code" id="smCode"></div>
-    <div class="sm-change" id="smChange"></div>
-    <div class="sm-total" id="smTotal"></div>
-    <div class="sm-btns">
-      <button class="sm-btn-new" onclick="newInvoice()">＋ Hóa đơn mới</button>
-      <button class="sm-btn-print" onclick="printReceipt()">🖨 In hóa đơn</button>
+    <div class="sm-title" style="margin-bottom: 10px;">Thanh toán thành công!</div>
+    <div class="sm-code" id="smCode" style="display:none"></div>
+    <div class="sm-change" id="smChange" style="display:none"></div>
+    <div class="sm-total" id="smTotal" style="display:none"></div>
+    
+    <!-- Receipt Container -->
+    <div id="modalReceiptContainer" style="flex: 1; overflow-y: auto; background: #fff; border: 1px dashed #94a3b8; border-radius: 8px; padding: 15px; text-align: left; font-family: monospace; font-size: 12px; color: #1e293b; margin-bottom: 15px;">
+      <!-- populated by JS -->
+    </div>
+    
+    <div class="sm-btns" style="display: flex; gap: 8px; width: 100%; flex-shrink: 0;">
+      <button class="sm-btn-print" onclick="printReceipt()" style="flex: 1; height: 44px; border-radius: 10px; border: 2px solid var(--border); background: #fff; color: var(--navy); font-size: 13px; font-weight: 750; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">🖨 In hóa đơn</button>
+      <button class="sm-btn-new" onclick="closeInvoiceModalAndShowList()" style="flex: 1; height: 44px; border-radius: 10px; background: linear-gradient(135deg, var(--blue), #1e40af); color: #fff; border: none; font-size: 13px; font-weight: 800; cursor: pointer;">✕ Đóng &amp; Xem hóa đơn</button>
     </div>
   </div>
 </div>
@@ -1863,14 +1888,13 @@ function submitSale() {
         document.getElementById('smTotal').textContent = fmtMoney(total);
         document.getElementById('smChange').textContent = (received > 0 && selectedPayment === 'CASH')
           ? 'Tiền thừa: ' + fmtMoney(change) : '';
+        
+        // Render thermal receipt layout in modal
+        renderModalReceipt(currentInvoice);
+        
         document.getElementById('successModal').classList.add('show');
         showToast('✅ Thanh toán thành công!'
           + (data.earnedPoints > 0 ? ' Khách +' + data.earnedPoints + ' điểm ⭐' : ''), 'ok');
-        
-        // Tự động xuất hiện/in hóa đơn ngay sau khi thanh toán thành công
-        setTimeout(() => {
-          printReceipt();
-        }, 300);
       } else {
         showToast('❌ ' + (data.msg || 'Lỗi xử lý!'), 'err');
         btn.disabled = false; btn.innerHTML = '🛒 THANH TOÁN';
@@ -1998,78 +2022,80 @@ function printReceipt() {
       + '</tr>';
   });
 
-  var html = '<!DOCTYPE html>'
-    + '<html lang="vi"><head>
-    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
-    
-    
-    '
-    + '<meta charset="UTF-8">'
-    + '<title>Hóa đơn ' + escHtml(inv.code) + '</title>'
-    + '<style>'
-    + '* { margin:0; padding:0; box-sizing:border-box; }'
-    + 'body { font-family: "Courier New", monospace; font-size: 12px; color: #000; padding: 8px; max-width: 320px; margin: 0 auto; }'
-    + '.center { text-align: center; }'
-    + '.bold { font-weight: bold; }'
-    + '.title { font-size: 15px; font-weight:800; margin: 4px 0; }'
-    + '.divider { border-top: 1px dashed #000; margin: 7px 0; }'
-    + '.divider2 { border-top: 2px solid #000; margin: 7px 0; }'
-    + 'table { width: 100%; border-collapse: collapse; font-size: 11px; }'
-    + 'th { background: #eee; padding: 4px 6px; font-weight:750; border-bottom: 1px solid #000; }'
-    + 'td { vertical-align: top; }'
-    + '.totals { margin-top: 6px; }'
-    + '.totals-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 12px; }'
-    + '.totals-row.grand { font-size: 14px; font-weight:800; border-top: 2px solid #000; padding-top: 5px; margin-top: 3px; }'
-    + '.footer { text-align: center; margin-top: 10px; font-style: italic; font-size: 11.5px; }'
-    + '.kv { display: flex; justify-content: space-between; font-size: 11.5px; padding: 2px 0; }'
-    + '@media print { body { padding: 0; } button { display: none; } }'
-    + '</style>'
-    + '    
-</head><body>'
-    + '<div class="center">'
-    + '<div class="bold" style="font-size:14px">NHÀ THUỐC Medicare</div>'
-    + '<div>Địa chỉ: 123 Đường Ba Cu, P.4, TP. Vũng Tàu</div>'
-    + '<div>Điện thoại: 0901.234.567</div>'
-    + '</div>'
-    + '<div class="divider2"></div>'
-    + '<div class="center"><div class="title">HÓA ĐƠN BÁN LẾ</div></div>'
-    + '<div class="divider"></div>'
-    + '<div class="kv"><span class="bold">Số HĐ:</span><span>#' + escHtml(inv.code) + '</span></div>'
-    + '<div class="kv"><span class="bold">Ngày lập:</span><span>' + dateStr + '</span></div>'
-    + '<div class="kv"><span class="bold">Khách hàng:</span><span>' + (inv.customer ? escHtml(inv.customer.name) : 'Khách lẻ') + '</span></div>'
-    + (inv.customer ? '<div class="kv"><span class="bold">SĐT:</span><span>' + escHtml(inv.customer.phone) + '</span></div>' : '')
-    + '<div class="kv"><span class="bold">Dược sĩ bán:</span><span>' + escHtml(sellerName) + '</span></div>'
-    + '<div class="divider"></div>'
-    + '<table><thead><tr>'
-    + '<th style="text-align:center;width:24px">STT</th>'
-    + '<th>Tên Thuốc / Vật Tư</th>'
-    + '<th style="text-align:center;width:30px">ĐVT</th>'
-    + '<th style="text-align:center;width:24px">SL</th>'
-    + '<th style="text-align:right;width:60px">Đơn Giá</th>'
-    + '<th style="text-align:right;width:66px">Thành Tiền</th>'
-    + '</tr></thead><tbody>' + itemRows + '</tbody></table>'
-    + '<div class="divider"></div>'
-    + '<div class="totals">'
-    + '<div class="totals-row"><span>Tổng tiền hàng:</span><span>' + fmt(inv.subtotal) + '</span></div>'
-    + '<div class="totals-row"><span>Giảm giá:</span><span>-' + fmt(inv.discount) + '</span></div>'
-    + '<div class="totals-row grand"><span>TỔNG THANH TOÁN:</span><span>' + fmt(inv.total) + '</span></div>'
-    + '</div>'
-    + (inv.cashReceived > 0
-        ? '<div class="divider"></div>'
-          + '<div class="totals-row"><span>Tiền khách đưa:</span><span>' + fmt(inv.cashReceived) + '</span></div>'
-          + '<div class="totals-row"><span>Tiền thối:</span><span>' + fmt(inv.change) + '</span></div>'
-        : '')
-    + '<div class="divider"></div>'
-    + '<div class="footer">'
-    + '<div>-- Chúc quý khách sức khỏe và một ngày tốt lành --</div>'
-    + '<div style="margin-top:4px;font-size:10px;color:#555">Hẹn gặp lại quý khách!</div>'
-    + '</div>'
-    + '<div style="height:16px"></div>'
-    + '<div class="center" style="margin-top:8px">'
-    + '<button onclick="window.print()" style="padding:8px 20px;background:#1a56db;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:750;font-family:'Plus Jakarta Sans',sans-serif">🖶 In hóa đơn</button>'
-    + '<button onclick="window.close()" style="padding:8px 16px;background:#e5e7eb;color:#111;border:none;border-radius:6px;cursor:pointer;font-size:13px;margin-left:6px;font-family:'Plus Jakarta Sans',sans-serif">✕ Đóng</button>'
-    + '</div>'
-    + '</body></html>';
+  var html = `<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <title>Hóa đơn \${escHtml(inv.code)}</title>
+    <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; color: #000; padding: 8px; max-width: 320px; margin: 0 auto; }
+    .center { text-align: center; }
+    .bold { font-weight: bold; }
+    .title { font-size: 15px; font-weight:800; margin: 4px 0; }
+    .divider { border-top: 1px dashed #000; margin: 7px 0; }
+    .divider2 { border-top: 2px solid #000; margin: 7px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th { background: #eee; padding: 4px 6px; font-weight:750; border-bottom: 1px solid #000; }
+    td { vertical-align: top; padding: 4px 6px; }
+    .totals { margin-top: 6px; }
+    .totals-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 12px; }
+    .totals-row.grand { font-size: 14px; font-weight:800; border-top: 2px solid #000; padding-top: 5px; margin-top: 3px; }
+    .footer { text-align: center; margin-top: 10px; font-style: italic; font-size: 11.5px; }
+    .kv { display: flex; justify-content: space-between; font-size: 11.5px; padding: 2px 0; }
+    @media print { body { padding: 0; } .print-actions { display: none !important; } }
+    </style>
+</head>
+<body>
+    <div class="center">
+        <div class="bold" style="font-size:14px">NHÀ THUỐC Medicare</div>
+        <div>Địa chỉ: 123 Đường Ba Cu, P.4, TP. Vũng Tàu</div>
+        <div>Điện thoại: 0901.234.567</div>
+    </div>
+    <div class="divider2"></div>
+    <div class="center"><div class="title">HÓA ĐƠN BÁN LẺ</div></div>
+    <div class="divider"></div>
+    <div class="kv"><span class="bold">Số HĐ:</span><span>#\${escHtml(inv.code)}</span></div>
+    <div class="kv"><span class="bold">Ngày lập:</span><span>\${dateStr}</span></div>
+    <div class="kv"><span class="bold">Khách hàng:</span><span>\${inv.customer ? escHtml(inv.customer.name) : 'Khách lẻ'}</span></div>
+    \${inv.customer ? '<div class="kv"><span class="bold">SĐT:</span><span>' + escHtml(inv.customer.phone) + '</span></div>' : ''}
+    <div class="kv"><span class="bold">Dược sĩ bán:</span><span>\${escHtml(sellerName)}</span></div>
+    <div class="divider"></div>
+    <table>
+        <thead>
+            <tr>
+                <th style="text-align:center;width:24px">STT</th>
+                <th>Tên Thuốc / Vật Tư</th>
+                <th style="text-align:center;width:30px">ĐVT</th>
+                <th style="text-align:center;width:24px">SL</th>
+                <th style="text-align:right;width:60px">Đơn Giá</th>
+                <th style="text-align:right;width:66px">Thành Tiền</th>
+            </tr>
+        </thead>
+        <tbody>\${itemRows}</tbody>
+    </table>
+    <div class="divider"></div>
+    <div class="totals">
+        <div class="totals-row"><span>Tổng tiền hàng:</span><span>\${fmt(inv.subtotal)}</span></div>
+        <div class="totals-row"><span>Giảm giá:</span><span>-\${fmt(inv.discount)}</span></div>
+        <div class="totals-row grand"><span>TỔNG THANH TOÁN:</span><span>\${fmt(inv.total)}</span></div>
+    </div>
+    \${inv.cashReceived > 0 ? '<div class="divider"></div><div class="totals-row"><span>Tiền khách đưa:</span><span>' + fmt(inv.cashReceived) + '</span></div><div class="totals-row"><span>Tiền thối:</span><span>' + fmt(inv.change) + '</span></div>' : ''}
+    <div class="divider"></div>
+    <div class="footer">
+        <div>-- Chúc quý khách sức khỏe và một ngày tốt lành --</div>
+        <div style="margin-top:4px;font-size:10px;color:#555">Hẹn gặp lại quý khách!</div>
+    </div>
+    <div style="height:16px"></div>
+    <div class="center print-actions" style="margin-top:8px">
+        <button onclick="window.print()" style="padding:8px 20px;background:#1a56db;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:750;font-family:'Plus Jakarta Sans',sans-serif">🖶 In hóa đơn</button>
+        <button onclick="window.close()" style="padding:8px 16px;background:#e5e7eb;color:#111;border:none;border-radius:6px;cursor:pointer;font-size:13px;margin-left:6px;font-family:'Plus Jakarta Sans',sans-serif">✕ Đóng</button>
+    </div>
+</body>
+</html>`;
 
   const win = window.open('', '_blank', 'width=380,height=600,toolbar=0,menubar=0,scrollbars=1');
   if (win) {
@@ -2078,7 +2104,89 @@ function printReceipt() {
   } else {
     showToast('⚠️ Trình duyệt chặn popup — vui lòng cho phép!', 'err');
   }
-  closeSuccess();
+}
+
+// ── Render receipt in modal ──
+function renderModalReceipt(inv) {
+  const d = inv.date;
+  const dateStr = d.getDate().toString().padStart(2,'0') + '/' +
+                  (d.getMonth()+1).toString().padStart(2,'0') + '/' + d.getFullYear() + ' ' +
+                  d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+
+  let itemRows = '';
+  inv.items.forEach((item, idx) => {
+    itemRows += `
+      <tr style="border-bottom: 1px dashed #e2e8f0;">
+        <td style="padding: 4px 0; text-align: center;">\${idx + 1}</td>
+        <td style="padding: 4px 0; font-weight: bold;">\${escHtml(item.name)}</td>
+        <td style="padding: 4px 0; text-align: center;">\${escHtml(item.unit)}</td>
+        <td style="padding: 4px 0; text-align: center;">\${item.qty}</td>
+        <td style="padding: 4px 0; text-align: right;">\${fmt(item.price)}</td>
+        <td style="padding: 4px 0; text-align: right; font-weight: bold;">\${fmt(item.price * item.qty)}</td>
+      </tr>
+    `;
+  });
+
+  const html = `
+    <div style="text-align: center; border-bottom: 1px dashed #94a3b8; padding-bottom: 10px; margin-bottom: 10px;">
+      <div style="font-weight: bold; font-size: 14px;">NHÀ THUỐC Medicare</div>
+      <div style="font-size: 11px; color: #64748b;">Đ/c: 123 Đường Ba Cu, Vũng Tàu</div>
+      <div style="font-size: 11px; color: #64748b;">SĐT: 0901.234.567</div>
+    </div>
+    <div style="text-align: center; font-weight: bold; font-size: 14px; margin-bottom: 10px;">HÓA ĐƠN BÁN LẺ</div>
+    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+      <span>Mã HĐ:</span><span style="font-weight: bold;">#\${escHtml(inv.code)}</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+      <span>Ngày lập:</span><span>\${dateStr}</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+      <span>Khách hàng:</span><span>\${inv.customer ? escHtml(inv.customer.name) : 'Khách lẻ'}</span>
+    </div>
+    \${inv.customer ? '<div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span>SĐT:</span><span>' + escHtml(inv.customer.phone) + '</span></div>' : ''}
+    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+      <span>Dược sĩ:</span><span>\${escHtml(sellerName)}</span>
+    </div>
+    
+    <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 10px;">
+      <thead>
+        <tr style="border-bottom: 1px solid #475569; font-weight: bold;">
+          <th style="padding: 4px 0; text-align: center; width: 25px;">STT</th>
+          <th style="padding: 4px 0; text-align: left;">Tên Thuốc</th>
+          <th style="padding: 4px 0; text-align: center; width: 35px;">ĐVT</th>
+          <th style="padding: 4px 0; text-align: center; width: 25px;">SL</th>
+          <th style="padding: 4px 0; text-align: right; width: 65px;">Giá</th>
+          <th style="padding: 4px 0; text-align: right; width: 75px;">T.Tiền</th>
+        </tr>
+      </thead>
+      <tbody>
+        \${itemRows}
+      </tbody>
+    </table>
+    
+    <div style="border-top: 1px solid #475569; padding-top: 6px; font-size: 12px;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+        <span>Tạm tính:</span><span>\${fmt(inv.subtotal)}</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+        <span>Giảm giá:</span><span>-\&nbsp;\${fmt(inv.discount)}</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; margin-top: 4px; border-top: 1px dashed #94a3b8; padding-top: 4px;">
+        <span>TỔNG CỘNG:</span><span style="color: var(--blue);">\${fmt(inv.total)}</span>
+      </div>
+      \${inv.cashReceived > 0 ? '<div style="display: flex; justify-content: space-between; margin-top: 4px;"><span>Khách đưa:</span><span>' + fmt(inv.cashReceived) + '</span></div><div style="display: flex; justify-content: space-between; font-weight: bold; color: var(--green);"><span>Tiền thối:</span><span>' + fmt(inv.change) + '</span></div>' : ''}
+    </div>
+    <div style="text-align: center; font-style: italic; margin-top: 15px; font-size: 11px; color: #64748b;">
+      Cảm ơn quý khách. Hẹn gặp lại!
+    </div>
+  `;
+  document.getElementById('modalReceiptContainer').innerHTML = html;
+}
+
+// ── Close invoice modal and open My Invoices ──
+function closeInvoiceModalAndShowList() {
+  document.getElementById('successModal').classList.remove('show');
+  openMyInvModal();
 }
 
 function fmt(n) { return new Intl.NumberFormat('vi-VN').format(Math.round(n||0)) + 'đ'; }
