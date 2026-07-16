@@ -5,13 +5,17 @@
     req.setAttribute("currentShift", shiftDAO.findCurrent(staffAcc.getAccountId()));
   ============================================================
 --%>
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java"  pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn"  uri="jakarta.tags.functions" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
     <meta charset="UTF-8">
     <title>Dashboard Nhân viên — medicare</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/style.css">
@@ -77,7 +81,7 @@
 
         .shift-timer {
             font-size: 28px;
-            font-weight: 900;
+            font-weight:800;
             color: #059669;
             font-variant-numeric: tabular-nums;
             letter-spacing: -1px;
@@ -85,7 +89,7 @@
         .shift-timer-label {
             font-size: 11px;
             color: #6EE7B7;
-            font-weight: 700;
+            font-weight:750;
             text-transform: uppercase;
             letter-spacing: .5px;
             margin-top: 2px;
@@ -111,7 +115,7 @@
         }
         .shift-meta-val {
             font-size: 13px;
-            font-weight: 700;
+            font-weight:750;
             color: #065F46;
             margin-top: 3px;
         }
@@ -143,7 +147,7 @@
         }
         .shift-close-row label {
             font-size: 11px;
-            font-weight: 700;
+            font-weight:750;
             color: #059669;
             text-transform: uppercase;
             letter-spacing: .5px;
@@ -208,7 +212,7 @@
         }
         .shift-open-row label {
             font-size: 11px;
-            font-weight: 700;
+            font-weight:750;
             color: #64748B;
             text-transform: uppercase;
             letter-spacing: .5px;
@@ -254,9 +258,34 @@
             margin-bottom: 6px;
             font-size: 12px;
         }
-        .shift-history-item .hi-date { color: #475569; font-weight: 600; }
+        .shift-history-item .hi-date { color: #475569; font-weight:750; }
         .shift-history-item .hi-dur  { color: #64748B; }
-        .shift-history-item .hi-cash { color: #059669; font-weight: 700; }
+        .shift-history-item .hi-cash { color: #059669; font-weight:750; }
+    </style>
+    
+    
+    <!-- Premium Georgia Typography & UX Refinement by Senior UI/UX Dev -->
+    <style>
+        html, body, select, input, button, textarea, .nav-item, .notif-tab, .btn-primary, .topbar-user-name, .user-info-sm, .logout-btn-full, .topbar-clock, .table, th, td, .form-control, .card, .btn,
+        h1, h2, h3, h4, h5, h6, .logo-text, .page-title, .section-title, .card-title, .table-card-title, .page-head-left h1, .topbar-title, .notif-head-title, .alert-text strong {
+            font-family:'Plus Jakarta Sans',sans-serif"Times New Roman", serif !important;
+        }
+        h1, .page-head-left h1 {
+            letter-spacing: -0.01em !important;
+            font-weight:750 !important;
+        }
+        /* Aesthetic updates for soft inputs & buttons */
+        input:focus, select:focus, textarea:focus {
+            border-color: #3ABDE0 !important;
+            box-shadow: 0 0 0 3px rgba(58, 189, 224, 0.15) !important;
+        }
+        .btn-primary, .logout-btn-full {
+            transition: all 0.2s ease-in-out !important;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 6px 20px rgba(21, 88, 168, 0.3) !important;
+        }
     </style>
 </head>
 <body>
@@ -271,7 +300,7 @@
         <div class="shift-widget-header">
             <h3>🕐 Ca làm việc</h3>
             <c:if test="${not empty currentShift}">
-                <span style="font-size:12px;color:#059669;font-weight:700">
+                <span style="font-size:12px;color:#059669;font-weight:750">
                     Ca #${currentShift.shiftId}
                 </span>
             </c:if>
@@ -322,7 +351,7 @@
                             padding:14px 18px;margin-top:12px">
                     <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
                         <span style="font-size:20px">🔒</span>
-                        <span style="font-size:13.5px;font-weight:700;color:#92400E">
+                        <span style="font-size:13.5px;font-weight:750;color:#92400E">
                             Đóng ca qua thẻ NFC hoặc liên hệ Admin
                         </span>
                     </div>
@@ -349,7 +378,7 @@
                             <%-- Có lịch ca hôm nay → hướng đến trang Điểm danh --%>
                             <div style="background:#F0FDF4;border:1.5px solid #BBF7D0;
                                         border-radius:12px;padding:14px 18px">
-                                <div style="font-size:13px;font-weight:700;color:#065F46;margin-bottom:6px">
+                                <div style="font-size:13px;font-weight:750;color:#065F46;margin-bottom:6px">
                                     📋 Ca hôm nay: <strong>${todaySchedule.shiftTypeName}</strong>
                                 </div>
                                 <div style="font-size:12px;color:#059669;margin-bottom:10px">
@@ -360,7 +389,7 @@
                                 <a href="${pageContext.request.contextPath}/staff-checkin?uid=${staffUid}"
                                    style="display:inline-block;background:#10B981;color:#fff;
                                           padding:9px 20px;border-radius:8px;font-size:13px;
-                                          font-weight:700;text-decoration:none">
+                                          font-weight:750;text-decoration:none">
                                     ✅ Đi đến trang Điểm danh
                                 </a>
                             </div>
@@ -370,7 +399,7 @@
                             <div style="background:#FEF2F2;border:1.5px solid #FECACA;
                                         border-radius:12px;padding:14px 18px;text-align:center">
                                 <div style="font-size:20px;margin-bottom:6px">🚫</div>
-                                <div style="font-size:13px;font-weight:700;color:#991B1B;margin-bottom:4px">
+                                <div style="font-size:13px;font-weight:750;color:#991B1B;margin-bottom:4px">
                                     Hôm nay bạn không có lịch làm việc
                                 </div>
                                 <div style="font-size:12px;color:#B91C1C">

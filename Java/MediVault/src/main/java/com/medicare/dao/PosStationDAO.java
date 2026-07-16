@@ -12,7 +12,7 @@ public class PosStationDAO implements IPosStationDAO {
     private PosStation mapRow(ResultSet rs) throws SQLException {
         PosStation p = new PosStation();
         p.setPosStationId(rs.getInt("PosStationID"));
-        p.setStationName(rs.getNString("StationName"));
+        p.setStationName(rs.getString("StationName"));
         p.setActive(rs.getBoolean("IsActive"));
         return p;
     }

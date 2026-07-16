@@ -415,6 +415,32 @@ public class MedicineServlet extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/medicines?msg=updated");
     }
 
+    // ── Trả JSON cho modal "Nhập lô mới" (AJAX) — KHÔNG redirect, tránh mất dữ
+    // liệu các ô đã nhập đúng khi chỉ 1 ô bị sai. field = tên input để JS tô đỏ
+    // đúng ô lỗi, các ô còn lại giữ nguyên giá trị người dùng đã gõ. ──────────
+    private void writeBatchJson(HttpServletResponse resp, boolean ok, String msg,
+                                 String field, String redirect) throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        PrintWriter out = resp.getWriter();
+        StringBuilder sb = new StringBuilder("{\"ok\":").append(ok);
+        if (msg != null)      sb.append(",\"msg\":\"").append(jsEsc(msg)).append("\"");
+        if (field != null)    sb.append(",\"field\":\"").append(field).append("\"");
+        if (redirect != null) sb.append(",\"redirect\":\"").append(jsEsc(redirect)).append("\"");
+        sb.append("}");
+        out.print(sb);
+    }
+
+    /** Đoán tên input tương ứng với thông báo lỗi để JS highlight đúng ô — phần còn lại giữ nguyên. */
+    private String guessBatchField(String msg) {
+        if (msg == null) return null;
+        if (msg.contains("Số lô"))          return "batchNumber";
+        if (msg.contains("Số lượng"))       return "initialQuantity";
+        if (msg.contains("Giá nhập"))       return "importPrice";
+        if (msg.contains("hết hạn") || msg.contains("HSD")) return "expiryDate";
+        if (msg.contains("sản xuất"))       return "manufactureDate";
+        return null;
+    }
+
     // ── SAVE LÔ ───────────────────────────────────────────────────────────────
     private void saveBatch(HttpServletRequest req, HttpServletResponse resp)
             throws IOException, ServletException {
@@ -423,6 +449,8 @@ public class MedicineServlet extends HttpServlet {
         boolean isNew  = (bidStr == null || bidStr.isBlank());
         String poMode  = req.getParameter("poMode");
         String returnTo = req.getParameter("returnTo"); // "edit" khi gọi từ modal trong medicine-form
+        boolean isAjax  = "edit".equals(returnTo)
+                && "XMLHttpRequest".equals(req.getHeader("X-Requested-With"));
 
         String batchNo = req.getParameter("batchNumber");
         String expiry  = req.getParameter("expiryDate");
@@ -466,6 +494,10 @@ public class MedicineServlet extends HttpServlet {
         final String base       = "edit".equals(returnTo) ? baseEdit : baseDetail;
 
         if (!errors.isEmpty()) {
+            if (isAjax) {
+                writeBatchJson(resp, false, errors.get(0), guessBatchField(errors.get(0)), null);
+                return;
+            }
             if ("edit".equals(returnTo)) {
                 resp.sendRedirect(base + "&batchErr=" + java.net.URLEncoder.encode(errors.get(0), "UTF-8"));
                 return;
@@ -482,21 +514,28 @@ public class MedicineServlet extends HttpServlet {
                 // Case 3: lô đã hết hạn hoặc bị tiêu hủy
                 if ("DESTROYED".equals(existing.getStatus())
                         || existing.getExpiryDate().isBefore(LocalDate.now())) {
-                    resp.sendRedirect(base + "&batchErr=" + java.net.URLEncoder.encode(
-                            "Lô '" + batchNo.trim() + "' đã hết hạn hoặc bị tiêu hủy — hãy dùng số lô mới.", "UTF-8"));
+                    String msg = "Lô '" + batchNo.trim() + "' đã hết hạn hoặc bị tiêu hủy — hãy dùng số lô mới.";
+                    if (isAjax) { writeBatchJson(resp, false, msg, "batchNumber", null); return; }
+                    resp.sendRedirect(base + "&batchErr=" + java.net.URLEncoder.encode(msg, "UTF-8"));
                     return;
                 }
                 // Case 1: lô còn hoạt động → cộng thêm
                 int addQty = 0;
                 try { addQty = Integer.parseInt(qty); } catch (Exception ignored) {}
                 if (addQty <= 0) {
-                    resp.sendRedirect(base + "&batchErr=" + java.net.URLEncoder.encode(
-                            "Số lượng nhập phải lớn hơn 0!", "UTF-8"));
+                    String msg = "Số lượng nhập phải lớn hơn 0!";
+                    if (isAjax) { writeBatchJson(resp, false, msg, "initialQuantity", null); return; }
+                    resp.sendRedirect(base + "&batchErr=" + java.net.URLEncoder.encode(msg, "UTF-8"));
                     return;
                 }
                 boolean ok = batchesDAO.addStock(existing.getBatchId(), addQty);
                 if (ok) AuditHelper.log(req, "Bổ sung vào lô", "Batch",
                         "Lô " + batchNo.trim() + " (thuốc ID=" + medicineId + "): +" + addQty);
+                if (isAjax) {
+                    writeBatchJson(resp, ok, null, null,
+                            base + "&msg=" + (ok ? "batch-stock-added" : "batch-stock-fail") + "&addedQty=" + addQty);
+                    return;
+                }
                 resp.sendRedirect(base + "&msg=" + (ok ? "batch-stock-added" : "batch-stock-fail")
                         + "&addedQty=" + addQty);
                 return;
@@ -528,17 +567,33 @@ public class MedicineServlet extends HttpServlet {
 
         Account adminAcc = (Account) req.getSession(false).getAttribute("adminAccount");
         int adminId = adminAcc != null ? adminAcc.getAccountId() : 1;
+        boolean forceShortExpiry = "true".equals(req.getParameter("forceShortExpiry"));
 
         ServiceResult<Batches> result = medicineService.saveBatch(
                 b, isNew, poMode,
                 req.getParameter("poId"),
                 req.getParameter("newPoSupplierId"),
                 req.getParameter("newPoNotes"),
-                adminId);
+                adminId,
+                forceShortExpiry);
 
         if (result.isFail()) {
+            String errMsg = result.hasErrors() ? result.getErrors().get(0) : result.getMessage();
+            if (errMsg != null && errMsg.startsWith("EXPIRY_WARNING:")) {
+                if (isAjax) { writeBatchJson(resp, false, errMsg, "expiryDate", null); return; }
+                if ("edit".equals(returnTo)) {
+                    resp.sendRedirect(base + "&expiryWarn=" + java.net.URLEncoder.encode(errMsg, "UTF-8"));
+                } else {
+                    req.setAttribute("expiryWarning", errMsg);
+                    showBatchForm(req, resp, isNew ? null : b);
+                }
+                return;
+            }
+            if (isAjax) {
+                writeBatchJson(resp, false, errMsg != null ? errMsg : "Lỗi không xác định", guessBatchField(errMsg), null);
+                return;
+            }
             if ("edit".equals(returnTo)) {
-                String errMsg = result.hasErrors() ? result.getErrors().get(0) : result.getMessage();
                 resp.sendRedirect(base + "&batchErr=" + java.net.URLEncoder.encode(errMsg != null ? errMsg : "Lỗi không xác định", "UTF-8"));
                 return;
             }
@@ -553,14 +608,15 @@ public class MedicineServlet extends HttpServlet {
             int poId = result.getData() != null ? result.getData().getPoId() : 0;
             AuditHelper.log(req, "Tạo phiếu nhập (chờ hàng)", "PurchaseOrder", poId,
                     "Nhập lô " + batchNo + " — SL: " + qty + " (PENDING, chưa cộng kho)");
-            if (poId > 0) {
-                resp.sendRedirect(req.getContextPath() + "/purchase-orders?action=detail&id=" + poId + "&msg=po-pending");
-            } else {
-                resp.sendRedirect(base + "&msg=batch-added");
-            }
+            String redirectUrl = poId > 0
+                    ? req.getContextPath() + "/purchase-orders?action=detail&id=" + poId + "&msg=po-pending"
+                    : base + "&msg=batch-added";
+            if (isAjax) { writeBatchJson(resp, true, null, null, redirectUrl); return; }
+            resp.sendRedirect(redirectUrl);
             return;
         }
         AuditHelper.log(req, "Sửa lô thuốc", "Batch", "Sửa lô " + batchNo);
+        if (isAjax) { writeBatchJson(resp, true, null, null, base + "&msg=batch-updated"); return; }
         resp.sendRedirect(base + "&msg=batch-updated");
     }
 
@@ -672,6 +728,10 @@ public class MedicineServlet extends HttpServlet {
             m.setExpiryAlertDays(Integer.parseInt(req.getParameter("expiryAlertDays")));
         } catch (Exception ignored) {
         }
+        String shelfLifeStr = req.getParameter("shelfLifeMonths");
+        if (shelfLifeStr != null && !shelfLifeStr.isBlank()) {
+            try { m.setShelfLifeMonths(Integer.parseInt(shelfLifeStr)); } catch (Exception ignored) {}
+        }
         m.setPackagingSpec(req.getParameter("packagingSpec"));
         // Existing image URL is passed as hidden field; preserved unless a new image is uploaded
         m.setImageUrl(req.getParameter("existingImageUrl"));
@@ -757,6 +817,7 @@ public class MedicineServlet extends HttpServlet {
             sb.append("\"sellingPrice\":").append(m.getSellingPrice() != null ? m.getSellingPrice().toPlainString() : "0").append(',');
             sb.append("\"minInventory\":").append(m.getMinInventory()).append(',');
             sb.append("\"expiryAlertDays\":").append(m.getExpiryAlertDays()).append(',');
+            sb.append("\"shelfLifeMonths\":").append(m.getShelfLifeMonths() != null ? m.getShelfLifeMonths() : "null").append(',');
             sb.append("\"isPrescriptionRequired\":").append(m.isPrescriptionRequired()).append(',');
             sb.append("\"status\":").append(m.isStatus()).append(',');
             sb.append("\"totalStock\":").append(totalStock).append(',');

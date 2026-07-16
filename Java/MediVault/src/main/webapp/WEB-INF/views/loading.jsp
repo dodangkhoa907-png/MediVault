@@ -47,13 +47,13 @@
   box-shadow:0 4px 16px rgba(21,88,168,.25);
 }
 .mv-load-name{
-  font-family:'Outfit',sans-serif;
+  font-family:'Plus Jakarta Sans',sans-serif"Times New Roman", serif;
   font-size:22px;font-weight:800;
   color:#0F2645;letter-spacing:-.3px;
 }
 .mv-load-sub{
-  font-family:'Outfit',sans-serif;
-  font-size:11px;font-weight:600;
+  font-family:'Plus Jakarta Sans',sans-serif"Times New Roman", serif;
+  font-size:11px;font-weight:750;
   color:#7A90B0;letter-spacing:1px;text-transform:uppercase;
 }
 
@@ -68,8 +68,8 @@
 @keyframes mv-spin{to{transform:rotate(360deg)}}
 
 .mv-load-text{
-  font-family:'Outfit',sans-serif;
-  font-size:13px;color:#7A90B0;font-weight:500;
+  font-family:'Plus Jakarta Sans',sans-serif"Times New Roman", serif;
+  font-size:13px;color:#7A90B0;font-weight:750;
   letter-spacing:.3px;
 }
 

@@ -13,10 +13,10 @@ public class ShelfDAO implements IShelfDAO {
     private Shelf mapRow(ResultSet rs) throws SQLException {
         Shelf s = new Shelf();
         s.setShelfId(rs.getInt("ShelfID"));
-        s.setShelfName(MojibakeUtil.fix(rs.getNString("ShelfName")));
+        s.setShelfName(MojibakeUtil.fix(rs.getString("ShelfName")));
         s.setMachineSlotCode(rs.getString("MachineSlotCode"));
         s.setMotorId(rs.getString("MotorID"));
-        s.setLocationNotes(MojibakeUtil.fix(rs.getNString("LocationNotes")));
+        s.setLocationNotes(MojibakeUtil.fix(rs.getString("LocationNotes")));
         try { s.setShelfType(rs.getString("ShelfType")); } catch (SQLException ignored) {}
         s.setAutomated(rs.getBoolean("IsAutomated"));
         return s;

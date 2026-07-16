@@ -202,17 +202,17 @@
 .logo-text span{color:#3ABDE0}
 .logo-sub{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1.2px;text-transform:uppercase;margin-top:1px}
 .nav-section{padding:12px 0 4px;flex-shrink:0}
-.nav-label{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:500;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
+.nav-label{font-size:9px;font-weight:750;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:750;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
 .nav-item:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.06)}
-.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:600}
+.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:750}
 .nav-item.active::before{content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:56%;background:#3ABDE0;border-radius:2px}
 .nav-icon{width:18px;text-align:center;font-size:14px;flex-shrink:0;opacity:.8}
 .nav-item.active .nav-icon{opacity:1}
-.nav-badge{margin-left:auto;background:#DC2626;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;min-width:20px;text-align:center}
+.nav-badge{margin-left:auto;background:#DC2626;color:#fff;font-size:10px;font-weight:750;padding:1px 7px;border-radius:20px;min-width:20px;text-align:center}
 .main{margin-left:232px;flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0}
 .sidebar-footer{margin-top:auto;padding:20px 14px 16px;border-top:1px solid rgba(255,255,255,.07);flex-shrink:0}
-.logout-btn-full{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:10px 14px;border-radius:10px;background:rgba(220,38,38,.35);border:1.5px solid rgba(220,38,38,.3);color:#FF6B6B;text-decoration:none;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;letter-spacing:.3px;transition:all .2s}
+.logout-btn-full{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:10px 14px;border-radius:10px;background:rgba(220,38,38,.35);border:1.5px solid rgba(220,38,38,.3);color:#FF6B6B;text-decoration:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;letter-spacing:.3px;transition:all .2s}
 .logout-btn-full:hover{background:rgba(220,38,38,.58);color:#fff;border-color:#DC2626}
 @media(max-width:820px){
   .sidebar{transform:translateX(-100%);transition:transform .25s ease}

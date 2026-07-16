@@ -14,7 +14,7 @@ import java.util.List;
  *
  * Flow bán hàng chuẩn:
  *   1. createPending()       → tạo hóa đơn PENDING
- *   2. addItemByFIFO()       → gọi SP_AddSaleByFIFO cho từng thuốc
+ *   2. addItemByFIFO()       → gọi SP_AddSaleByFEFO cho từng thuốc (trừ kho theo HSD gần nhất trước)
  *   3. complete()            → chốt hóa đơn COMPLETED + tính tiền
  *   4. (nếu lỗi) cancel()   → hủy hóa đơn CANCELLED
  */
@@ -66,14 +66,13 @@ public class InvoiceDAO implements IInvoiceDAO {
     }
 
     /**
-     * Bước 2: Thêm 1 loại thuốc vào hóa đơn theo FIFO.
-     * Gọi Stored Procedure SP_AddSaleByFIFO trong DB.
-     * SP tự chọn lô cũ nhất → trừ kho → tạo InvoiceDetail → đẩy lệnh máy.
+     * Bước 2: Thêm 1 loại thuốc vào hóa đơn theo FEFO (First Expire, First Out).
+     * Gọi Stored Procedure SP_AddSaleByFEFO trong DB.
+     * SP tự chọn lô có HSD gần nhất trước (không phải lô nhập trước) → trừ kho → tạo InvoiceDetail.
      */
     public boolean addItemByFIFO(int invoiceId, int medicineId, int quantity) {
-        String sql = "EXEC SP_AddSaleByFIFO ?, ?, ?";
         try (Connection cn = DBContext.getConnection();
-             CallableStatement cs = cn.prepareCall(sql)) {
+             CallableStatement cs = cn.prepareCall("{CALL SP_AddSaleByFEFO(?, ?, ?)}")) {
             cs.setInt(1, invoiceId);
             cs.setInt(2, medicineId);
             cs.setInt(3, quantity);
@@ -217,33 +216,43 @@ public class InvoiceDAO implements IInvoiceDAO {
      * @param shiftId  Ca làm việc hiện tại (null nếu không có ca đang mở)
      * @return invoiceId nếu thành công, -1 nếu lỗi
      */
+    // ThreadLocal — InvoiceDAO được servlet giữ như 1 instance dùng chung cho MỌI request
+    // (xem PosServlet/SaleService: `private final ... = new InvoiceDAO()`), nên KHÔNG được
+    // dùng field thường ở đây: 2 nhân viên bán hàng ở 2 quầy POS thanh toán cùng lúc sẽ ghi
+    // đè lỗi của nhau. ThreadLocal đảm bảo mỗi thread (mỗi request) có bản riêng.
+    private final ThreadLocal<String> lastSaleError = new ThreadLocal<>();
+
+    public String getLastSaleError() { return lastSaleError.get(); }
+
     public int completeSaleTransaction(int accountId, Integer shiftId, Integer customerId,
                                        String paymentMethod, java.math.BigDecimal discount,
                                        int[] medicineIds, int[] quantities) {
+        lastSaleError.remove();
         Connection cn = null;
         try {
             cn = DBContext.getConnection();
-            cn.setAutoCommit(false);  // ── Bắt đầu transaction ──
+            cn.setAutoCommit(false);
 
             // Bước 1: Tạo Invoice PENDING — bao gồm ShiftID
+            int invoiceId;
             String sqlInsert = "INSERT INTO Invoices (AccountID, ShiftID, CustomerID, PaymentMethod) " +
-                    "VALUES (?,?,?,?); SELECT SCOPE_IDENTITY();";
-            int invoiceId = -1;
-            try (PreparedStatement ps = cn.prepareStatement(sqlInsert)) {
+                    "VALUES (?,?,?,?)";
+            try (PreparedStatement ps = cn.prepareStatement(sqlInsert, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setInt(1, accountId);
                 if (shiftId != null) ps.setInt(2, shiftId); else ps.setNull(2, Types.INTEGER);
                 if (customerId != null) ps.setInt(3, customerId); else ps.setNull(3, Types.INTEGER);
                 ps.setString(4, paymentMethod != null ? paymentMethod : "CASH");
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) invoiceId = rs.getInt(1);
+                ps.executeUpdate();
+                try (ResultSet keys = ps.getGeneratedKeys()) {
+                    if (keys.next()) invoiceId = keys.getInt(1);
+                    else throw new Exception("Không lấy được InvoiceID sau INSERT");
                 }
             }
-            if (invoiceId < 0) throw new Exception("Không tạo được hóa đơn");
+            if (invoiceId <= 0) throw new Exception("InvoiceID không hợp lệ: " + invoiceId);
 
-            // Bước 2: Thêm từng sản phẩm qua SP (FIFO) — cùng connection, cùng transaction
-            String sqlSP = "EXEC SP_AddSaleByFIFO ?, ?, ?";
+            // Bước 2: Thêm từng sản phẩm qua SP (FEFO — hạn dùng gần nhất trước) — cùng connection, cùng transaction
             for (int i = 0; i < medicineIds.length; i++) {
-                try (CallableStatement cs = cn.prepareCall(sqlSP)) {
+                try (CallableStatement cs = cn.prepareCall("{CALL SP_AddSaleByFEFO(?, ?, ?)}")) {
                     cs.setInt(1, invoiceId);
                     cs.setInt(2, medicineIds[i]);
                     cs.setInt(3, quantities[i]);
@@ -264,14 +273,16 @@ public class InvoiceDAO implements IInvoiceDAO {
                 ps.setInt(2, invoiceId);
                 ps.setBigDecimal(3, disc);
                 ps.setInt(4, invoiceId);
-                if (ps.executeUpdate() == 0) throw new Exception("Không complete được hóa đơn");
+                if (ps.executeUpdate() == 0) throw new Exception("Không complete được hóa đơn (ID=" + invoiceId + ")");
             }
 
             cn.commit();
             return invoiceId;
 
         } catch (Exception e) {
+            lastSaleError.set(e.getMessage());
             System.err.println("[InvoiceDAO] completeSaleTransaction rollback: " + e.getMessage());
+            e.printStackTrace();
             if (cn != null) {
                 try { cn.rollback(); } catch (SQLException rb) { rb.printStackTrace(); }
             }
@@ -408,7 +419,7 @@ public class InvoiceDAO implements IInvoiceDAO {
             ps.setDate(1, Date.valueOf(from));
             ps.setDate(2, Date.valueOf(to));
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) result.put(rs.getNString("Label"), rs.getBigDecimal("Rev"));
+                while (rs.next()) result.put(rs.getString("Label"), rs.getBigDecimal("Rev"));
             }
         } catch (Exception e) { e.printStackTrace(); }
         return result;
@@ -430,7 +441,7 @@ public class InvoiceDAO implements IInvoiceDAO {
             ps.setDate(1, Date.valueOf(from));
             ps.setDate(2, Date.valueOf(to));
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) result.put(rs.getNString("Label"), rs.getBigDecimal("Rev"));
+                while (rs.next()) result.put(rs.getString("Label"), rs.getBigDecimal("Rev"));
             }
         } catch (Exception e) { e.printStackTrace(); }
         return result;

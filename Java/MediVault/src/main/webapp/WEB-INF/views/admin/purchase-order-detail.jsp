@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8"  pageEncoding="UTF-8" %>
 <%@ taglib prefix="c"   uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%@ taglib prefix="fn"  uri="jakarta.tags.functions" %>
@@ -13,11 +13,15 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>${po.poCode} — MediCare</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -25,10 +29,10 @@
   --surface:#F1F5FB;--white:#fff;--muted:#7A90B0;--border:#D5E0F0;
   --green:#059669;--red:#DC2626;--gold:#D97706;
 }
-html,body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--surface);color:var(--ink)}
+html,body{min-height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(--surface);color:var(--ink)}
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50}
-.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--ink)}
-.btn-back{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:9px;border:1.5px solid var(--border);background:var(--white);color:var(--ink);font-size:13px;font-weight:600;text-decoration:none}
+.topbar-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:750;color:var(--ink)}
+.btn-back{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:9px;border:1.5px solid var(--border);background:var(--white);color:var(--ink);font-size:13px;font-weight:750;text-decoration:none}
 .btn-back:hover{border-color:var(--blue);color:var(--blue)}
 
     
@@ -36,10 +40,10 @@ html,body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--surfa
 .user-av-sm{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#3ABDE0,#1558A8);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
 .content{max-width:880px;margin:28px auto;padding:0 20px 40px}
 .info-card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:18px;display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
-.info-item .lbl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:4px}
+.info-item .lbl{font-size:10.5px;font-weight:750;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:4px}
 .info-item .val{font-size:15px;font-weight:800;color:var(--ink)}
 .info-item.full{grid-column:1/-1}
-.table-card{background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.table-card{background:#fff;border:1px solid rgba(213,224,240,.45);border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(15,38,69,.03),0 4px 12px rgba(15,38,69,.04)}
 .table-card-head{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .table-card-head h2{font-size:15px;font-weight:800}
 .table-wrap{overflow-x:auto}
@@ -49,8 +53,9 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink);border-bottom:1px sol
 tbody tr:last-child td{border-bottom:none}
 .empty-row{text-align:center;padding:48px;color:var(--muted)}
 .hint-box{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px 16px;margin-bottom:18px;font-size:12.5px;color:#1558A8;display:flex;gap:10px;align-items:flex-start}
-.btn-primary{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;text-decoration:none}
+.btn-primary{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;border:none;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:750;cursor:pointer;text-decoration:none}
 </style>
+    
 </head>
 <body>
 <div class="topbar">
@@ -63,18 +68,26 @@ tbody tr:last-child td{border-bottom:none}
 
   <%-- Toast kết quả nhận hàng --%>
   <c:if test="${param.msg == 'po-pending'}">
-    <div style="background:#EFF6FF;border:1px solid #BFDBFE;color:#1558A8;border-radius:11px;padding:12px 18px;margin-bottom:16px;font-size:13.5px;font-weight:700">
+    <div style="background:#EFF6FF;border:1px solid #BFDBFE;color:#1558A8;border-radius:11px;padding:12px 18px;margin-bottom:16px;font-size:13.5px;font-weight:750">
       📋 Đã tạo phiếu nhập — đơn đang <b>CHỜ HÀNG VỀ</b>. Kho CHƯA tăng. Khi hàng tới, bấm <b>"Xác nhận Hàng Đã Tới"</b> bên dưới.
     </div>
   </c:if>
   <c:if test="${param.msg == 'received'}">
-    <div style="background:#D1FAE5;border:1px solid #A7F3D0;color:#065F46;border-radius:11px;padding:12px 18px;margin-bottom:16px;font-size:13.5px;font-weight:700">
+    <div style="background:#D1FAE5;border:1px solid #A7F3D0;color:#065F46;border-radius:11px;padding:12px 18px;margin-bottom:16px;font-size:13.5px;font-weight:750">
       ✅ Đã xác nhận hàng về — các lô đã được nhập kho, tồn kho đã tăng!
     </div>
   </c:if>
   <c:if test="${param.msg == 'receive-fail'}">
-    <div style="background:#FEE2E2;border:1px solid #FECACA;color:#991B1B;border-radius:11px;padding:12px 18px;margin-bottom:16px;font-size:13.5px;font-weight:700">
-      ❌ Không thể xác nhận (đơn không ở trạng thái Chờ xử lý hoặc không có dòng hàng).
+    <div style="background:#FEE2E2;border:1px solid #FECACA;color:#991B1B;border-radius:11px;padding:12px 18px;margin-bottom:16px;font-size:13.5px;font-weight:750">
+      ❌ Không thể xác nhận hàng về.
+      <c:choose>
+        <c:when test="${not empty param.receiveErr}">
+          <div style="margin-top:6px;font-weight:600;font-size:12.5px">Lý do: <c:out value="${param.receiveErr}"/></div>
+        </c:when>
+        <c:otherwise>
+          Đơn không ở trạng thái Chờ xử lý hoặc không có dòng hàng.
+        </c:otherwise>
+      </c:choose>
     </div>
   </c:if>
 
@@ -121,9 +134,9 @@ tbody tr:last-child td{border-bottom:none}
       </c:choose>
     </div></div>
     <div class="info-item"><div class="lbl">Chiết khấu</div><div class="val" style="font-size:13px"><fmt:formatNumber value="${po.discountAmount}" type="number" maxFractionDigits="0"/>đ</div></div>
-    <div class="info-item full"><div class="lbl">Địa chỉ NCC (đặt hàng ở đâu)</div><div class="val" style="font-size:13px;font-weight:600">${supplier != null && not empty supplier.address ? supplier.address : 'Chưa cập nhật địa chỉ — vào tab Nhà cung cấp để bổ sung.'}</div></div>
+    <div class="info-item full"><div class="lbl">Địa chỉ NCC (đặt hàng ở đâu)</div><div class="val" style="font-size:13px;font-weight:750">${supplier != null && not empty supplier.address ? supplier.address : 'Chưa cập nhật địa chỉ — vào tab Nhà cung cấp để bổ sung.'}</div></div>
     <c:if test="${not empty po.notes}">
-      <div class="info-item full"><div class="lbl">Ghi chú</div><div class="val" style="font-size:13px;font-weight:500">${po.notes}</div></div>
+      <div class="info-item full"><div class="lbl">Ghi chú</div><div class="val" style="font-size:13px;font-weight:750">${po.notes}</div></div>
     </c:if>
   </div>
 
@@ -143,10 +156,10 @@ tbody tr:last-child td{border-bottom:none}
           </c:if>
           <c:forEach var="d" items="${podLines}">
             <tr>
-              <td style="font-weight:700">${d.medicineName}</td>
+              <td style="font-weight:750">${d.medicineName}</td>
               <td style="font-family:monospace">${not empty d.batchNumber ? d.batchNumber : '—'}</td>
               <td style="color:var(--muted)">${d.expiryDate != null ? d.expiryDate : '—'}</td>
-              <td style="font-weight:700">${d.quantity}</td>
+              <td style="font-weight:750">${d.quantity}</td>
               <td><fmt:formatNumber value="${d.importPrice}" type="number" maxFractionDigits="0"/>đ</td>
               <td style="font-weight:800"><fmt:formatNumber value="${d.importPrice * d.quantity}" type="number" maxFractionDigits="0"/>đ</td>
             </tr>
@@ -172,7 +185,7 @@ tbody tr:last-child td{border-bottom:none}
           </c:if>
           <c:forEach var="b" items="${batches}">
             <tr>
-              <td style="font-weight:700">${medicineMap[b.medicineId] != null ? medicineMap[b.medicineId].medicineName : 'ID ' += b.medicineId}</td>
+              <td style="font-weight:750">${medicineMap[b.medicineId] != null ? medicineMap[b.medicineId].medicineName : 'ID ' += b.medicineId}</td>
               <td style="font-family:monospace">${b.batchNumber}</td>
               <td style="color:var(--muted)">${b.expiryDate}</td>
               <td><fmt:formatNumber value="${b.importPrice}" type="number" maxFractionDigits="0"/>đ</td>

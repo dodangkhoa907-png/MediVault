@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8"  pageEncoding="UTF-8" %>
 <%@ taglib prefix="c"   uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn"  uri="jakarta.tags.functions" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
@@ -33,12 +33,16 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta name="ctx" content="${pageContext.request.contextPath}">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>MediCare — <%= roleName %></title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+
+
 <script src="${pageContext.request.contextPath}/js/face-api/face-api.min.js" defer></script>
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff-portal.css">
 <style>
@@ -69,14 +73,14 @@
 .notif-dropdown.show{display:block;animation:ndSlide .2s ease}
 @keyframes ndSlide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 .nd-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.nd-title{font-size:13px;font-weight:700;color:var(--ink)}
-.nd-mark-all{font-size:11px;color:var(--main);cursor:pointer;font-weight:600;border:none;background:none}
+.nd-title{font-size:13px;font-weight:750;color:var(--ink)}
+.nd-mark-all{font-size:11px;color:var(--main);cursor:pointer;font-weight:750;border:none;background:none}
 .nd-mark-all:hover{text-decoration:underline}
 .nd-list{max-height:320px;overflow-y:auto}
 .nd-item{padding:10px 16px;border-bottom:1px solid rgba(0,0,0,.04);cursor:pointer;transition:background .12s}
 .nd-item:hover{background:var(--soft)}
 .nd-item:last-child{border-bottom:none}
-.nd-item-title{font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:2px}
+.nd-item-title{font-size:12.5px;font-weight:750;color:var(--ink);margin-bottom:2px}
 .nd-item-msg{font-size:11.5px;color:var(--muted);line-height:1.5}
 .nd-item-time{font-size:10px;color:var(--muted);margin-top:3px;opacity:.7}
 .nd-empty{padding:24px 16px;text-align:center;color:var(--muted);font-size:12px}
@@ -86,10 +90,10 @@
   animation:reminderGlow 2s ease-in-out infinite alternate}
 @keyframes reminderGlow{from{box-shadow:0 0 0 0 rgba(245,158,11,.2)}to{box-shadow:0 0 0 8px rgba(245,158,11,.15)}}
 .shift-reminder-icon{font-size:22px;flex-shrink:0}
-.shift-reminder-text{font-size:13px;font-weight:600;color:#78350F}
+.shift-reminder-text{font-size:13px;font-weight:750;color:#78350F}
 .shift-reminder-time{font-size:12px;color:#92400E;margin-top:2px}
 
-html,body{height:100%;font-family:'Outfit',sans-serif}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif}
 body{display:flex;background:var(--soft);color:var(--ink)}
 
 /* ── TOPBAR ── */
@@ -100,18 +104,18 @@ body{display:flex;background:var(--soft);color:var(--ink)}
   position:sticky;top:0;z-index:50;
 }
 .topbar-greeting{
-  font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;color:var(--muted);
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:750;color:var(--muted);
 }
-.topbar-greeting strong{color:var(--ink);font-weight:700}
+.topbar-greeting strong{color:var(--ink);font-weight:750}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-shrink:0}
 .clock-pill{
   display:flex;align-items:center;gap:6px;padding:6px 13px;
   background:var(--soft);border:1.5px solid var(--border);border-radius:20px;
-  font-size:13px;font-weight:700;color:var(--main);font-variant-numeric:tabular-nums;
+  font-size:13px;font-weight:750;color:var(--main);font-variant-numeric:tabular-nums;
 }
 .clock-sep{animation:blink 1s step-end infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-.clock-date{font-size:11px;font-weight:500;color:var(--muted);border-left:1px solid var(--border);padding-left:8px;margin-left:2px;font-variant-numeric:initial}
+.clock-date{font-size:11px;font-weight:750;color:var(--muted);border-left:1px solid var(--border);padding-left:8px;margin-left:2px;font-variant-numeric:initial}
 .topbar-av{
   width:34px;height:34px;border-radius:9px;
   background:linear-gradient(135deg,var(--light),var(--main));
@@ -147,11 +151,11 @@ body{display:flex;background:var(--soft);color:var(--ink)}
   width:58px;height:58px;border-radius:16px;flex-shrink:0;
   background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.25);
   display:flex;align-items:center;justify-content:center;
-  font-family:'DM Serif Display',serif;font-size:22px;color:#fff;
+  font-family:'Lora',serif;font-size:22px;color:#fff;
 }
 .welcome-body{flex:1;min-width:0}
 .welcome-body h2{
-  font-family:'DM Serif Display',serif;font-size:22px;font-weight:400;
+  font-family:'Lora',serif;font-size:22px;font-weight:400;
   color:#fff;margin-bottom:4px;
 }
 .welcome-body p{font-size:13.5px;color:rgba(255,255,255,.6)}
@@ -161,7 +165,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
   border-radius:14px;padding:12px 18px;text-align:center;
 }
 .wrb-icon{font-size:22px;display:block;margin-bottom:5px}
-.wrb-text{font-size:12px;font-weight:600;color:rgba(255,255,255,.8)}
+.wrb-text{font-size:12px;font-weight:750;color:rgba(255,255,255,.8)}
 
 /* Stats */
 .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px}
@@ -173,19 +177,19 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 }
 .stat-card:hover{box-shadow:0 6px 24px rgba(109,40,217,.09);transform:translateY(-2px)}
 .stat-top{display:flex;align-items:center;justify-content:space-between}
-.stat-lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.stat-lbl{font-size:11px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
 .stat-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px}
 .ic-p{background:rgba(109,40,217,.1)}
 .ic-r{background:rgba(220,38,38,.1)}
 .ic-g{background:rgba(5,150,105,.1)}
 .ic-o{background:rgba(217,119,6,.1)}
-.stat-val{font-family:'DM Serif Display',serif;font-size:30px;color:var(--ink)}
+.stat-val{font-family:'Lora',serif;font-size:30px;color:var(--ink)}
 .stat-note{font-size:12px;color:var(--muted)}
-.stat-warn{color:var(--red);font-weight:600}
+.stat-warn{color:var(--red);font-weight:750}
 
 /* Section heading */
 .sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.sec-title{font-family:'DM Serif Display',serif;font-size:18px;color:var(--ink)}
+.sec-title{font-family:'Lora',serif;font-size:18px;color:var(--ink)}
 .sec-sub{font-size:12.5px;color:var(--muted);margin-top:1px}
 /* ── Shift widget (inline — staff-dashboard-shift-section removed) ── */
 .shift-widget{background:#fff;border:1.5px solid #E8EDF5;border-radius:16px;overflow:hidden;margin-bottom:20px}
@@ -196,18 +200,18 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .shift-live-badge{display:inline-flex;align-items:center;gap:7px;background:#D1FAE5;color:#065F46;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:800}
 .dot-live{width:8px;height:8px;border-radius:50%;background:#10B981;animation:pulse 1.4s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.shift-timer{font-size:28px;font-weight:900;color:#059669;font-variant-numeric:tabular-nums;letter-spacing:-1px}
-.shift-timer-label{font-size:11px;color:#6EE7B7;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.shift-timer{font-size:28px;font-weight:800;color:#059669;font-variant-numeric:tabular-nums;letter-spacing:-1px}
+.shift-timer-label{font-size:11px;color:#6EE7B7;font-weight:750;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
 .shift-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
 .shift-meta-item{background:rgba(255,255,255,.7);border-radius:8px;padding:9px 12px}
 .shift-meta-label{font-size:10px;font-weight:800;color:#6EE7B7;text-transform:uppercase;letter-spacing:.5px}
-.shift-meta-val{font-size:13px;font-weight:700;color:#065F46;margin-top:3px}
+.shift-meta-val{font-size:13px;font-weight:750;color:#065F46;margin-top:3px}
 .shift-close-form{padding:16px 20px;border-top:1px solid #D1FAE5;background:rgba(236,253,245,.5)}
 .shift-close-form h4{font-size:13px;font-weight:800;color:#065F46;margin:0 0 12px}
 .shift-close-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
 .shift-close-row .fg{display:flex;flex-direction:column;gap:5px;flex:1;min-width:140px}
-.shift-close-row label{font-size:11px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:.5px}
-.shift-close-row input,.shift-close-row textarea{border:1.5px solid #A7F3D0;border-radius:8px;padding:8px 12px;font-size:13px;background:#fff;font-family:'Outfit',sans-serif}
+.shift-close-row label{font-size:11px;font-weight:750;color:#059669;text-transform:uppercase;letter-spacing:.5px}
+.shift-close-row input,.shift-close-row textarea{border:1.5px solid #A7F3D0;border-radius:8px;padding:8px 12px;font-size:13px;background:#fff;font-family:'Plus Jakarta Sans',sans-serif}
 .shift-close-row input:focus,.shift-close-row textarea:focus{outline:none;border-color:#059669}
 .btn-close-shift{background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:800;cursor:pointer;align-self:flex-end;white-space:nowrap}
 .btn-close-shift:hover{opacity:.9}
@@ -218,24 +222,24 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .shift-open-form h4{font-size:13px;font-weight:800;color:#1558A8;margin:0 0 12px}
 .shift-open-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
 .shift-open-row .fg{display:flex;flex-direction:column;gap:5px}
-.shift-open-row label{font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px}
-.shift-open-row input{border:1.5px solid #BFDBFE;border-radius:8px;padding:8px 12px;font-size:13px;min-width:150px;font-family:'Outfit',sans-serif}
+.shift-open-row label{font-size:11px;font-weight:750;color:#64748B;text-transform:uppercase;letter-spacing:.5px}
+.shift-open-row input{border:1.5px solid #BFDBFE;border-radius:8px;padding:8px 12px;font-size:13px;min-width:150px;font-family:'Plus Jakarta Sans',sans-serif}
 .btn-open-shift{background:linear-gradient(135deg,#1558A8,#0D3F85);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:800;cursor:pointer}
 .btn-open-shift:hover{opacity:.9}
 .shift-history{padding:0 20px 16px}
 .shift-history-title{font-size:12px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px;margin:14px 0 10px}
 .shift-history-item{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:#F8FAFC;border-radius:8px;margin-bottom:6px;font-size:12px}
-.shift-history-item .hi-date{color:#475569;font-weight:600}
+.shift-history-item .hi-date{color:#475569;font-weight:750}
 .shift-history-item .hi-dur{color:#64748B}
-.shift-history-item .hi-cash{color:#059669;font-weight:700}
+.shift-history-item .hi-cash{color:#059669;font-weight:750}
 
 /* ── Lịch tuần — full-width 7-col calendar ── */
 .wk-panel{background:var(--white);border:1px solid var(--border);border-radius:18px;margin-bottom:22px;overflow:hidden;animation:fadeUp .35s ease both}
 .wk-panel-head{background:linear-gradient(135deg,#1e3a5f 0%,#1a56db 100%);padding:13px 20px;display:flex;align-items:center;justify-content:space-between}
 .wk-panel-title{font-size:14.5px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px}
 .wk-panel-meta{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.wk-panel-range{font-size:11.5px;color:rgba(255,255,255,.65);font-weight:500}
-.wk-panel-count{font-size:11px;font-weight:700;background:rgba(255,255,255,.18);color:#fff;padding:2px 10px;border-radius:20px}
+.wk-panel-range{font-size:11.5px;color:rgba(255,255,255,.65);font-weight:750}
+.wk-panel-count{font-size:11px;font-weight:750;background:rgba(255,255,255,.18);color:#fff;padding:2px 10px;border-radius:20px}
 /* 7-column grid */
 .wk-cols{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--border)}
 .wk-col{border-right:1px solid #F1F5F9;padding:10px 7px 12px;min-height:130px;position:relative;transition:background .2s}
@@ -243,7 +247,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 /* Column header */
 .wk-col-head{text-align:center;margin-bottom:9px}
 .wk-col-dayname{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#94A3B8;margin-bottom:4px}
-.wk-col-num{font-size:24px;font-weight:900;color:#0F172A;line-height:1}
+.wk-col-num{font-size:24px;font-weight:800;color:#0F172A;line-height:1}
 /* TODAY highlight */
 .wk-col.wk-today{background:linear-gradient(180deg,#EFF6FF 0%,#F0F9FF 100%)}
 .wk-col.wk-today .wk-col-dayname{color:#1D4ED8}
@@ -254,12 +258,12 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .wk-col.wk-active-col .wk-col-dayname{color:#059669}
 .wk-col.wk-active-col .wk-col-num{color:#059669}
 /* Live badge */
-.wk-live{position:absolute;top:7px;right:5px;font-size:8.5px;font-weight:700;background:#10B981;color:#fff;padding:1px 6px;border-radius:8px;letter-spacing:.2px}
+.wk-live{position:absolute;top:7px;right:5px;font-size:8.5px;font-weight:750;background:#10B981;color:#fff;padding:1px 6px;border-radius:8px;letter-spacing:.2px}
 /* Shift chip inside column */
 .wk-chip{background:#fff;border:1.5px solid #E2E8F0;border-radius:8px;padding:6px 7px;margin-bottom:5px}
 .wk-today .wk-chip{border-color:#BFDBFE;background:#F8FBFF}
 .wk-active-col .wk-chip{border-color:#A7F3D0;background:#F0FDF9}
-.wk-chip-name{font-size:10.5px;font-weight:700;color:#1E40AF;line-height:1.3;margin-bottom:3px}
+.wk-chip-name{font-size:10.5px;font-weight:750;color:#1E40AF;line-height:1.3;margin-bottom:3px}
 .wk-active-col .wk-chip-name{color:#065F46}
 .wk-chip-time{font-size:10px;color:#64748B;margin-bottom:4px;line-height:1.3}
 .wk-chip-pos{display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:800;color:#fff;background:#3B82F6;padding:2px 7px;border-radius:5px;white-space:nowrap}
@@ -284,21 +288,21 @@ body{display:flex;background:var(--soft);color:var(--ink)}
   width:48px;height:48px;border-radius:13px;flex-shrink:0;
   background:linear-gradient(135deg,var(--light),var(--main));
   display:flex;align-items:center;justify-content:center;
-  font-family:'DM Serif Display',serif;font-size:20px;color:#fff;
+  font-family:'Lora',serif;font-size:20px;color:#fff;
   box-shadow:0 4px 14px rgba(109,40,217,.25);
 }
-.profile-head-name{font-size:14px;font-weight:700;color:var(--ink)}
+.profile-head-name{font-size:14px;font-weight:750;color:var(--ink)}
 .profile-head-role{font-size:12px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:5px}
 .role-dot{width:6px;height:6px;border-radius:50%;background:var(--light)}
 .profile-field{padding:13px 22px;border-bottom:1px solid #F8F7FF;display:flex;flex-direction:column;gap:2px}
 .profile-field:last-child{border-bottom:none}
-.pf-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
-.pf-value{font-size:13.5px;font-weight:500;color:var(--ink)}
+.pf-label{font-size:10.5px;font-weight:750;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.pf-value{font-size:13.5px;font-weight:750;color:var(--ink)}
 .pf-value.empty{color:var(--muted);font-style:italic;font-weight:400}
 .edit-link{
   display:block;margin:14px 22px 18px;padding:10px;
   background:var(--soft);border:1.5px solid var(--border);border-radius:10px;
-  text-align:center;text-decoration:none;font-size:13px;font-weight:600;color:var(--main);
+  text-align:center;text-decoration:none;font-size:13px;font-weight:750;color:var(--main);
   transition:all .18s;
 }
 .edit-link:hover{background:rgba(167,139,250,.12);border-color:var(--light)}
@@ -312,7 +316,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
   padding:20px 22px 14px;border-bottom:1px solid var(--border);
   background:linear-gradient(135deg,#FAFAFA,#F0FDF4);
 }
-.shift-head-title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:2px}
+.shift-head-title{font-size:14px;font-weight:750;color:var(--ink);margin-bottom:2px}
 .shift-head-sub{font-size:12px;color:var(--muted)}
 .shift-body{padding:20px 22px}
 .shift-today{
@@ -320,17 +324,17 @@ body{display:flex;background:var(--soft);color:var(--ink)}
   border:1px solid var(--border);border-radius:12px;padding:16px 18px;
   margin-bottom:14px;
 }
-.shift-today-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px}
-.shift-today-time{font-family:'DM Serif Display',serif;font-size:24px;color:var(--main)}
+.shift-today-lbl{font-size:11px;font-weight:750;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px}
+.shift-today-time{font-family:'Lora',serif;font-size:24px;color:var(--main)}
 .shift-today-note{font-size:12px;color:var(--muted);margin-top:4px}
 
 /* Progress tasks */
-.task-section-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:10px}
+.task-section-lbl{font-size:11px;font-weight:750;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:10px}
 .task-item{
   display:flex;align-items:center;gap:12px;
   padding:10px 14px;border-radius:10px;margin-bottom:6px;
   background:var(--soft);border:1px solid var(--border);
-  font-size:13px;font-weight:500;color:var(--ink);
+  font-size:13px;font-weight:750;color:var(--ink);
   transition:background .15s;
 }
 .task-item:last-child{margin-bottom:0}
@@ -359,11 +363,11 @@ body{display:flex;background:var(--soft);color:var(--ink)}
   background:linear-gradient(135deg,#FAFAFA,#F5F3FF);
   display:flex;align-items:center;justify-content:space-between;
 }
-.log-head-title{font-size:14px;font-weight:700;color:var(--ink)}
+.log-head-title{font-size:14px;font-weight:750;color:var(--ink)}
 .log-head-sub{font-size:12px;color:var(--muted);margin-top:2px}
 .log-table{width:100%;border-collapse:collapse}
 .log-table th{
-  font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  font-size:10.5px;font-weight:750;text-transform:uppercase;letter-spacing:.6px;
   color:var(--muted);padding:10px 18px;background:var(--soft);
   border-bottom:1px solid var(--border);text-align:left;
 }
@@ -375,7 +379,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .log-table tr:hover td{background:#FAFAFA}
 .log-badge{
   display:inline-flex;align-items:center;gap:4px;
-  padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600;
+  padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:750;
 }
 .lb-green{background:rgba(5,150,105,.1);color:var(--green)}
 .lb-gray{background:rgba(124,111,170,.1);color:var(--muted)}
@@ -384,7 +388,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .log-time{font-size:12px;color:var(--muted);white-space:nowrap}
 .log-empty{text-align:center;padding:28px;color:var(--muted);font-size:13px}
 
-.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:750}
 .b-purple{background:rgba(109,40,217,.1);color:var(--main)}
 .b-green{background:rgba(5,150,105,.1);color:var(--green)}
 
@@ -401,7 +405,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .face-enroll-text span{font-size:12px;color:#1E40AF;opacity:.85}
 .face-enroll-cta{
   flex-shrink:0;background:#1D4ED8;color:#fff;padding:9px 16px;border-radius:10px;
-  font-size:12.5px;font-weight:700;white-space:nowrap;border:none;cursor:pointer;
+  font-size:12.5px;font-weight:750;white-space:nowrap;border:none;cursor:pointer;
 }
 
 /* ── Face Modal (camera) ── */
@@ -415,21 +419,22 @@ body{display:flex;background:var(--soft);color:var(--ink)}
   box-shadow:0 20px 60px rgba(0,0,0,.3);
 }
 .face-modal-head{padding:18px 22px;background:linear-gradient(90deg,var(--mid),var(--main));color:#fff;display:flex;align-items:center;justify-content:space-between}
-.face-modal-head h3{font-size:15px;font-weight:700}
+.face-modal-head h3{font-size:15px;font-weight:750}
 .face-modal-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:14px}
 .face-modal-body{padding:20px 22px}
 .face-video-wrap{position:relative;width:100%;aspect-ratio:4/3;background:#0B1628;border-radius:14px;overflow:hidden;margin-bottom:14px}
 .face-video-wrap video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
 .face-video-wrap canvas{position:absolute;top:0;left:0;width:100%;height:100%;transform:scaleX(-1)}
-.face-modal-status{text-align:center;font-size:13px;font-weight:600;color:var(--main);margin-bottom:12px;min-height:18px}
+.face-modal-status{text-align:center;font-size:13px;font-weight:750;color:var(--main);margin-bottom:12px;min-height:18px}
 .face-progress{display:flex;gap:6px;justify-content:center;margin-bottom:14px}
 .face-progress-dot{width:10px;height:10px;border-radius:50%;background:#E2E8F0;transition:background .2s}
 .face-progress-dot.done{background:#059669}
 .face-modal-actions{display:flex;gap:10px}
-.face-modal-actions button{flex:1;padding:11px 0;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:700;cursor:pointer;border:none}
+.face-modal-actions button{flex:1;padding:11px 0;border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:750;cursor:pointer;border:none}
 .face-btn-capture{background:linear-gradient(135deg,var(--light),var(--main));color:#fff}
 .face-btn-cancel{background:var(--surface);color:var(--muted);border:1.5px solid var(--border)!important}
 </style>
+    
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>
@@ -768,7 +773,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
           <h3>🕐 Ca làm việc</h3>
           <c:if test="${not empty currentShift}">
             <a href="${pageContext.request.contextPath}/staff-my-shifts?uid=${staffUid}"
-               style="font-size:12px;color:#059669;font-weight:700;text-decoration:none">
+               style="font-size:12px;color:#059669;font-weight:750;text-decoration:none">
               Ca #${currentShift.shiftId} →
             </a>
           </c:if>
@@ -814,7 +819,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
             </div>
             <div class="shift-close-form">
                 <div style="background:linear-gradient(135deg,#FEF3C7,#FFFBEB);border:1.5px solid #FDE68A;border-radius:10px;padding:12px 16px;margin-top:8px">
-                    <div style="font-size:12.5px;font-weight:700;color:#92400E;margin-bottom:4px">🔒 Đóng ca qua NFC hoặc Admin</div>
+                    <div style="font-size:12.5px;font-weight:750;color:#92400E;margin-bottom:4px">🔒 Đóng ca qua NFC hoặc Admin</div>
                     <div style="font-size:11.5px;color:#B45309;line-height:1.6">
                         • Ca tự đóng sau 20 phút kết thúc giờ<br>• Trễ &gt; 5 phút → bị trừ tiền phạt
                     </div>
@@ -832,18 +837,18 @@ body{display:flex;background:var(--soft);color:var(--ink)}
                 <c:choose>
                     <c:when test="${not empty todaySchedule}">
                         <div style="background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:10px;padding:12px 16px">
-                            <div style="font-size:13px;font-weight:700;color:#065F46;margin-bottom:4px">📋 ${todaySchedule.shiftTypeName}</div>
+                            <div style="font-size:13px;font-weight:750;color:#065F46;margin-bottom:4px">📋 ${todaySchedule.shiftTypeName}</div>
                             <div style="font-size:11.5px;color:#059669;margin-bottom:4px">
                                 🕐 <c:if test="${not empty todaySchedule.plannedStart}">${fn:substring(todaySchedule.plannedStart.toString(),11,16)}</c:if>–<c:if test="${not empty todaySchedule.plannedEnd}">${fn:substring(todaySchedule.plannedEnd.toString(),11,16)}</c:if>
                             </div>
                             <c:if test="${todaySchedule.posStation > 0}">
-                            <div style="font-size:11.5px;font-weight:700;color:#1D4ED8;margin-bottom:8px">🖥️ Quầy POS ${todaySchedule.posStation}</div>
+                            <div style="font-size:11.5px;font-weight:750;color:#1D4ED8;margin-bottom:8px">🖥️ Quầy POS ${todaySchedule.posStation}</div>
                             </c:if>
                             <c:if test="${todaySchedule.posStation == 0}">
                             <div style="height:8px"></div>
                             </c:if>
                             <a href="${pageContext.request.contextPath}/staff-checkin?uid=${staffUid}"
-                               style="display:block;text-align:center;background:#10B981;color:#fff;padding:8px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none">
+                               style="display:block;text-align:center;background:#10B981;color:#fff;padding:8px;border-radius:8px;font-size:13px;font-weight:750;text-decoration:none">
                                 ✅ Đến trang Điểm danh
                             </a>
                         </div>
@@ -851,7 +856,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
                     <c:otherwise>
                         <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:10px;padding:12px 16px;text-align:center">
                             <div style="font-size:16px;margin-bottom:4px">🚫</div>
-                            <div style="font-size:12.5px;font-weight:700;color:#991B1B">Không có lịch ca hôm nay</div>
+                            <div style="font-size:12.5px;font-weight:750;color:#991B1B">Không có lịch ca hôm nay</div>
                             <div style="font-size:11.5px;color:#B91C1C;margin-top:3px">Liên hệ Admin để xếp ca</div>
                         </div>
                     </c:otherwise>

@@ -1,7 +1,7 @@
-﻿
-<%@ page contentType="text/html;charset=UTF-8" %>
+
+<%@ page contentType="text/html;charset=UTF-8"  pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ page import="java.lang.String" %>
+<%@ page import="java.lang.String"  pageEncoding="UTF-8" %>
 <%
     com.medicare.entity.Account acc =
         (com.medicare.entity.Account) session.getAttribute("adminAccount");
@@ -43,11 +43,15 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><%= isNew ? "Tạo tài khoản nhân viên" : "Cập nhật tài khoản" %> — MediCare</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+
 <script src="${pageContext.request.contextPath}/js/face-api/face-api.min.js" defer></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -56,7 +60,7 @@
   --surface:#F1F5FB;--white:#fff;--muted:#7A90B0;--border:#D5E0F0;
   --green:#059669;--red:#DC2626;
 }
-html,body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--surface);color:var(--ink)}
+html,body{min-height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(--surface);color:var(--ink)}
 body{display:flex;flex-direction:column}
 
 /* ── TOPBAR ── */
@@ -74,14 +78,14 @@ body{display:flex;flex-direction:column}
   display:flex;align-items:center;justify-content:center;font-size:14px;
   box-shadow:0 3px 10px rgba(58,189,224,.35);
 }
-.logo-wordmark{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:#fff;letter-spacing:-.2px}
+.logo-wordmark{font-family:'Lora',serif;font-size:16px;font-weight:800;color:#fff;letter-spacing:-.2px}
 .logo-wordmark span{color:var(--cyan)}
 .topbar-sep{width:1px;height:16px;background:rgba(255,255,255,.15)}
-.topbar-section{font-size:13px;font-weight:500;color:rgba(255,255,255,.5)}
+.topbar-section{font-size:13px;font-weight:750;color:rgba(255,255,255,.5)}
 .btn-back{
   margin-left:auto;display:inline-flex;align-items:center;gap:6px;
   padding:7px 14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);
-  border-radius:8px;font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:500;
+  border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:750;
   color:rgba(255,255,255,.75);text-decoration:none;transition:all .18s;
 }
 .btn-back:hover{background:rgba(255,255,255,.14);color:#fff}
@@ -105,7 +109,7 @@ body{display:flex;flex-direction:column}
   border:1.5px solid rgba(58,189,224,.35);border-radius:14px;
   display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px;
 }
-.info-card h2{font-family:'Outfit',sans-serif;font-size:18px;font-weight:400;color:#fff;margin-bottom:8px}
+.info-card h2{font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:400;color:#fff;margin-bottom:8px}
 .info-card>p{font-size:12.5px;line-height:1.65;color:rgba(255,255,255,.55)}
 
 .info-steps{margin-top:22px;display:flex;flex-direction:column;gap:12px}
@@ -114,16 +118,16 @@ body{display:flex;flex-direction:column}
   width:22px;height:22px;border-radius:6px;flex-shrink:0;
   background:rgba(58,189,224,.18);border:1px solid rgba(58,189,224,.3);
   display:flex;align-items:center;justify-content:center;
-  font-size:11px;font-weight:700;color:var(--cyan);
+  font-size:11px;font-weight:750;color:var(--cyan);
 }
-.step-text strong{display:block;font-size:12.5px;font-weight:600;color:#fff;margin-bottom:1px}
+.step-text strong{display:block;font-size:12.5px;font-weight:750;color:#fff;margin-bottom:1px}
 .step-text span{font-size:11.5px;color:rgba(255,255,255,.42);line-height:1.4}
 
 .otp-note{
   margin-top:20px;padding:13px 15px;
   background:rgba(58,189,224,.1);border:1px solid rgba(58,189,224,.2);border-radius:11px;
 }
-.otp-note-title{font-size:11.5px;font-weight:700;color:var(--cyan);margin-bottom:5px;display:flex;align-items:center;gap:5px}
+.otp-note-title{font-size:11.5px;font-weight:750;color:var(--cyan);margin-bottom:5px;display:flex;align-items:center;gap:5px}
 .otp-note p{font-size:11px;color:rgba(255,255,255,.45);line-height:1.5}
 
 /* ── FORM PANEL (right) ── */
@@ -133,10 +137,10 @@ body{display:flex;flex-direction:column}
 .form-eyebrow{
   display:inline-flex;align-items:center;gap:5px;
   padding:3px 11px;background:rgba(21,88,168,.1);border:1px solid rgba(21,88,168,.15);
-  border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.8px;
+  border-radius:20px;font-size:11px;font-weight:750;letter-spacing:.8px;
   text-transform:uppercase;color:var(--blue);margin-bottom:10px;
 }
-.form-heading h1{font-family:'Outfit',sans-serif;font-size:26px;color:var(--ink);margin-bottom:4px}
+.form-heading h1{font-family:'Plus Jakarta Sans',sans-serif;font-size:26px;color:var(--ink);margin-bottom:4px}
 .form-heading p{font-size:13px;color:var(--muted)}
 
 /* Error block */
@@ -147,10 +151,10 @@ body{display:flex;flex-direction:column}
   display:flex;align-items:flex-start;gap:12px;
 }
 .pending-reset-banner-icon{font-size:20px;flex-shrink:0;margin-top:2px}
-.pending-reset-banner-title{font-size:13.5px;font-weight:700;color:#92400E;margin-bottom:4px}
+.pending-reset-banner-title{font-size:13.5px;font-weight:750;color:#92400E;margin-bottom:4px}
 .pending-reset-banner-msg{font-size:12.5px;color:#78350F;line-height:1.5}
 .pending-reset-banner-action{
-  margin-top:10px;font-size:12px;font-weight:600;color:#B45309;
+  margin-top:10px;font-size:12px;font-weight:750;color:#B45309;
   background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.2);
   border-radius:7px;padding:5px 12px;display:inline-block;
 }
@@ -160,7 +164,7 @@ body{display:flex;flex-direction:column}
   animation:fadeDown .3s ease;
 }
 @keyframes fadeDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-.err-block-title{font-size:13px;font-weight:700;color:#991B1B;margin-bottom:7px;display:flex;align-items:center;gap:6px}
+.err-block-title{font-size:13px;font-weight:750;color:#991B1B;margin-bottom:7px;display:flex;align-items:center;gap:6px}
 .err-block ul{list-style:none}
 .err-block li{font-size:12.5px;color:var(--red);padding:2px 0;display:flex;align-items:flex-start;gap:5px}
 .err-block li::before{content:'›';font-weight:800}
@@ -183,7 +187,7 @@ body{display:flex;flex-direction:column}
   display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
   box-shadow:0 3px 10px rgba(58,189,224,.25);
 }
-.form-card-head h2{font-family:'Outfit',sans-serif;font-size:16px;color:var(--ink);margin-bottom:2px}
+.form-card-head h2{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;color:var(--ink);margin-bottom:2px}
 .form-card-head p{font-size:12px;color:var(--muted)}
 
 .form-body{padding:22px 24px}
@@ -192,7 +196,7 @@ body{display:flex;flex-direction:column}
 
 .field{display:flex;flex-direction:column;gap:6px}
 .field-label{
-  font-size:12.5px;font-weight:700;color:var(--navy);letter-spacing:.2px;
+  font-size:12.5px;font-weight:750;color:var(--navy);letter-spacing:.2px;
   display:flex;align-items:center;gap:4px;
 }
 .req{color:var(--red);font-size:13px}
@@ -201,7 +205,7 @@ body{display:flex;flex-direction:column}
 .field-input{
   height:42px;padding:0 14px;
   background:#fff;border:1.5px solid var(--border);border-radius:11px;
-  font-family:'Outfit',sans-serif;font-size:13.5px;color:var(--ink);
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;color:var(--ink);
   outline:none;transition:border-color .18s,box-shadow .18s;
 }
 .field-input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(58,189,224,.12)}
@@ -228,7 +232,7 @@ select.field-input{
 /* Email OTP highlight */
 .email-highlight .field-label::after{
   content:'· Email liên lạc nhân viên';
-  font-size:10.5px;font-weight:500;color:var(--cyan);
+  font-size:10.5px;font-weight:750;color:var(--cyan);
   background:rgba(58,189,224,.1);padding:2px 8px;border-radius:10px;margin-left:6px;
 }
 .email-highlight .field-input{border-color:rgba(58,189,224,.4)}
@@ -239,8 +243,8 @@ select.field-input{
 .btn-change-pw-toggle{
   display:inline-flex;align-items:center;gap:7px;
   padding:9px 16px;border:1.5px solid #BFDBFE;border-radius:9px;
-  background:#EFF6FF;color:#1558A8;font-family:'Outfit',sans-serif;
-  font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;
+  background:#EFF6FF;color:#1558A8;font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:13px;font-weight:750;cursor:pointer;transition:all .18s;
 }
 .btn-change-pw-toggle:hover{background:#DBEAFE;border-color:#93C5FD}
 .btn-change-pw-toggle.active{background:#1558A8;color:#fff;border-color:#1558A8}
@@ -254,8 +258,8 @@ select.field-input{
 .btn-submit{
   display:inline-flex;align-items:center;gap:8px;padding:11px 22px;
   background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;
-  border:none;border-radius:11px;font-family:'Outfit',sans-serif;
-  font-size:14px;font-weight:700;cursor:pointer;
+  border:none;border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:14px;font-weight:750;cursor:pointer;
   transition:all .22s;box-shadow:0 4px 14px rgba(21,88,168,.28);
 }
 .btn-submit:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(21,88,168,.38)}
@@ -264,7 +268,7 @@ select.field-input{
 .btn-cancel{
   display:inline-flex;align-items:center;gap:6px;padding:11px 18px;
   background:var(--white);border:1.5px solid var(--border);border-radius:11px;
-  font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:600;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:750;
   color:var(--muted);text-decoration:none;transition:all .18s;
 }
 .btn-cancel:hover{border-color:var(--blue);color:var(--navy)}
@@ -274,7 +278,7 @@ select.field-input{
 #toast{
   position:fixed;top:20px;right:24px;padding:12px 20px;
   background:#064e3b;color:#fff;border-radius:11px;
-  font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:600;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:750;
   display:flex;align-items:center;gap:8px;
   box-shadow:0 8px 32px rgba(0,0,0,.2);z-index:999;
   animation:slideIn .3s ease;transition:opacity .4s;
@@ -291,7 +295,7 @@ select.field-input{
 .face-status-text span{font-size:12px;color:var(--muted)}
 .btn-face-action{
   display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:10px;
-  font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .18s;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer;border:none;transition:all .18s;
 }
 .btn-face-enroll{background:linear-gradient(135deg,var(--cyan),var(--blue));color:#fff;box-shadow:0 4px 14px rgba(58,189,224,.3)}
 .btn-face-enroll:hover{transform:translateY(-1px)}
@@ -309,18 +313,18 @@ select.field-input{
   box-shadow:0 20px 60px rgba(0,0,0,.3);
 }
 .face-modal-head{padding:18px 22px;background:linear-gradient(90deg,#0F2645,#1558A8);color:#fff;display:flex;align-items:center;justify-content:space-between}
-.face-modal-head h3{font-size:15px;font-weight:700}
+.face-modal-head h3{font-size:15px;font-weight:750}
 .face-modal-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:14px}
 .face-modal-body{padding:20px 22px}
 .face-video-wrap{position:relative;width:100%;aspect-ratio:4/3;background:#0B1628;border-radius:14px;overflow:hidden;margin-bottom:14px}
 .face-video-wrap video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
 .face-video-wrap canvas{position:absolute;top:0;left:0;width:100%;height:100%;transform:scaleX(-1)}
-.face-modal-status{text-align:center;font-size:13px;font-weight:600;color:var(--blue);margin-bottom:12px;min-height:18px}
+.face-modal-status{text-align:center;font-size:13px;font-weight:750;color:var(--blue);margin-bottom:12px;min-height:18px}
 .face-progress{display:flex;gap:6px;justify-content:center;margin-bottom:14px}
 .face-progress-dot{width:10px;height:10px;border-radius:50%;background:#E2E8F0;transition:background .2s}
 .face-progress-dot.done{background:#059669}
 .face-modal-actions{display:flex;gap:10px}
-.face-modal-actions button{flex:1;padding:11px 0;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:700;cursor:pointer;border:none}
+.face-modal-actions button{flex:1;padding:11px 0;border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:750;cursor:pointer;border:none}
 .face-btn-capture{background:linear-gradient(135deg,var(--cyan),var(--blue));color:#fff}
 .face-btn-cancel{background:var(--surface);color:var(--muted);border:1.5px solid var(--border)!important}
 
@@ -331,7 +335,22 @@ select.field-input{
   .form-grid{grid-template-columns:1fr}
   .span-2{grid-column:1}
 }
+select,option{font-family:inherit;font-size:inherit}
+.cdd{position:relative;user-select:none;display:inline-block}
+.cdd-btn{display:flex;align-items:center;gap:6px;padding:9px 14px;background:var(--white,#fff);border:1.5px solid var(--border,#D5E0F0);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;color:var(--ink,#0B1628);cursor:pointer;transition:all .18s;white-space:nowrap}
+.cdd-btn:hover{border-color:var(--cyan,#3ABDE0);background:var(--cyan-soft,#EBF8FD)}
+.cdd-btn.open{border-color:var(--cyan,#3ABDE0);box-shadow:0 0 0 3px rgba(58,189,224,.12)}
+.cdd-arrow{font-size:9px;color:var(--muted,#7A90B0);transition:transform .2s}
+.cdd-btn.open .cdd-arrow{transform:rotate(180deg)}
+.cdd-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:100%;background:var(--white,#fff);border:1.5px solid var(--border,#D5E0F0);border-radius:12px;padding:6px;box-shadow:0 12px 36px rgba(15,38,69,.15);z-index:200;opacity:0;transform:translateY(-6px);pointer-events:none;transition:all .18s ease;max-height:260px;overflow-y:auto}
+.cdd-menu.show{opacity:1;transform:translateY(0);pointer-events:auto}
+.cdd-menu::-webkit-scrollbar{width:4px}
+.cdd-menu::-webkit-scrollbar-thumb{background:var(--border,#D5E0F0);border-radius:4px}
+.cdd-opt{padding:8px 14px;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;color:var(--ink,#0B1628);cursor:pointer;transition:all .12s;white-space:nowrap}
+.cdd-opt:hover{background:var(--surface,#F1F5FB);color:var(--blue,#1558A8)}
+.cdd-opt.active{background:linear-gradient(135deg,var(--blue,#1558A8),#0D3F85);color:#fff;font-weight:750}
 </style>
+    
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>
@@ -454,10 +473,17 @@ select.field-input{
                         </div>
                         <div class="field">
                             <label class="field-label" for="roleId">Phân quyền <span class="req">*</span></label>
-                            <select id="roleId" name="roleId" class="field-input" required>
-                                <option value="2" <%= vRoleId == 2 ? "selected" : "" %>>💊 Dược sĩ bán hàng</option>
-                                <option value="3" <%= vRoleId == 3 ? "selected" : "" %>>📦 Thủ kho</option>
-                            </select>
+                            <input type="hidden" name="roleId" id="hRoleId" value="<%= vRoleId %>">
+                            <div class="cdd" id="cddRoleId">
+                                <div class="cdd-btn" onclick="toggleCdd('cddRoleId')">
+                                    <span class="cdd-label"><%= vRoleId == 2 ? "💊 Dược sĩ bán hàng" : "📦 Thủ kho" %></span>
+                                    <span class="cdd-arrow">▼</span>
+                                </div>
+                                <div class="cdd-menu">
+                                    <div class="cdd-opt <%= vRoleId == 2 ? "active" : "" %>" data-val="2" onclick="pickCdd('cddRoleId','hRoleId',this,false)">💊 Dược sĩ bán hàng</div>
+                                    <div class="cdd-opt <%= vRoleId == 3 ? "active" : "" %>" data-val="3" onclick="pickCdd('cddRoleId','hRoleId',this,false)">📦 Thủ kho</div>
+                                </div>
+                            </div>
                         </div>
                         <% if (isNew) { %>
                         <%-- TẠO MỚI: MK + rules checklist + xác nhận --%>
@@ -488,7 +514,7 @@ select.field-input{
                                        oninput="checkCreatePwMatch()">
                                 <button type="button" class="pw-toggle" onclick="togglePwField('confirmPw',this)" title="Hiện/ẩn">👁</button>
                             </div>
-                            <div id="pwMatchHint" style="font-size:12px;margin-top:5px;font-weight:600"></div>
+                            <div id="pwMatchHint" style="font-size:12px;margin-top:5px;font-weight:750"></div>
                         </div>
                         <% } else { %>
                         <%-- CHỈNH SỬA: chỉ cần gõ "update" → OTP → nhập MK mới ở trang riêng --%>
@@ -504,7 +530,7 @@ select.field-input{
                             </button>
                             <div id="changePwSection" style="display:none;margin-top:12px">
                                 <div style="background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:12px;padding:16px 18px">
-                                    <p style="font-size:13px;color:#1E40AF;font-weight:600;margin-bottom:10px">
+                                    <p style="font-size:13px;color:#1E40AF;font-weight:750;margin-bottom:10px">
                                         Gõ chữ <strong style="font-family:monospace;font-size:15px;background:#DBEAFE;padding:2px 8px;border-radius:6px">update</strong>
                                         (chữ thường) rồi bấm <strong>Lưu thay đổi</strong>
                                     </p>
@@ -548,7 +574,7 @@ select.field-input{
                                    oninput="validateField('phone'); <% if (isNew) { %>autoFillUsername();<% } %>"
                                    value="<%= vPhone %>" placeholder="0901234567" pattern="0[0-9]{9}" <%= isNew ? "required" : "" %>>
                             <% if (isNew) { %>
-                            <span class="field-note" style="color:#059669;font-weight:600">📱 Username sẽ tự động = số điện thoại nếu để trống ô trên.</span>
+                            <span class="field-note" style="color:#059669;font-weight:750">📱 Username sẽ tự động = số điện thoại nếu để trống ô trên.</span>
                             <% } %>
                         </div>
                         <div class="field">
@@ -656,9 +682,15 @@ select.field-input{
 <% java.lang.String msg = request.getParameter("msg"); %>
 <% if ("updated".equals(msg)) { %>
 <div id="toast">✅ Đã cập nhật tài khoản thành công!</div>
+<% } else if ("created-more".equals(msg)) { %>
+<div id="toast">✅ Đã tạo tài khoản! Tiếp tục nhập tài khoản mới.</div>
 <% } %>
 
 <script>
+function toggleCdd(id){var w=document.getElementById(id),m=w.querySelector('.cdd-menu'),b=w.querySelector('.cdd-btn');var open=m.classList.contains('show');document.querySelectorAll('.cdd-menu.show').forEach(function(x){x.classList.remove('show');x.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')});if(!open){m.classList.add('show');b.classList.add('open');var act=m.querySelector('.cdd-opt.active');if(act)act.scrollIntoView({block:'nearest'})}}
+function pickCdd(wId,hId,el,autoSubmit){document.getElementById(hId).value=el.dataset.val;var w=document.getElementById(wId);w.querySelector('.cdd-label').textContent=el.textContent;w.querySelectorAll('.cdd-opt').forEach(function(o){o.classList.remove('active')});el.classList.add('active');w.querySelector('.cdd-menu').classList.remove('show');w.querySelector('.cdd-btn').classList.remove('open');if(autoSubmit){var f=w.closest('form');if(f)f.submit()}}
+document.addEventListener('click',function(e){if(!e.target.closest('.cdd')){document.querySelectorAll('.cdd-menu.show').forEach(function(m){m.classList.remove('show');m.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')})}});
+
 // ── Tự động fill username từ SĐT khi nhập (real-time) ──
 function autoFillUsername() {
     const phoneEl = document.getElementById('phone');
@@ -743,7 +775,7 @@ function validateField(id) {
   if (!warn) {
     warn = document.createElement('div');
     warn.id = 'warn_' + id;
-    warn.style.cssText = 'font-size:12px;color:#DC2626;margin-top:4px;font-weight:600;min-height:18px';
+    warn.style.cssText = 'font-size:12px;color:#DC2626;margin-top:4px;font-weight:750;min-height:18px';
     el.parentNode.insertBefore(warn, el.nextSibling);
   }
   if (!rule.test(el.value.trim())) {
@@ -808,11 +840,11 @@ function syncConfirmWord(inp) {
         return;
     }
     if (raw === 'update') {
-        hint.innerHTML = '✅ <span style="color:#059669;font-weight:600">Xác nhận — OTP sẽ gửi về Gmail admin khi bấm Lưu.</span>';
+        hint.innerHTML = '✅ <span style="color:#059669;font-weight:750">Xác nhận — OTP sẽ gửi về Gmail admin khi bấm Lưu.</span>';
         inp.style.borderColor = '#059669';
         inp.style.boxShadow = '0 0 0 3px rgba(5,150,105,.1)';
     } else {
-        hint.innerHTML = '❌ <span style="color:#DC2626;font-weight:600">Phải gõ đúng chữ <code>update</code> (chữ thường, không phải UPDATE hay Update).</span>';
+        hint.innerHTML = '❌ <span style="color:#DC2626;font-weight:750">Phải gõ đúng chữ <code>update</code> (chữ thường, không phải UPDATE hay Update).</span>';
         inp.style.borderColor = '#DC2626';
         inp.style.boxShadow = '0 0 0 3px rgba(220,38,38,.1)';
     }
@@ -828,7 +860,7 @@ document.getElementById('mainForm').addEventListener('submit', function(e) {
         if (cw !== 'update') {
             e.preventDefault();
             document.getElementById('confirmWordHint').innerHTML =
-                '❌ <span style="color:#DC2626;font-weight:600">Phải gõ đúng chữ <code>update</code> (chữ thường)!</span>';
+                '❌ <span style="color:#DC2626;font-weight:750">Phải gõ đúng chữ <code>update</code> (chữ thường)!</span>';
             document.getElementById('confirmWordInput').focus();
             return;
         }
@@ -924,8 +956,18 @@ document.getElementById('mainForm').addEventListener('submit', function(e) {
             return;
         }
     }
-    const btn = document.getElementById('submitBtn');
-    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Đang tạo…'; }
+    // Disable cả 2 nút để tránh double-submit
+    ['submitBtn','submitBtnMore'].forEach(id => {
+        const b = document.getElementById(id);
+        if (b) b.disabled = true;
+    });
+    const activeId = document.activeElement ? document.activeElement.id : '';
+    if (activeId === 'submitBtnMore') {
+        document.getElementById('submitBtnMore').innerHTML = '⏳ Đang tạo…';
+    } else {
+        const mainBtn = document.getElementById('submitBtn');
+        if (mainBtn) mainBtn.innerHTML = '⏳ Đang tạo…';
+    }
 });
 <% } %>
 </script>

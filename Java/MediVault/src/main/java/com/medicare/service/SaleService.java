@@ -52,7 +52,6 @@ public class SaleService implements ISaleService {
                 medicineIds, quantities);
 
         if (invoiceId > 0) {
-            // Ghi audit log bán hàng
             auditDAO.log(new StaffAuditLog(
                     accountId,
                     "Thanh toán bán hàng",
@@ -63,6 +62,10 @@ public class SaleService implements ISaleService {
             return ServiceResult.ok(inv);
         }
 
-        return ServiceResult.fail("Thanh toán thất bại! Kiểm tra lại tồn kho.");
+        String detail = ((InvoiceDAO) invoiceDAO).getLastSaleError();
+        String msg = detail != null
+                ? "Thanh toán thất bại: " + detail
+                : "Thanh toán thất bại! Kiểm tra lại tồn kho.";
+        return ServiceResult.fail(msg);
     }
 }

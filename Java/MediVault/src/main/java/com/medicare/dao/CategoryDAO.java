@@ -13,8 +13,8 @@ public class CategoryDAO implements ICategoryDAO {
     private Category mapRow(ResultSet rs) throws SQLException {
         return new Category(
                 rs.getInt("CategoryID"),
-                MojibakeUtil.fix(rs.getNString("CategoryName")),
-                MojibakeUtil.fix(rs.getNString("Description"))
+                MojibakeUtil.fix(rs.getString("CategoryName")),
+                MojibakeUtil.fix(rs.getString("Description"))
         );
     }
 

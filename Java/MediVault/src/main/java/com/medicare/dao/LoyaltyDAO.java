@@ -29,10 +29,10 @@ public class LoyaltyDAO {
         if (rs.getTimestamp("IssuedAt") != null)
             c.setIssuedAt(rs.getTimestamp("IssuedAt").toLocalDateTime());
         c.setActive(rs.getBoolean("IsActive"));
-        try { c.setTierName(rs.getNString("TierName")); } catch (SQLException ignored) {}
+        try { c.setTierName(rs.getString("TierName")); } catch (SQLException ignored) {}
         try { c.setDiscountPct(rs.getBigDecimal("DiscountPct")); } catch (SQLException ignored) {}
         try {
-            c.setNextTierName(rs.getNString("NextTierName"));
+            c.setNextTierName(rs.getString("NextTierName"));
             c.setNextTierMinPoints(rs.getInt("NextTierMin"));
         } catch (SQLException ignored) {}
         return c;
@@ -143,7 +143,7 @@ public class LoyaltyDAO {
                     list.add(new String[]{
                             rs.getString("TransType"),
                             String.valueOf(rs.getInt("Points")),
-                            rs.getNString("Note") != null ? rs.getNString("Note") : "",
+                            rs.getString("Note") != null ? rs.getString("Note") : "",
                             rs.getString("CreatedAt")
                     });
                 }

@@ -22,6 +22,7 @@ public class Medicines {
     private BigDecimal defaultDosageMax;
     private String dosageWarning;
     private int expiryAlertDays;
+    private Integer shelfLifeMonths; // "Hạn dùng chuẩn" (tháng) kể từ ngày nhập — null = chưa cấu hình
     private String contraindications;
     private boolean isPrescriptionRequired;
     private BigDecimal sellingPrice;
@@ -215,6 +216,14 @@ public class Medicines {
 
     public void setExpiryAlertDays(int expiryAlertDays) {
         this.expiryAlertDays = expiryAlertDays;
+    }
+
+    public Integer getShelfLifeMonths() {
+        return shelfLifeMonths;
+    }
+
+    public void setShelfLifeMonths(Integer shelfLifeMonths) {
+        this.shelfLifeMonths = shelfLifeMonths;
     }
 
     public String getContraindications() {

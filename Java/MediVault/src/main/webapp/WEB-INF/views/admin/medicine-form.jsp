@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8"  pageEncoding="UTF-8" %>
 <% String activeNav = "medicines"; %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%
@@ -27,6 +27,7 @@
     int    vShelfId = m != null && m.getShelfId()           != null ? m.getShelfId()           : 0;
     int    vMinInv  = m != null ? m.getMinInventory()    : 0;
     int    vExpDays = m != null ? m.getExpiryAlertDays() : 30;
+    String vShelfLifeMonths = m != null && m.getShelfLifeMonths() != null ? m.getShelfLifeMonths().toString() : "";
     boolean vRx     = m != null && m.isPrescriptionRequired();
 
     @SuppressWarnings("unchecked")
@@ -45,11 +46,15 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title><%= isNew ? "Thêm thuốc mới" : "Sửa — " + vName %> — MediCare</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -57,37 +62,37 @@
   --surface:#F1F5FB;--white:#fff;--muted:#7A90B0;--border:#D5E0F0;
   --green:#059669;--red:#DC2626;--gold:#D97706;--sidebar:232px;
 }
-html,body{height:100%;font-family:'Outfit',sans-serif}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif}
 body{display:flex;background:var(--surface);color:var(--ink)}
 /* ── SIDEBAR ── */
 .sidebar{width:var(--sidebar);min-height:100vh;background:linear-gradient(175deg,#071022 0%,#0F2645 45%,#1558A8 100%);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;box-shadow:4px 0 32px rgba(0,0,0,.18)}
 .sidebar-logo{height:66px;padding:0 20px;display:flex;align-items:center;gap:11px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
 .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,#3ABDE0,#1558A8);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
 .logo-text{font-size:16px;font-weight:800;color:#fff;letter-spacing:-.2px;line-height:1.1}
-.logo-sub{font-size:10px;color:rgba(255,255,255,.45);font-weight:500;letter-spacing:.5px;text-transform:uppercase}
+.logo-sub{font-size:10px;color:rgba(255,255,255,.45);font-weight:750;letter-spacing:.5px;text-transform:uppercase}
 .nav-section{padding:10px 12px 4px;flex-shrink:0}
-.nav-label{font-size:9.5px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase;padding:0 8px;margin-bottom:4px}
-.nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:10px;color:rgba(255,255,255,.6);text-decoration:none;font-size:13.5px;font-weight:500;transition:all .16s;margin-bottom:2px}
+.nav-label{font-size:9.5px;font-weight:750;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase;padding:0 8px;margin-bottom:4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:10px;color:rgba(255,255,255,.6);text-decoration:none;font-size:13.5px;font-weight:750;transition:all .16s;margin-bottom:2px}
 .nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
 .nav-item.active{background:rgba(58,189,224,.15);color:#fff;border:1px solid rgba(58,189,224,.2)}
 .sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
 .sidebar-user{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
 .user-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#3ABDE0,#1558A8);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0}
-.user-name{font-size:13px;font-weight:700;color:#fff}
+.user-name{font-size:13px;font-weight:750;color:#fff}
 .user-role{font-size:11px;color:rgba(255,255,255,.4)}
 .logout-btn{margin-left:auto;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.4);text-decoration:none;font-size:16px;transition:all .15s}
 .logout-btn:hover{background:rgba(220,38,38,.2);color:#DC2626}
 /* ── MAIN LAYOUT ── */
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh}
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding: 28px;gap:14px;position:sticky;top:0;z-index:50}
-.topbar-title{font-size:16px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar-title{font-size:16px;font-weight:750;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .topbar-right{margin-left:auto;display:flex;gap:8px;flex-shrink:0}
-.btn-back{height:36px;padding:0 14px;background:var(--white);border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.btn-back{height:36px;padding:0 14px;background:var(--white);border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-weight:750;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
 .btn-back:hover{border-color:var(--blue);color:var(--navy)}
 .content{padding:24px 28px;flex:1}
 /* ── SECTION TABS ── */
 .section-tabs{display:flex;gap:6px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content;margin-bottom:22px}
-.section-tab{padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;transition:all .15s;white-space:nowrap}
+.section-tab{padding:7px 16px;border-radius:8px;font-size:13px;font-weight:750;color:var(--muted);text-decoration:none;transition:all .15s;white-space:nowrap}
 .section-tab:hover{background:var(--surface);color:var(--ink)}
 .section-tab.active{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;box-shadow:0 2px 8px rgba(21,88,168,.22)}
 /* ── PAGE HEADER ── */
@@ -98,23 +103,23 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .inv-panel{position:sticky;top:76px}
 /* ── ERROR BLOCK ── */
 .err-block{background:#FEF2F2;border:1.5px solid #FECACA;border-left:3px solid var(--red);border-radius:12px;padding:14px 18px;margin-bottom:18px}
-.err-title{font-size:13px;font-weight:700;color:#991B1B;margin-bottom:7px}
+.err-title{font-size:13px;font-weight:750;color:#991B1B;margin-bottom:7px}
 .err-block li{font-size:12.5px;color:var(--red);margin-left:16px;padding:2px 0}
 /* ── HINT BANNER ── */
 .add-hint{background:linear-gradient(90deg,#EFF6FF,#F0FDFA);border:1.5px solid #BFDBFE;border-radius:12px;padding:12px 16px;margin-bottom:18px;display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#1558A8}
-.add-hint strong{font-weight:700}
+.add-hint strong{font-weight:750}
 /* ── FORM CARDS ── */
 .form-card{background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(21,88,168,.04);margin-bottom:16px}
 .form-card-head{padding:15px 20px;background:linear-gradient(90deg,#F5F8FD,var(--surface));border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px}
 .form-card-icon{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-.form-card-head h2{font-size:14.5px;font-weight:700;color:var(--ink);margin:0}
+.form-card-head h2{font-size:14.5px;font-weight:750;color:var(--ink);margin:0}
 .form-card-head p{font-size:11.5px;color:var(--muted);margin:2px 0 0}
 .form-body{padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .span-2{grid-column:1/-1}
 .field{display:flex;flex-direction:column;gap:5px}
-.field-label{font-size:12px;font-weight:700;color:var(--navy);display:flex;justify-content:space-between;align-items:center}
+.field-label{font-size:12px;font-weight:750;color:var(--navy);display:flex;justify-content:space-between;align-items:center}
 .req{color:var(--red)}
-.field-input{height:42px;padding:0 13px;background:#fff;border:1.5px solid var(--border);border-radius:10px;font-family:'Outfit',sans-serif;font-size:13.5px;color:var(--ink);outline:none;transition:border-color .18s}
+.field-input{height:42px;padding:0 13px;background:#fff;border:1.5px solid var(--border);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;color:var(--ink);outline:none;transition:border-color .18s}
 .field-input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(58,189,224,.1)}
 .field-input::placeholder{color:#B8CCE0}
 select.field-input{appearance:none;cursor:pointer;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath stroke='%237A90B0' stroke-width='1.5' stroke-linecap='round' d='M1 1l4 4 4-4'/%3E%3C/svg%3E") no-repeat right 12px center;padding-right:30px}
@@ -122,16 +127,16 @@ textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
 .field-hint{font-size:11px;color:var(--muted)}
 .checkbox-row{display:flex;align-items:center;gap:14px;padding:12px 16px 12px 18px;background:rgba(245,158,11,.06);border:1.5px solid rgba(245,158,11,.25);border-radius:10px;cursor:pointer}
 .checkbox-row input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:var(--gold);flex-shrink:0;margin:0}
-.checkbox-row label{font-size:13px;font-weight:600;color:#92400E;cursor:pointer;line-height:1.4}
+.checkbox-row label{font-size:13px;font-weight:750;color:#92400E;cursor:pointer;line-height:1.4}
 .price-wrap{position:relative}
 .price-wrap .field-input{padding-right:36px}
-.price-suffix{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:11.5px;font-weight:700;color:var(--muted)}
-.add-btn-small{height:26px;padding:0 10px;background:rgba(58,189,224,.1);border:1.5px solid rgba(58,189,224,.35);border-radius:7px;font-size:11.5px;font-weight:700;color:#1558A8;cursor:pointer}
+.price-suffix{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:11.5px;font-weight:750;color:var(--muted)}
+.add-btn-small{height:26px;padding:0 10px;background:rgba(58,189,224,.1);border:1.5px solid rgba(58,189,224,.35);border-radius:7px;font-size:11.5px;font-weight:750;color:#1558A8;cursor:pointer}
 /* ── ACTION ROW ── */
 .action-row{display:flex;align-items:center;gap:10px;padding:14px 20px;background:linear-gradient(90deg,#FAFBFD,var(--surface));border:1px solid var(--border);border-radius:14px;margin-top:4px}
-.btn-submit{height:40px;padding:0 22px;background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(21,88,168,.25);transition:all .2s}
+.btn-submit{height:40px;padding:0 22px;background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;border:none;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:750;cursor:pointer;box-shadow:0 4px 12px rgba(21,88,168,.25);transition:all .2s}
 .btn-submit:hover{transform:translateY(-1px)}
-.btn-cancel{height:40px;padding:0 16px;background:var(--white);border:1.5px solid var(--border);border-radius:10px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;transition:all .18s}
+.btn-cancel{height:40px;padding:0 16px;background:var(--white);border:1.5px solid var(--border);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;transition:all .18s}
 .btn-cancel:hover{border-color:var(--blue);color:var(--navy)}
 /* ── INIT STOCK CARD (Create mode) ── */
 .init-stock-card{background:linear-gradient(135deg,#F0FDF4,#ECFDF5);border:1.5px solid #A7F3D0;border-radius:16px;overflow:hidden;margin-bottom:16px}
@@ -140,29 +145,29 @@ textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
 .init-stock-body{padding:18px 20px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .qty-toggle{display:flex;align-items:center;gap:8px;padding:10px 13px;background:#fff;border:1.5px solid #A7F3D0;border-radius:10px;cursor:pointer;grid-column:1/-1}
 .qty-toggle input[type=checkbox]{width:17px;height:17px;accent-color:#059669;cursor:pointer;flex-shrink:0}
-.qty-toggle label{font-size:13px;font-weight:600;color:#065F46;cursor:pointer;line-height:1.3}
+.qty-toggle label{font-size:13px;font-weight:750;color:#065F46;cursor:pointer;line-height:1.3}
 .qty-fields{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 /* ── INVENTORY PANEL (Edit right column) ── */
 .stock-card{background:linear-gradient(135deg,#0F2645 0%,#1558A8 100%);border-radius:14px;padding:18px 22px;color:#fff;margin-bottom:14px}
 .stock-num{font-size:44px;font-weight:800;letter-spacing:-2px;line-height:1}
-.stock-unit-lbl{font-size:14px;font-weight:600;opacity:.7;margin-left:5px}
+.stock-unit-lbl{font-size:14px;font-weight:750;opacity:.7;margin-left:5px}
 .stock-sub{font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;margin-top:5px}
 .inv-actions{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
-.btn-add-batch{height:42px;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;border-radius:11px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .18s;box-shadow:0 3px 10px rgba(5,150,105,.25)}
+.btn-add-batch{height:42px;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:750;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .18s;box-shadow:0 3px 10px rgba(5,150,105,.25)}
 .btn-add-batch:hover{transform:translateY(-1px);box-shadow:0 5px 15px rgba(5,150,105,.3)}
-.btn-detail-link{height:38px;background:var(--white);border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
+.btn-detail-link{height:38px;background:var(--white);border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:750;color:var(--muted);text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
 .btn-detail-link:hover{border-color:var(--blue);color:var(--blue)}
 .batch-panel{background:var(--white);border:1px solid var(--border);border-radius:14px;overflow:hidden}
-.batch-panel-head{padding:11px 16px;background:var(--surface);border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px}
+.batch-panel-head{padding:11px 16px;background:var(--surface);border-bottom:1px solid var(--border);font-size:12px;font-weight:750;color:var(--navy);text-transform:uppercase;letter-spacing:.5px}
 .batch-row{padding:11px 16px;border-bottom:.5px solid #F0F4FB;display:flex;align-items:center;gap:10px}
 .batch-row:last-child{border-bottom:none}
 .batch-row:hover{background:#FAFBFF}
-.bno{font-family:monospace;font-size:12px;font-weight:700;color:var(--navy);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bno{font-family:monospace;font-size:12px;font-weight:750;color:var(--navy);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bqty{font-size:15px;font-weight:800;color:var(--ink);flex-shrink:0}
 .bhsd{font-size:11.5px;flex-shrink:0}
-.bhsd.ok{color:var(--green);font-weight:700}
-.bhsd.warn{color:var(--gold);font-weight:700}
-.bhsd.err{color:var(--red);font-weight:700}
+.bhsd.ok{color:var(--green);font-weight:750}
+.bhsd.warn{color:var(--gold);font-weight:750}
+.bhsd.err{color:var(--red);font-weight:750}
 .empty-batch{padding:28px;text-align:center;color:var(--muted);font-size:13px}
 /* ── BATCH ADD MODAL ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(11,22,40,.6);z-index:500;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px);animation:fadeIn .18s ease}
@@ -171,21 +176,22 @@ textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
 .batch-modal{background:#fff;border-radius:20px;width:560px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.3);animation:slideUp .22s ease}
 @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
 .bm-head{padding:18px 24px;background:linear-gradient(90deg,#0F2645,#1558A8);color:#fff;display:flex;align-items:center;justify-content:space-between;border-radius:20px 20px 0 0;flex-shrink:0}
-.bm-title{font-size:15px;font-weight:700}
+.bm-title{font-size:15px;font-weight:750}
 .bm-sub{font-size:11.5px;opacity:.6;margin-top:2px}
 .bm-close{width:30px;height:30px;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
 .bm-close:hover{background:rgba(255,255,255,.25)}
 .bm-body{padding:22px 24px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .bm-actions{padding:14px 24px 20px;display:flex;gap:10px;align-items:center;border-top:1px solid var(--border)}
 /* ── TOAST NOTIFICATION ── */
-.toast{position:fixed;top:76px;right:24px;z-index:900;min-width:280px;max-width:400px;padding:13px 18px;border-radius:12px;font-size:13.5px;font-weight:600;display:flex;align-items:flex-start;gap:10px;box-shadow:0 8px 30px rgba(0,0,0,.18);animation:toastIn .28s ease;pointer-events:none}
+.toast{position:fixed;top:76px;right:24px;z-index:900;min-width:280px;max-width:400px;padding:13px 18px;border-radius:12px;font-size:13.5px;font-weight:750;display:flex;align-items:flex-start;gap:10px;box-shadow:0 8px 30px rgba(0,0,0,.18);animation:toastIn .28s ease;pointer-events:none}
 @keyframes toastIn{from{transform:translateY(-12px);opacity:0}to{transform:translateY(0);opacity:1}}
 .toast-ok{background:#F0FDF4;border:1.5px solid #A7F3D0;color:#065F46}
 .toast-err{background:#FEF2F2;border:1.5px solid #FECACA;color:#991B1B}
 .toast-warn{background:#FFFBEB;border:1.5px solid #FDE68A;color:#92400E}
 .toast-icon{font-size:16px;flex-shrink:0;margin-top:1px}
-.inline-err{font-size:11.5px;color:var(--red);font-weight:600;margin-top:4px;display:block}
-.inline-warn{font-size:11.5px;color:var(--gold);font-weight:600;margin-top:4px;display:block}
+.inline-err{font-size:11.5px;color:var(--red);font-weight:750;margin-top:4px;display:block}
+.inline-warn{font-size:11.5px;color:var(--gold);font-weight:750;margin-top:4px;display:block}
+.field-input.field-error{border-color:var(--red)!important;box-shadow:0 0 0 3px rgba(220,38,38,.1)}
 /* ── NOT FOUND STATE ── */
 .not-found-wrap{display:flex;align-items:center;justify-content:center;min-height:60vh}
 .not-found-card{background:var(--white);border:1px solid var(--border);border-radius:20px;padding:48px 40px;text-align:center;max-width:480px;box-shadow:0 4px 20px rgba(21,88,168,.06)}
@@ -193,10 +199,25 @@ textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
 .nf-title{font-size:20px;font-weight:800;color:var(--ink);margin-bottom:8px}
 .nf-sub{font-size:13.5px;color:var(--muted);line-height:1.6;margin-bottom:24px}
 .nf-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-.nf-btn-primary{height:44px;padding:0 24px;background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;border:none;border-radius:11px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
-.nf-btn-sec{height:44px;padding:0 20px;background:var(--white);border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;font-weight:600;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:.15s}
+.nf-btn-primary{height:44px;padding:0 24px;background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;border:none;border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:750;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.nf-btn-sec{height:44px;padding:0 20px;background:var(--white);border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;font-weight:750;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:.15s}
 .nf-btn-sec:hover{border-color:var(--blue);color:var(--navy)}
+select,option{font-family:inherit;font-size:inherit}
+.cdd{position:relative;user-select:none;display:inline-block}
+.cdd-btn{display:flex;align-items:center;gap:6px;padding:9px 14px;background:var(--white,#fff);border:1.5px solid var(--border,#D5E0F0);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;color:var(--ink,#0B1628);cursor:pointer;transition:all .18s;white-space:nowrap}
+.cdd-btn:hover{border-color:var(--cyan,#3ABDE0);background:var(--cyan-soft,#EBF8FD)}
+.cdd-btn.open{border-color:var(--cyan,#3ABDE0);box-shadow:0 0 0 3px rgba(58,189,224,.12)}
+.cdd-arrow{font-size:9px;color:var(--muted,#7A90B0);transition:transform .2s}
+.cdd-btn.open .cdd-arrow{transform:rotate(180deg)}
+.cdd-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:100%;background:var(--white,#fff);border:1.5px solid var(--border,#D5E0F0);border-radius:12px;padding:6px;box-shadow:0 12px 36px rgba(15,38,69,.15);z-index:200;opacity:0;transform:translateY(-6px);pointer-events:none;transition:all .18s ease;max-height:260px;overflow-y:auto}
+.cdd-menu.show{opacity:1;transform:translateY(0);pointer-events:auto}
+.cdd-menu::-webkit-scrollbar{width:4px}
+.cdd-menu::-webkit-scrollbar-thumb{background:var(--border,#D5E0F0);border-radius:4px}
+.cdd-opt{padding:8px 14px;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;color:var(--ink,#0B1628);cursor:pointer;transition:all .12s;white-space:nowrap}
+.cdd-opt:hover{background:var(--surface,#F1F5FB);color:var(--blue,#1558A8)}
+.cdd-opt.active{background:linear-gradient(135deg,var(--blue,#1558A8),#0D3F85);color:#fff;font-weight:750}
 </style>
+    
 </head>
 <body>
 
@@ -317,6 +338,10 @@ textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
                 <label class="field-label">Danh mục <span class="req">*</span>
                   <button type="button" onclick="openCatModal()" class="add-btn-small">➕ Thêm</button>
                 </label>
+                <%-- NOTE: kept as a native <select> — saveCat() in the script below does
+                     sel.appendChild(new Option(...)) directly on this element after AJAX
+                     category creation. Converting to .cdd would require rewriting that
+                     handler too, so left native to avoid breaking the "➕ Thêm" flow. --%>
                 <select name="categoryId" id="categoryId" class="field-input" required>
                   <option value="">-- Chọn danh mục --</option>
                   <% if (cats != null) for (com.medicare.entity.Category c : cats) { %>
@@ -328,6 +353,9 @@ textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
                 <label class="field-label">Nhà sản xuất <span class="req">*</span>
                   <button type="button" onclick="openMfrModal()" class="add-btn-small">➕ Thêm</button>
                 </label>
+                <%-- NOTE: kept as a native <select> — saveMfr() does
+                     sel.appendChild(new Option(...)) directly on this element after AJAX
+                     manufacturer creation. Left native for the same reason as categoryId. --%>
                 <select name="manufacturerId" id="manufacturerId" class="field-input" required>
                   <option value="">-- Chọn nhà sản xuất --</option>
                   <% if (mfrs != null) for (com.medicare.entity.Manufacturer mf : mfrs) { %>
@@ -370,9 +398,19 @@ textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
                 <input type="number" name="expiryAlertDays" class="field-input" value="<%= vExpDays %>" min="1">
               </div>
               <div class="field">
-                <label class="field-label">Vị trí kệ
-                  <button type="button" onclick="openShelfMgr()" style="margin-left:6px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1558A8;border-radius:7px;padding:2px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🗂️ Quản lý kệ</button>
+                <label class="field-label">Hạn dùng chuẩn (tháng)
+                  <span style="font-size:11px;font-weight:400;color:var(--muted)">(tùy chọn)</span>
                 </label>
+                <input type="number" name="shelfLifeMonths" class="field-input" value="<%= vShelfLifeMonths %>" min="1" placeholder="VD: 24">
+                <span class="field-hint">Dùng để đối chiếu HSD khi nhập lô — bỏ trống nếu không cần kiểm tra.</span>
+              </div>
+              <div class="field">
+                <label class="field-label">Vị trí kệ
+                  <button type="button" onclick="openShelfMgr()" style="margin-left:6px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1558A8;border-radius:7px;padding:2px 9px;font-size:11px;font-weight:750;cursor:pointer;font-family:inherit">🗂️ Quản lý kệ</button>
+                </label>
+                <%-- NOTE: kept as a native <select> — syncShelfSelects() in the script below
+                     rewrites .innerHTML of every select.shelf-select after shelf CRUD via AJAX
+                     (add/rename/delete). Left native to avoid breaking that sync logic. --%>
                 <select name="shelfId" class="field-input shelf-select">
                   <option value="">-- Chọn kệ (tùy chọn) --</option>
                   <% if (shelves != null) for (com.medicare.entity.Shelf sh : shelves) { %>
@@ -516,6 +554,8 @@ textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
             <label class="field-label">Danh mục <span class="req">*</span>
               <button type="button" onclick="openCatModal()" class="add-btn-small">➕ Thêm</button>
             </label>
+            <%-- NOTE: kept as a native <select> — saveCat() appends new options onto this
+                 element directly after AJAX category creation. See edit-mode form above. --%>
             <select name="categoryId" id="categoryId" class="field-input" required>
               <option value="">-- Chọn danh mục --</option>
               <% if (cats != null) for (com.medicare.entity.Category c : cats) { %>
@@ -527,6 +567,8 @@ textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
             <label class="field-label">Nhà sản xuất <span class="req">*</span>
               <button type="button" onclick="openMfrModal()" class="add-btn-small">➕ Thêm</button>
             </label>
+            <%-- NOTE: kept as a native <select> — saveMfr() appends new options onto this
+                 element directly after AJAX manufacturer creation. --%>
             <select name="manufacturerId" id="manufacturerId" class="field-input" required>
               <option value="">-- Chọn nhà sản xuất --</option>
               <% if (mfrs != null) for (com.medicare.entity.Manufacturer mf : mfrs) { %>
@@ -570,8 +612,10 @@ textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
           </div>
           <div class="field">
             <label class="field-label">Vị trí kệ
-              <button type="button" onclick="openShelfMgr()" style="margin-left:6px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1558A8;border-radius:7px;padding:2px 9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🗂️ Quản lý kệ</button>
+              <button type="button" onclick="openShelfMgr()" style="margin-left:6px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1558A8;border-radius:7px;padding:2px 9px;font-size:11px;font-weight:750;cursor:pointer;font-family:inherit">🗂️ Quản lý kệ</button>
             </label>
+            <%-- NOTE: kept as a native <select> — syncShelfSelects() rewrites .innerHTML
+                 of every select.shelf-select on the page after shelf CRUD via AJAX. --%>
             <select name="shelfId" class="field-input shelf-select">
               <option value="">-- Chọn kệ (tùy chọn) --</option>
               <% if (shelves != null) for (com.medicare.entity.Shelf sh : shelves) { %>
@@ -582,9 +626,9 @@ textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
 
           <%-- Thêm lô đầu — nhập số lượng thêm vào kho (tùy chọn) --%>
           <div class="field span-2" style="border-top:1px dashed var(--border);padding-top:14px;margin-top:4px">
-            <div style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;color:#065F46">
+            <div style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:750;color:#065F46">
               📦 Thêm lô đầu vào kho
-              <span style="font-weight:500;color:#059669;font-size:11.5px">— nhập số lượng muốn thêm vào ngay khi tạo thuốc, hệ thống sẽ tự tạo lô nhập kho (để 0 nếu chưa có hàng)</span>
+              <span style="font-weight:750;color:#059669;font-size:11.5px">— nhập số lượng muốn thêm vào ngay khi tạo thuốc, hệ thống sẽ tự tạo lô nhập kho (để 0 nếu chưa có hàng)</span>
             </div>
           </div>
           <div class="field">
@@ -673,18 +717,21 @@ textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
       <input type="hidden" name="medicineId" value="<%= m.getMedicineId() %>">
       <input type="hidden" name="poMode" value="none">
       <input type="hidden" name="returnTo" value="edit">
+      <input type="hidden" name="forceShortExpiry" id="bmForceShortExpiry" value="false">
       <div class="bm-body">
         <div class="field span-2">
           <label class="field-label">Số lô hàng <span class="req">*</span>
-            <span style="font-size:11px;font-weight:500;color:var(--muted)">— Nếu trùng lô cũ, hệ thống sẽ cộng thêm số lượng</span>
+            <span style="font-size:11px;font-weight:750;color:var(--muted)">— Nếu trùng lô cũ, hệ thống sẽ cộng thêm số lượng</span>
           </label>
           <input type="text" name="batchNumber" id="bmBatchNo" class="field-input"
                  placeholder="VD: BATCH-2024-001" required>
+          <span class="inline-err" id="bmBatchNoErr"></span>
         </div>
         <div class="field">
           <label class="field-label">Số lượng nhập <span class="req">*</span></label>
           <input type="number" name="initialQuantity" id="bmQty" class="field-input"
                  placeholder="VD: 100" min="1" required>
+          <span class="inline-err" id="bmQtyErr"></span>
         </div>
         <div class="field">
           <label class="field-label">Ngày hết hạn (HSD) <span class="req">*</span></label>
@@ -699,6 +746,7 @@ textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
             <span class="price-suffix">₫</span>
           </div>
           <span class="inline-warn" id="bmPriceWarn"></span>
+          <span class="inline-err" id="bmPriceErr"></span>
         </div>
         <div class="field">
           <label class="field-label">Ngày sản xuất <span style="font-size:11px;font-weight:400;color:var(--muted)">(tùy chọn)</span></label>
@@ -720,25 +768,25 @@ textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
 <div id="catModal" style="display:none;position:fixed;inset:0;background:rgba(11,22,40,.55);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(2px)">
   <div style="background:#fff;border-radius:18px;width:400px;max-width:92vw;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <div style="padding:18px 22px;background:linear-gradient(90deg,#0F2645,#1558A8);color:#fff;display:flex;align-items:center;justify-content:space-between">
-      <h3 style="font-size:15px;font-weight:700;margin:0">📂 Thêm danh mục thuốc</h3>
+      <h3 style="font-size:15px;font-weight:750;margin:0">📂 Thêm danh mục thuốc</h3>
       <button onclick="closeCatModal()" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:14px">✕</button>
     </div>
     <div style="padding:22px">
       <div style="margin-bottom:14px">
-        <label style="font-size:12.5px;font-weight:700;color:#0F2645;display:block;margin-bottom:6px">Tên danh mục <span style="color:#DC2626">*</span></label>
+        <label style="font-size:12.5px;font-weight:750;color:#0F2645;display:block;margin-bottom:6px">Tên danh mục <span style="color:#DC2626">*</span></label>
         <input id="catNameInput" type="text" placeholder="VD: Kháng sinh, Giảm đau..."
-               style="width:100%;height:42px;padding:0 14px;border:1.5px solid #D5E0F0;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;outline:none;box-sizing:border-box"
+               style="width:100%;height:42px;padding:0 14px;border:1.5px solid #D5E0F0;border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;outline:none;box-sizing:border-box"
                onkeydown="if(event.key==='Enter'){event.preventDefault();saveCat()}">
       </div>
       <div style="margin-bottom:18px">
-        <label style="font-size:12.5px;font-weight:700;color:#0F2645;display:block;margin-bottom:6px">Mô tả (không bắt buộc)</label>
+        <label style="font-size:12.5px;font-weight:750;color:#0F2645;display:block;margin-bottom:6px">Mô tả (không bắt buộc)</label>
         <input id="catDescInput" type="text" placeholder="Mô tả ngắn"
-               style="width:100%;height:42px;padding:0 14px;border:1.5px solid #D5E0F0;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;outline:none;box-sizing:border-box">
+               style="width:100%;height:42px;padding:0 14px;border:1.5px solid #D5E0F0;border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;outline:none;box-sizing:border-box">
       </div>
       <div id="catErr" style="font-size:12px;color:#DC2626;margin-bottom:10px;display:none"></div>
       <div style="display:flex;gap:10px">
-        <button onclick="saveCat()" style="flex:1;height:40px;background:linear-gradient(135deg,#1558A8,#0D3F85);color:#fff;border:none;border-radius:11px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;cursor:pointer">➕ Tạo danh mục</button>
-        <button onclick="closeCatModal()" style="height:40px;padding:0 18px;background:#fff;border:1.5px solid #D5E0F0;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:600;color:#7A90B0;cursor:pointer">Hủy</button>
+        <button onclick="saveCat()" style="flex:1;height:40px;background:linear-gradient(135deg,#1558A8,#0D3F85);color:#fff;border:none;border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:750;cursor:pointer">➕ Tạo danh mục</button>
+        <button onclick="closeCatModal()" style="height:40px;padding:0 18px;background:#fff;border:1.5px solid #D5E0F0;border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:750;color:#7A90B0;cursor:pointer">Hủy</button>
       </div>
     </div>
   </div>
@@ -748,41 +796,46 @@ textarea.field-input{height:80px;padding:10px 13px;resize:vertical}
 <div id="mfrModal" style="display:none;position:fixed;inset:0;background:rgba(11,22,40,.55);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(2px)">
   <div style="background:#fff;border-radius:18px;width:420px;max-width:92vw;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <div style="padding:18px 22px;background:linear-gradient(90deg,#0F2645,#1558A8);color:#fff;display:flex;align-items:center;justify-content:space-between">
-      <h3 style="font-size:15px;font-weight:700;margin:0">🏭 Thêm nhà sản xuất</h3>
+      <h3 style="font-size:15px;font-weight:750;margin:0">🏭 Thêm nhà sản xuất</h3>
       <button onclick="closeMfrModal()" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:14px">✕</button>
     </div>
     <div style="padding:22px">
       <div style="margin-bottom:14px">
-        <label style="font-size:12.5px;font-weight:700;color:#0F2645;display:block;margin-bottom:6px">Tên nhà sản xuất <span style="color:#DC2626">*</span></label>
+        <label style="font-size:12.5px;font-weight:750;color:#0F2645;display:block;margin-bottom:6px">Tên nhà sản xuất <span style="color:#DC2626">*</span></label>
         <input id="mfrNameInput" type="text" placeholder="VD: Sanofi, Pfizer, Imexpharm..."
-               style="width:100%;height:42px;padding:0 14px;border:1.5px solid #D5E0F0;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;outline:none;box-sizing:border-box">
+               style="width:100%;height:42px;padding:0 14px;border:1.5px solid #D5E0F0;border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;outline:none;box-sizing:border-box">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
         <div>
-          <label style="font-size:12.5px;font-weight:700;color:#0F2645;display:block;margin-bottom:6px">Quốc gia</label>
+          <label style="font-size:12.5px;font-weight:750;color:#0F2645;display:block;margin-bottom:6px">Quốc gia</label>
           <input id="mfrCountryInput" type="text" placeholder="VD: Pháp, Việt Nam"
-                 style="width:100%;height:42px;padding:0 14px;border:1.5px solid #D5E0F0;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;outline:none;box-sizing:border-box">
+                 style="width:100%;height:42px;padding:0 14px;border:1.5px solid #D5E0F0;border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;outline:none;box-sizing:border-box">
         </div>
         <div>
-          <label style="font-size:12.5px;font-weight:700;color:#0F2645;display:block;margin-bottom:6px">Liên hệ</label>
+          <label style="font-size:12.5px;font-weight:750;color:#0F2645;display:block;margin-bottom:6px">Liên hệ</label>
           <input id="mfrContactInput" type="text" placeholder="Website hoặc SĐT"
-                 style="width:100%;height:42px;padding:0 14px;border:1.5px solid #D5E0F0;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;outline:none;box-sizing:border-box">
+                 style="width:100%;height:42px;padding:0 14px;border:1.5px solid #D5E0F0;border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;outline:none;box-sizing:border-box">
         </div>
       </div>
       <div id="mfrErr" style="font-size:12px;color:#DC2626;margin-bottom:10px;display:none"></div>
       <div style="display:flex;gap:10px">
-        <button onclick="saveMfr()" style="flex:1;height:40px;background:linear-gradient(135deg,#1558A8,#0D3F85);color:#fff;border:none;border-radius:11px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;cursor:pointer">➕ Tạo nhà sản xuất</button>
-        <button onclick="closeMfrModal()" style="height:40px;padding:0 18px;background:#fff;border:1.5px solid #D5E0F0;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:600;color:#7A90B0;cursor:pointer">Hủy</button>
+        <button onclick="saveMfr()" style="flex:1;height:40px;background:linear-gradient(135deg,#1558A8,#0D3F85);color:#fff;border:none;border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:750;cursor:pointer">➕ Tạo nhà sản xuất</button>
+        <button onclick="closeMfrModal()" style="height:40px;padding:0 18px;background:#fff;border:1.5px solid #D5E0F0;border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:750;color:#7A90B0;cursor:pointer">Hủy</button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
+function toggleCdd(id){var w=document.getElementById(id),m=w.querySelector('.cdd-menu'),b=w.querySelector('.cdd-btn');var open=m.classList.contains('show');document.querySelectorAll('.cdd-menu.show').forEach(function(x){x.classList.remove('show');x.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')});if(!open){m.classList.add('show');b.classList.add('open');var act=m.querySelector('.cdd-opt.active');if(act)act.scrollIntoView({block:'nearest'})}}
+function pickCdd(wId,hId,el,autoSubmit){document.getElementById(hId).value=el.dataset.val;var w=document.getElementById(wId);w.querySelector('.cdd-label').textContent=el.textContent;w.querySelectorAll('.cdd-opt').forEach(function(o){o.classList.remove('active')});el.classList.add('active');w.querySelector('.cdd-menu').classList.remove('show');w.querySelector('.cdd-btn').classList.remove('open');if(autoSubmit){var f=w.closest('form');if(f)f.submit()}}
+document.addEventListener('click',function(e){if(!e.target.closest('.cdd')){document.querySelectorAll('.cdd-menu.show').forEach(function(m){m.classList.remove('show');m.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')})}});
+
 const CTX = '${pageContext.request.contextPath}';
 <%-- Giá nhập lần cuối để so sánh outlier — 0 nếu chưa có lô nào --%>
 <% java.math.BigDecimal _lp = (java.math.BigDecimal) request.getAttribute("lastImportPrice"); %>
 const LAST_IMPORT_PRICE = <%= _lp != null ? _lp.toPlainString() : "0" %>;
+const EXPIRY_ALERT_DAYS = <%= vExpDays %>;
 
 // ── TOAST ────────────────────────────────────────────────────────────────────
 function showToast(type, msg, duration) {
@@ -799,7 +852,13 @@ function showToast(type, msg, duration) {
   const msg = p.get('msg');
   const addedQty = p.get('addedQty');
   const batchErr = p.get('batchErr');
-  if (batchErr) {
+  const expiryWarn = p.get('expiryWarn');
+  if (expiryWarn) {
+    const parts = decodeURIComponent(expiryWarn).split(':');
+    const remainDays = parts[1] || '?';
+    const alertDays = parts[2] || '?';
+    showToast('warn', '⚠️ HSD chỉ còn ' + remainDays + ' ngày (ngưỡng: ' + alertDays + ' ngày). Mở lại modal và xác nhận để nhập lô.', 8000);
+  } else if (batchErr) {
     showToast('err', decodeURIComponent(batchErr), 6000);
   } else if (msg === 'batch-added') {
     showToast('ok', 'Nhập lô mới thành công!');
@@ -813,7 +872,7 @@ function showToast(type, msg, duration) {
     showToast('err', 'Có lỗi xảy ra, vui lòng thử lại.');
   }
   // Xóa query params khỏi URL (clean address bar)
-  if (msg || batchErr) {
+  if (msg || batchErr || expiryWarn) {
     const clean = window.location.pathname + (p.get('action') ? '?action=' + p.get('action') + (p.get('id') ? '&id=' + p.get('id') : '') : '');
     window.history.replaceState({}, '', clean);
   }
@@ -828,13 +887,19 @@ function openBatchModal() {
     const ts = new Date().toISOString().slice(2,10).replace(/-/g,'');
     bno.value = 'LO-<%= m != null ? m.getMedicineId() : 0 %>-' + ts;
   }
-  // Reset inline errors
-  ['bmExpiryErr','bmMfErr','bmPriceWarn'].forEach(id => {
+  // Reset inline errors and force flag
+  ['bmExpiryErr','bmMfErr','bmPriceWarn','bmBatchNoErr','bmQtyErr','bmPriceErr'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = '';
   });
+  ['bmBatchNo','bmQty','bmExpiry','bmPrice','bmMfDate'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('field-error');
+  });
+  const forceField = document.getElementById('bmForceShortExpiry');
+  if (forceField) forceField.value = 'false';
   const btn = document.getElementById('bmSubmitBtn');
-  if (btn) btn.disabled = false;
+  if (btn) { btn.disabled = false; btn.textContent = '📥 Nhập lô vào kho'; }
   modal.classList.add('open');
   setTimeout(() => { const q = document.getElementById('bmQty'); if (q) q.focus(); }, 120);
 }
@@ -851,20 +916,97 @@ document.addEventListener('keydown', e => {
 
 // Client-side validation cho batch modal
 const batchForm = document.getElementById('batchModalForm');
+
+// Ánh xạ tên field server trả về ↔ id input/lỗi trong modal — dùng để chỉ tô đỏ
+// đúng ô bị sai, KHÔNG đụng tới các ô khác đã nhập đúng.
+const BM_FIELD_TO_INPUT = {
+  batchNumber:'bmBatchNo', initialQuantity:'bmQty', expiryDate:'bmExpiry',
+  importPrice:'bmPrice', manufactureDate:'bmMfDate'
+};
+const BM_INPUT_TO_ERR = {
+  bmBatchNo:'bmBatchNoErr', bmQty:'bmQtyErr', bmExpiry:'bmExpiryErr',
+  bmPrice:'bmPriceErr', bmMfDate:'bmMfErr'
+};
+function clearBmFieldError(inputId) {
+  const input = document.getElementById(inputId);
+  if (input) input.classList.remove('field-error');
+  const errEl = document.getElementById(BM_INPUT_TO_ERR[inputId]);
+  if (errEl) errEl.textContent = '';
+}
+
 if (batchForm) {
   // Live: clear errors khi user sửa
   document.getElementById('bmExpiry').addEventListener('change', validateBatchDates);
   document.getElementById('bmMfDate').addEventListener('change', validateBatchDates);
   document.getElementById('bmPrice').addEventListener('input', checkPriceOutlier);
+  Object.keys(BM_INPUT_TO_ERR).forEach(inputId => {
+    const el = document.getElementById(inputId);
+    if (el) el.addEventListener('input', () => clearBmFieldError(inputId));
+  });
 
   batchForm.addEventListener('submit', function(e) {
+    e.preventDefault(); // luôn gửi qua AJAX — không để trình duyệt điều hướng trang
     const ok = validateBatchDates();
-    if (!ok) { e.preventDefault(); return; }
-    checkPriceOutlier(); // warn only, không chặn
-    // Disable button chống double-submit
-    const btn = document.getElementById('bmSubmitBtn');
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Đang xử lý...'; }
+    if (!ok) return;
+    checkPriceOutlier();
+
+    // Kiểm tra cảnh báo HSD dưới ngưỡng expiryAlertDays
+    const forceField = document.getElementById('bmForceShortExpiry');
+    if (forceField.value !== 'true') {
+      const expiryVal = document.getElementById('bmExpiry').value;
+      if (expiryVal && EXPIRY_ALERT_DAYS > 0) {
+        const today = new Date(); today.setHours(0,0,0,0);
+        const expDate = new Date(expiryVal);
+        const diffDays = Math.round((expDate - today) / 86400000);
+        if (diffDays > 0 && diffDays <= EXPIRY_ALERT_DAYS) {
+          if (confirm('⚠️ HSD chỉ còn ' + diffDays + ' ngày, dưới ngưỡng cảnh báo '
+              + EXPIRY_ALERT_DAYS + ' ngày đã cấu hình cho thuốc này.\n\n'
+              + 'Bạn có chắc chắn muốn nhập lô này không?')) {
+            forceField.value = 'true';
+            submitBatchForm();
+          }
+          return;
+        }
+      }
+    }
+    submitBatchForm();
   });
+}
+
+// Gửi form modal qua fetch (AJAX) thay vì submit thường — khi server báo lỗi,
+// trang KHÔNG reload nên mọi ô đã nhập đúng vẫn còn nguyên, chỉ ô sai bị tô đỏ.
+async function submitBatchForm() {
+  const btn = document.getElementById('bmSubmitBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Đang xử lý...'; }
+  try {
+    const fd = new FormData(batchForm);
+    const res = await fetch(batchForm.action, {
+      method: 'POST',
+      body: fd,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      window.location.href = data.redirect
+          || (CTX + '/medicines?action=edit&id=<%= m != null ? m.getMedicineId() : 0 %>&msg=batch-added');
+      return;
+    }
+
+    // LỖI: chỉ tô đỏ + hiện thông báo ở đúng ô sai — các ô còn lại giữ nguyên giá trị
+    showToast('err', data.msg || 'Có lỗi xảy ra, vui lòng thử lại.', 6000);
+    const inputId = BM_FIELD_TO_INPUT[data.field];
+    if (inputId) {
+      const input = document.getElementById(inputId);
+      const errEl = document.getElementById(BM_INPUT_TO_ERR[inputId]);
+      if (input) { input.classList.add('field-error'); input.focus(); }
+      if (errEl) errEl.textContent = data.msg;
+    }
+    if (btn) { btn.disabled = false; btn.textContent = '📥 Nhập lô vào kho'; }
+  } catch (err) {
+    showToast('err', 'Lỗi kết nối, vui lòng thử lại.', 6000);
+    if (btn) { btn.disabled = false; btn.textContent = '📥 Nhập lô vào kho'; }
+  }
 }
 
 function validateBatchDates() {
@@ -882,11 +1024,20 @@ function validateBatchDates() {
     if (expDate <= today) {
       expiryErr.textContent = '⛔ Ngày hết hạn phải sau hôm nay!';
       ok = false;
-    } else if (mfDateVal) {
-      const mfDate = new Date(mfDateVal);
-      if (mfDate >= expDate) {
-        mfErr.textContent = '⛔ Ngày sản xuất không thể bằng hoặc sau ngày hết hạn!';
-        ok = false;
+    } else {
+      const diffDays = Math.round((expDate - today) / 86400000);
+      if (diffDays <= EXPIRY_ALERT_DAYS) {
+        expiryErr.innerHTML = '⚠️ HSD chỉ còn ' + diffDays + ' ngày — dưới ngưỡng cảnh báo ' + EXPIRY_ALERT_DAYS + ' ngày. Sẽ cần xác nhận khi nhập.';
+        expiryErr.className = 'inline-warn';
+      } else {
+        expiryErr.className = 'inline-err';
+      }
+      if (mfDateVal) {
+        const mfDate = new Date(mfDateVal);
+        if (mfDate >= expDate) {
+          mfErr.textContent = '⛔ Ngày sản xuất không thể bằng hoặc sau ngày hết hạn!';
+          ok = false;
+        }
       }
     }
   }
@@ -1007,8 +1158,8 @@ function renderShelfList() {
     '<div style="display:flex;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9" data-shelf="' + s.id + '">'
     + '<input type="text" value="' + s.name.replace(/"/g,'&quot;') + '" data-orig="' + s.name.replace(/"/g,'&quot;') + '"'
     + ' style="flex:1;border:1.5px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit">'
-    + '<button type="button" onclick="saveShelf(' + s.id + ',this)" style="background:#ECFDF5;border:1px solid #A7F3D0;color:#047857;border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">💾</button>'
-    + '<button type="button" onclick="deleteShelf(' + s.id + ')" style="background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🗑️</button>'
+    + '<button type="button" onclick="saveShelf(' + s.id + ',this)" style="background:#ECFDF5;border:1px solid #A7F3D0;color:#047857;border-radius:8px;padding:7px 11px;font-size:12px;font-weight:750;cursor:pointer;font-family:inherit">💾</button>'
+    + '<button type="button" onclick="deleteShelf(' + s.id + ')" style="background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;border-radius:8px;padding:7px 11px;font-size:12px;font-weight:750;cursor:pointer;font-family:inherit">🗑️</button>'
     + '</div>').join('');
 }
 
@@ -1096,7 +1247,7 @@ async function deleteShelf(id) {
     </div>
     <div id="shelfMgrList" style="flex:1;overflow-y:auto;padding:12px 20px"></div>
     <div style="padding:14px 20px;border-top:1.5px solid #f1f5f9">
-      <div id="shelfMgrMsg" style="display:none;font-size:12px;font-weight:700;margin-bottom:8px"></div>
+      <div id="shelfMgrMsg" style="display:none;font-size:12px;font-weight:750;margin-bottom:8px"></div>
       <div style="display:flex;gap:8px">
         <input type="text" id="shelfNewName" placeholder="Tên kệ mới (VD: Kệ A3 — tầng 2)"
                onkeydown="if(event.key==='Enter'){event.preventDefault();addShelf();}"

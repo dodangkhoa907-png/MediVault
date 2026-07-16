@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8"  pageEncoding="UTF-8" %>
 <%
     com.medicare.entity.Account admin = (com.medicare.entity.Account) session.getAttribute("adminAccount");
     if (admin == null) { response.sendRedirect(request.getContextPath() + "/login"); return; }
@@ -12,16 +12,20 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Xác nhận xóa vĩnh viễn — Medicare</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=DM+Serif+Display@400;400i&display=swap" rel="stylesheet">
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--red:#DC2626;--ink:#0B1628;--muted:#7A90B0;--border:#D5E0F0}
 body{min-height:100vh;display:flex;align-items:center;justify-content:center;
   background:linear-gradient(145deg,#1a0505 0%,#3B0A0A 50%,#7F1D1D 100%);
-  padding:24px;font-family:'Outfit',sans-serif;}
+  padding:24px;font-family:'Plus Jakarta Sans',sans-serif;}
 .card{width:100%;max-width:420px;background:#fff;border-radius:22px;padding:36px;
   box-shadow:0 24px 60px rgba(0,0,0,.35);animation:fadeUp .4s ease both;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
@@ -30,34 +34,35 @@ body{min-height:100vh;display:flex;align-items:center;justify-content:center;
   display:flex;align-items:center;justify-content:center;font-size:16px;}
 .logo-text{font-size:15px;font-weight:800;color:var(--ink)}
 .warn-badge{display:inline-flex;align-items:center;gap:6px;background:#FEF2F2;border:1px solid #FECACA;
-  border-radius:20px;padding:5px 14px;margin-bottom:14px;font-size:12px;font-weight:600;color:var(--red);}
-h2{font-family:'DM Serif Display',serif;font-size:24px;color:var(--ink);margin-bottom:6px}
+  border-radius:20px;padding:5px 14px;margin-bottom:14px;font-size:12px;font-weight:750;color:var(--red);}
+h2{font-family:'Lora',serif;font-size:24px;color:var(--ink);margin-bottom:6px}
 .subtitle{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.55}
 .target-card{background:#FEF2F2;border:1.5px solid #FECACA;border-radius:12px;
   padding:14px 16px;margin-bottom:20px;display:flex;align-items:center;gap:12px;}
 .target-av{width:40px;height:40px;border-radius:10px;flex-shrink:0;
   background:linear-gradient(135deg,#EF4444,#DC2626);
   display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;}
-.target-name{font-size:14px;font-weight:700;color:#991B1B}
+.target-name{font-size:14px;font-weight:750;color:#991B1B}
 .target-user{font-size:12px;color:#B91C1C;margin-top:2px}
-.field-label{font-size:12.5px;font-weight:600;color:var(--ink);display:block;margin-bottom:7px}
+.field-label{font-size:12.5px;font-weight:750;color:var(--ink);display:block;margin-bottom:7px}
 .field-input{width:100%;padding:12px 16px;background:#fff;border:1.5px solid var(--border);
-  border-radius:11px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;
+  border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:750;
   color:var(--ink);outline:none;transition:all .2s;letter-spacing:2px;text-align:center;}
 .field-input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(220,38,38,.1)}
-.hint-text{font-size:12px;margin-top:6px;font-weight:600;min-height:18px;text-align:center}
+.hint-text{font-size:12px;margin-top:6px;font-weight:750;min-height:18px;text-align:center}
 .btn-row{display:flex;gap:10px;margin-top:20px}
 .btn-danger{flex:1;padding:13px;background:linear-gradient(135deg,var(--red),#B91C1C);
-  color:#fff;border:none;border-radius:12px;font-family:'Outfit',sans-serif;
-  font-size:15px;font-weight:700;cursor:pointer;transition:all .22s;
+  color:#fff;border:none;border-radius:12px;font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:15px;font-weight:750;cursor:pointer;transition:all .22s;
   box-shadow:0 4px 14px rgba(220,38,38,.3);}
 .btn-danger:hover:not(:disabled){transform:translateY(-1px)}
 .btn-danger:disabled{opacity:.4;cursor:not-allowed}
 .btn-cancel{padding:13px 18px;background:#fff;color:var(--muted);border:1.5px solid var(--border);
-  border-radius:12px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;
+  border-radius:12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:750;
   cursor:pointer;transition:all .2s;text-decoration:none;display:flex;align-items:center;}
 .btn-cancel:hover{border-color:var(--red);color:var(--red)}
 </style>
+    
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>

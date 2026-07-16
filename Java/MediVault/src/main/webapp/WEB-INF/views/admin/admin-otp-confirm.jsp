@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8"  pageEncoding="UTF-8" %>
 <%
     com.medicare.entity.Account admin = (com.medicare.entity.Account) session.getAttribute("adminAccount");
     if (admin == null) { response.sendRedirect(request.getContextPath() + "/login"); return; }
@@ -21,18 +21,22 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Xác nhận OTP — Đặt lại mật khẩu nhân viên</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --ink:#0B1628;--navy:#0F2645;--blue:#1558A8;--cyan:#3ABDE0;
   --surface:#EEF3FA;--white:#fff;--muted:#7A90B0;--border:#D0DCF0;
 }
-html,body{height:100%;font-family:'Outfit',sans-serif}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif}
 body{
   min-height:100vh;display:flex;align-items:center;justify-content:center;
   background:linear-gradient(145deg,#071022 0%,#0F2645 50%,#1558A8 100%);
@@ -70,10 +74,10 @@ body::before{
   background:linear-gradient(135deg,rgba(21,88,168,.08),rgba(58,189,224,.06));
   border:1px solid rgba(21,88,168,.15);
   border-radius:20px;padding:5px 14px;margin-bottom:18px;
-  font-size:12px;font-weight:600;color:var(--blue);
+  font-size:12px;font-weight:750;color:var(--blue);
 }
 
-h2{font-family:'DM Serif Display',serif;font-size:26px;color:var(--ink);margin-bottom:6px}
+h2{font-family:'Lora',serif;font-size:26px;color:var(--ink);margin-bottom:6px}
 .subtitle{font-size:13.5px;color:var(--muted);margin-bottom:24px;line-height:1.55}
 
 /* Staff info card */
@@ -89,7 +93,7 @@ h2{font-family:'DM Serif Display',serif;font-size:26px;color:var(--ink);margin-b
   display:flex;align-items:center;justify-content:center;
   font-size:14px;font-weight:800;color:#fff;
 }
-.staff-name{font-size:14px;font-weight:700;color:var(--navy)}
+.staff-name{font-size:14px;font-weight:750;color:var(--navy)}
 .staff-user{font-size:12px;color:var(--muted);margin-top:2px}
 
 /* Email hint */
@@ -104,7 +108,7 @@ h2{font-family:'DM Serif Display',serif;font-size:26px;color:var(--ink);margin-b
 .otp-wrap{display:flex;gap:10px;justify-content:center;margin:20px 0 8px}
 .otp-input{
   width:48px;height:54px;border:2px solid var(--border);border-radius:11px;
-  font-family:'Outfit',sans-serif;font-size:22px;font-weight:700;color:var(--navy);
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:750;color:var(--navy);
   text-align:center;outline:none;transition:all .2s;background:#fff;
 }
 .otp-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(21,88,168,.12)}
@@ -116,13 +120,13 @@ h2{font-family:'DM Serif Display',serif;font-size:26px;color:var(--ink);margin-b
 
 .err-box{
   background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;
-  padding:10px 14px;margin-bottom:16px;font-size:13px;color:#991B1B;font-weight:500;
+  padding:10px 14px;margin-bottom:16px;font-size:13px;color:#991B1B;font-weight:750;
   display:flex;align-items:center;gap:8px;
 }
 
 .btn{
   width:100%;padding:13px;border-radius:12px;
-  font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:750;
   cursor:pointer;transition:all .22s;border:none;
 }
 .btn-primary{
@@ -134,8 +138,8 @@ h2{font-family:'DM Serif Display',serif;font-size:26px;color:var(--ink);margin-b
 
 .resend-row{text-align:center;margin-top:14px;font-size:13px;color:var(--muted)}
 .resend-btn{
-  background:none;border:none;color:var(--blue);font-family:'Outfit',sans-serif;
-  font-size:13px;font-weight:600;cursor:pointer;padding:0;margin-left:4px;
+  background:none;border:none;color:var(--blue);font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:13px;font-weight:750;cursor:pointer;padding:0;margin-left:4px;
 }
 .resend-btn:disabled{color:var(--muted);cursor:not-allowed}
 
@@ -154,6 +158,7 @@ h2{font-family:'DM Serif Display',serif;font-size:26px;color:var(--ink);margin-b
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
+    
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>
