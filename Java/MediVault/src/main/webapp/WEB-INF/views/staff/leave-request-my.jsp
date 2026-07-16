@@ -156,6 +156,9 @@ select,option{font-family:inherit;font-size:inherit}
     <a href="${pageContext.request.contextPath}/pos?uid=${staffUid}" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
     </a>
+    <a href="${pageContext.request.contextPath}/staff-my-invoices?uid=${staffUid}" class="nav-item">
+      <span class="nav-icon">🧾</span> Hóa đơn của tôi
+    </a>
   </nav>
   <div class="sidebar-footer">
     <a href="${pageContext.request.contextPath}/logout?from=staff&amp;uid=${staffUid}" class="logout-btn-full">

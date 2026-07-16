@@ -326,6 +326,9 @@ body{display:flex}
 .station-opt.selected{border-color:var(--blue);background:#eff6ff}
 .so-num{font-size:22px;font-weight:800;color:var(--blue)}
 .so-label{font-size:12px;font-weight:750;color:var(--muted)}
+.so-occupant{font-size:11px;font-weight:750;margin-top:2px;display:flex;align-items:center;gap:4px}
+.so-occupant.busy{color:#B45309}
+.so-occupant.free{color:#059669}
 .btn-confirm-station{width:100%;height:44px;border-radius:11px;border:none;background:linear-gradient(135deg,#059669,#047857);color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
 
 /* FACE CHECK-IN MODAL */
@@ -2161,7 +2164,8 @@ function openStationModal() {
     // Nhãn lớn lấy SỐ QUẦY từ tên (VD "Quầy 3" → "Q3"), khớp với admin —
     // KHÔNG dùng st.id vì id trong DB có thể không liền mạch (2,3,4,5,12…).
     const soNum = (String(st.name).match(/\d+/) || [st.id])[0];
-    opt.innerHTML = '<div class="so-num">Q' + soNum + '</div><div class="so-label">' + st.name + '</div>';
+    opt.innerHTML = '<div class="so-num">Q' + soNum + '</div><div class="so-label">' + st.name + '</div>'
+      + '<div class="so-occupant" data-station-occupant="' + st.id + '">⏳ Đang tải…</div>';
     opt.onclick = function() {
       document.querySelectorAll('.station-opt').forEach(o => o.classList.remove('selected'));
       this.classList.add('selected');
@@ -2169,6 +2173,29 @@ function openStationModal() {
     grid.appendChild(opt);
   });
   document.getElementById('stationModal').classList.add('show');
+  loadStationOccupancy();
+}
+
+// Ai đang đứng quầy nào — gọi lại MỖI LẦN mở modal (không cache) để luôn thấy tình trạng
+// mới nhất, tránh chọn nhầm quầy người khác đang bán dở.
+async function loadStationOccupancy() {
+  try {
+    const res = await fetch(ctx + '/pos?action=station-staff');
+    const map = await res.json();
+    document.querySelectorAll('[data-station-occupant]').forEach(el => {
+      const stId = el.dataset.stationOccupant;
+      const name = map[stId];
+      if (name) {
+        el.className = 'so-occupant busy';
+        el.textContent = '👤 ' + name;
+      } else {
+        el.className = 'so-occupant free';
+        el.textContent = '✓ Đang trống';
+      }
+    });
+  } catch (e) {
+    document.querySelectorAll('[data-station-occupant]').forEach(el => { el.textContent = ''; });
+  }
 }
 
 function closeStationModal() {

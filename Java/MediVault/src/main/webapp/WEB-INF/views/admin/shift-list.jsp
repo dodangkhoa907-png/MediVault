@@ -975,7 +975,7 @@ select,option{font-family:inherit;font-size:inherit}
         <div class="toast <c:choose><c:when test='${param.deleted > 0 and empty param.skippedActive and empty param.skippedSchedule}'>toast-ok</c:when><c:when test='${param.deleted == 0}'>toast-err</c:when><c:otherwise>toast-warn</c:otherwise></c:choose>" id="toast">
           <c:if test="${param.deleted > 0}">🗑️ Đã xóa ${param.deleted} loại ca. </c:if>
           <c:if test="${not empty param.skippedActive}">⚠️ Bỏ qua (đang dùng): ${param.skippedActive}. </c:if>
-          <c:if test="${not empty param.skippedSchedule}">⚠️ Bỏ qua (còn lịch ca): ${param.skippedSchedule}.</c:if>
+          <c:if test="${not empty param.skippedSchedule}">⚠️ Bỏ qua (từng có lịch, kể cả cũ/đã hủy): ${param.skippedSchedule}.</c:if>
         </div>
       </c:when>
       <c:when test="${param.msg == 'quick-sched'}"><div class="toast toast-ok" id="toast">✅ Xếp ca nhanh thành công!</div></c:when>
@@ -987,8 +987,7 @@ select,option{font-family:inherit;font-size:inherit}
       <c:when test="${param.msg == 'type-err-time'}"> <div class="toast toast-err"  id="toast">⚠️ Vui lòng chọn đầy đủ giờ bắt đầu và kết thúc!</div></c:when>
       <c:when test="${param.msg == 'type-err-rate'}"> <div class="toast toast-err"  id="toast">⚠️ Lương theo giờ phải từ 50,000đ trở lên!</div></c:when>
       <c:when test="${param.msg == 'past-date'}"><div class="toast toast-err" id="toast">⛔ Không thể xếp ca cho ngày đã qua! Chỉ được xếp từ hôm nay trở đi.</div></c:when>
-      <c:when test="${param.msg == 'type-has-schedules'}"><div class="toast toast-err" id="toast">⚠️ Không thể xóa — loại ca này còn lịch ca đang dùng!</div></c:when>
-      <c:when test="${param.msg == 'type-has-schedules'}"><div class="toast toast-err" id="toast">⚠️ Không thể xóa — loại ca này còn lịch ca đang dùng!</div></c:when>
+      <c:when test="${param.msg == 'type-has-schedules'}"><div class="toast toast-err" id="toast">⚠️ Không thể xóa vĩnh viễn — loại ca này từng được xếp vào lịch làm việc (kể cả lịch cũ/đã hủy). Chỉ có thể Tạm dừng để ẩn khỏi danh sách chọn.</div></c:when>
       <c:when test="${param.msg == 'sched-bulk-ok'}"><div class="toast toast-ok" id="toast">✅ Đã xếp ${param.count} lịch ca! <c:if test="${param.skip > 0}">(bỏ qua ${param.skip} trùng)</c:if></div></c:when>
       <c:when test="${param.msg == 'sched-bulk-err'}"><div class="toast toast-err" id="toast">❌ Lỗi khi xếp ca!</div></c:when>
       <c:when test="${param.msg == 'err-counter-has-staff'}"><div class="toast toast-err" id="toast">❌ Không thể xóa quầy vì đang có nhân viên làm việc!</div></c:when>

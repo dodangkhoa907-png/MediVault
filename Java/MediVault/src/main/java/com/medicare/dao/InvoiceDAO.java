@@ -343,6 +343,29 @@ public class InvoiceDAO implements IInvoiceDAO {
                 "JOIN Invoices inv ON inv.InvoiceID = id.InvoiceID " +
                 "JOIN Batches b    ON b.BatchID = id.BatchID " +
                 "WHERE inv.Status = 'COMPLETED' AND CAST(inv.CreatedAt AS DATE) BETWEEN ? AND ?";
+        BigDecimal gross = BigDecimal.ZERO;
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setDate(1, Date.valueOf(from));
+            ps.setDate(2, Date.valueOf(to));
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) gross = rs.getBigDecimal(1);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        // Trừ giá vốn của hàng ĐÃ TRẢ LẠI — nếu không, khách trả hàng đã bị trừ doanh thu
+        // (sumRefundByDateRange) nhưng giá vốn của lô hàng đó vẫn bị tính đủ 100%, khiến
+        // Lợi nhuận gộp bị BÁO THẤP HƠN THỰC TẾ mỗi khi có phát sinh trả hàng trong kỳ.
+        return gross.subtract(sumReturnedCOGSByDateRange(from, to));
+    }
+
+    /** Giá vốn của các lô hàng ĐÃ TRẢ LẠI (CUSTOMER_RETURN) trong kỳ — dùng để trừ ngược khỏi COGS. */
+    private BigDecimal sumReturnedCOGSByDateRange(LocalDate from, LocalDate to) {
+        String sql = "SELECT ISNULL(SUM(r.Quantity * b.ImportPrice), 0) " +
+                "FROM Returns r " +
+                "JOIN Batches b   ON b.BatchID = r.BatchID " +
+                "JOIN Invoices inv ON inv.InvoiceID = r.InvoiceID " +
+                "WHERE r.ReturnType = 'CUSTOMER_RETURN' AND inv.Status = 'COMPLETED' " +
+                "  AND CAST(r.CreatedAt AS DATE) BETWEEN ? AND ?";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setDate(1, Date.valueOf(from));
@@ -451,11 +474,15 @@ public class InvoiceDAO implements IInvoiceDAO {
     public java.util.TreeMap<Integer, BigDecimal> revenueByHour(LocalDate from, LocalDate to) {
         java.util.TreeMap<Integer, BigDecimal> result = new java.util.TreeMap<>();
         for (int h = 0; h < 24; h++) result.put(h, BigDecimal.ZERO); // luôn đủ 24 mốc giờ
-        // +7h để quy đổi CreatedAt (UTC trên server) → giờ VN trước khi lấy khung giờ
+        // +7h để quy đổi CreatedAt (UTC trên server) → giờ VN — PHẢI áp dụng +7h cho CẢ điều
+        // kiện lọc ngày (WHERE) LẪN khung giờ (GROUP BY) cùng 1 mốc thời gian VN nhất quán.
+        // Trước đây WHERE lọc theo ngày UTC (chưa +7h) trong khi GROUP BY lấy giờ đã +7h — lệch
+        // nhau khiến hóa đơn tạo lúc 00h-06h59 giờ VN (tức khoảng 17h-23h59 UTC hôm trước) bị
+        // RỚT KHỎI bộ lọc "hôm nay" dù rõ ràng là hóa đơn của hôm nay theo giờ VN.
         String sql = "SELECT DATEPART(HOUR, DATEADD(HOUR, 7, inv.CreatedAt)) AS Hr, " +
                 "       SUM(inv.FinalAmount) AS Rev " +
                 "FROM Invoices inv " +
-                "WHERE inv.Status = 'COMPLETED' AND CAST(inv.CreatedAt AS DATE) BETWEEN ? AND ? " +
+                "WHERE inv.Status = 'COMPLETED' AND CAST(DATEADD(HOUR, 7, inv.CreatedAt) AS DATE) BETWEEN ? AND ? " +
                 "GROUP BY DATEPART(HOUR, DATEADD(HOUR, 7, inv.CreatedAt))";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
@@ -498,6 +525,16 @@ public class InvoiceDAO implements IInvoiceDAO {
                 "JOIN Batches b    ON b.BatchID = id.BatchID " +
                 "WHERE inv.Status = 'COMPLETED' AND CAST(inv.CreatedAt AS DATE) BETWEEN ? AND ? " +
                 "GROUP BY CAST(inv.CreatedAt AS DATE)";
+        // Giá vốn hàng ĐÃ TRẢ LẠI theo ngày trả — trừ ngược vào bucket ngày tương ứng, cùng
+        // quy ước "ghi nhận theo ngày trả" như sumRefundByDateRange (không phải ngày bán gốc),
+        // để khớp với công thức Lợi nhuận gộp = Doanh thu thuần - COGS ở card tổng quan.
+        String sqlReturnedCogs = "SELECT CAST(r.CreatedAt AS DATE) AS Day, SUM(r.Quantity * b.ImportPrice) AS Cogs " +
+                "FROM Returns r " +
+                "JOIN Batches b    ON b.BatchID = r.BatchID " +
+                "JOIN Invoices inv ON inv.InvoiceID = r.InvoiceID " +
+                "WHERE r.ReturnType = 'CUSTOMER_RETURN' AND inv.Status = 'COMPLETED' " +
+                "  AND CAST(r.CreatedAt AS DATE) BETWEEN ? AND ? " +
+                "GROUP BY CAST(r.CreatedAt AS DATE)";
         try (Connection cn = DBContext.getConnection()) {
             try (PreparedStatement ps = cn.prepareStatement(sqlRev)) {
                 ps.setDate(1, Date.valueOf(from));
@@ -516,6 +553,17 @@ public class InvoiceDAO implements IInvoiceDAO {
                     while (rs.next()) {
                         String day = rs.getDate("Day").toString();
                         result.computeIfAbsent(day, k -> new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO})[1] = rs.getBigDecimal("Cogs");
+                    }
+                }
+            }
+            try (PreparedStatement ps = cn.prepareStatement(sqlReturnedCogs)) {
+                ps.setDate(1, Date.valueOf(from));
+                ps.setDate(2, Date.valueOf(to));
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String day = rs.getDate("Day").toString();
+                        BigDecimal[] slot = result.computeIfAbsent(day, k -> new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO});
+                        slot[1] = slot[1].subtract(rs.getBigDecimal("Cogs"));
                     }
                 }
             }

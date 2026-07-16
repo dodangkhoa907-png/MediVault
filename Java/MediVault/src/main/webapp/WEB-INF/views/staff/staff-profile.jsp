@@ -199,6 +199,9 @@ body{display:flex;background:var(--soft);color:var(--ink)}
     <a href="<%= request.getContextPath() %>/pos?uid=<%= _staffUid %>" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
     </a>
+    <a href="<%= request.getContextPath() %>/staff-my-invoices?uid=<%= _staffUid %>" class="nav-item">
+      <span class="nav-icon">🧾</span> Hóa đơn của tôi
+    </a>
   </nav>
   <div style="flex:1"></div>
   <div class="sidebar-footer">

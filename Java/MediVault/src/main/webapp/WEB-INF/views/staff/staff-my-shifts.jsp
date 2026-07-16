@@ -208,6 +208,9 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
     <a href="<%= request.getContextPath() %>/pos?uid=<%= uid %>" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
     </a>
+    <a href="<%= request.getContextPath() %>/staff-my-invoices?uid=<%= uid %>" class="nav-item">
+      <span class="nav-icon">🧾</span> Hóa đơn của tôi
+    </a>
   </nav>
   <% } %>
   <div class="sidebar-footer">
