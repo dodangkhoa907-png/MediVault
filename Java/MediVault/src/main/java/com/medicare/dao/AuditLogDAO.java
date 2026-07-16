@@ -20,8 +20,10 @@ public class AuditLogDAO implements IAuditLogDAO {
         log.setEntityId((Integer) rs.getObject("EntityID"));
         log.setDescription(rs.getString("Description"));
         log.setIpAddress(rs.getString("IPAddress"));
+        // CreatedAt được lưu theo GETDATE() của SQL Server (UTC trên server host) — cộng 7h
+        // để hiển thị đúng giờ Việt Nam, đồng bộ cách InvoiceDAO đang xử lý (xem InvoiceDAO#454).
         if (rs.getTimestamp("CreatedAt") != null)
-            log.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
+            log.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime().plusHours(7));
         // Username từ JOIN (có thể null nếu account đã bị xóa)
         try {
             String uname = rs.getString("Username");

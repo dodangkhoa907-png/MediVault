@@ -18,6 +18,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @WebServlet("/pos")
 public class PosServlet extends HttpServlet {
@@ -32,6 +34,14 @@ public class PosServlet extends HttpServlet {
     private final IShiftScheduleDAO scheduleDAO = new ShiftScheduleDAO();
 
     private static final int POS_ACCOUNT_ID = 1;
+
+    // ── Idempotency cho complete-sale ─────────────────────────────────────────
+    // Nếu FE gửi trùng clientRequestId (double-submit do click liên tục, mạng lag khiến
+    // race giữa các lượt poll QR, F5 giữa lúc đang xử lý...) thì KHÔNG xử lý lại / trừ kho
+    // lần nữa — trả thẳng kết quả của lượt xử lý đầu tiên. TTL đơn giản, đủ cho tải POS thấp.
+    private static final ConcurrentMap<String, String> saleResponseCache = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, Long>   saleResponseCacheTime = new ConcurrentHashMap<>();
+    private static final long SALE_CACHE_TTL_MS = 10 * 60 * 1000L;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -199,7 +209,7 @@ public class PosServlet extends HttpServlet {
             String sql =
                 "WITH bs AS (" +
                 "  SELECT MedicineID, ISNULL(SUM(CurrentQuantity),0) AS TotalStock" +
-                "  FROM Batches WHERE ExpiryDate > CAST(GETDATE() AS DATE) GROUP BY MedicineID" +
+                "  FROM Batches WHERE ExpiryDate > CAST(GETDATE() AS DATE) AND Status = 'ACTIVE' GROUP BY MedicineID" +
                 ")" +
                 "SELECT m.MedicineID, m.MedicineName, m.MedicineCode, m.Unit," +
                 "  ISNULL(bs.TotalStock,0) AS TotalStock," +
@@ -427,6 +437,24 @@ public class PosServlet extends HttpServlet {
         }
 
         if ("complete-sale".equals(action)) {
+            String clientReqId = req.getParameter("clientRequestId");
+            if (clientReqId != null && !clientReqId.isBlank()) {
+                long now = System.currentTimeMillis();
+                saleResponseCacheTime.forEach((k, t) -> {
+                    if (now - t > SALE_CACHE_TTL_MS) {
+                        saleResponseCache.remove(k);
+                        saleResponseCacheTime.remove(k);
+                    }
+                });
+                String placeholder = "{\"ok\":false,\"msg\":\"Giao dịch này đang được xử lý, vui lòng đợi…\"}";
+                String existing = saleResponseCache.putIfAbsent(clientReqId, placeholder);
+                if (existing != null) {
+                    // Yêu cầu trùng lặp (double-submit) — KHÔNG xử lý lại, trả kết quả gốc
+                    out.print(existing);
+                    return;
+                }
+                saleResponseCacheTime.put(clientReqId, now);
+            }
             try {
                 HttpSession session = req.getSession(false);
                 Account acc = null;
@@ -479,6 +507,7 @@ public class PosServlet extends HttpServlet {
                         accountId, customerId, payMethod, discount,
                         medicineIds, quantities, req.getRemoteAddr());
 
+                String jsonResp;
                 if (result.isOk()) {
                     Invoice inv = result.getData();
                     // Tích điểm loyalty (1 điểm / 10.000đ) nếu hóa đơn gắn khách hàng
@@ -487,7 +516,8 @@ public class PosServlet extends HttpServlet {
                         earned = new com.medicare.dao.LoyaltyDAO().earnFromInvoice(
                                 customerId, inv.getInvoiceId(), inv.getFinalAmount(), accountId);
                     }
-                    out.printf("{\"ok\":true,\"invoiceId\":%d,\"invoiceCode\":\"%s\",\"total\":%s,\"earnedPoints\":%d}",
+                    jsonResp = String.format(
+                            "{\"ok\":true,\"invoiceId\":%d,\"invoiceCode\":\"%s\",\"total\":%s,\"earnedPoints\":%d}",
                             inv != null ? inv.getInvoiceId()  : 0,
                             inv != null ? esc(inv.getInvoiceCode()) : "",
                             inv != null ? inv.getFinalAmount() : "0",
@@ -495,11 +525,16 @@ public class PosServlet extends HttpServlet {
                     // Push tồn kho mới tới tất cả medicine-list tabs qua SSE
                     com.medicare.controller.admin.InventorySSEServlet.broadcast();
                 } else {
-                    out.printf("{\"ok\":false,\"msg\":\"%s\"}", esc(result.firstError()));
+                    jsonResp = String.format("{\"ok\":false,\"msg\":\"%s\"}", esc(result.firstError()));
                 }
+                if (clientReqId != null && !clientReqId.isBlank()) saleResponseCache.put(clientReqId, jsonResp);
+                out.print(jsonResp);
 
             } catch (Throwable e) {
                 e.printStackTrace();
+                // Lỗi hệ thống thật sự — bỏ cache để lượt thử lại (cùng clientRequestId) không
+                // bị kẹt mãi ở placeholder "đang xử lý" trong lúc chờ TTL hết hạn.
+                if (clientReqId != null && !clientReqId.isBlank()) saleResponseCache.remove(clientReqId);
                 String errMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
                 out.printf("{\"ok\":false,\"msg\":\"Lỗi hệ thống: %s\"}", esc(errMsg));
             }

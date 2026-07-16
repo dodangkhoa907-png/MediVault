@@ -234,6 +234,27 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
                 return -1;
             }
 
+            // Kiểm tra trùng (MedicineID, BatchNumber) TRƯỚC khi insert — đơn PENDING này có thể
+            // được tạo TRƯỚC khi validate trùng lô lúc lưu phiếu tồn tại (hoặc số lô đã bị 1 đơn
+            // khác chiếm sau đó). Không kiểm tra trước, lỗi sẽ rơi thẳng vào UNIQUE KEY constraint
+            // của SQL Server — vẫn đúng nhưng thông báo tiếng Anh khó hiểu với admin.
+            try (PreparedStatement ps = cn.prepareStatement(
+                    "SELECT TOP 1 BatchNumber FROM Batches WHERE MedicineID = ? AND BatchNumber = ? AND Status != 'CANCELLED'")) {
+                for (Batches b : lines) {
+                    ps.setInt(1, b.getMedicineId());
+                    ps.setString(2, b.getBatchNumber());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            cn.rollback();
+                            lastConfirmError.set("Số lô '" + b.getBatchNumber()
+                                    + "' đã tồn tại trong kho cho thuốc này (MedicineID=" + b.getMedicineId()
+                                    + ") — đổi số lô trên dòng hàng này trước khi xác nhận.");
+                            return -1;
+                        }
+                    }
+                }
+            }
+
             insertBatchesFromLines(cn, poId, supplierId, lines);
 
             try (PreparedStatement ps = cn.prepareStatement(
