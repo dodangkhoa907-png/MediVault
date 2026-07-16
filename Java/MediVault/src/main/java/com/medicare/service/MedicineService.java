@@ -63,7 +63,8 @@ public class MedicineService implements IMedicineService {
             Batches b, boolean isNew,
             String poMode, String poIdStr,
             String newSupplierId, String newPoNotes,
-            int adminAccountId) {
+            int adminAccountId,
+            boolean forceShortExpiry) {
 
         if (!isNew) {
             // Load lô cũ để lấy SupplierID thật — form edit không gửi SupplierID (Bug 3)
@@ -79,11 +80,21 @@ public class MedicineService implements IMedicineService {
             return ok ? ServiceResult.ok(b) : ServiceResult.fail("Cập nhật lô thất bại!");
         }
 
-        // ── Nhập lô mới: kiểm tra HSD (Bug 1 — chỉ chặn khi isNew, không áp dụng cho edit) ──
+        // ── Nhập lô mới: kiểm tra HSD ──
         if (b.getExpiryDate() == null || !b.getExpiryDate().isAfter(java.time.LocalDate.now()))
             return ServiceResult.fail("Ngày hết hạn phải sau ngày hôm nay!");
-        if (!b.getExpiryDate().isAfter(java.time.LocalDate.now().plusDays(90)))
-            return ServiceResult.fail("GPP: Hạn sử dụng phải còn ≥ 90 ngày khi nhập kho mới!");
+
+        // Cảnh báo khi HSD dưới ngưỡng expiryAlertDays của thuốc (mặc định 90 ngày)
+        if (!forceShortExpiry) {
+            Medicines med = medicineDAO.findById(b.getMedicineId());
+            int alertDays = (med != null && med.getExpiryAlertDays() > 0) ? med.getExpiryAlertDays() : 90;
+            if (!b.getExpiryDate().isAfter(java.time.LocalDate.now().plusDays(alertDays))) {
+                long remainDays = java.time.temporal.ChronoUnit.DAYS.between(java.time.LocalDate.now(), b.getExpiryDate());
+                return ServiceResult.fail("EXPIRY_WARNING:" + remainDays + ":" + alertDays
+                        + ":HSD chỉ còn " + remainDays + " ngày, dưới ngưỡng cảnh báo " + alertDays
+                        + " ngày. Xác nhận vẫn muốn nhập lô?");
+            }
+        }
 
         // ── Nhập lô mới: KHÔNG cộng kho ngay. Ghi vào PHIẾU NHẬP dạng PENDING (chờ hàng về).
         // Kho (Batches) chỉ tăng khi admin bấm "Xác nhận Hàng Đã Tới" ở chi tiết đơn.

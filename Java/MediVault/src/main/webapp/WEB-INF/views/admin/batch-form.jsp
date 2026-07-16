@@ -138,6 +138,9 @@ select,option{font-family:inherit;font-size:inherit}
   <c:if test="${not empty errors}">
     <div class="error-box"><ul><c:forEach var="e" items="${errors}"><li>${e}</li></c:forEach></ul></div>
   </c:if>
+  <c:if test="${not empty expiryWarning}">
+    <div class="alert-box">⚠️ HSD dưới ngưỡng cảnh báo. Nhấn <strong>Xác nhận nhập kho</strong> lần nữa để xác nhận nhập lô này.</div>
+  </c:if>
 
   <c:if test="${not isNew}">
     <div class="alert-box">⚠️ Chỉ được sửa số lô, ngày tháng và giá nhập. Số lượng không thể thay đổi sau khi nhập kho.</div>
@@ -149,6 +152,7 @@ select,option{font-family:inherit;font-size:inherit}
     <c:if test="${batch != null && batch.batchId != 0}">
       <input type="hidden" name="batchId" value="${batch.batchId}"/>
     </c:if>
+    <input type="hidden" name="forceShortExpiry" id="forceShortExpiry" value="false"/>
 
     <%-- ① NGUỒN NHẬP — nhà cung cấp / đơn đặt hàng (đặt đầu cho rõ "hàng ở đâu ra") --%>
     <c:if test="${isNew}">
@@ -342,6 +346,7 @@ function pickCdd(wId,hId,el,autoSubmit){document.getElementById(hId).value=el.da
 document.addEventListener('click',function(e){if(!e.target.closest('.cdd')){document.querySelectorAll('.cdd-menu.show').forEach(function(m){m.classList.remove('show');m.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')})}});
 
 const IS_NEW_BATCH = <%= isNew %>;
+const EXPIRY_ALERT_DAYS = ${medicine.expiryAlertDays > 0 ? medicine.expiryAlertDays : 90};
 
 // ── Đồng hồ realtime trên topbar ──
 function tickClock() {
@@ -409,7 +414,7 @@ function computePack() {
   } else { box.style.display = 'none'; }
 }
 
-// ── Kiểm tra HSD (còn bao nhiêu ngày, cảnh báo GPP ≥ 90 ngày khi nhập) ──
+// ── Kiểm tra HSD (còn bao nhiêu ngày, cảnh báo theo expiryAlertDays khi nhập) ──
 function checkHsd(inp) {
   const warn = document.getElementById('hsdWarn');
   if (!inp.value) { warn.style.display = 'none'; inp.setCustomValidity(''); return; }
@@ -421,16 +426,37 @@ function checkHsd(inp) {
     warn.style.cssText = base + 'background:#FEE2E2;color:#991B1B;border:1px solid #FECACA';
     warn.textContent = IS_NEW_BATCH ? '❌ HSD đã qua! Không thể nhập lô hết hạn.' : '⚠️ Lô này đã hết hạn.';
     inp.setCustomValidity(IS_NEW_BATCH ? 'Ngày hết hạn đã qua' : '');
-  } else if (diffDays < 90) {
+  } else if (diffDays <= EXPIRY_ALERT_DAYS) {
     warn.style.cssText = base + 'background:#FFFBEB;color:#92400E;border:1px solid #FDE68A';
-    warn.textContent = '⚠️ HSD chỉ còn ' + diffDays + ' ngày' + (IS_NEW_BATCH ? ' — GPP khuyến nghị ≥ 90 ngày khi nhập kho!' : '');
-    inp.setCustomValidity(IS_NEW_BATCH ? 'HSD phải còn ít nhất 90 ngày' : '');
+    warn.textContent = '⚠️ HSD chỉ còn ' + diffDays + ' ngày — dưới ngưỡng cảnh báo ' + EXPIRY_ALERT_DAYS + ' ngày. Sẽ cần xác nhận khi nhập.';
+    inp.setCustomValidity('');
   } else {
     warn.style.cssText = base + 'background:#F0FDF4;color:#166534;border:1px solid #BBF7D0';
     warn.textContent = '✓ HSD còn ' + diffDays + ' ngày (~' + Math.round(diffDays/30) + ' tháng).';
     inp.setCustomValidity('');
   }
 }
+
+// ── Xác nhận khi HSD dưới ngưỡng cảnh báo ──
+document.querySelector('form[action*="medicines"]').addEventListener('submit', function(e) {
+  if (!IS_NEW_BATCH) return;
+  const forceField = document.getElementById('forceShortExpiry');
+  if (forceField.value === 'true') return;
+  const inp = document.getElementById('expiryDateInp');
+  if (!inp || !inp.value) return;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const hsd = new Date(inp.value);
+  const diffDays = Math.round((hsd - today) / 86400000);
+  if (diffDays > 0 && diffDays <= EXPIRY_ALERT_DAYS) {
+    e.preventDefault();
+    if (confirm('⚠️ HSD chỉ còn ' + diffDays + ' ngày, dưới ngưỡng cảnh báo '
+        + EXPIRY_ALERT_DAYS + ' ngày đã cấu hình cho thuốc này.\n\n'
+        + 'Bạn có chắc chắn muốn nhập lô này không?')) {
+      forceField.value = 'true';
+      e.target.submit();
+    }
+  }
+});
 
 // ── Chọn đơn có sẵn / tạo đơn mới ──
 function togglePoMode() {

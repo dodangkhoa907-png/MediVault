@@ -40,7 +40,8 @@ public interface IMedicineService {
             Batches b, boolean isNew,
             String poMode, String poIdStr,
             String newSupplierId, String newPoNotes,
-            int adminAccountId);
+            int adminAccountId,
+            boolean forceShortExpiry);
 
     /** Hủy lô (CANCELLED) — chỉ khi chưa có bán hàng nào */
     ServiceResult<Void> deleteBatch(int batchId);
