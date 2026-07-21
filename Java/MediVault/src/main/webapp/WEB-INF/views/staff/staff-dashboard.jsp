@@ -1367,6 +1367,10 @@ document.addEventListener("DOMContentLoaded", function() {
         iframeView.style.display = "none";
         iframe.src = "about:blank"; // clear iframe
         homeView.style.display = "block";
+      } else if (item.href.includes("/pos")) {
+        // Bán thuốc (POS) và Xem hóa đơn: màn hình riêng biệt, toàn màn hình —
+        // KHÔNG nhúng vào iframe của trang chủ (nhúng sẽ đè 2 sidebar + 2 modal lên nhau).
+        window.location.href = item.href;
       } else {
         // For other pages, load in iframe
         homeView.style.display = "none";

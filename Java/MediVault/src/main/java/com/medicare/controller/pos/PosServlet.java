@@ -140,6 +140,13 @@ public class PosServlet extends HttpServlet {
             return;
         }
 
+        if ("invoice-detail".equals(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            PrintWriter out = resp.getWriter();
+            handleInvoiceDetail(req, out);
+            return;
+        }
+
         if ("inventory".equals(action)) {
             // Single JOIN query: medicine + all batches — thay 1000+ queries
             resp.setContentType("application/json;charset=UTF-8");
@@ -204,6 +211,14 @@ public class PosServlet extends HttpServlet {
         else if (hasStaff && "ACTIVE".equals(posStateS)) screenState = "ACTIVE";
         else if (hasStaff && "PAUSED".equals(posStateS)) screenState = "PAUSED";
         else                                              screenState = "IDLE";
+
+        // Link "🧾 Xem hóa đơn" ở sidebar các trang khác trỏ vào /pos?view=invoices — đây là
+        // MÀN HÌNH RIÊNG (không phải màn bán hàng): không tải danh sách thuốc/danh mục, không
+        // cần chọn quầy, forward thẳng sang trang hóa đơn nhẹ, tách biệt hẳn khỏi "Bán thuốc (POS)".
+        if ("invoices".equals(req.getParameter("view"))) {
+            req.getRequestDispatcher("/WEB-INF/views/pos/invoices.jsp").forward(req, resp);
+            return;
+        }
 
         req.setAttribute("screenState", screenState);
         req.setAttribute("categories",  categoryDAO.findAll());
@@ -858,7 +873,8 @@ public class PosServlet extends HttpServlet {
                     if (amt == null) amt = java.math.BigDecimal.ZERO;
                     String status = rs.getString("Status");
                     if ("COMPLETED".equals(status)) total = total.add(amt);
-                    sb.append("{\"code\":\"").append(esc(rs.getString("InvoiceCode")))
+                    sb.append("{\"id\":").append(rs.getInt("InvoiceID"))
+                      .append(",\"code\":\"").append(esc(rs.getString("InvoiceCode")))
                       .append("\",\"time\":\"").append(rs.getString("CreatedTime"))
                       .append("\",\"amount\":").append(amt.toPlainString())
                       .append(",\"method\":\"").append(esc(rs.getString("PaymentMethod")))
@@ -872,6 +888,109 @@ public class PosServlet extends HttpServlet {
         out.print("{\"ok\":true,\"staffName\":\"" + esc(name) + "\",\"count\":" + count
                 + ",\"totalRevenue\":" + total.toPlainString()
                 + ",\"invoices\":[" + sb + "]}");
+    }
+
+    /**
+     * Chi tiết 1 hóa đơn để "xem lại / in lại" — chỉ trả về nếu hóa đơn thuộc
+     * chính nhân viên đang đăng nhập (AccountID khớp), tránh xem hóa đơn người khác.
+     */
+    private void handleInvoiceDetail(HttpServletRequest req, PrintWriter out) {
+        Account staff = getStaffAccount(req);
+        if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
+
+        int invoiceId;
+        try {
+            invoiceId = Integer.parseInt(req.getParameter("id"));
+        } catch (Exception e) {
+            out.print("{\"ok\":false,\"reason\":\"bad_id\"}");
+            return;
+        }
+
+        String headerSql = "SELECT i.InvoiceID, i.InvoiceCode, i.FinalAmount, i.DiscountAmount, " +
+                "i.PaymentMethod, i.Status, i.CreatedAt, " +
+                "c.CustomerName, c.Phone AS CustomerPhone, " +
+                "a.FullName AS SellerName, a.Username AS SellerUsername " +
+                "FROM Invoices i " +
+                "LEFT JOIN Customers c ON c.CustomerID = i.CustomerID " +
+                "LEFT JOIN Accounts a ON a.AccountID = i.AccountID " +
+                "WHERE i.InvoiceID = ? AND i.AccountID = ?";
+        String itemsSql = "SELECT m.MedicineName, m.Unit, m.Dosage, d.Quantity, d.UnitPrice, d.SubTotal " +
+                "FROM InvoiceDetails d " +
+                "JOIN Batches b ON b.BatchID = d.BatchID " +
+                "JOIN Medicines m ON m.MedicineID = b.MedicineID " +
+                "WHERE d.InvoiceID = ? " +
+                "ORDER BY d.DetailID";
+
+        try (java.sql.Connection cn = com.medicare.config.DBContext.getConnection()) {
+            String code = null, method = null, status = null, sellerName = null;
+            String custName = null, custPhone = null, createdAt = null;
+            java.math.BigDecimal finalAmount = java.math.BigDecimal.ZERO;
+            java.math.BigDecimal discount = java.math.BigDecimal.ZERO;
+
+            try (java.sql.PreparedStatement ps = cn.prepareStatement(headerSql)) {
+                ps.setInt(1, invoiceId);
+                ps.setInt(2, staff.getAccountId());
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next()) { out.print("{\"ok\":false,\"reason\":\"not_found\"}"); return; }
+                    code = rs.getString("InvoiceCode");
+                    method = rs.getString("PaymentMethod");
+                    status = rs.getString("Status");
+                    finalAmount = rs.getBigDecimal("FinalAmount");
+                    if (finalAmount == null) finalAmount = java.math.BigDecimal.ZERO;
+                    discount = rs.getBigDecimal("DiscountAmount");
+                    if (discount == null) discount = java.math.BigDecimal.ZERO;
+                    custName = rs.getString("CustomerName");
+                    custPhone = rs.getString("CustomerPhone");
+                    java.sql.Timestamp ts = rs.getTimestamp("CreatedAt");
+                    if (ts != null) {
+                        java.time.LocalDateTime ldt = ts.toLocalDateTime();
+                        createdAt = String.format("%02d/%02d/%04d", ldt.getDayOfMonth(), ldt.getMonthValue(), ldt.getYear());
+                    } else {
+                        createdAt = "";
+                    }
+                    sellerName = rs.getString("SellerName");
+                    if (sellerName == null || sellerName.isEmpty()) sellerName = rs.getString("SellerUsername");
+                }
+            }
+
+            StringBuilder items = new StringBuilder();
+            int itemCount = 0;
+            try (java.sql.PreparedStatement ps = cn.prepareStatement(itemsSql)) {
+                ps.setInt(1, invoiceId);
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        if (itemCount > 0) items.append(",");
+                        java.math.BigDecimal price = rs.getBigDecimal("UnitPrice");
+                        if (price == null) price = java.math.BigDecimal.ZERO;
+                        items.append("{\"name\":\"").append(esc(rs.getString("MedicineName")))
+                             .append("\",\"unit\":\"").append(esc(rs.getString("Unit")))
+                             .append("\",\"dosage\":\"").append(esc(rs.getString("Dosage")))
+                             .append("\",\"qty\":").append(rs.getInt("Quantity"))
+                             .append(",\"price\":").append(price.toPlainString())
+                             .append("}");
+                        itemCount++;
+                    }
+                }
+            }
+
+            out.print("{\"ok\":true,\"invoice\":{"
+                    + "\"id\":" + invoiceId
+                    + ",\"code\":\"" + esc(code) + "\""
+                    + ",\"dateStr\":\"" + esc(createdAt) + "\""
+                    + ",\"method\":\"" + esc(method) + "\""
+                    + ",\"status\":\"" + esc(status) + "\""
+                    + ",\"total\":" + finalAmount.toPlainString()
+                    + ",\"discount\":" + discount.toPlainString()
+                    + ",\"subtotal\":" + finalAmount.add(discount).toPlainString()
+                    + ",\"sellerName\":\"" + esc(sellerName) + "\""
+                    + ",\"customerName\":" + (custName != null ? "\"" + esc(custName) + "\"" : "null")
+                    + ",\"customerPhone\":" + (custPhone != null ? "\"" + esc(custPhone) + "\"" : "null")
+                    + ",\"items\":[" + items + "]"
+                    + "}}");
+        } catch (Exception e) {
+            e.printStackTrace();
+            out.print("{\"ok\":false,\"reason\":\"error\"}");
+        }
     }
 
     private void handleShiftSummary(HttpServletRequest req, PrintWriter out) {
