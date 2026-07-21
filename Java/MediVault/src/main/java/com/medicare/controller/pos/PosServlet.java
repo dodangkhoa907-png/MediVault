@@ -140,10 +140,21 @@ public class PosServlet extends HttpServlet {
             return;
         }
 
-        if ("invoice-detail".equals(action)) {
+        // Ai đang đứng quầy nào (chưa check-out hôm nay) — hiện trong modal chọn quầy, để
+        // biết trước quầy nào đang có người trước khi chọn (tránh chọn nhầm quầy người khác).
+        if ("station-staff".equals(action)) {
             resp.setContentType("application/json;charset=UTF-8");
             PrintWriter out = resp.getWriter();
-            handleInvoiceDetail(req, out);
+            Map<Integer, String> staffByStation = attendanceDAO.findActiveStaffByStation();
+            StringBuilder sb = new StringBuilder("{");
+            boolean first = true;
+            for (Map.Entry<Integer, String> e : staffByStation.entrySet()) {
+                if (!first) sb.append(",");
+                sb.append("\"").append(e.getKey()).append("\":\"").append(esc(e.getValue())).append("\"");
+                first = false;
+            }
+            sb.append("}");
+            out.print(sb);
             return;
         }
 
@@ -203,7 +214,7 @@ public class PosServlet extends HttpServlet {
         Integer posStationObj = sess != null ? (Integer) sess.getAttribute("posStation") : null;
         int posStation = posStationObj != null ? posStationObj : 0;
         String posStateS  = sess != null ? (String)  sess.getAttribute("posState")     : null;
-        Account staffAccS = getStaffAccount(req);
+        Account staffAccS = sess != null ? (Account) sess.getAttribute("staffAccount") : null;
         boolean hasStaff  = staffAccS != null && staffAccS.getRoleId() != 1;
 
         String screenState;
@@ -211,14 +222,6 @@ public class PosServlet extends HttpServlet {
         else if (hasStaff && "ACTIVE".equals(posStateS)) screenState = "ACTIVE";
         else if (hasStaff && "PAUSED".equals(posStateS)) screenState = "PAUSED";
         else                                              screenState = "IDLE";
-
-        // Link "🧾 Xem hóa đơn" ở sidebar các trang khác trỏ vào /pos?view=invoices — đây là
-        // MÀN HÌNH RIÊNG (không phải màn bán hàng): không tải danh sách thuốc/danh mục, không
-        // cần chọn quầy, forward thẳng sang trang hóa đơn nhẹ, tách biệt hẳn khỏi "Bán thuốc (POS)".
-        if ("invoices".equals(req.getParameter("view"))) {
-            req.getRequestDispatcher("/WEB-INF/views/pos/invoices.jsp").forward(req, resp);
-            return;
-        }
 
         req.setAttribute("screenState", screenState);
         req.setAttribute("categories",  categoryDAO.findAll());
@@ -312,12 +315,19 @@ public class PosServlet extends HttpServlet {
                 saleResponseCacheTime.put(clientReqId, now);
             }
             try {
-                Account acc = getStaffAccount(req);
-                // KHÔNG lấy adminAccount — admin không phải người đứng quầy POS
+                HttpSession session = req.getSession(false);
+                Account acc = null;
+                if (session != null) {
+                    String uid = req.getParameter("uid");
+                    if (uid != null && !uid.isEmpty())
+                        acc = (Account) session.getAttribute("staffAccount_" + uid);
+                    if (acc == null)
+                        acc = (Account) session.getAttribute("staffAccount");
+                    // KHÔNG lấy adminAccount — admin không phải người đứng quầy POS
+                }
 
                 // Đọc posStation từ request hoặc session (cần sớm để tra attendance)
                 Integer posStation = parseIntOrNull(req.getParameter("posStation"));
-                HttpSession session = req.getSession(false);
                 if (posStation == null && session != null) {
                     posStation = (Integer) session.getAttribute("posStation");
                 }
@@ -755,7 +765,7 @@ public class PosServlet extends HttpServlet {
 
     private void handleOpenShift(HttpServletRequest req, PrintWriter out) {
         HttpSession session = req.getSession(false);
-        Account staff = getStaffAccount(req);
+        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
         if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
         BigDecimal openingCash = BigDecimal.ZERO;
         String cashStr = req.getParameter("openingCash");
@@ -773,7 +783,7 @@ public class PosServlet extends HttpServlet {
 
     private void handleEndShift(HttpServletRequest req, PrintWriter out) {
         HttpSession session = req.getSession(false);
-        Account staff = getStaffAccount(req);
+        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
         if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
 
         // Accept actual cash counted by staff
@@ -835,31 +845,19 @@ public class PosServlet extends HttpServlet {
      */
     private void handleMyInvoices(HttpServletRequest req, PrintWriter out) {
         HttpSession session = req.getSession(false);
-        Account staff = getStaffAccount(req);
+        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
         if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
 
         Integer posStation = (Integer) session.getAttribute("posStation");
         boolean hasSt = posStation != null && posStation > 0;
 
-        String range = req.getParameter("range");
-        if (range == null) range = "today";
-
-        String dateCond = "CAST(CreatedAt AS DATE) = CAST(GETDATE() AS DATE)";
-        if ("yesterday".equals(range)) {
-            dateCond = "CAST(CreatedAt AS DATE) = CAST(DATEADD(day, -1, GETDATE()) AS DATE)";
-        } else if ("7days".equals(range)) {
-            dateCond = "CreatedAt >= DATEADD(day, -7, CAST(GETDATE() AS DATE))";
-        } else if ("30days".equals(range)) {
-            dateCond = "CreatedAt >= DATEADD(day, -30, CAST(GETDATE() AS DATE))";
-        }
-
         StringBuilder sb = new StringBuilder();
         java.math.BigDecimal total = java.math.BigDecimal.ZERO;
         int count = 0;
         String sql = "SELECT InvoiceID, InvoiceCode, FinalAmount, PaymentMethod, Status, " +
-                "CONVERT(VARCHAR(16), CreatedAt, 120) AS CreatedTime " +
+                "CONVERT(VARCHAR(5), CreatedAt, 108) AS CreatedTime " +
                 "FROM Invoices " +
-                "WHERE AccountID = ? AND " + dateCond + " " +
+                "WHERE AccountID = ? AND CAST(CreatedAt AS DATE) = CAST(GETDATE() AS DATE) " +
                 (hasSt ? "AND PosStation = ? " : "") +
                 "ORDER BY CreatedAt DESC";
         try (java.sql.Connection cn = com.medicare.config.DBContext.getConnection();
@@ -873,8 +871,7 @@ public class PosServlet extends HttpServlet {
                     if (amt == null) amt = java.math.BigDecimal.ZERO;
                     String status = rs.getString("Status");
                     if ("COMPLETED".equals(status)) total = total.add(amt);
-                    sb.append("{\"id\":").append(rs.getInt("InvoiceID"))
-                      .append(",\"code\":\"").append(esc(rs.getString("InvoiceCode")))
+                    sb.append("{\"code\":\"").append(esc(rs.getString("InvoiceCode")))
                       .append("\",\"time\":\"").append(rs.getString("CreatedTime"))
                       .append("\",\"amount\":").append(amt.toPlainString())
                       .append(",\"method\":\"").append(esc(rs.getString("PaymentMethod")))
@@ -890,112 +887,9 @@ public class PosServlet extends HttpServlet {
                 + ",\"invoices\":[" + sb + "]}");
     }
 
-    /**
-     * Chi tiết 1 hóa đơn để "xem lại / in lại" — chỉ trả về nếu hóa đơn thuộc
-     * chính nhân viên đang đăng nhập (AccountID khớp), tránh xem hóa đơn người khác.
-     */
-    private void handleInvoiceDetail(HttpServletRequest req, PrintWriter out) {
-        Account staff = getStaffAccount(req);
-        if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
-
-        int invoiceId;
-        try {
-            invoiceId = Integer.parseInt(req.getParameter("id"));
-        } catch (Exception e) {
-            out.print("{\"ok\":false,\"reason\":\"bad_id\"}");
-            return;
-        }
-
-        String headerSql = "SELECT i.InvoiceID, i.InvoiceCode, i.FinalAmount, i.DiscountAmount, " +
-                "i.PaymentMethod, i.Status, i.CreatedAt, " +
-                "c.CustomerName, c.Phone AS CustomerPhone, " +
-                "a.FullName AS SellerName, a.Username AS SellerUsername " +
-                "FROM Invoices i " +
-                "LEFT JOIN Customers c ON c.CustomerID = i.CustomerID " +
-                "LEFT JOIN Accounts a ON a.AccountID = i.AccountID " +
-                "WHERE i.InvoiceID = ? AND i.AccountID = ?";
-        String itemsSql = "SELECT m.MedicineName, m.Unit, m.Dosage, d.Quantity, d.UnitPrice, d.SubTotal " +
-                "FROM InvoiceDetails d " +
-                "JOIN Batches b ON b.BatchID = d.BatchID " +
-                "JOIN Medicines m ON m.MedicineID = b.MedicineID " +
-                "WHERE d.InvoiceID = ? " +
-                "ORDER BY d.DetailID";
-
-        try (java.sql.Connection cn = com.medicare.config.DBContext.getConnection()) {
-            String code = null, method = null, status = null, sellerName = null;
-            String custName = null, custPhone = null, createdAt = null;
-            java.math.BigDecimal finalAmount = java.math.BigDecimal.ZERO;
-            java.math.BigDecimal discount = java.math.BigDecimal.ZERO;
-
-            try (java.sql.PreparedStatement ps = cn.prepareStatement(headerSql)) {
-                ps.setInt(1, invoiceId);
-                ps.setInt(2, staff.getAccountId());
-                try (java.sql.ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) { out.print("{\"ok\":false,\"reason\":\"not_found\"}"); return; }
-                    code = rs.getString("InvoiceCode");
-                    method = rs.getString("PaymentMethod");
-                    status = rs.getString("Status");
-                    finalAmount = rs.getBigDecimal("FinalAmount");
-                    if (finalAmount == null) finalAmount = java.math.BigDecimal.ZERO;
-                    discount = rs.getBigDecimal("DiscountAmount");
-                    if (discount == null) discount = java.math.BigDecimal.ZERO;
-                    custName = rs.getString("CustomerName");
-                    custPhone = rs.getString("CustomerPhone");
-                    java.sql.Timestamp ts = rs.getTimestamp("CreatedAt");
-                    if (ts != null) {
-                        java.time.LocalDateTime ldt = ts.toLocalDateTime();
-                        createdAt = String.format("%02d/%02d/%04d", ldt.getDayOfMonth(), ldt.getMonthValue(), ldt.getYear());
-                    } else {
-                        createdAt = "";
-                    }
-                    sellerName = rs.getString("SellerName");
-                    if (sellerName == null || sellerName.isEmpty()) sellerName = rs.getString("SellerUsername");
-                }
-            }
-
-            StringBuilder items = new StringBuilder();
-            int itemCount = 0;
-            try (java.sql.PreparedStatement ps = cn.prepareStatement(itemsSql)) {
-                ps.setInt(1, invoiceId);
-                try (java.sql.ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        if (itemCount > 0) items.append(",");
-                        java.math.BigDecimal price = rs.getBigDecimal("UnitPrice");
-                        if (price == null) price = java.math.BigDecimal.ZERO;
-                        items.append("{\"name\":\"").append(esc(rs.getString("MedicineName")))
-                             .append("\",\"unit\":\"").append(esc(rs.getString("Unit")))
-                             .append("\",\"dosage\":\"").append(esc(rs.getString("Dosage")))
-                             .append("\",\"qty\":").append(rs.getInt("Quantity"))
-                             .append(",\"price\":").append(price.toPlainString())
-                             .append("}");
-                        itemCount++;
-                    }
-                }
-            }
-
-            out.print("{\"ok\":true,\"invoice\":{"
-                    + "\"id\":" + invoiceId
-                    + ",\"code\":\"" + esc(code) + "\""
-                    + ",\"dateStr\":\"" + esc(createdAt) + "\""
-                    + ",\"method\":\"" + esc(method) + "\""
-                    + ",\"status\":\"" + esc(status) + "\""
-                    + ",\"total\":" + finalAmount.toPlainString()
-                    + ",\"discount\":" + discount.toPlainString()
-                    + ",\"subtotal\":" + finalAmount.add(discount).toPlainString()
-                    + ",\"sellerName\":\"" + esc(sellerName) + "\""
-                    + ",\"customerName\":" + (custName != null ? "\"" + esc(custName) + "\"" : "null")
-                    + ",\"customerPhone\":" + (custPhone != null ? "\"" + esc(custPhone) + "\"" : "null")
-                    + ",\"items\":[" + items + "]"
-                    + "}}");
-        } catch (Exception e) {
-            e.printStackTrace();
-            out.print("{\"ok\":false,\"reason\":\"error\"}");
-        }
-    }
-
     private void handleShiftSummary(HttpServletRequest req, PrintWriter out) {
         HttpSession session = req.getSession(false);
-        Account staff = getStaffAccount(req);
+        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
         if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
 
         Integer posStation = session != null ? (Integer)    session.getAttribute("posStation")    : null;
@@ -1056,19 +950,5 @@ public class PosServlet extends HttpServlet {
     private String esc(String s) {
         if (s == null) return "";
         return s.replace("\\","\\\\").replace("\"","\\\"").replace("\n"," ").replace("\r","");
-    }
-
-    private Account getStaffAccount(HttpServletRequest req) {
-        HttpSession session = req.getSession(false);
-        if (session == null) return null;
-        String uid = req.getParameter("uid");
-        Account acc = null;
-        if (uid != null && !uid.isEmpty()) {
-            acc = (Account) session.getAttribute("staffAccount_" + uid);
-        }
-        if (acc == null) {
-            acc = (Account) session.getAttribute("staffAccount");
-        }
-        return acc;
     }
 }

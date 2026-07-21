@@ -4,6 +4,7 @@ import com.medicare.entity.Attendance;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 public interface IAttendanceDAO {
 
@@ -21,6 +22,13 @@ public interface IAttendanceDAO {
      * Dùng để tra "ai đang đứng quầy số X" khi session không có staffAccount.
      */
     Attendance findActiveByStation(int posStation);
+
+    /**
+     * Toàn bộ danh sách "quầy POS -> tên nhân viên đang đứng quầy" (chưa check-out) hôm nay,
+     * 1 query duy nhất — dùng cho modal chọn quầy trong POS, để biết quầy nào đang có người
+     * làm TRƯỚC KHI chọn, tránh chọn nhầm quầy người khác đang dùng.
+     */
+    Map<Integer, String> findActiveStaffByStation();
 
     /** Lịch sử theo tháng */
     List<Attendance> findByAccountAndMonth(int accountId, int month, int year);

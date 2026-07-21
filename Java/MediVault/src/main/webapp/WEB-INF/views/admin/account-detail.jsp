@@ -531,6 +531,17 @@ body{display:flex;background:var(--surface);color:var(--ink)}
                 </c:choose>
               </div>
             </div>
+            <div class="info-field">
+              <div class="field-lbl">File PDF giấy phép hành nghề</div>
+              <div class="field-val ${empty account.licenseFilePath ? 'empty' : ''}">
+                <c:choose>
+                  <c:when test="${not empty account.licenseFilePath}">
+                    <a href="${pageContext.request.contextPath}/${account.licenseFilePath}" target="_blank">📄 Xem file PDF</a>
+                  </c:when>
+                  <c:otherwise>Chưa upload</c:otherwise>
+                </c:choose>
+              </div>
+            </div>
           </div>
         </div>
 

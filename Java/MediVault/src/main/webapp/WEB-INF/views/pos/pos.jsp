@@ -90,8 +90,6 @@ body{display:flex}
 .search-wrap input{width:100%;height:38px;padding:0 38px 0 14px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit;outline:none;background:var(--surface);transition:.2s}
 .search-wrap input:focus{border-color:var(--sky);background:#fff}
 .search-wrap::after{content:'🔍';position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:none}
-.scan-btn{height:38px;width:38px;flex-shrink:0;border:1.5px solid var(--border);background:#fff;border-radius:9px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
-.scan-btn:hover{border-color:var(--sky);background:#eff6ff}
 .med-count-badge{background:#eff6ff;color:var(--blue);font-size:13px;font-weight:750;padding:5px 12px;border-radius:7px;white-space:nowrap;flex-shrink:0}
 .topbar-date{font-size:12.5px;color:var(--muted);white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:4px}
 
@@ -328,6 +326,9 @@ body{display:flex}
 .station-opt.selected{border-color:var(--blue);background:#eff6ff}
 .so-num{font-size:22px;font-weight:800;color:var(--blue)}
 .so-label{font-size:12px;font-weight:750;color:var(--muted)}
+.so-occupant{font-size:11px;font-weight:750;margin-top:2px;display:flex;align-items:center;gap:4px}
+.so-occupant.busy{color:#B45309}
+.so-occupant.free{color:#059669}
 .btn-confirm-station{width:100%;height:44px;border-radius:11px;border:none;background:linear-gradient(135deg,#059669,#047857);color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
 
 /* FACE CHECK-IN MODAL */
@@ -549,7 +550,6 @@ body{display:flex}
     <div class="search-wrap">
       <input type="text" id="searchInput" placeholder="Tìm thuốc theo tên hoặc mã vạch…" autocomplete="off">
     </div>
-    <button type="button" class="scan-btn" onclick="openBarcodeScan()" title="Quét mã vạch bằng camera">📷</button>
     <!-- Station badge -->
     <div class="station-badge" onclick="openStationModal()" id="stationBadge" title="Chọn quầy POS">
       <span class="station-dot"></span>
@@ -608,37 +608,13 @@ body{display:flex}
     <div style="background:#fff;border-radius:18px;max-width:520px;width:100%;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden">
       <div style="padding:18px 22px;background:linear-gradient(135deg,#1558A8,#3ABDE0);color:#fff;display:flex;align-items:center;justify-content:space-between">
         <div>
-          <h3 style="margin:0;font-size:17px;font-weight:800">🧾 Hóa đơn của tôi</h3>
+          <h3 style="margin:0;font-size:17px;font-weight:800">🧾 Hóa đơn của tôi — hôm nay</h3>
           <div id="myInvSummary" style="font-size:12px;opacity:.85;margin-top:3px">Đang tải…</div>
         </div>
         <button onclick="closeMyInvModal()" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:32px;height:32px;border-radius:9px;font-size:16px;cursor:pointer">✕</button>
       </div>
-      <!-- Bộ chọn thời gian -->
-      <div style="padding:10px 18px;border-bottom:1px solid #e2e8f0;background:#f8fafc;display:flex;align-items:center;gap:8px">
-        <label for="myInvRange" style="font-size:13px;font-weight:700;color:#475569">Thời gian:</label>
-        <select id="myInvRange" onchange="openMyInvModal()" style="padding:6px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;color:#1e293b;background:#fff;cursor:pointer">
-          <option value="today">Hôm nay</option>
-          <option value="yesterday">Hôm qua</option>
-          <option value="7days">7 ngày qua</option>
-          <option value="30days">30 ngày qua</option>
-        </select>
-      </div>
       <div id="myInvList" style="flex:1;overflow-y:auto;padding:14px 18px">
         <div style="color:#94a3b8;font-size:13px;text-align:center;padding:26px 0">Đang tải…</div>
-      </div>
-    </div>
-  </div>
-
-  <%-- Modal: Quét mã vạch bằng camera --%>
-  <div id="barcodeScanModal" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(11,22,40,.7);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeBarcodeScan()">
-    <div style="background:#fff;border-radius:18px;max-width:420px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden">
-      <div style="padding:16px 20px;background:linear-gradient(135deg,#1558A8,#3ABDE0);color:#fff;display:flex;align-items:center;justify-content:space-between">
-        <h3 style="margin:0;font-size:16px;font-weight:800">📷 Quét mã vạch</h3>
-        <button onclick="closeBarcodeScan()" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:30px;height:30px;border-radius:9px;font-size:15px;cursor:pointer">✕</button>
-      </div>
-      <div style="padding:16px 20px">
-        <div id="barcodeReaderBox" style="width:100%;min-height:260px;border-radius:12px;overflow:hidden;background:#0b1628"></div>
-        <div id="barcodeScanStatus" style="margin-top:10px;font-size:12.5px;color:#64748b;text-align:center">Đưa mã vạch vào giữa khung hình…</div>
       </div>
     </div>
   </div>
@@ -756,7 +732,6 @@ body{display:flex}
            data-rx="${m.prescriptionRequired}"
            data-dosage="<c:out value='${m.dosage}' />"
            data-code="<c:out value='${m.medicineCode}' />"
-           data-barcode="<c:out value='${m.barcode}' />"
            data-stock="${mStock}"
            data-batchno="<c:out value='${mBatch}' />"
            data-expiry="${mExpiry}"
@@ -1121,7 +1096,6 @@ body{display:flex}
 
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 const ctx = '<%= ctx %>';
 const screenState = '${screenState}';
@@ -1167,7 +1141,6 @@ document.querySelectorAll('.med-card').forEach(card => {
     expiry:  card.dataset.expiry  || '',
     dosage:  card.dataset.dosage  || '',
     code:    card.dataset.code    || '',
-    barcode: card.dataset.barcode || '',
     generic:  card.dataset.generic  || '',
     contra:   card.dataset.contra   || '',
     warning:  card.dataset.warning  || '',
@@ -1184,82 +1157,12 @@ document.getElementById('searchInput').addEventListener('input', function() {
   const q = this.value.toLowerCase().trim();
   searchTimer = setTimeout(() => {
     allMedicines.forEach(m => {
-      const show = !q || m.name.toLowerCase().includes(q) || m.code.toLowerCase().includes(q) || (m.barcode && m.barcode.toLowerCase().includes(q));
+      const show = !q || m.name.toLowerCase().includes(q) || m.code.toLowerCase().includes(q);
       m.el.style.display = (show && (activeCat === 0 || m.catId === activeCat)) ? '' : 'none';
     });
     checkEmpty();
   }, 200);
 });
-
-// Quét mã vạch xong (scanner vật lý gõ mã + Enter, hoặc quét qua camera) →
-// nếu khớp CHÍNH XÁC 1 thuốc theo barcode, thêm thẳng vào giỏ thay vì chỉ lọc danh sách.
-function tryBarcodeAutoAdd(code) {
-  const q = (code || '').trim();
-  if (!q) return false;
-  const match = allMedicines.find(m => m.barcode && m.barcode === q);
-  if (match) {
-    addToCart(match.el);
-    showToast('✅ Đã thêm: ' + match.name, 'ok');
-    return true;
-  }
-  return false;
-}
-document.getElementById('searchInput').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') {
-    if (tryBarcodeAutoAdd(this.value)) {
-      this.value = '';
-      this.dispatchEvent(new Event('input'));
-    }
-  }
-});
-
-// ── Quét mã vạch bằng camera (html5-qrcode) ──
-let barcodeScanner = null;
-function openBarcodeScan() {
-  document.getElementById('barcodeScanModal').style.display = 'flex';
-  const status = document.getElementById('barcodeScanStatus');
-  status.textContent = 'Đưa mã vạch vào giữa khung hình…';
-  if (typeof Html5Qrcode === 'undefined') {
-    status.textContent = '⚠️ Không tải được thư viện quét mã vạch — kiểm tra kết nối mạng.';
-    return;
-  }
-  barcodeScanner = new Html5Qrcode('barcodeReaderBox');
-  const config = {
-    fps: 10,
-    qrbox: { width: 260, height: 140 },
-    formatsToSupport: [
-      Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
-      Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
-      Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
-      Html5QrcodeSupportedFormats.QR_CODE
-    ]
-  };
-  let lastCode = '', lastTime = 0;
-  barcodeScanner.start(
-    { facingMode: 'environment' },
-    config,
-    (decodedText) => {
-      const now = Date.now();
-      if (decodedText === lastCode && now - lastTime < 2000) return; // tránh cộng trùng khi camera lặp lại khung hình cũ
-      lastCode = decodedText; lastTime = now;
-      const added = tryBarcodeAutoAdd(decodedText);
-      status.textContent = added
-        ? '✅ Đã thêm vào giỏ: ' + decodedText
-        : '⚠️ Không tìm thấy thuốc với mã: ' + decodedText;
-    },
-    () => {} // lỗi giải mã từng khung hình — bỏ qua, camera vẫn tiếp tục quét
-  ).catch(err => {
-    status.textContent = '⚠️ Không mở được camera: ' + (err.message || err);
-  });
-}
-function closeBarcodeScan() {
-  document.getElementById('barcodeScanModal').style.display = 'none';
-  if (barcodeScanner) {
-    const s = barcodeScanner;
-    barcodeScanner = null;
-    s.stop().then(() => s.clear()).catch(() => {});
-  }
-}
 
 // ── Category filter ──
 let activeCat = 0;
@@ -1912,19 +1815,28 @@ function submitSale() {
     })
     .then(data => {
       if (data.ok) {
-        const total    = calcTotal();
+        // Tổng in trên hóa đơn LẤY THEO SERVER (data.total = FinalAmount đã kẹp [0, subtotal]),
+        // không dùng số client tự tính — nếu server đã chặn giảm giá quá tay thì hóa đơn/tiền
+        // thối phải phản ánh đúng con số thật đã ghi vào DB.
+        const total    = (data.total != null && !isNaN(parseFloat(data.total)))
+                            ? parseFloat(data.total) : calcTotal();
         const disc     = parseFloat(document.getElementById('discountInput').value) || 0;
         const received = selectedPayment === 'CASH' ? (parseFloat(document.getElementById('cashInput').value) || 0) : 0;
         const change   = received > 0 ? Math.max(0, received - total) : 0;
         const now      = new Date();
 
         // Snapshot cart và customer trước khi xóa
+        const subtotalSnap = cart.reduce((s,i) => s + i.price*i.qty, 0);
+        // Giảm giá IN trên hóa đơn suy ra từ (subtotal − total server) để 3 dòng
+        // subtotal/giảm giá/tổng LUÔN khớp nhau và khớp số thật đã thu — kể cả khi
+        // server đã kẹp khoản giảm quá tay.
+        const discShown = Math.max(0, subtotalSnap - total);
         currentInvoice = {
           id:           data.invoiceId || 0,
           code:         data.invoiceCode || '',
           total:        total,
-          subtotal:     cart.reduce((s,i) => s + i.price*i.qty, 0),
-          discount:     disc,
+          subtotal:     subtotalSnap,
+          discount:     discShown,
           cashReceived: received,
           change:       change,
           date:         now,
@@ -2075,18 +1987,18 @@ function addFromDrawer() {
 }
 
 // ── Receipt printing ──
-// inv shape dùng chung cho cả in ngay sau khi bán VÀ xem/in lại hóa đơn cũ:
-// {code, dateStr, customerName, customerPhone, sellerName, items:[{name,unit,qty,price,dosage}],
-//  subtotal, discount, total, cashReceived, change, reprint}
-function buildReceiptHtml(inv) {
+function printReceipt() {
+  if (!currentInvoice) { showToast('⚠️ Không có dữ liệu hóa đơn để in!', 'err'); return; }
+  const inv = currentInvoice;
+  const d   = inv.date;
+  const dateStr = d.getDate().toString().padStart(2,'0') + '/' +
+                  (d.getMonth()+1).toString().padStart(2,'0') + '/' + d.getFullYear();
+
   let itemRows = '';
   inv.items.forEach((item, idx) => {
-    const dosageLine = item.dosage
-      ? '<div style="font-size:9.5px;color:#444;font-style:italic;margin-top:1px">↳ HDSD: ' + escHtml(item.dosage) + '</div>'
-      : '';
     itemRows += '<tr>'
       + '<td style="text-align:center;padding:4px 6px">' + (idx+1) + '</td>'
-      + '<td style="padding:4px 6px">' + escHtml(item.name) + dosageLine + '</td>'
+      + '<td style="padding:4px 6px">' + escHtml(item.name) + '</td>'
       + '<td style="text-align:center;padding:4px 6px">' + escHtml(item.unit) + '</td>'
       + '<td style="text-align:center;padding:4px 6px">' + item.qty + '</td>'
       + '<td style="text-align:right;padding:4px 6px">' + fmt(item.price) + '</td>'
@@ -2094,7 +2006,7 @@ function buildReceiptHtml(inv) {
       + '</tr>';
   });
 
-  return '<!DOCTYPE html>'
+  var html = '<!DOCTYPE html>'
     + '<html lang="vi"><head>'
     + '<meta charset="UTF-8">'
     + '<title>Hóa đơn ' + escHtml(inv.code) + '</title>'
@@ -2114,11 +2026,24 @@ function buildReceiptHtml(inv) {
     + '.totals-row.grand { font-size: 14px; font-weight:800; border-top: 2px solid #000; padding-top: 5px; margin-top: 3px; }'
     + '.footer { text-align: center; margin-top: 10px; font-style: italic; font-size: 11.5px; }'
     + '.kv { display: flex; justify-content: space-between; font-size: 11.5px; padding: 2px 0; }'
-    + '.reprint-tag { text-align:center; font-size:10.5px; color:#b45309; background:#fffbeb; border:1px dashed #d97706; border-radius:4px; padding:3px 6px; margin-bottom:6px; }'
-    + '@media print { body { padding: 0; } button { display: none; } }'
+    // Khối chính sách cố định + khối ghi chú dược sĩ (động)
+    + '.policy { font-size: 10.5px; line-height: 1.45; margin-top: 4px; }'
+    + '.policy-title { font-weight: 800; text-align: center; margin-bottom: 2px; letter-spacing: .5px; }'
+    + '.rx-notes { font-size: 11px; line-height: 1.5; padding: 4px 6px; border: 1px dashed #000; border-radius: 4px; }'
+    + '.rx-notes-title { font-weight: 800; margin-bottom: 3px; }'
+    + '.rx-note-line { padding: 1px 0; word-break: break-word; }'
+    // In cho máy nhiệt khổ 80mm: cố định khổ giấy, in cả nền/màu, không cắt ngang khối
+    + '@page { size: 80mm auto; margin: 0; }'
+    + '@media print {'
+    +   ' html, body { width: 80mm; margin: 0; }'
+    +   ' body { padding: 0 3mm; }'
+    +   ' button { display: none !important; }'
+    +   ' * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }'
+    +   ' .rx-notes, .policy, .totals, table, tr { break-inside: avoid; page-break-inside: avoid; }'
+    +   ' thead { display: table-header-group; }'
+    + ' }'
     + '</style>'
     + '</head><body>'
-    + (inv.reprint ? '<div class="reprint-tag">🔁 BẢN XEM LẠI — không phải hóa đơn gốc</div>' : '')
     + '<div class="center">'
     + '<div class="bold" style="font-size:14px">NHÀ THUỐC Medicare</div>'
     + '<div>Địa chỉ: 123 Đường Ba Cu, P.4, TP. Vũng Tàu</div>'
@@ -2128,10 +2053,10 @@ function buildReceiptHtml(inv) {
     + '<div class="center"><div class="title">HÓA ĐƠN BÁN LẾ</div></div>'
     + '<div class="divider"></div>'
     + '<div class="kv"><span class="bold">Số HĐ:</span><span>#' + escHtml(inv.code) + '</span></div>'
-    + '<div class="kv"><span class="bold">Ngày lập:</span><span>' + inv.dateStr + '</span></div>'
-    + '<div class="kv"><span class="bold">Khách hàng:</span><span>' + (inv.customerName ? escHtml(inv.customerName) : 'Khách lẻ') + '</span></div>'
-    + (inv.customerName && inv.customerPhone ? '<div class="kv"><span class="bold">SĐT:</span><span>' + escHtml(inv.customerPhone) + '</span></div>' : '')
-    + '<div class="kv"><span class="bold">Dược sĩ bán:</span><span>' + escHtml(inv.sellerName) + '</span></div>'
+    + '<div class="kv"><span class="bold">Ngày lập:</span><span>' + dateStr + '</span></div>'
+    + '<div class="kv"><span class="bold">Khách hàng:</span><span>' + (inv.customer ? escHtml(inv.customer.name) : 'Khách lẻ') + '</span></div>'
+    + (inv.customer ? '<div class="kv"><span class="bold">SĐT:</span><span>' + escHtml(inv.customer.phone) + '</span></div>' : '')
+    + '<div class="kv"><span class="bold">Dược sĩ bán:</span><span>' + escHtml(sellerName) + '</span></div>'
     + '<div class="divider"></div>'
     + '<table><thead><tr>'
     + '<th style="text-align:center;width:24px">STT</th>'
@@ -2152,20 +2077,14 @@ function buildReceiptHtml(inv) {
           + '<div class="totals-row"><span>Tiền khách đưa:</span><span>' + fmt(inv.cashReceived) + '</span></div>'
           + '<div class="totals-row"><span>Tiền thối:</span><span>' + fmt(inv.change) + '</span></div>'
         : '')
-    + '<div class="divider"></div>'
-    + '<div class="footer">'
-    + '<div>-- Chúc quý khách sức khỏe và một ngày tốt lành --</div>'
-    + '<div style="margin-top:4px;font-size:10px;color:#555">Hẹn gặp lại quý khách!</div>'
-    + '</div>'
+    + renderReceiptFooter(inv)
     + '<div style="height:16px"></div>'
     + '<div class="center" style="margin-top:8px">'
     + '<button onclick="window.print()" style="padding:8px 20px;background:#1a56db;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:750;font-family:&quot;Plus Jakarta Sans&quot;,sans-serif">🖶 In hóa đơn</button>'
     + '<button onclick="window.close()" style="padding:8px 16px;background:#e5e7eb;color:#111;border:none;border-radius:6px;cursor:pointer;font-size:13px;margin-left:6px;font-family:&quot;Plus Jakarta Sans&quot;,sans-serif">✕ Đóng</button>'
     + '</div>'
     + '</body></html>';
-}
 
-function openReceiptWindow(html) {
   const win = window.open('', '_blank', 'width=380,height=600,toolbar=0,menubar=0,scrollbars=1');
   if (win) {
     win.document.write(html);
@@ -2173,64 +2092,51 @@ function openReceiptWindow(html) {
   } else {
     showToast('⚠️ Trình duyệt chặn popup — vui lòng cho phép!', 'err');
   }
-}
-
-function printReceipt() {
-  if (!currentInvoice) { showToast('⚠️ Không có dữ liệu hóa đơn để in!', 'err'); return; }
-  const inv = currentInvoice;
-  const d   = inv.date;
-  const dateStr = d.getDate().toString().padStart(2,'0') + '/' +
-                  (d.getMonth()+1).toString().padStart(2,'0') + '/' + d.getFullYear();
-
-  const html = buildReceiptHtml({
-    code: inv.code,
-    dateStr: dateStr,
-    customerName: inv.customer ? inv.customer.name : null,
-    customerPhone: inv.customer ? inv.customer.phone : null,
-    sellerName: sellerName,
-    items: inv.items,
-    subtotal: inv.subtotal,
-    discount: inv.discount,
-    total: inv.total,
-    cashReceived: inv.cashReceived,
-    change: inv.change,
-    reprint: false
-  });
-  openReceiptWindow(html);
   closeSuccess();
 }
 
-// ── Xem lại / in lại 1 hóa đơn cũ (từ danh sách "Hóa đơn của tôi") ──
-async function viewInvoice(invoiceId) {
-  try {
-    const res = await fetch(ctx + '/pos?action=invoice-detail&id=' + invoiceId);
-    const data = await res.json();
-    if (!data.ok) {
-      showToast(data.reason === 'not_found' ? '⚠️ Không tìm thấy hóa đơn.' : '⚠️ Không tải được hóa đơn.', 'err');
-      return;
-    }
-    const iv = data.invoice;
-    const html = buildReceiptHtml({
-      code: iv.code,
-      dateStr: iv.dateStr,
-      customerName: iv.customerName,
-      customerPhone: iv.customerPhone,
-      sellerName: iv.sellerName,
-      items: iv.items,
-      subtotal: parseFloat(iv.subtotal) || 0,
-      discount: parseFloat(iv.discount) || 0,
-      total: parseFloat(iv.total) || 0,
-      cashReceived: 0,
-      change: 0,
-      reprint: true
-    });
-    openReceiptWindow(html);
-  } catch (e) {
-    showToast('⚠️ Lỗi kết nối khi tải hóa đơn.', 'err');
-  }
+function fmt(n) { return new Intl.NumberFormat('vi-VN').format(Math.round(n||0)) + 'đ'; }
+
+// ── Receipt footer ─────────────────────────────────────────────────────────
+// Lọc lời dặn dược sĩ về danh sách dòng CÓ NỘI DUNG THẬT. Coi là rỗng nếu:
+// null | undefined | '' | toàn khoảng trắng | [] | mảng toàn phần tử rỗng.
+function normalizeInstructions(v) {
+  if (v == null) return [];
+  const arr = Array.isArray(v) ? v : String(v).split('\n');
+  return arr.filter(x => typeof x === 'string' || typeof x === 'number')
+            .map(x => String(x).trim())
+            .filter(x => x.length > 0);
 }
 
-function fmt(n) { return new Intl.NumberFormat('vi-VN').format(Math.round(n||0)) + 'đ'; }
+// Dựng FOOTER hóa đơn 80mm:
+//  • Khối chính sách → LUÔN in (cố định).
+//  • Khối lời dặn dược sĩ → CHỈ in khi có nội dung; rỗng ⇒ KHÔNG tạo DOM/viền/khoảng
+//    trắng nào (yêu cầu "collapse completely" — không phí giấy in nhiệt).
+function renderReceiptFooter(inv) {
+  const notes = normalizeInstructions(inv && inv.instructions);
+
+  const noteBlock = notes.length === 0 ? '' : (
+      '<div class="divider"></div>'
+    + '<div class="rx-notes">'
+    +   '<div class="rx-notes-title">📋 LỜI DẶN CỦA DƯỢC SĨ</div>'
+    +   notes.map(n => '<div class="rx-note-line">• ' + escHtml(n) + '</div>').join('')
+    + '</div>'
+  );
+
+  return noteBlock
+    + '<div class="divider"></div>'
+    + '<div class="policy">'
+    +   '<div class="policy-title">LƯU Ý</div>'
+    +   '<div>• Kiểm tra thuốc và hạn dùng trước khi rời quầy.</div>'
+    +   '<div>• Bảo quản nơi khô ráo, nhiệt độ dưới 30°C.</div>'
+    +   '<div>• Để thuốc xa tầm tay trẻ em.</div>'
+    +   '<div>• Đọc kỹ hướng dẫn trước khi dùng.</div>'
+    + '</div>'
+    + '<div class="footer">'
+    +   '<div>-- Chúc quý khách sức khỏe và một ngày tốt lành --</div>'
+    +   '<div style="margin-top:4px;font-size:10px;color:#555">Hẹn gặp lại quý khách!</div>'
+    + '</div>';
+}
 
 function showToast(msg, type) {
   const t = document.createElement('div');
@@ -2277,7 +2183,6 @@ document.addEventListener('keydown', e => {
     closeFaceModal();
     closeInfoDrawer();
     closeEndShiftModal();
-    closeBarcodeScan();
   }
 });
 
@@ -2320,7 +2225,8 @@ function openStationModal() {
     // Nhãn lớn lấy SỐ QUẦY từ tên (VD "Quầy 3" → "Q3"), khớp với admin —
     // KHÔNG dùng st.id vì id trong DB có thể không liền mạch (2,3,4,5,12…).
     const soNum = (String(st.name).match(/\d+/) || [st.id])[0];
-    opt.innerHTML = '<div class="so-num">Q' + soNum + '</div><div class="so-label">' + st.name + '</div>';
+    opt.innerHTML = '<div class="so-num">Q' + soNum + '</div><div class="so-label">' + st.name + '</div>'
+      + '<div class="so-occupant" data-station-occupant="' + st.id + '">⏳ Đang tải…</div>';
     opt.onclick = function() {
       document.querySelectorAll('.station-opt').forEach(o => o.classList.remove('selected'));
       this.classList.add('selected');
@@ -2328,6 +2234,29 @@ function openStationModal() {
     grid.appendChild(opt);
   });
   document.getElementById('stationModal').classList.add('show');
+  loadStationOccupancy();
+}
+
+// Ai đang đứng quầy nào — gọi lại MỖI LẦN mở modal (không cache) để luôn thấy tình trạng
+// mới nhất, tránh chọn nhầm quầy người khác đang bán dở.
+async function loadStationOccupancy() {
+  try {
+    const res = await fetch(ctx + '/pos?action=station-staff');
+    const map = await res.json();
+    document.querySelectorAll('[data-station-occupant]').forEach(el => {
+      const stId = el.dataset.stationOccupant;
+      const name = map[stId];
+      if (name) {
+        el.className = 'so-occupant busy';
+        el.textContent = '👤 ' + name;
+      } else {
+        el.className = 'so-occupant free';
+        el.textContent = '✓ Đang trống';
+      }
+    });
+  } catch (e) {
+    document.querySelectorAll('[data-station-occupant]').forEach(el => { el.textContent = ''; });
+  }
 }
 
 function closeStationModal() {
@@ -2731,8 +2660,7 @@ async function openMyInvModal() {
   list.innerHTML = '<div style="color:#94a3b8;font-size:13px;text-align:center;padding:26px 0">Đang tải…</div>';
   sum.textContent = 'Đang tải…';
   try {
-    const range = document.getElementById('myInvRange') ? document.getElementById('myInvRange').value : 'today';
-    const res = await fetch(ctx + '/pos?action=my-invoices&range=' + range);
+    const res = await fetch(ctx + '/pos?action=my-invoices');
     const data = await res.json();
     if (!data.ok) {
       list.innerHTML = '<div style="color:#dc2626;font-size:13px;text-align:center;padding:26px 0">'
@@ -2742,24 +2670,15 @@ async function openMyInvModal() {
     }
     sum.textContent = data.count + ' hóa đơn · Doanh thu: ' + fmtMoney(parseFloat(data.totalRevenue) || 0);
     if (!data.invoices.length) {
-      list.innerHTML = '<div style="text-align:center;padding:32px 0;color:#94a3b8"><div style="font-size:34px;margin-bottom:8px">🧾</div><div style="font-size:13px">Không có hóa đơn nào trong khoảng thời gian này.</div></div>';
+      list.innerHTML = '<div style="text-align:center;padding:32px 0;color:#94a3b8"><div style="font-size:34px;margin-bottom:8px">🧾</div><div style="font-size:13px">Chưa có hóa đơn nào trong ca hôm nay.</div></div>';
       return;
     }
     const mLabel = { 'CASH': '💵 Tiền mặt', 'QR_CODE': '📱 QR', 'CARD': '💳 Thẻ' };
     list.innerHTML = data.invoices.map(iv => {
       const refunded = iv.status !== 'COMPLETED';
-      let displayTime = iv.time;
-      if (displayTime && displayTime.includes('-')) {
-        const parts = displayTime.split(' ');
-        if (parts.length >= 2) {
-          const dateParts = parts[0].split('-');
-          displayTime = dateParts[2] + '/' + dateParts[1] + ' ' + parts[1];
-        }
-      }
-      return '<div onclick="viewInvoice(' + iv.id + ')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid #f1f5f9" '
-        + 'onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'\'">'
-        + '<div><div style="font-weight:750;font-size:13.5px;color:#0f172a">' + iv.code + ' <span style="font-size:10.5px;color:#93c5fd;font-weight:600">↗ xem lại</span></div>'
-        + '<div style="font-size:11.5px;color:#94a3b8;margin-top:2px">' + displayTime + ' · ' + (mLabel[iv.method] || iv.method) + '</div></div>'
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid #f1f5f9">'
+        + '<div><div style="font-weight:750;font-size:13.5px;color:#0f172a">' + iv.code + '</div>'
+        + '<div style="font-size:11.5px;color:#94a3b8;margin-top:2px">' + iv.time + ' · ' + (mLabel[iv.method] || iv.method) + '</div></div>'
         + '<div style="text-align:right"><div style="font-weight:800;font-size:14px;color:' + (refunded ? '#dc2626' : '#059669') + '">'
         + fmtMoney(parseFloat(iv.amount) || 0) + '</div>'
         + (refunded ? '<div style="font-size:10.5px;color:#dc2626;font-weight:750">Hoàn trả</div>' : '')

@@ -8,7 +8,9 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class AttendanceDAO implements IAttendanceDAO {
 
@@ -138,6 +140,24 @@ public class AttendanceDAO implements IAttendanceDAO {
         return null;
     }
 
+
+    @Override
+    public Map<Integer, String> findActiveStaffByStation() {
+        Map<Integer, String> map = new HashMap<>();
+        // att.PosStation = quầy THỰC TẾ lúc check-in (có thể khác quầy dự kiến trong lịch ca).
+        String sql = SELECT_FULL +
+                "WHERE att.CheckOutTime IS NULL AND att.PosStation IS NOT NULL " +
+                "  AND CAST(att.CheckInTime AS DATE) = CAST(GETDATE() AS DATE)";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Integer station = (Integer) rs.getObject("PosStation");
+                if (station != null) map.put(station, rs.getString("StaffName"));
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return map;
+    }
 
     @Override
     public List<Attendance> findByAccountAndMonth(int accountId, int month, int year) {

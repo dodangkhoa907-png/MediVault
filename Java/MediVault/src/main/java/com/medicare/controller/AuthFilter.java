@@ -7,6 +7,7 @@ import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.*;
 import java.io.IOException;
+import java.util.Set;
 
 @WebFilter(urlPatterns = "/*", asyncSupported = true)
 public class AuthFilter implements Filter {
@@ -16,6 +17,21 @@ public class AuthFilter implements Filter {
     private static final String COOKIE_ADMIN_REMEMBER = "mv_admin_remember";  // 7 ngày, CÓ auto-restore
     private static final String COOKIE_STAFF = "mv_staff_uid";
     private static final int    COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 ngày (Remember Me)
+
+    // ── Chặn ADMIN theo IP — CHỈ áp dụng cho admin, KHÔNG áp dụng cho staff/POS/portal.
+    // 172.29.48.1 = IP WiFi của máy admin. Cho phép thêm localhost để admin vẫn test được
+    // trực tiếp trên máy chủ (127.0.0.1 / ::1 — Tomcat có thể trả 1 trong 2 dạng tuỳ kết nối).
+    // Áp dụng ở CẢ 2 nơi: lúc đăng nhập (LoginServlet gọi isAdminIpAllowed) VÀ mọi request admin
+    // sau đó (isAdminOnly bên dưới) — để cookie/session admin bị lộ từ máy khác cũng không dùng được.
+    private static final Set<String> ADMIN_IP_WHITELIST = Set.of(
+            "172.29.48.1",
+            "127.0.0.1", "0:0:0:0:0:0:0:1", "::1"
+    );
+
+    public static boolean isAdminIpAllowed(HttpServletRequest req) {
+        String ip = req.getRemoteAddr();
+        return ip != null && ADMIN_IP_WHITELIST.contains(ip);
+    }
 
     private final IAccountDAO accountDAO = new AccountDAO();
 
@@ -121,6 +137,14 @@ public class AuthFilter implements Filter {
         // ── 2. Lấy session hiện tại (không tạo mới) ──
         HttpSession session = req.getSession(false);
         Account adminAcc = session != null ? (Account) session.getAttribute("adminAccount") : null;
+        // Chặn ADMIN theo IP — CHỈ admin, không đụng tới staffAcc bên dưới. Nếu IP hiện tại
+        // không nằm trong whitelist thì coi như CHƯA đăng nhập cho MỌI quyết định routing bên
+        // dưới (redirect "/", "/login", "/dashboard", isAdminOnly...) — nhưng KHÔNG xoá
+        // session.removeAttribute, để mạng chập chờn/đổi IP tạm thời không tự đăng xuất admin
+        // thật; request tiếp theo từ đúng IP whitelist vẫn dùng lại được session cũ bình thường.
+        if (adminAcc != null && !isAdminIpAllowed(req)) {
+            adminAcc = null;
+        }
 
         // Lấy staffAccount từ URL param uid — mỗi tab tự mang uid của mình
         Account staffAcc = null;
@@ -150,7 +174,9 @@ public class AuthFilter implements Filter {
 
             // Restore adminAccount — CHỈ khi có cookie Remember Me (mv_admin_remember)
             // Cookie session thường (mv_admin_uid) KHÔNG restore → admin phải login lại sau khi đóng browser
-            if (adminAcc == null) {
+            // KHÔNG restore nếu IP hiện tại không nằm trong whitelist — cookie Remember Me lộ ra
+            // máy/mạng khác cũng không tự đăng nhập lại được.
+            if (adminAcc == null && isAdminIpAllowed(req)) {
                 String rememberVal = getCookieValue(req, COOKIE_ADMIN_REMEMBER);
                 if (rememberVal != null && !rememberVal.isEmpty()) {
                     try {
@@ -277,6 +303,7 @@ public class AuthFilter implements Filter {
                 || uri.equals(ctx + "/staff-profile")
                 || uri.startsWith(ctx + "/staff-notifications")
                 || uri.startsWith(ctx + "/staff-my-shifts")
+                || uri.startsWith(ctx + "/staff-my-invoices")
                 || uri.startsWith(ctx + "/staff-checkin")
                 || (uri.startsWith(ctx + "/leave-requests")
                 && req.getParameter("uid") != null)) {

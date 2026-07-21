@@ -32,6 +32,7 @@ public class AccountDAO implements IAccountDAO {
         if (rs.getDate("TrainingDate") != null)
             a.setTrainingDate(rs.getDate("TrainingDate").toLocalDate());
         a.setFaceEnrollmentPath(rs.getString("FaceEnrollmentPath"));
+        try { a.setLicenseFilePath(rs.getString("LicenseFilePath")); } catch (SQLException ignored) {}
         try { a.setFaceVector(rs.getString("FaceVector")); } catch (SQLException ignored) {}
         try {
             Timestamp fe = rs.getTimestamp("FaceEnrolledAt");
@@ -475,6 +476,18 @@ public class AccountDAO implements IAccountDAO {
 
     public boolean updateAvatar(int accountId, String path) {
         String sql = "UPDATE Accounts SET FaceEnrollmentPath = ? WHERE AccountID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, path);
+            ps.setInt(2, accountId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    /** Lưu đường dẫn file PDF giấy phép hành nghề (bằng chứng thật, thay vì chỉ gõ tay số chứng chỉ). */
+    @Override
+    public boolean updateLicenseFilePath(int accountId, String path) {
+        String sql = "UPDATE Accounts SET LicenseFilePath = ? WHERE AccountID = ?";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, path);

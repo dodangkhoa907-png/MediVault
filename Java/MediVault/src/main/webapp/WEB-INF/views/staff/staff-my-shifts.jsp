@@ -31,35 +31,6 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <script>
-      if (window.self !== window.top) {
-        document.documentElement.classList.add('in-iframe');
-        window.addEventListener('DOMContentLoaded', function() {
-          document.body.classList.add('in-iframe');
-          document.documentElement.classList.add('in-iframe');
-        });
-      }
-    </script>
-    <style>
-      html.in-iframe .sidebar,
-      body.in-iframe .sidebar,
-      html.in-iframe .topbar,
-      body.in-iframe .topbar,
-      html.in-iframe #mainSidebar,
-      body.in-iframe #mainSidebar {
-        display: none !important;
-      }
-      html.in-iframe .main,
-      body.in-iframe .main {
-        margin-left: 0 !important;
-        min-height: 100vh !important;
-        width: 100% !important;
-      }
-      html.in-iframe .content,
-      body.in-iframe .content {
-        padding: 12px 14px !important;
-      }
-    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
     
     
@@ -231,14 +202,14 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
       <span class="nav-icon">🏖️</span> Xin nghỉ phép
     </a>
   </nav>
-  <% if (staffAcc.getRoleId() == 2 || staffAcc.getRoleId() == 3) { %>
+  <% if (staffAcc.getRoleId() == 2) { %>
   <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
     <a href="<%= request.getContextPath() %>/pos?uid=<%= uid %>" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
     </a>
-    <a href="<%= request.getContextPath() %>/pos?uid=<%= uid %>&view=invoices" class="nav-item">
-      <span class="nav-icon">🧾</span> Xem hóa đơn
+    <a href="<%= request.getContextPath() %>/staff-my-invoices?uid=<%= uid %>" class="nav-item">
+      <span class="nav-icon">🧾</span> Hóa đơn của tôi
     </a>
   </nav>
   <% } %>

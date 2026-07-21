@@ -190,7 +190,9 @@ public class ReportServlet extends HttpServlet {
         LinkedHashMap<String, BigDecimal> cat = invoiceDAO.revenueByCategory(from, to);
         appendGroupedJson(json, "cat", cat);
 
-        // 5) Doanh thu theo khung giờ (0h → 23h, giờ VN)
+        // 5) Doanh thu theo khung giờ (0h → 23h, giờ VN) — CẢ THÁNG đang chọn (cộng dồn tất cả
+        // các ngày trong tháng vào cùng 1 khung giờ, phục vụ phân tích "giờ vàng" — KHÔNG phải
+        // riêng hôm nay, dễ gây hiểu nhầm nên có thêm bản "hôm nay" riêng ngay bên dưới.
         TreeMap<Integer, BigDecimal> hourly = invoiceDAO.revenueByHour(from, to);
         List<String> hourLabels = new ArrayList<>();
         List<BigDecimal> hourValues = new ArrayList<>();
@@ -199,7 +201,17 @@ public class ReportServlet extends HttpServlet {
             hourValues.add(e.getValue());
         }
         json.append("\"hourLabels\":").append(jsonStrArray(hourLabels)).append(",");
-        json.append("\"hourValues\":").append(jsonNumArray(hourValues));
+        json.append("\"hourValues\":").append(jsonNumArray(hourValues)).append(",");
+
+        // 5b) Doanh thu theo khung giờ — CHỈ RIÊNG HÔM NAY (ngày thực tế hiện tại, không phụ
+        // thuộc tháng/năm đang xem trên bộ lọc) — phục vụ nút chuyển "Hôm nay" trên biểu đồ.
+        LocalDate today = LocalDate.now();
+        TreeMap<Integer, BigDecimal> hourlyToday = invoiceDAO.revenueByHour(today, today);
+        List<BigDecimal> hourTodayValues = new ArrayList<>();
+        for (Map.Entry<Integer, BigDecimal> e : hourlyToday.entrySet()) {
+            hourTodayValues.add(e.getValue());
+        }
+        json.append("\"hourTodayValues\":").append(jsonNumArray(hourTodayValues));
 
         json.append("}");
 

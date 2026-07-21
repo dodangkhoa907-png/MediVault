@@ -475,18 +475,17 @@ body{display:flex;background:var(--soft);color:var(--ink)}
     </a>
   </nav>
 
-  <% if (acc.getRoleId() == 2 || acc.getRoleId() == 3) { %>
+  <% if (acc.getRoleId() == 2) { %>
   <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
     <a href="${pageContext.request.contextPath}/pos?uid=<%= _uid %>" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
     </a>
-    <a href="${pageContext.request.contextPath}/pos?uid=<%= _uid %>&view=invoices" class="nav-item">
-      <span class="nav-icon">🧾</span> Xem hóa đơn
+    <a href="${pageContext.request.contextPath}/staff-my-invoices?uid=<%= _uid %>" class="nav-item">
+      <span class="nav-icon">🧾</span> Hóa đơn của tôi
     </a>
   </nav>
-  <% } %>
-  <% if (acc.getRoleId() == 3) { %>
+  <% } else { %>
   <nav class="nav-block">
     <div class="nav-label">Kho hàng</div>
     <a href="${pageContext.request.contextPath}/staff-dashboard?uid=<%= _uid %>" class="nav-item" style="opacity:.5;cursor:default">
@@ -552,7 +551,6 @@ body{display:flex;background:var(--soft);color:var(--ink)}
   </header>
 
   <div class="content">
-    <div id="homeView">
 
     <%-- Shift Reminder Banner --%>
     <c:if test="${not empty todaySchedule}">
@@ -943,11 +941,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
         </tbody>
       </table>
     </div>
-    </div> <!-- end #homeView -->
-    
-    <div id="iframeView" style="display:none; width:100%; height:100%; overflow:hidden;">
-      <iframe id="contentIframe" name="contentIframe" style="width:100%; height:calc(100vh - 62px); border:none; display:block; background:var(--soft);"></iframe>
-    </div>
+
   </div>
 </div>
 
@@ -1341,57 +1335,6 @@ function closeFaceModal() {
     document.getElementById('captureCount').textContent = '0';
     updateProgressDots();
 }
-</script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-  const navItems = document.querySelectorAll(".sidebar .nav-item");
-  const homeView = document.getElementById("homeView");
-  const iframeView = document.getElementById("iframeView");
-  const iframe = document.getElementById("contentIframe");
-
-  navItems.forEach(item => {
-    // Skip logout links
-    if (item.href.includes("logout")) return;
-
-    item.addEventListener("click", function(e) {
-      e.preventDefault();
-      
-      // Remove active class from all nav items
-      navItems.forEach(i => i.classList.remove("active"));
-      // Add active class to clicked item
-      item.classList.add("active");
-
-      // If it is Trang chủ (home)
-      if (item.href.includes("staff-dashboard") && !item.href.includes("view=")) {
-        iframeView.style.display = "none";
-        iframe.src = "about:blank"; // clear iframe
-        homeView.style.display = "block";
-      } else if (item.href.includes("/pos")) {
-        // Bán thuốc (POS) và Xem hóa đơn: màn hình riêng biệt, toàn màn hình —
-        // KHÔNG nhúng vào iframe của trang chủ (nhúng sẽ đè 2 sidebar + 2 modal lên nhau).
-        window.location.href = item.href;
-      } else {
-        // For other pages, load in iframe
-        homeView.style.display = "none";
-        iframeView.style.display = "block";
-        iframe.src = item.href;
-      }
-    });
-  });
-
-  // Intercept profile click on topbar avatar and greeting
-  const topbarAv = document.querySelector(".topbar-av");
-  if (topbarAv) {
-    topbarAv.addEventListener("click", function(e) {
-      e.preventDefault();
-      const profileNavItem = Array.from(navItems).find(i => i.href.includes("staff-profile"));
-      if (profileNavItem) {
-        profileNavItem.click();
-      }
-    });
-  }
-});
 </script>
 
 </body>

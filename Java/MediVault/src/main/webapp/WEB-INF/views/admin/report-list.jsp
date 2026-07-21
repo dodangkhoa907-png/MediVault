@@ -404,8 +404,15 @@ select,option{font-family:inherit;font-size:inherit}
         </c:if>
       </div>
       <div class="chart-card">
-        <div class="chart-card-head"><h3>🕐 Doanh thu theo khung giờ (giờ vàng)</h3></div>
+        <div class="chart-card-head">
+          <h3>🕐 Doanh thu theo khung giờ (giờ vàng)</h3>
+          <div class="view-toggle">
+            <button id="btnHourToday" class="vt-btn" onclick="setPeakHourScope('today')">Hôm nay</button>
+            <button id="btnHourMonth" class="vt-btn active" onclick="setPeakHourScope('month')">Cả tháng</button>
+          </div>
+        </div>
         <div class="chart-card-body"><canvas id="peakHourChart"></canvas></div>
+        <div style="padding:0 18px 12px;font-size:11px;color:#7C6FAA" id="peakHourNote">ℹ️ Đang xem: cộng dồn doanh thu theo từng khung giờ trên TOÀN BỘ tháng đang chọn (không phải riêng hôm nay).</div>
       </div>
     </div>
 
@@ -559,6 +566,21 @@ const fmt = v => new Intl.NumberFormat('vi-VN').format(v) + 'đ';
 
 let cashChartInstance = null, financeChart = null, waterfallChart = null, peakHourChart = null, mfgChart = null, catChart = null;
 let _cashChartType = 'line';
+let _peakHourScope = 'month'; // 'month' = cộng dồn cả tháng (mặc định) | 'today' = riêng hôm nay
+let _lastChartData = null;    // cache JSON lần fetch gần nhất — đổi scope không cần gọi lại server
+
+function setPeakHourScope(scope) {
+  _peakHourScope = scope;
+  document.getElementById('btnHourToday').classList.toggle('active', scope === 'today');
+  document.getElementById('btnHourMonth').classList.toggle('active', scope === 'month');
+  const note = document.getElementById('peakHourNote');
+  if (note) {
+    note.textContent = scope === 'today'
+      ? 'ℹ️ Đang xem: doanh thu theo khung giờ CHỈ RIÊNG HÔM NAY.'
+      : 'ℹ️ Đang xem: cộng dồn doanh thu theo từng khung giờ trên TOÀN BỘ tháng đang chọn (không phải riêng hôm nay).';
+  }
+  if (_lastChartData) renderPeakHourChart(_lastChartData);
+}
 
 const PALETTE = ['#1558A8','#3ABDE0','#059669','#D97706','#7C3AED','#DC2626','#0EA5E9','#94A3B8'];
 
@@ -581,6 +603,7 @@ async function loadAllCharts() {
     );
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
+    _lastChartData = data;
     try { renderCashChart(data);    } catch(e) { console.warn('cashChart lỗi:', e); }
     try { renderFinanceChart(data); } catch(e) { console.warn('financeChart lỗi:', e); }
     try { renderWaterfallChart(data); } catch(e) { console.warn('waterfallChart lỗi:', e); }
@@ -703,11 +726,12 @@ function renderPeakHourChart(data) {
   const grad = canvas.getContext('2d').createLinearGradient(0,0,0,220);
   grad.addColorStop(0, 'rgba(217,119,6,.35)');
   grad.addColorStop(1, 'rgba(217,119,6,0)');
+  const hourData = _peakHourScope === 'today' ? (data.hourTodayValues||[]) : (data.hourValues||[]);
   peakHourChart = new Chart(canvas.getContext('2d'), {
     type: 'line',
     data: {
       labels: data.hourLabels||[],
-      datasets: [{ label:'Doanh thu', data:data.hourValues||[], borderColor:'#D97706', backgroundColor:grad, borderWidth:2, pointRadius:0, pointHoverRadius:4, fill:true, tension:.4 }]
+      datasets: [{ label:'Doanh thu', data:hourData, borderColor:'#D97706', backgroundColor:grad, borderWidth:2, pointRadius:0, pointHoverRadius:4, fill:true, tension:.4 }]
     },
     options: baseChartOptions()
   });
