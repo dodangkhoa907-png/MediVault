@@ -798,13 +798,25 @@ public class PosServlet extends HttpServlet {
         Integer posStation = (Integer) session.getAttribute("posStation");
         boolean hasSt = posStation != null && posStation > 0;
 
+        String range = req.getParameter("range");
+        if (range == null) range = "today";
+
+        String dateCond = "CAST(CreatedAt AS DATE) = CAST(GETDATE() AS DATE)";
+        if ("yesterday".equals(range)) {
+            dateCond = "CAST(CreatedAt AS DATE) = CAST(DATEADD(day, -1, GETDATE()) AS DATE)";
+        } else if ("7days".equals(range)) {
+            dateCond = "CreatedAt >= DATEADD(day, -7, CAST(GETDATE() AS DATE))";
+        } else if ("30days".equals(range)) {
+            dateCond = "CreatedAt >= DATEADD(day, -30, CAST(GETDATE() AS DATE))";
+        }
+
         StringBuilder sb = new StringBuilder();
         java.math.BigDecimal total = java.math.BigDecimal.ZERO;
         int count = 0;
         String sql = "SELECT InvoiceID, InvoiceCode, FinalAmount, PaymentMethod, Status, " +
-                "CONVERT(VARCHAR(5), CreatedAt, 108) AS CreatedTime " +
+                "CONVERT(VARCHAR(16), CreatedAt, 120) AS CreatedTime " +
                 "FROM Invoices " +
-                "WHERE AccountID = ? AND CAST(CreatedAt AS DATE) = CAST(GETDATE() AS DATE) " +
+                "WHERE AccountID = ? AND " + dateCond + " " +
                 (hasSt ? "AND PosStation = ? " : "") +
                 "ORDER BY CreatedAt DESC";
         try (java.sql.Connection cn = com.medicare.config.DBContext.getConnection();

@@ -517,6 +517,8 @@ body{display:flex}
           <div><div style="font-size:13px;font-weight:700;color:#fff"><%= fullName %></div><div style="font-size:10.5px;color:rgba(255,255,255,.45)">Đang ca làm việc</div></div>
         </div>
         <a href="<%= ctx %>/staff-dashboard" style="display:block;padding:8px 11px;background:rgba(255,255,255,.1);border-radius:8px;color:#93c5fd;font-size:12.5px;font-weight:600;text-decoration:none;margin-bottom:5px;text-align:center">📅 Xem lịch ca</a>
+        <button onclick="openMyInvModal();toggleCheckinPanel();" style="display:block;width:100%;padding:8px 11px;background:rgba(255,255,255,.1);border-radius:8px;color:#a5f3fc;font-size:12.5px;font-weight:600;text-align:center;border:none;cursor:pointer;font-family:inherit;margin-bottom:5px">🧾 Hóa đơn của tôi</button>
+        <button onclick="openOpenCashModal();toggleCheckinPanel();" style="display:block;width:100%;padding:8px 11px;background:rgba(255,255,255,.1);border-radius:8px;color:#86efac;font-size:12.5px;font-weight:600;text-align:center;border:none;cursor:pointer;font-family:inherit;margin-bottom:5px">💵 Khai báo tiền đầu ca (tùy chọn)</button>
         <button onclick="openEndShiftModal();toggleCheckinPanel();" style="display:block;width:100%;padding:8px 11px;background:rgba(239,68,68,.15);border-radius:8px;color:#fca5a5;font-size:12.5px;font-weight:600;text-align:center;border:none;cursor:pointer;font-family:inherit">⏻ Kết thúc ca</button>
         <% } else { %>
         <div style="font-size:11.5px;color:rgba(255,255,255,.5);margin-bottom:11px">Điểm danh để ghi nhận doanh số theo nhân viên</div>
@@ -572,6 +574,50 @@ body{display:flex}
     </button>
   </div>
   <% } %>
+
+  <%-- Modal: Khai báo tiền đầu ca (mở ca) --%>
+  <div id="openCashModal" style="display:none;position:fixed;inset:0;z-index:9600;background:rgba(11,22,40,.55);align-items:center;justify-content:center;padding:20px">
+    <div style="background:#fff;border-radius:18px;max-width:400px;width:100%;padding:28px;box-shadow:0 24px 70px rgba(0,0,0,.35)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="font-size:26px">💵</span>
+        <h3 style="margin:0;font-size:18px;font-weight:800;color:#0f172a">Khai báo tiền đầu ca</h3>
+      </div>
+      <p style="font-size:12.5px;color:#64748b;margin:0 0 16px;line-height:1.5">Đếm tiền mặt hiện có trong két và nhập số tiền để mở ca. Số này dùng đối soát khi kết ca.</p>
+      <label style="font-size:12.5px;font-weight:700;color:#334155;display:block;margin-bottom:6px">Tiền mặt trong két (đ) <span style="color:#dc2626">*</span></label>
+      <input type="number" id="openCashInput" min="0" step="1000" placeholder="VD: 500000"
+             style="width:100%;border:1.5px solid #e2e8f0;border-radius:11px;padding:12px 14px;font-size:17px;font-weight:700;font-family:inherit;box-sizing:border-box"
+             onkeydown="if(event.key==='Enter')confirmOpenShift()">
+      <div id="openCashErr" style="color:#dc2626;font-size:12px;margin-top:6px;display:none"></div>
+      <button type="button" id="openShiftBtn" onclick="confirmOpenShift()"
+              style="width:100%;margin-top:16px;padding:13px;background:linear-gradient(135deg,#059669,#047857);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">✓ Mở ca &amp; bắt đầu bán hàng</button>
+    </div>
+  </div>
+
+  <%-- Modal: Hóa đơn của tôi (bill trong ca hôm nay của chính nhân viên) --%>
+  <div id="myInvModal" style="display:none;position:fixed;inset:0;z-index:9600;background:rgba(11,22,40,.55);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeMyInvModal()">
+    <div style="background:#fff;border-radius:18px;max-width:520px;width:100%;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden">
+      <div style="padding:18px 22px;background:linear-gradient(135deg,#1558A8,#3ABDE0);color:#fff;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <h3 style="margin:0;font-size:17px;font-weight:800">🧾 Hóa đơn của tôi</h3>
+          <div id="myInvSummary" style="font-size:12px;opacity:.85;margin-top:3px">Đang tải…</div>
+        </div>
+        <button onclick="closeMyInvModal()" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:32px;height:32px;border-radius:9px;font-size:16px;cursor:pointer">✕</button>
+      </div>
+      <!-- Bộ chọn thời gian -->
+      <div style="padding:10px 18px;border-bottom:1px solid #e2e8f0;background:#f8fafc;display:flex;align-items:center;gap:8px">
+        <label for="myInvRange" style="font-size:13px;font-weight:700;color:#475569">Thời gian:</label>
+        <select id="myInvRange" onchange="openMyInvModal()" style="padding:6px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;color:#1e293b;background:#fff;cursor:pointer">
+          <option value="today">Hôm nay</option>
+          <option value="yesterday">Hôm qua</option>
+          <option value="7days">7 ngày qua</option>
+          <option value="30days">30 ngày qua</option>
+        </select>
+      </div>
+      <div id="myInvList" style="flex:1;overflow-y:auto;padding:14px 18px">
+        <div style="color:#94a3b8;font-size:13px;text-align:center;padding:26px 0">Đang tải…</div>
+      </div>
+    </div>
+  </div>
 
   <!-- Medicine grid -->
   <div class="med-grid" id="medGrid">
@@ -2310,6 +2356,100 @@ async function confirmEndShift() {
     showToast('❌ Lỗi kết nối', 'err');
     btn.disabled = false;
     btn.textContent = '⏻ Xác nhận & Đóng ca';
+  }
+}
+
+// ── OPEN SHIFT & MY INVOICES MODALS ─────────────────────────────────────────
+function openOpenCashModal() {
+  const m = document.getElementById('openCashModal');
+  m.style.display = 'flex';
+  const inp = document.getElementById('openCashInput');
+  inp.value = '';
+  document.getElementById('openCashErr').style.display = 'none';
+  setTimeout(() => inp.focus(), 120);
+}
+async function confirmOpenShift() {
+  const inp = document.getElementById('openCashInput');
+  const err = document.getElementById('openCashErr');
+  const val = parseFloat(inp.value);
+  if (isNaN(val) || val < 0) {
+    err.textContent = 'Vui lòng nhập số tiền hợp lệ (≥ 0).';
+    err.style.display = 'block';
+    inp.focus();
+    return;
+  }
+  const btn = document.getElementById('openShiftBtn');
+  btn.disabled = true; btn.textContent = '⏳ Đang mở ca…';
+  try {
+    const res = await fetch(ctx + '/pos', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'open-shift', openingCash: val }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('openCashModal').style.display = 'none';
+      if (typeof hideShiftLock === 'function') hideShiftLock();
+      else location.reload();
+      showToast('🔓 Đã mở ca — tiền đầu ca ' + fmtMoney(val), 'ok');
+    } else {
+      err.textContent = data.reason === 'not_logged_in'
+        ? 'Chưa điểm danh — hãy điểm danh khuôn mặt trước.'
+        : ('Lỗi: ' + (data.reason || 'không mở được ca'));
+      err.style.display = 'block';
+      btn.disabled = false; btn.textContent = '✓ Mở ca & bắt đầu bán hàng';
+    }
+  } catch (e) {
+    err.textContent = 'Lỗi kết nối: ' + e.message;
+    err.style.display = 'block';
+    btn.disabled = false; btn.textContent = '✓ Mở ca & bắt đầu bán hàng';
+  }
+}
+function closeMyInvModal() { document.getElementById('myInvModal').style.display = 'none'; }
+async function openMyInvModal() {
+  const modal = document.getElementById('myInvModal');
+  const list  = document.getElementById('myInvList');
+  const sum   = document.getElementById('myInvSummary');
+  modal.style.display = 'flex';
+  list.innerHTML = '<div style="color:#94a3b8;font-size:13px;text-align:center;padding:26px 0">Đang tải…</div>';
+  sum.textContent = 'Đang tải…';
+  try {
+    const range = document.getElementById('myInvRange') ? document.getElementById('myInvRange').value : 'today';
+    const res = await fetch(ctx + '/pos?action=my-invoices&range=' + range);
+    const data = await res.json();
+    if (!data.ok) {
+      list.innerHTML = '<div style="color:#dc2626;font-size:13px;text-align:center;padding:26px 0">'
+        + (data.reason === 'not_logged_in' ? 'Chưa điểm danh ca làm.' : 'Lỗi tải dữ liệu.') + '</div>';
+      sum.textContent = '';
+      return;
+    }
+    sum.textContent = data.count + ' hóa đơn · Doanh thu: ' + fmtMoney(parseFloat(data.totalRevenue) || 0);
+    if (!data.invoices.length) {
+      list.innerHTML = '<div style="text-align:center;padding:32px 0;color:#94a3b8"><div style="font-size:34px;margin-bottom:8px">🧾</div><div style="font-size:13px">Không có hóa đơn nào trong khoảng thời gian này.</div></div>';
+      return;
+    }
+    const mLabel = { 'CASH': '💵 Tiền mặt', 'QR_CODE': '📱 QR', 'CARD': '💳 Thẻ' };
+    list.innerHTML = data.invoices.map(iv => {
+      const refunded = iv.status !== 'COMPLETED';
+      let displayTime = iv.time;
+      if (displayTime && displayTime.includes('-')) {
+        const parts = displayTime.split(' ');
+        if (parts.length >= 2) {
+          const dateParts = parts[0].split('-');
+          displayTime = dateParts[2] + '/' + dateParts[1] + ' ' + parts[1];
+        }
+      }
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid #f1f5f9">'
+        + '<div><div style="font-weight:700;font-size:13.5px;color:#0f172a">' + iv.code + '</div>'
+        + '<div style="font-size:11.5px;color:#94a3b8;margin-top:2px">' + displayTime + ' · ' + (mLabel[iv.method] || iv.method) + '</div></div>'
+        + '<div style="text-align:right"><div style="font-weight:800;font-size:14px;color:' + (refunded ? '#dc2626' : '#059669') + '">'
+        + fmtMoney(parseFloat(iv.amount) || 0) + '</div>'
+        + (refunded ? '<div style="font-size:10.5px;color:#dc2626;font-weight:700">Hoàn trả</div>' : '')
+        + '</div></div>';
+    }).join('');
+  } catch (e) {
+    list.innerHTML = '<div style="color:#dc2626;font-size:13px;text-align:center;padding:26px 0">Lỗi kết nối.</div>';
+    sum.textContent = '';
   }
 }
 </script>
