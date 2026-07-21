@@ -12,6 +12,15 @@ import java.util.List;
 
 public class PurchaseOrderDAO implements IPurchaseOrderDAO {
 
+    // ThreadLocal — PurchaseOrderDAO được servlet giữ như 1 instance dùng chung cho MỌI
+    // request (xem PurchaseOrderServlet/MedicineService: `private final ... = new PurchaseOrderDAO()`),
+    // nên KHÔNG được dùng field thường ở đây: 2 admin xác nhận nhận hàng cùng lúc trên 2 đơn
+    // khác nhau sẽ ghi đè lỗi của nhau. ThreadLocal đảm bảo mỗi thread (mỗi request) có bản riêng.
+    private final ThreadLocal<String> lastConfirmError = new ThreadLocal<>();
+
+    /** Lý do thất bại của lần gọi confirmReceived() gần nhất trên THREAD HIỆN TẠI — null nếu thành công/chưa gọi. */
+    public String getLastConfirmError() { return lastConfirmError.get(); }
+
     private PurchaseOrders mapRow(ResultSet rs) throws SQLException {
         PurchaseOrders po = new PurchaseOrders();
         po.setPoId(rs.getInt("POID"));
@@ -21,7 +30,7 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
         if (rs.getTimestamp("OrderDate") != null)
             po.setOrderDate(rs.getTimestamp("OrderDate").toLocalDateTime());
         po.setTotalValue(rs.getBigDecimal("TotalValue"));
-        po.setNotes(rs.getNString("Notes"));
+        po.setNotes(rs.getString("Notes"));
         try { po.setStatus(rs.getString("Status")); } catch (SQLException ignored) {}
         try { po.setPaymentMethod(rs.getString("PaymentMethod")); } catch (SQLException ignored) {}
         try { po.setDiscountAmount(rs.getBigDecimal("DiscountAmount")); } catch (SQLException ignored) {}
@@ -163,7 +172,7 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
                     d.setBatchNumber(rs.getString("BatchNumber"));
                     if (rs.getDate("ExpiryDate") != null)      d.setExpiryDate(rs.getDate("ExpiryDate").toLocalDate());
                     if (rs.getDate("ManufactureDate") != null) d.setManufactureDate(rs.getDate("ManufactureDate").toLocalDate());
-                    d.setMedicineName(rs.getNString("MedicineName"));
+                    d.setMedicineName(rs.getString("MedicineName"));
                     list.add(d);
                 }
             }
@@ -179,6 +188,7 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
      * Trả về số lô đã tạo, -1 nếu lỗi/đơn không ở trạng thái PENDING.
      */
     public int confirmReceived(int poId) {
+        lastConfirmError.remove();
         Connection cn = null;
         try {
             cn = DBContext.getConnection();
@@ -190,7 +200,11 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
                     "SELECT SupplierID FROM PurchaseOrders WHERE POID = ? AND Status = 'PENDING'")) {
                 ps.setInt(1, poId);
                 try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) { cn.rollback(); return -1; }
+                    if (!rs.next()) {
+                        cn.rollback();
+                        lastConfirmError.set("Đơn không tồn tại hoặc đã được xác nhận trước đó (không còn ở trạng thái Chờ xử lý).");
+                        return -1;
+                    }
                     supplierId = rs.getInt(1);
                 }
             }
@@ -214,7 +228,32 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
                     }
                 }
             }
-            if (lines.isEmpty()) { cn.rollback(); return -1; }
+            if (lines.isEmpty()) {
+                cn.rollback();
+                lastConfirmError.set("Đơn không có dòng hàng nào để nhập kho.");
+                return -1;
+            }
+
+            // Kiểm tra trùng (MedicineID, BatchNumber) TRƯỚC khi insert — đơn PENDING này có thể
+            // được tạo TRƯỚC khi validate trùng lô lúc lưu phiếu tồn tại (hoặc số lô đã bị 1 đơn
+            // khác chiếm sau đó). Không kiểm tra trước, lỗi sẽ rơi thẳng vào UNIQUE KEY constraint
+            // của SQL Server — vẫn đúng nhưng thông báo tiếng Anh khó hiểu với admin.
+            try (PreparedStatement ps = cn.prepareStatement(
+                    "SELECT TOP 1 BatchNumber FROM Batches WHERE MedicineID = ? AND BatchNumber = ? AND Status != 'CANCELLED'")) {
+                for (Batches b : lines) {
+                    ps.setInt(1, b.getMedicineId());
+                    ps.setString(2, b.getBatchNumber());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            cn.rollback();
+                            lastConfirmError.set("Số lô '" + b.getBatchNumber()
+                                    + "' đã tồn tại trong kho cho thuốc này (MedicineID=" + b.getMedicineId()
+                                    + ") — đổi số lô trên dòng hàng này trước khi xác nhận.");
+                            return -1;
+                        }
+                    }
+                }
+            }
 
             insertBatchesFromLines(cn, poId, supplierId, lines);
 
@@ -226,6 +265,14 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
             cn.commit();
             return lines.size();
         } catch (Exception e) {
+            // QUAN TRỌNG: không nuốt lỗi — nếu DB có trigger chặn HSD cận date (RAISERROR),
+            // lỗi đó rơi vào đây. Trước đây chỉ printStackTrace() rồi trả -1 chung chung,
+            // khiến admin tưởng "nhập kho thất bại ngẫu nhiên" trong khi thực ra trigger đã
+            // chặn đúng — nhưng cũng chặn LUÔN toàn bộ đơn (kể cả các dòng hợp lệ) vì cả đơn
+            // chạy chung 1 transaction. Lộ rõ message thật để admin biết lô nào bị chặn và vì sao.
+            String errMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            lastConfirmError.set(errMsg);
+            System.err.println("[PurchaseOrderDAO] confirmReceived thất bại (POID=" + poId + "): " + errMsg);
             e.printStackTrace();
             if (cn != null) try { cn.rollback(); } catch (Exception ignored) {}
             return -1;

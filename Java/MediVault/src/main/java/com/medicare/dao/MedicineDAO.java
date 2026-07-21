@@ -14,22 +14,23 @@ public class MedicineDAO implements IMedicineDAO {
         Medicines m = new Medicines();
         m.setMedicineId(rs.getInt("MedicineID"));
         m.setMedicineCode(rs.getString("MedicineCode"));
-        m.setMedicineName(MojibakeUtil.fix(rs.getNString("MedicineName")));
-        m.setGenericName(MojibakeUtil.fix(rs.getNString("GenericName")));
+        m.setMedicineName(MojibakeUtil.fix(rs.getString("MedicineName")));
+        m.setGenericName(MojibakeUtil.fix(rs.getString("GenericName")));
         m.setBarcode(rs.getString("Barcode"));
         m.setRegistrationNumber(rs.getString("RegistrationNumber"));
         m.setCategoryId(rs.getInt("CategoryID"));
         m.setManufacturerId(rs.getInt("ManufacturerID"));
-        m.setUnit(MojibakeUtil.fix(rs.getNString("Unit")));
+        m.setUnit(MojibakeUtil.fix(rs.getString("Unit")));
         m.setShelfId(rs.getInt("ShelfID"));
-        m.setDosage(MojibakeUtil.fix(rs.getNString("Dosage")));
-        m.setContraindications(MojibakeUtil.fix(rs.getNString("Contraindications")));
+        m.setDosage(MojibakeUtil.fix(rs.getString("Dosage")));
+        m.setContraindications(MojibakeUtil.fix(rs.getString("Contraindications")));
         m.setPrescriptionRequired(rs.getBoolean("IsPrescriptionRequired"));
         m.setSellingPrice(rs.getBigDecimal("SellingPrice"));
         m.setMinInventory(rs.getInt("MinInventory"));
-        m.setStorageConditions(MojibakeUtil.fix(rs.getNString("StorageConditions")));
+        m.setStorageConditions(MojibakeUtil.fix(rs.getString("StorageConditions")));
         m.setStatus(rs.getBoolean("Status"));
         m.setExpiryAlertDays(rs.getInt("ExpiryAlertDays"));
+        try { m.setShelfLifeMonths((Integer) rs.getObject("ShelfLifeMonths")); } catch (Exception ignored) {}
         if (rs.getTimestamp("CreatedAt") != null)
             m.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
         try { m.setPackagingSpec(rs.getString("PackagingSpec")); } catch (Exception ignored) {}
@@ -138,9 +139,12 @@ public class MedicineDAO implements IMedicineDAO {
     // Thuốc sắp hết hàng (CurrentQuantity <= MinInventory)
     public List<Medicines> findLowStock() {
         List<Medicines> list = new ArrayList<>();
+        // Lọc Status='ACTIVE' + còn hạn — khớp BatchesDAO#getTotalQuantityMap(), tránh đếm
+        // nhầm lô CANCELLED/hết hạn vào tồn kho khiến "sắp hết hàng" lệch với số thật.
         String sql = "SELECT m.* FROM Medicines m " +
                 "LEFT JOIN (SELECT MedicineID, SUM(CurrentQuantity) AS TotalQty " +
-                "           FROM Batches GROUP BY MedicineID) b ON m.MedicineID = b.MedicineID " +
+                "           FROM Batches WHERE Status = 'ACTIVE' AND ExpiryDate > CAST(GETDATE() AS DATE) " +
+                "           GROUP BY MedicineID) b ON m.MedicineID = b.MedicineID " +
                 "WHERE m.Status = 1 AND ISNULL(b.TotalQty, 0) > 0 " +
                 "  AND ISNULL(b.TotalQty, 0) <= m.MinInventory AND m.MinInventory > 0 " +
                 "ORDER BY ISNULL(b.TotalQty, 0) ASC";
@@ -171,7 +175,8 @@ public class MedicineDAO implements IMedicineDAO {
     public int countLowStock() {
         String sql = "SELECT COUNT(*) FROM Medicines m " +
                 "LEFT JOIN (SELECT MedicineID, SUM(CurrentQuantity) AS TotalQty " +
-                "           FROM Batches GROUP BY MedicineID) b ON m.MedicineID = b.MedicineID " +
+                "           FROM Batches WHERE Status = 'ACTIVE' AND ExpiryDate > CAST(GETDATE() AS DATE) " +
+                "           GROUP BY MedicineID) b ON m.MedicineID = b.MedicineID " +
                 "WHERE m.Status = 1 AND ISNULL(b.TotalQty, 0) > 0 " +
                 "  AND ISNULL(b.TotalQty, 0) <= m.MinInventory AND m.MinInventory > 0";
         try (Connection cn = DBContext.getConnection();
@@ -196,7 +201,7 @@ public class MedicineDAO implements IMedicineDAO {
         String sql = "INSERT INTO Medicines (MedicineName, GenericName, Barcode, RegistrationNumber, " +
                 "CategoryID, ManufacturerID, Unit, ShelfID, Dosage, Contraindications, " +
                 "StorageConditions, IsPrescriptionRequired, SellingPrice, MinInventory, ExpiryAlertDays, " +
-                "PackagingSpec) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                "PackagingSpec, ShelfLifeMonths) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try (Connection cn = DBContext.getConnection();
                 PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setNString(1, m.getMedicineName());
@@ -215,6 +220,7 @@ public class MedicineDAO implements IMedicineDAO {
             ps.setInt(14, m.getMinInventory());
             ps.setInt(15, m.getExpiryAlertDays());
             ps.setNString(16, m.getPackagingSpec());
+            setIntOrNull(ps, 17, m.getShelfLifeMonths());
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
             e.printStackTrace();
@@ -226,7 +232,7 @@ public class MedicineDAO implements IMedicineDAO {
         String sql = "INSERT INTO Medicines (MedicineName, GenericName, Barcode, RegistrationNumber, " +
                 "CategoryID, ManufacturerID, Unit, ShelfID, Dosage, Contraindications, " +
                 "StorageConditions, IsPrescriptionRequired, SellingPrice, MinInventory, ExpiryAlertDays, " +
-                "PackagingSpec) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                "PackagingSpec, ShelfLifeMonths) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try (Connection cn = DBContext.getConnection();
                 PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setNString(1, m.getMedicineName());
@@ -245,6 +251,7 @@ public class MedicineDAO implements IMedicineDAO {
             ps.setInt(14, m.getMinInventory());
             ps.setInt(15, m.getExpiryAlertDays());
             ps.setNString(16, m.getPackagingSpec());
+            setIntOrNull(ps, 17, m.getShelfLifeMonths());
             if (ps.executeUpdate() > 0) {
                 try (ResultSet keys = ps.getGeneratedKeys()) {
                     if (keys.next()) return keys.getInt(1);
@@ -260,7 +267,8 @@ public class MedicineDAO implements IMedicineDAO {
         String sql = "UPDATE Medicines SET MedicineName=?, GenericName=?, Barcode=?, " +
                 "RegistrationNumber=?, CategoryID=?, ManufacturerID=?, Unit=?, ShelfID=?, " +
                 "Dosage=?, Contraindications=?, StorageConditions=?, IsPrescriptionRequired=?, " +
-                "SellingPrice=?, MinInventory=?, ExpiryAlertDays=?, PackagingSpec=?, ImageUrl=? " +
+                "SellingPrice=?, MinInventory=?, ExpiryAlertDays=?, PackagingSpec=?, ImageUrl=?, " +
+                "ShelfLifeMonths=? " +
                 "WHERE MedicineID=?";
         try (Connection cn = DBContext.getConnection();
                 PreparedStatement ps = cn.prepareStatement(sql)) {
@@ -281,7 +289,8 @@ public class MedicineDAO implements IMedicineDAO {
             ps.setInt(15, m.getExpiryAlertDays());
             ps.setNString(16, m.getPackagingSpec());
             ps.setString(17, m.getImageUrl());
-            ps.setInt(18, m.getMedicineId());
+            setIntOrNull(ps, 18, m.getShelfLifeMonths());
+            ps.setInt(19, m.getMedicineId());
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
             e.printStackTrace();
@@ -359,16 +368,20 @@ public class MedicineDAO implements IMedicineDAO {
 
     // ── Single-query methods replacing N+1 patterns ──────────────────────────
 
+    // PHẢI lọc Status = 'ACTIVE' — khớp với BatchesDAO#getTotalQuantityMap() (dùng cho SSE
+    // live-push sau mỗi đơn bán). Thiếu điều kiện này khiến tồn kho lúc load trang POS (query
+    // này) và tồn kho lúc push realtime (getTotalQuantityMap) tính RA 2 CON SỐ KHÁC NHAU cho
+    // cùng 1 thuốc — vì query này còn cộng cả lô CANCELLED/khác trạng thái vào tổng.
     private static final String STOCK_CTE = "WITH bs AS (" +
             "  SELECT MedicineID, SUM(CurrentQuantity) AS TotalStock" +
-            "  FROM Batches WHERE ExpiryDate > CAST(GETDATE() AS DATE)" +
+            "  FROM Batches WHERE ExpiryDate > CAST(GETDATE() AS DATE) AND Status = 'ACTIVE'" +
             "  GROUP BY MedicineID" +
             ")," +
             "nb AS (" +
             "  SELECT MedicineID, ExpiryDate AS NearestExpiry, BatchNumber AS NearestBatchNo," +
             "         ROW_NUMBER() OVER (PARTITION BY MedicineID ORDER BY ExpiryDate ASC) AS rn" +
             "  FROM Batches" +
-            "  WHERE CurrentQuantity > 0 AND ExpiryDate > CAST(GETDATE() AS DATE)" +
+            "  WHERE CurrentQuantity > 0 AND ExpiryDate > CAST(GETDATE() AS DATE) AND Status = 'ACTIVE'" +
             ") ";
 
     private Medicines mapRowWithStock(ResultSet rs) throws SQLException {

@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java"  pageEncoding="UTF-8" %>
 <%
     boolean isNewAccount = (session.getAttribute("pendingNewAccount") != null);
     boolean isLogin      = (session.getAttribute("pendingAccount")    != null);
@@ -27,11 +27,15 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>medicare — Xác nhận OTP</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -39,7 +43,7 @@
   --surface:#EEF3FA;--white:#fff;--muted:#7A90B0;--border:#D0DCF0;
   --purple:#6D28D9;--purple-light:#A78BFA;
 }
-html,body{height:100%;font-family:'Outfit',sans-serif}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif}
 body{
   min-height:100vh;display:flex;align-items:center;justify-content:center;
   background:linear-gradient(145deg,#071022 0%,#0F2645 50%,#1558A8 100%);
@@ -80,27 +84,27 @@ body::before{
   animation:iconPulse 2s ease-in-out infinite;
 }
 @keyframes iconPulse{0%,100%{box-shadow:0 8px 24px rgba(58,189,224,.3)}50%{box-shadow:0 8px 32px rgba(58,189,224,.5)}}
-.card-title{font-family:'Outfit',sans-serif;font-size:26px;color:var(--ink);margin-bottom:6px}
+.card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:26px;color:var(--ink);margin-bottom:6px}
 .card-sub{font-size:13.5px;color:var(--muted);line-height:1.5}
-.card-email{font-weight:700;color:var(--blue)}
+.card-email{font-weight:750;color:var(--blue)}
 
 .card-body{padding:28px 36px 32px}
 
 .msg-box{
   display:flex;align-items:flex-start;gap:10px;padding:11px 15px;
-  border-radius:10px;margin-bottom:20px;font-size:13px;font-weight:500;
+  border-radius:10px;margin-bottom:20px;font-size:13px;font-weight:750;
 }
 .msg-err{background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;animation:shake .4s ease}
 .msg-ok{background:#F0FDF4;border:1px solid #BBF7D0;color:#166534}
 @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
 
 /* OTP boxes */
-.otp-label{font-size:12.5px;font-weight:700;color:var(--navy);letter-spacing:.4px;margin-bottom:12px;display:block;text-align:center}
+.otp-label{font-size:12.5px;font-weight:750;color:var(--navy);letter-spacing:.4px;margin-bottom:12px;display:block;text-align:center}
 .otp-boxes{display:flex;gap:10px;justify-content:center;margin-bottom:24px}
 .otp-box{
   width:52px;height:60px;border-radius:12px;
   border:2px solid var(--border);background:#fff;
-  font-family:'Outfit',sans-serif;font-size:28px;font-weight:400;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:28px;font-weight:400;
   color:var(--ink);text-align:center;outline:none;
   transition:all .18s;cursor:text;
 }
@@ -116,7 +120,7 @@ body::before{
 }
 .ring-bg{stroke:#EEF3FA}
 .ring-progress{stroke:var(--cyan);stroke-dasharray:94.2;transform:rotate(-90deg);transform-origin:center}
-.timer-text{font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--muted)}
+.timer-text{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;color:var(--muted)}
 .timer-num{color:var(--ink)}
 .timer-expired{color:var(--muted);font-style:italic}
 
@@ -125,7 +129,7 @@ body::before{
   width:100%;padding:13px;margin-bottom:16px;
   background:linear-gradient(135deg,var(--blue),#0D3F85);
   color:#fff;border:none;border-radius:12px;
-  font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:750;
   cursor:pointer;transition:all .22s;letter-spacing:.3px;
 }
 .btn-verify:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 28px rgba(21,88,168,.3)}
@@ -134,7 +138,7 @@ body::before{
 .actions{display:flex;gap:10px}
 .btn-resend,.btn-back{
   flex:1;padding:10px;border-radius:10px;
-  font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;
   cursor:pointer;text-align:center;text-decoration:none;
   transition:all .18s;display:inline-flex;align-items:center;justify-content:center;gap:6px;
 }
@@ -146,6 +150,7 @@ body::before{
 .btn-back{background:var(--surface);border:1.5px solid var(--border);color:var(--muted)}
 .btn-back:hover{color:var(--navy)}
 </style>
+    
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>

@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8"  pageEncoding="UTF-8" %>
 <% String activeNav = "customers"; %>
 <%@ taglib prefix="c"   uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
@@ -14,11 +14,15 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>${customer.customerName} — MediCare</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -26,7 +30,7 @@
   --surface:#F1F5FB;--white:#fff;--muted:#7A90B0;--border:#D5E0F0;
   --green:#059669;--red:#DC2626;--gold:#D97706;--sidebar:232px;
 }
-html,body{height:100%;font-family:'Outfit',sans-serif}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif}
 body{display:flex;background:var(--surface);color:var(--ink)}
 
 /* ── Sidebar (dùng chung với các trang admin) ── */
@@ -36,19 +40,19 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .logo-text span{color:var(--cyan)}
 .logo-sub{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1.2px;text-transform:uppercase;margin-top:1px}
 .nav-section{padding:12px 0 4px;flex-shrink:0}
-.nav-label{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:500;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
+.nav-label{font-size:9px;font-weight:750;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:750;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
 .nav-item:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.06)}
-.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:600}
+.nav-item.active{color:#fff;background:rgba(58,189,224,.14);font-weight:750}
 .nav-item.active::before{content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:56%;background:var(--cyan);border-radius:2px}
-.nav-badge{margin-left:auto;background:#DC2626;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;min-width:20px;text-align:center}
+.nav-badge{margin-left:auto;background:#DC2626;color:#fff;font-size:10px;font-weight:750;padding:1px 7px;border-radius:20px;min-width:20px;text-align:center}
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0}
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50;flex-shrink:0}
-.topbar-title{font-size:16px;font-weight:700;color:var(--ink)}
-.btn-back{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:9px;border:1.5px solid var(--border);background:var(--white);color:var(--ink);font-size:13px;font-weight:600;text-decoration:none}
+.topbar-title{font-size:16px;font-weight:750;color:var(--ink)}
+.btn-back{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:9px;border:1.5px solid var(--border);background:var(--white);color:var(--ink);font-size:13px;font-weight:750;text-decoration:none}
 .btn-back:hover{border-color:var(--blue);color:var(--blue)}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.btn-edit{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;background:var(--blue);color:#fff;font-size:13px;font-weight:700;text-decoration:none}
+.btn-edit{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;background:var(--blue);color:#fff;font-size:13px;font-weight:750;text-decoration:none}
 .btn-edit:hover{background:#0E4890}
 .user-av-sm{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#3ABDE0,#1558A8);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
 .content{max-width:960px;margin:26px auto;padding:0 20px 48px}
@@ -62,11 +66,11 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .hero-row{display:flex;align-items:center;gap:18px;position:relative;z-index:1}
 .hero-av{width:74px;height:74px;border-radius:20px;background:rgba(255,255,255,.16);
   border:2px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;
-  font-size:30px;font-weight:900;flex-shrink:0;backdrop-filter:blur(4px)}
-.hero-name{font-size:25px;font-weight:900;line-height:1.1}
+  font-size:30px;font-weight:800;flex-shrink:0;backdrop-filter:blur(4px)}
+.hero-name{font-size:25px;font-weight:800;line-height:1.1}
 .hero-sub{font-size:13px;opacity:.9;margin-top:5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .hero-badges{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.hb{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:700;
+.hb{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:750;
   background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3)}
 .hb.gold{background:rgba(217,119,6,.9);border-color:transparent}
 .hb.nfc{background:rgba(16,185,129,.92);border-color:transparent}
@@ -78,8 +82,8 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .kpi:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(15,38,69,.08)}
 .kpi-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
 .kpi-blue{background:#EFF6FF}.kpi-green{background:#ECFDF5}.kpi-amber{background:#FFFBEB}.kpi-purple{background:#F5F3FF}
-.kpi-num{font-size:20px;font-weight:900;line-height:1.1}
-.kpi-lbl{font-size:10.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.kpi-num{font-size:20px;font-weight:800;line-height:1.1}
+.kpi-lbl{font-size:10.5px;color:var(--muted);font-weight:750;text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
 
 .grid-2{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;margin-bottom:18px}
 @media(max-width:820px){.grid-2{grid-template-columns:1fr}.kpi-strip{grid-template-columns:repeat(2,1fr)}}
@@ -89,18 +93,18 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .card-body{padding:18px 20px}
 
 .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
-.info-item .lbl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:4px}
-.info-item .val{font-size:13.5px;font-weight:700;color:var(--ink);word-break:break-word}
+.info-item .lbl{font-size:10.5px;font-weight:750;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:4px}
+.info-item .val{font-size:13.5px;font-weight:750;color:var(--ink);word-break:break-word}
 .info-item.full{grid-column:1/-1}
-.med-box{margin-top:4px;padding:11px 13px;border-radius:11px;font-size:13px;font-weight:600;line-height:1.5}
+.med-box{margin-top:4px;padding:11px 13px;border-radius:11px;font-size:13px;font-weight:750;line-height:1.5}
 .med-warn{background:#FEF2F2;border:1px solid #FCA5A5;color:#991B1B}
 .med-ok{background:#F0FDF4;border:1px solid #BBF7D0;color:#166534}
 
 /* Loyalty */
 .loy-points{text-align:center;padding:6px 0 14px}
-.loy-num{font-size:40px;font-weight:900;background:linear-gradient(135deg,#1558A8,#3ABDE0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
-.loy-lbl{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-.loy-tier-row{display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px}
+.loy-num{font-size:40px;font-weight:800;background:linear-gradient(135deg,#1558A8,#3ABDE0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
+.loy-lbl{font-size:11px;color:var(--muted);font-weight:750;text-transform:uppercase;letter-spacing:.5px}
+.loy-tier-row{display:flex;justify-content:space-between;font-size:12px;font-weight:750;color:var(--muted);margin-bottom:6px}
 .loy-bar{height:9px;border-radius:20px;background:#EEF2F7;overflow:hidden}
 .loy-bar>span{display:block;height:100%;border-radius:20px;background:linear-gradient(90deg,#1558A8,#3ABDE0)}
 .loy-hist{margin-top:16px;max-height:180px;overflow-y:auto}
@@ -115,13 +119,14 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink);border-bottom:1px sol
 tbody tr:last-child td{border-bottom:none}
 tbody tr{cursor:pointer}
 tbody tr:hover td{background:#F7FBFF}
-.inv-code{font-family:monospace;font-weight:700;color:var(--blue)}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700}
+.inv-code{font-family:monospace;font-weight:750;color:var(--blue)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:750}
 .badge-completed{background:#ECFDF5;color:var(--green)}
 .badge-cancelled{background:#FEF2F2;color:var(--red)}
 .badge-pending{background:#FFFBEB;color:var(--gold)}
 .empty-row{text-align:center;padding:44px;color:var(--muted)}
 </style>
+    
 </head>
 <body>
 <%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
@@ -259,7 +264,7 @@ tbody tr:hover td{background:#F7FBFF}
               <c:forEach var="h" items="${pointHistory}">
                 <div class="loy-hist-item">
                   <div style="min-width:0">
-                    <div style="font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px">${h[2]}</div>
+                    <div style="font-weight:750;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px">${h[2]}</div>
                     <div style="font-size:11px;color:var(--muted)">${h[3]}</div>
                   </div>
                   <div class="loy-pts ${h[0] == 'EARN' ? 'loy-pos' : 'loy-neg'}">${h[0] == 'EARN' ? '+' : '−'}${fn:replace(h[1],'-','')}</div>

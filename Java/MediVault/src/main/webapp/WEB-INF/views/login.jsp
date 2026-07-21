@@ -1,12 +1,16 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8"  pageEncoding="UTF-8" %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MediCare — Đăng nhập</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -14,7 +18,7 @@
   --surface:#EEF3FA;--white:#fff;--muted:#7A90B0;--border:#D0DCF0;
   --gold:#F5C842;--red:#E03B3B;
 }
-html,body{height:100%;font-family:'Outfit',sans-serif}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif}
 body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(--ink);overflow:hidden}
 
 /* ── LEFT ── */
@@ -38,7 +42,7 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
   display:inline-flex;align-items:center;gap:7px;
   border-radius:20px;border:1px solid rgba(58,189,224,.2);
   background:rgba(58,189,224,.06);
-  padding:6px 13px;font-size:11.5px;font-weight:500;color:rgba(255,255,255,.55);
+  padding:6px 13px;font-size:11.5px;font-weight:750;color:rgba(255,255,255,.55);
 }
 .pill-icon{font-size:13px}
 
@@ -54,19 +58,19 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
   display:flex;align-items:center;justify-content:center;font-size:16px;
   box-shadow:0 4px 16px rgba(58,189,224,.3);
 }
-.brand-name{font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:#fff;letter-spacing:-.2px}
+.brand-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800;color:#fff;letter-spacing:-.2px}
 .brand-tag{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:1px;text-transform:uppercase}
 
 .left-headline{position:relative;z-index:2;margin-bottom:auto}
 .left-headline h1{
-  font-family:'Outfit',sans-serif;font-size:62px;font-weight:600;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:62px;font-weight:750;
   color:#fff;line-height:1.2;letter-spacing:-.5px;margin-bottom:16px;
 }
-.left-headline h1 em{color:var(--cyan);font-style:italic; font-weight: 600}
+.left-headline h1 em{color:var(--cyan);font-style:italic; font-weight:750}
 .left-headline p{font-size:15px;color:rgba(255,255,255,.5);line-height:1.6;max-width:360px}
 
 .left-footer{position:relative;z-index:2;display:flex;gap:24px}
-.feat{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.4);font-size:12.5px;font-weight:500}
+.feat{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.4);font-size:12.5px;font-weight:750}
 .feat-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);opacity:.6}
 
 /* ── RIGHT ── */
@@ -76,26 +80,26 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
 }
 .right::before{
   content:'';position:absolute;top:-100px;right:-100px;
-  width:350px;height:350px;border-radius:50%;
+  width:400px;height:350px;border-radius:50%;
   background:radial-gradient(circle,rgba(21,88,168,.07) 0%,transparent 70%);
   pointer-events:none;
 }
-.form-box{width:100%;max-width:380px}
+.form-box{width:120%;max-width:380px}
 .form-eyebrow{
   display:inline-flex;align-items:center;gap:7px;
   background:#fff;border:1px solid var(--border);
   border-radius:20px;padding:5px 14px;margin-bottom:24px;
-  font-size:12px;font-weight:600;color:var(--blue);letter-spacing:.3px;
+  font-size:12px;font-weight:750;color:var(--blue);letter-spacing:.3px;
 }
 .form-eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--cyan)}
-.form-title{font-family:'Outfit',sans-serif;font-size:37px;color:var(--ink);margin-bottom:6px; font-weight: 550}
-.form-sub{font-size:14px;color:var(--muted);margin-bottom:32px;line-height:1.5}
+.form-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:37px;color:var(--ink);margin-bottom:6px; font-weight:750}
+.form-sub{font-size:14px;color:var(--muted);margin-bottom:32px;line-height:1.5;white-space:nowrap}
 
 /* Error */
 .err-box{
   display:flex;align-items:flex-start;gap:10px;padding:12px 16px;
   background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;
-  margin-bottom:20px;font-size:13px;color:#991B1B;font-weight:500;
+  margin-bottom:20px;font-size:13px;color:#991B1B;font-weight:750;
   animation:shake .4s ease;
 }
 .err-icon{font-size:15px;flex-shrink:0;margin-top:1px}
@@ -103,13 +107,13 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
 
 /* Fields */
 .field{margin-bottom:18px}
-.field-label{font-size:12.5px;font-weight:600;color:var(--navy);letter-spacing:.3px;margin-bottom:7px;display:block}
+.field-label{font-size:12.5px;font-weight:750;color:var(--navy);letter-spacing:.3px;margin-bottom:7px;display:block}
 .field-wrap{position:relative}
 .field-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none;opacity:.5}
 .field-input{
   width:100%;padding:12px 16px 12px 42px;
   background:#fff;border:1.5px solid var(--border);border-radius:12px;
-  font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;color:var(--ink);
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:750;color:var(--ink);
   outline:none;transition:all .2s;
 }
 .field-input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(58,189,224,.12)}
@@ -126,7 +130,7 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
   width:100%;padding:13px;margin-top:8px;
   background:linear-gradient(135deg,var(--blue),#0D3F85);
   color:#fff;border:none;border-radius:12px;
-  font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:750;
   cursor:pointer;letter-spacing:.3px;
   transition:all .22s;position:relative;overflow:hidden;
 }
@@ -150,6 +154,7 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
 .field:nth-child(2){animation:fadeUp .5s .25s ease both}
 .btn-submit{animation:fadeUp .5s .3s ease both}
 </style>
+    
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>
@@ -177,7 +182,7 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
   </div>
 
   <div class="left-headline">
-    <h1>Quản trị<br>nhà thuốc<br><em>thông minh</em></h1>
+    <h1>Quản trị<br>nhà thuốc<br><em>Thông minh</em></h1>
     <p>Hệ thống quản lý dược phẩm tích hợp — kiểm soát tồn kho, bán hàng và nhân sự trong một nền tảng.</p>
   </div>
 

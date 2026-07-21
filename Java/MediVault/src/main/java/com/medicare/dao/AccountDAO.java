@@ -15,15 +15,15 @@ public class AccountDAO implements IAccountDAO {
         a.setAccountId(rs.getInt("AccountID"));
         a.setUsername(rs.getString("Username"));
         a.setPasswordHash(rs.getString("PasswordHash"));
-        // NVARCHAR columns — dùng getNString() để đọc đúng Unicode (tiếng Việt)
-        a.setFullName(rs.getNString("FullName"));
+        // Unicode columns
+        a.setFullName(rs.getString("FullName"));
         a.setEmail(rs.getString("Email"));
         a.setPhone(rs.getString("Phone"));
         a.setRoleId(rs.getInt("RoleID"));
         a.setActive(rs.getBoolean("IsActive"));
         a.setCitizenId(rs.getString("CitizenId"));
-        a.setPosition(rs.getNString("Position"));
-        a.setProfessionalCertNo(rs.getNString("ProfessionalCertNo"));
+        a.setPosition(rs.getString("Position"));
+        a.setProfessionalCertNo(rs.getString("ProfessionalCertNo"));
         a.setDeleted(rs.getBoolean("IsDeleted"));
         if (rs.getTimestamp("DeletedAt") != null)
             a.setDeletedAt(rs.getTimestamp("DeletedAt").toLocalDateTime());
@@ -32,14 +32,14 @@ public class AccountDAO implements IAccountDAO {
         if (rs.getDate("TrainingDate") != null)
             a.setTrainingDate(rs.getDate("TrainingDate").toLocalDate());
         a.setFaceEnrollmentPath(rs.getString("FaceEnrollmentPath"));
-        try { a.setFaceVector(rs.getNString("FaceVector")); } catch (SQLException ignored) {}
+        try { a.setFaceVector(rs.getString("FaceVector")); } catch (SQLException ignored) {}
         try {
             Timestamp fe = rs.getTimestamp("FaceEnrolledAt");
             if (fe != null) a.setFaceEnrolledAt(fe.toLocalDateTime());
         } catch (SQLException ignored) {}
         // ── Face re-enroll (cột optional — bọc try/catch để không vỡ khi query cũ) ──
         try { a.setFaceReenrollStatus(rs.getString("FaceReenrollStatus")); } catch (SQLException ignored) {}
-        try { a.setFaceReenrollReason(rs.getNString("FaceReenrollReason")); } catch (SQLException ignored) {}
+        try { a.setFaceReenrollReason(rs.getString("FaceReenrollReason")); } catch (SQLException ignored) {}
         try {
             Timestamp rr = rs.getTimestamp("FaceReenrollRequestedAt");
             if (rr != null) a.setFaceReenrollRequestedAt(rr.toLocalDateTime());
@@ -97,7 +97,7 @@ public class AccountDAO implements IAccountDAO {
      */
     public boolean isEmailTaken(String email, int excludeId) {
         if (email == null || email.trim().isEmpty()) return false;
-        String sql = "SELECT 1 FROM Accounts WHERE Email = ? AND AccountID != ?";
+        String sql = "SELECT 1 FROM Accounts WHERE Email = ? AND AccountID != ? AND IsDeleted = 0";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, email.trim());
@@ -314,9 +314,12 @@ public class AccountDAO implements IAccountDAO {
     }
 
 
-    /** Soft delete — đánh dấu xóa, giữ trong DB 30 ngày */
+    /** Soft delete — đánh dấu xóa, giữ trong DB 30 ngày.
+     *  Username được đổi thành __del_<id>_<orig> để giải phóng unique slot cho tài khoản mới. */
     public boolean softDelete(int accountId) {
-        String sql = "UPDATE Accounts SET IsDeleted = 1, DeletedAt = GETDATE() WHERE AccountID = ?";
+        String sql = "UPDATE Accounts SET IsDeleted = 1, DeletedAt = GETDATE(), " +
+                     "Username = CONCAT('__del_', CAST(AccountID AS NVARCHAR), '_', Username) " +
+                     "WHERE AccountID = ? AND IsDeleted = 0";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, accountId);
@@ -324,9 +327,22 @@ public class AccountDAO implements IAccountDAO {
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
 
-    /** Khôi phục tài khoản đã soft delete */
+    /** Khôi phục tài khoản đã soft delete — cũng khôi phục username gốc (bỏ tiền tố __del_<id>_) */
     public boolean restore(int accountId) {
-        String sql = "UPDATE Accounts SET IsDeleted = 0, DeletedAt = NULL WHERE AccountID = ?";
+        // Khôi phục username gốc bằng cách bỏ tiền tố "__del_<id>_" (nếu có).
+        // Nếu username gốc đã bị tài khoản khác chiếm, giữ nguyên username hiện tại.
+        String sql = "UPDATE Accounts SET IsDeleted = 0, DeletedAt = NULL, " +
+                "Username = CASE " +
+                "  WHEN Username LIKE CONCAT('__del_', CAST(AccountID AS NVARCHAR(20)), '_%') " +
+                "    AND NOT EXISTS (" +
+                "      SELECT 1 FROM Accounts a2 WHERE a2.IsDeleted = 0 AND a2.AccountID != AccountID " +
+                "      AND a2.Username = SUBSTRING(Username, " +
+                "        LEN(CONCAT('__del_', CAST(AccountID AS NVARCHAR(20)), '_')) + 1, LEN(Username))" +
+                "    ) " +
+                "  THEN SUBSTRING(Username, LEN(CONCAT('__del_', CAST(AccountID AS NVARCHAR(20)), '_')) + 1, LEN(Username)) " +
+                "  ELSE Username " +
+                "END " +
+                "WHERE AccountID = ?";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, accountId);

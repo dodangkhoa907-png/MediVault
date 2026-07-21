@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java"  pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
@@ -31,11 +31,44 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <script>
+      if (window.self !== window.top) {
+        document.documentElement.classList.add('in-iframe');
+        window.addEventListener('DOMContentLoaded', function() {
+          document.body.classList.add('in-iframe');
+          document.documentElement.classList.add('in-iframe');
+        });
+      }
+    </script>
+    <style>
+      html.in-iframe .sidebar,
+      body.in-iframe .sidebar,
+      html.in-iframe .topbar,
+      body.in-iframe .topbar,
+      html.in-iframe #mainSidebar,
+      body.in-iframe #mainSidebar {
+        display: none !important;
+      }
+      html.in-iframe .main,
+      body.in-iframe .main {
+        margin-left: 0 !important;
+        min-height: 100vh !important;
+        width: 100% !important;
+      }
+      html.in-iframe .content,
+      body.in-iframe .content {
+        padding: 12px 14px !important;
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ca làm việc của tôi — MediCare</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff-portal.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -46,23 +79,23 @@
   --green:#059669;--red:#DC2626;--gold:#D97706;--cyan:#5EEAD4;--blue:#2563EB;
   --sidebar:228px;--radius:14px;
 }
-html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--soft);color:var(--ink)}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(--soft);color:var(--ink)}
 body{display:flex}
 .topbar{height:60px;background:var(--white);border-bottom:1px solid var(--border);
   display:flex;align-items:center;padding:0 26px;gap:12px;position:sticky;top:0;z-index:50}
-.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--ink)}
+.topbar-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:750;color:var(--ink)}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
 .back-btn{padding:7px 14px;border-radius:8px;background:var(--surface);border:1.5px solid var(--border);
-  color:var(--muted);font-size:12.5px;font-weight:600;text-decoration:none;transition:all .18s}
+  color:var(--muted);font-size:12.5px;font-weight:750;text-decoration:none;transition:all .18s}
 .back-btn:hover{background:var(--border)}
 .content{padding:24px 28px;flex:1}
 .page-head{margin-bottom:22px}
 .breadcrumb{font-size:12px;color:var(--muted);margin-bottom:4px}
-.page-head h1{font-family:'Outfit',sans-serif;font-size:24px;font-weight:800;color:var(--ink)}
+.page-head h1{font-family:'Plus Jakarta Sans',sans-serif;font-size:24px;font-weight:800;color:var(--ink)}
 
 /* ── TOAST ── */
 .toast{position:fixed;top:20px;right:24px;padding:12px 20px;border-radius:11px;
-  font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px;
+  font-size:13.5px;font-weight:750;display:flex;align-items:center;gap:8px;
   box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:999;transition:opacity .4s}
 .toast-ok{background:#D1FAE5;color:#065F46}
 .toast-err{background:#FEE2E2;color:#991B1B}
@@ -90,7 +123,7 @@ body{display:flex}
 .live-badge{
   display:inline-flex;align-items:center;gap:6px;
   background:#D1FAE5;color:#065F46;border-radius:20px;padding:4px 12px;
-  font-size:12px;font-weight:700;
+  font-size:12px;font-weight:750;
 }
 .dot-live{width:7px;height:7px;border-radius:50%;background:#10B981;
   animation:pulse 1.5s infinite}
@@ -98,37 +131,37 @@ body{display:flex}
 .no-shift-badge{
   display:inline-flex;align-items:center;gap:6px;
   background:#F1F5F9;color:#64748B;border-radius:20px;padding:4px 12px;
-  font-size:12px;font-weight:600;
+  font-size:12px;font-weight:750;
 }
 
 .current-body{padding:18px 22px}
 .shift-info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:18px}
 .shift-info-item{background:rgba(255,255,255,.7);border-radius:10px;padding:12px 14px;border:1px solid rgba(0,0,0,.07)}
-.shift-info-lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
-.shift-info-val{font-size:14px;font-weight:700;color:var(--ink)}
+.shift-info-lbl{font-size:11px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.shift-info-val{font-size:14px;font-weight:750;color:var(--ink)}
 .shift-info-val.green{color:var(--green)}
-.duration-live{font-size:12px;color:var(--green);margin-top:3px;font-weight:600}
+.duration-live{font-size:12px;color:var(--green);margin-top:3px;font-weight:750}
 
 /* Open/Close shift forms */
 .shift-action-row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
 .fg{display:flex;flex-direction:column;gap:5px}
-.fg label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.fg label{font-size:11px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 .fg input,
 .fg textarea{border:1.5px solid var(--border);border-radius:9px;padding:9px 13px;
-  font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);outline:none;transition:border .18s}
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;transition:border .18s}
 .fg input:focus,.fg textarea:focus{border-color:var(--blue)}
 .fg textarea{resize:vertical;min-height:66px;width:220px}
 .btn-open{
   padding:10px 20px;background:linear-gradient(135deg,#1558A8,#0D3F85);
-  color:#fff;border:none;border-radius:9px;font-family:'Outfit',sans-serif;
-  font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;
+  color:#fff;border:none;border-radius:9px;font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:13px;font-weight:750;cursor:pointer;transition:all .2s;
   box-shadow:0 4px 12px rgba(21,88,168,.25);white-space:nowrap;align-self:flex-end
 }
 .btn-open:hover{opacity:.9;transform:translateY(-1px)}
 .btn-close{
   padding:10px 20px;background:linear-gradient(135deg,#DC2626,#B91C1C);
-  color:#fff;border:none;border-radius:9px;font-family:'Outfit',sans-serif;
-  font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;
+  color:#fff;border:none;border-radius:9px;font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:13px;font-weight:750;cursor:pointer;transition:all .2s;
   box-shadow:0 4px 12px rgba(220,38,38,.25);white-space:nowrap;align-self:flex-end
 }
 .btn-close:hover{opacity:.9}
@@ -139,12 +172,12 @@ body{display:flex}
   padding:16px 22px;border-bottom:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-between;
 }
-.section-head h2{font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:var(--ink)}
+.section-head h2{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800;color:var(--ink)}
 .section-head-sub{font-size:12px;color:var(--muted)}
 .table-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
 thead th{
-  padding:11px 16px;font-size:11.5px;font-weight:700;color:var(--muted);
+  padding:11px 16px;font-size:11.5px;font-weight:750;color:var(--muted);
   text-align:left;text-transform:uppercase;letter-spacing:.6px;
   background:#F8FAFC;border-bottom:1px solid var(--border);white-space:nowrap
 }
@@ -152,15 +185,16 @@ tbody tr{border-bottom:1px solid #F1F5F9;transition:background .14s}
 tbody tr:last-child{border-bottom:none}
 tbody tr:hover{background:#F8FAFC}
 tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:750}
 .badge-green{background:#D1FAE5;color:#065F46}
 .badge-gray{background:#F1F5F9;color:#475569}
 .badge-red{background:#FEE2E2;color:#991B1B}
-.money{font-family:'Outfit',sans-serif;font-weight:700;color:var(--ink)}
+.money{font-family:'Plus Jakarta Sans',sans-serif;font-weight:750;color:var(--ink)}
 .empty-state{padding:48px 20px;text-align:center;color:var(--muted)}
 .empty-state .empty-icon{font-size:36px;margin-bottom:12px}
 .empty-state p{font-size:13.5px}
 </style>
+    
 </head>
 <body>
 
@@ -197,11 +231,14 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
       <span class="nav-icon">🏖️</span> Xin nghỉ phép
     </a>
   </nav>
-  <% if (staffAcc.getRoleId() == 2) { %>
+  <% if (staffAcc.getRoleId() == 2 || staffAcc.getRoleId() == 3) { %>
   <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
     <a href="<%= request.getContextPath() %>/pos?uid=<%= uid %>" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
+    </a>
+    <a href="<%= request.getContextPath() %>/pos?uid=<%= uid %>&view=invoices" class="nav-item">
+      <span class="nav-icon">🧾</span> Xem hóa đơn
     </a>
   </nav>
   <% } %>
@@ -280,7 +317,7 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
         <%-- Thông báo: Chỉ Admin đóng ca hoặc quẹt thẻ NFC ─-%>
         <%-- Form nhập tiền cuối ca + đóng ca --%>
         <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:16px 18px;margin-top:10px">
-          <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:12px">🔴 Kết thúc ca</div>
+          <div style="font-size:13px;font-weight:750;color:var(--ink);margin-bottom:12px">🔴 Kết thúc ca</div>
           <form action="${pageContext.request.contextPath}/staff-shift" method="post">
             <input type="hidden" name="action"  value="close">
             <input type="hidden" name="uid"     value="<%= uid %>">
@@ -289,14 +326,14 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
               <label>💰 Tiền cuối ca (tiền trong két)</label>
               <input type="number" name="closingCash" min="0" step="1000"
                      placeholder="Nhập số tiền trong két lúc đóng ca"
-                     style="border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-family:'Outfit',sans-serif;font-size:13px;width:100%;outline:none"
+                     style="border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;width:100%;outline:none"
                      required>
             </div>
             <div class="fg" style="margin-bottom:12px">
               <label>📝 Ghi chú bàn giao</label>
               <textarea name="notes" rows="2"
                         placeholder="Tình trạng cuối ca, bàn giao..."
-                        style="border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-family:'Outfit',sans-serif;font-size:13px;width:100%;outline:none;resize:vertical"></textarea>
+                        style="border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;width:100%;outline:none;resize:vertical"></textarea>
             </div>
             <button type="submit" class="btn-close"
                     onclick="return confirm('Xác nhận đóng ca và nhập tiền cuối ca?')"
@@ -332,7 +369,7 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
               </div>
               <a href="${pageContext.request.contextPath}/staff-checkin?uid=<%= uid %>"
                  style="display:block;text-align:center;background:#10B981;color:#fff;
-                        padding:10px;border-radius:9px;font-size:13px;font-weight:700;
+                        padding:10px;border-radius:9px;font-size:13px;font-weight:750;
                         text-decoration:none;transition:background .2s"
                  onmouseover="this.style.background='#059669'"
                  onmouseout="this.style.background='#10B981'">
@@ -344,8 +381,8 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
           <c:otherwise>
             <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:12px;padding:14px 18px;text-align:center;margin:12px 0">
               <div style="font-size:22px;margin-bottom:8px">🔒</div>
-              <div style="font-size:13px;font-weight:700;color:#991B1B;margin-bottom:4px">Chưa có ca đang mở</div>
-              <div style="font-size:12px;color:#B91C1C">Vào trang <a href="${pageContext.request.contextPath}/staff-checkin?uid=<%= uid %>" style="color:#1558A8;font-weight:700">Điểm danh</a> để check-in khi có lịch ca.</div>
+              <div style="font-size:13px;font-weight:750;color:#991B1B;margin-bottom:4px">Chưa có ca đang mở</div>
+              <div style="font-size:12px;color:#B91C1C">Vào trang <a href="${pageContext.request.contextPath}/staff-checkin?uid=<%= uid %>" style="color:#1558A8;font-weight:750">Điểm danh</a> để check-in khi có lịch ca.</div>
             </div>
           </c:otherwise>
         </c:choose>
@@ -394,7 +431,7 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
                    }
             %>
             <tr>
-              <td style="font-weight:700;color:var(--blue)">#<%= s.getShiftId() %></td>
+              <td style="font-weight:750;color:var(--blue)">#<%= s.getShiftId() %></td>
               <td style="color:var(--muted);font-size:12.5px">
                 <%= s.getStartTime() != null ? s.getStartTime().format(dtfFull) : "—" %>
               </td>

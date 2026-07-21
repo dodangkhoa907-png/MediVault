@@ -39,11 +39,13 @@ public class StaffAuditLogDAO implements IStaffAuditLogDAO {
                     StaffAuditLog log = new StaffAuditLog();
                     log.setLogId(rs.getInt("LogID"));
                     log.setAccountId(rs.getInt("AccountID"));
-                    log.setAction(rs.getNString("Action"));
-                    log.setDetails(rs.getNString("Details"));
+                    log.setAction(rs.getString("Action"));
+                    log.setDetails(rs.getString("Details"));
                     log.setIpAddress(rs.getString("IPAddress"));
+                    // CreatedAt lưu theo GETDATE() của SQL Server (UTC trên server host) — cộng 7h
+                    // để hiển thị đúng giờ Việt Nam, đồng bộ AuditLogDAO#mapRow.
                     if (rs.getTimestamp("CreatedAt") != null)
-                        log.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
+                        log.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime().plusHours(7));
                     list.add(log);
                 }
             }

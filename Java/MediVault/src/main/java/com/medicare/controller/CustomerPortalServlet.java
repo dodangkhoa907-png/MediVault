@@ -215,8 +215,8 @@ public class CustomerPortalServlet extends HttpServlet {
                                 ",\"method\":\"" + esc(rs.getString("PaymentMethod")) + "\"";
                     }
                     if (!first) items.append(",");
-                    items.append("{\"name\":\"").append(esc(rs.getNString("MedicineName")))
-                         .append("\",\"unit\":\"").append(esc(rs.getNString("Unit")))
+                    items.append("{\"name\":\"").append(esc(rs.getString("MedicineName")))
+                         .append("\",\"unit\":\"").append(esc(rs.getString("Unit")))
                          .append("\",\"qty\":").append(rs.getInt("Quantity"))
                          .append(",\"price\":").append(rs.getBigDecimal("UnitPrice").toPlainString())
                          .append(",\"subtotal\":").append(rs.getBigDecimal("SubTotal").toPlainString())

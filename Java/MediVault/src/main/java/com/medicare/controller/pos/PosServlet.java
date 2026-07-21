@@ -18,6 +18,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @WebServlet("/pos")
 public class PosServlet extends HttpServlet {
@@ -32,6 +34,14 @@ public class PosServlet extends HttpServlet {
     private final IShiftScheduleDAO scheduleDAO = new ShiftScheduleDAO();
 
     private static final int POS_ACCOUNT_ID = 1;
+
+    // ── Idempotency cho complete-sale ─────────────────────────────────────────
+    // Nếu FE gửi trùng clientRequestId (double-submit do click liên tục, mạng lag khiến
+    // race giữa các lượt poll QR, F5 giữa lúc đang xử lý...) thì KHÔNG xử lý lại / trừ kho
+    // lần nữa — trả thẳng kết quả của lượt xử lý đầu tiên. TTL đơn giản, đủ cho tải POS thấp.
+    private static final ConcurrentMap<String, String> saleResponseCache = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, Long>   saleResponseCacheTime = new ConcurrentHashMap<>();
+    private static final long SALE_CACHE_TTL_MS = 10 * 60 * 1000L;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -138,7 +148,7 @@ public class PosServlet extends HttpServlet {
             String sql =
                 "WITH bs AS (" +
                 "  SELECT MedicineID, ISNULL(SUM(CurrentQuantity),0) AS TotalStock" +
-                "  FROM Batches WHERE ExpiryDate > CAST(GETDATE() AS DATE) GROUP BY MedicineID" +
+                "  FROM Batches WHERE ExpiryDate > CAST(GETDATE() AS DATE) AND Status = 'ACTIVE' GROUP BY MedicineID" +
                 ")" +
                 "SELECT m.MedicineID, m.MedicineName, m.MedicineCode, m.Unit," +
                 "  ISNULL(bs.TotalStock,0) AS TotalStock," +
@@ -158,8 +168,8 @@ public class PosServlet extends HttpServlet {
                     out.printf("{\"medId\":%d,\"medName\":\"%s\",\"medCode\":\"%s\",\"unit\":\"%s\"," +
                                     "\"totalStock\":%d,\"batchNo\":\"%s\",\"expiryDate\":\"%s\"," +
                                     "\"currentQty\":%d,\"initialQty\":%d,\"importPrice\":\"%s\"}",
-                            rs.getInt("MedicineID"), esc(rs.getNString("MedicineName")),
-                            esc(rs.getString("MedicineCode")), esc(rs.getNString("Unit")),
+                            rs.getInt("MedicineID"), esc(rs.getString("MedicineName")),
+                            esc(rs.getString("MedicineCode")), esc(rs.getString("Unit")),
                             rs.getInt("TotalStock"),
                             esc(rs.getString("BatchNumber") != null ? rs.getString("BatchNumber") : ""),
                             rs.getString("ExpiryDate") != null ? rs.getString("ExpiryDate") : "",
@@ -186,7 +196,7 @@ public class PosServlet extends HttpServlet {
         Integer posStationObj = sess != null ? (Integer) sess.getAttribute("posStation") : null;
         int posStation = posStationObj != null ? posStationObj : 0;
         String posStateS  = sess != null ? (String)  sess.getAttribute("posState")     : null;
-        Account staffAccS = sess != null ? (Account) sess.getAttribute("staffAccount") : null;
+        Account staffAccS = getStaffAccount(req);
         boolean hasStaff  = staffAccS != null && staffAccS.getRoleId() != 1;
 
         String screenState;
@@ -268,20 +278,31 @@ public class PosServlet extends HttpServlet {
         if ("cancel-qr".equals(action))       { handleCancelQr(req, out);      return; }
 
         if ("complete-sale".equals(action)) {
-            try {
-                HttpSession session = req.getSession(false);
-                Account acc = null;
-                if (session != null) {
-                    String uid = req.getParameter("uid");
-                    if (uid != null && !uid.isEmpty())
-                        acc = (Account) session.getAttribute("staffAccount_" + uid);
-                    if (acc == null)
-                        acc = (Account) session.getAttribute("staffAccount");
-                    // KHÔNG lấy adminAccount — admin không phải người đứng quầy POS
+            String clientReqId = req.getParameter("clientRequestId");
+            if (clientReqId != null && !clientReqId.isBlank()) {
+                long now = System.currentTimeMillis();
+                saleResponseCacheTime.forEach((k, t) -> {
+                    if (now - t > SALE_CACHE_TTL_MS) {
+                        saleResponseCache.remove(k);
+                        saleResponseCacheTime.remove(k);
+                    }
+                });
+                String placeholder = "{\"ok\":false,\"msg\":\"Giao dịch này đang được xử lý, vui lòng đợi…\"}";
+                String existing = saleResponseCache.putIfAbsent(clientReqId, placeholder);
+                if (existing != null) {
+                    // Yêu cầu trùng lặp (double-submit) — KHÔNG xử lý lại, trả kết quả gốc
+                    out.print(existing);
+                    return;
                 }
+                saleResponseCacheTime.put(clientReqId, now);
+            }
+            try {
+                Account acc = getStaffAccount(req);
+                // KHÔNG lấy adminAccount — admin không phải người đứng quầy POS
 
                 // Đọc posStation từ request hoặc session (cần sớm để tra attendance)
                 Integer posStation = parseIntOrNull(req.getParameter("posStation"));
+                HttpSession session = req.getSession(false);
                 if (posStation == null && session != null) {
                     posStation = (Integer) session.getAttribute("posStation");
                 }
@@ -320,6 +341,7 @@ public class PosServlet extends HttpServlet {
                         accountId, customerId, payMethod, discount,
                         medicineIds, quantities, req.getRemoteAddr());
 
+                String jsonResp;
                 if (result.isOk()) {
                     Invoice inv = result.getData();
                     // Tích điểm loyalty (1 điểm / 10.000đ) nếu hóa đơn gắn khách hàng
@@ -328,7 +350,8 @@ public class PosServlet extends HttpServlet {
                         earned = new com.medicare.dao.LoyaltyDAO().earnFromInvoice(
                                 customerId, inv.getInvoiceId(), inv.getFinalAmount(), accountId);
                     }
-                    out.printf("{\"ok\":true,\"invoiceId\":%d,\"invoiceCode\":\"%s\",\"total\":%s,\"earnedPoints\":%d}",
+                    jsonResp = String.format(
+                            "{\"ok\":true,\"invoiceId\":%d,\"invoiceCode\":\"%s\",\"total\":%s,\"earnedPoints\":%d}",
                             inv != null ? inv.getInvoiceId()  : 0,
                             inv != null ? esc(inv.getInvoiceCode()) : "",
                             inv != null ? inv.getFinalAmount() : "0",
@@ -336,11 +359,16 @@ public class PosServlet extends HttpServlet {
                     // Push tồn kho mới tới tất cả medicine-list tabs qua SSE
                     com.medicare.controller.admin.InventorySSEServlet.broadcast();
                 } else {
-                    out.printf("{\"ok\":false,\"msg\":\"%s\"}", esc(result.firstError()));
+                    jsonResp = String.format("{\"ok\":false,\"msg\":\"%s\"}", esc(result.firstError()));
                 }
+                if (clientReqId != null && !clientReqId.isBlank()) saleResponseCache.put(clientReqId, jsonResp);
+                out.print(jsonResp);
 
             } catch (Throwable e) {
                 e.printStackTrace();
+                // Lỗi hệ thống thật sự — bỏ cache để lượt thử lại (cùng clientRequestId) không
+                // bị kẹt mãi ở placeholder "đang xử lý" trong lúc chờ TTL hết hạn.
+                if (clientReqId != null && !clientReqId.isBlank()) saleResponseCache.remove(clientReqId);
                 String errMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
                 out.printf("{\"ok\":false,\"msg\":\"Lỗi hệ thống: %s\"}", esc(errMsg));
             }
@@ -712,7 +740,7 @@ public class PosServlet extends HttpServlet {
 
     private void handleOpenShift(HttpServletRequest req, PrintWriter out) {
         HttpSession session = req.getSession(false);
-        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
+        Account staff = getStaffAccount(req);
         if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
         BigDecimal openingCash = BigDecimal.ZERO;
         String cashStr = req.getParameter("openingCash");
@@ -730,7 +758,7 @@ public class PosServlet extends HttpServlet {
 
     private void handleEndShift(HttpServletRequest req, PrintWriter out) {
         HttpSession session = req.getSession(false);
-        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
+        Account staff = getStaffAccount(req);
         if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
 
         // Accept actual cash counted by staff
@@ -792,7 +820,7 @@ public class PosServlet extends HttpServlet {
      */
     private void handleMyInvoices(HttpServletRequest req, PrintWriter out) {
         HttpSession session = req.getSession(false);
-        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
+        Account staff = getStaffAccount(req);
         if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
 
         Integer posStation = (Integer) session.getAttribute("posStation");
@@ -848,7 +876,7 @@ public class PosServlet extends HttpServlet {
 
     private void handleShiftSummary(HttpServletRequest req, PrintWriter out) {
         HttpSession session = req.getSession(false);
-        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
+        Account staff = getStaffAccount(req);
         if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
 
         Integer posStation = session != null ? (Integer)    session.getAttribute("posStation")    : null;
@@ -909,5 +937,19 @@ public class PosServlet extends HttpServlet {
     private String esc(String s) {
         if (s == null) return "";
         return s.replace("\\","\\\\").replace("\"","\\\"").replace("\n"," ").replace("\r","");
+    }
+
+    private Account getStaffAccount(HttpServletRequest req) {
+        HttpSession session = req.getSession(false);
+        if (session == null) return null;
+        String uid = req.getParameter("uid");
+        Account acc = null;
+        if (uid != null && !uid.isEmpty()) {
+            acc = (Account) session.getAttribute("staffAccount_" + uid);
+        }
+        if (acc == null) {
+            acc = (Account) session.getAttribute("staffAccount");
+        }
+        return acc;
     }
 }

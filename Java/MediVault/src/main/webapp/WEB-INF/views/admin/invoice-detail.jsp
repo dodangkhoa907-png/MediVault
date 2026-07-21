@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8"  pageEncoding="UTF-8" %>
 <%@ taglib prefix="c"   uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%@ taglib prefix="fn"  uri="jakarta.tags.functions" %>
@@ -13,11 +13,15 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>${inv.invoiceCode} — MediCare</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -25,28 +29,28 @@
   --surface:#F1F5FB;--white:#fff;--muted:#7A90B0;--border:#D5E0F0;
   --green:#059669;--red:#DC2626;--gold:#D97706;
 }
-html,body{min-height:100%;font-family:'Outfit',sans-serif;background:var(--surface);color:var(--ink)}
+html,body{min-height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(--surface);color:var(--ink)}
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50}
-.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--ink)}
-.btn-back{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:9px;border:1.5px solid var(--border);background:var(--white);color:var(--ink);font-size:13px;font-weight:600;text-decoration:none}
+.topbar-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:750;color:var(--ink)}
+.btn-back{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:9px;border:1.5px solid var(--border);background:var(--white);color:var(--ink);font-size:13px;font-weight:750;text-decoration:none}
 .btn-back:hover{border-color:var(--blue);color:var(--blue)}
 
     
 .topbar-right{margin-left:auto}
 .user-av-sm{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#3ABDE0,#1558A8);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
 .content{max-width:880px;margin:28px auto;padding:0 20px 40px}
-.banner{border-radius:14px;padding:14px 20px;margin-bottom:18px;font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:10px}
+.banner{border-radius:14px;padding:14px 20px;margin-bottom:18px;font-size:13.5px;font-weight:750;display:flex;align-items:center;gap:10px}
 .banner-cancelled{background:#FEF2F2;color:#991B1B;border:1.5px solid #FECACA}
 .banner-pending{background:#FFFBEB;color:#92400E;border:1.5px solid #FDE68A}
 .info-card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:18px;display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
-.info-item .lbl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:4px}
+.info-item .lbl{font-size:10.5px;font-weight:750;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:4px}
 .info-item .val{font-size:14.5px;font-weight:800;color:var(--ink)}
 .info-item.full{grid-column:1/-1}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:750}
 .badge-completed{background:#ECFDF5;color:var(--green)}
 .badge-cancelled{background:#FEF2F2;color:var(--red)}
 .badge-pending{background:#FFFBEB;color:var(--gold)}
-.table-card{background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:18px}
+.table-card{background:#fff;border:1px solid rgba(213,224,240,.45);border-radius:16px;overflow:hidden;margin-bottom:18px;box-shadow:0 1px 3px rgba(15,38,69,.03),0 4px 12px rgba(15,38,69,.04)}
 .table-card-head{padding:18px 24px;border-bottom:1px solid var(--border)}
 .table-card-head h2{font-size:15px;font-weight:800}
 .table-wrap{overflow-x:auto}
@@ -56,13 +60,14 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink);border-bottom:1px sol
 tbody tr:last-child td{border-bottom:none}
 .totals-card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:22px 24px;margin-left:auto;max-width:360px}
 .totals-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:13.5px}
-.totals-row.final{border-top:1.5px solid var(--border);margin-top:8px;padding-top:14px;font-size:17px;font-weight:900}
+.totals-row.final{border-top:1.5px solid var(--border);margin-top:8px;padding-top:14px;font-size:17px;font-weight:800}
 .totals-row .lbl{color:var(--muted)}
-.totals-row .val{font-weight:700;color:var(--ink)}
+.totals-row .val{font-weight:750;color:var(--ink)}
 .totals-row.discount .val{color:var(--red)}
 .empty-row{text-align:center;padding:48px;color:var(--muted)}
 .hint-box{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px 16px;margin-bottom:18px;font-size:12px;color:#1558A8}
 </style>
+    
 </head>
 <body>
 <div class="topbar">
@@ -71,7 +76,7 @@ tbody tr:last-child td{border-bottom:none}
   <div class="topbar-right">
     <c:if test="${inv.status == 'COMPLETED'}">
       <a href="${pageContext.request.contextPath}/returns?action=new&invoiceId=${inv.invoiceId}"
-         style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;background:#FFF7ED;color:#C2410C;font-size:13px;font-weight:700;text-decoration:none;margin-right:10px">↩️ Tạo phiếu trả hàng</a>
+         style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;background:#FFF7ED;color:#C2410C;font-size:13px;font-weight:750;text-decoration:none;margin-right:10px">↩️ Tạo phiếu trả hàng</a>
     </c:if>
     <div class="user-av-sm"><%= initials %></div>
   </div>
@@ -138,7 +143,7 @@ tbody tr:last-child td{border-bottom:none}
           </c:if>
           <c:forEach var="d" items="${details}">
             <tr>
-              <td style="font-weight:700">${d.medicineName}</td>
+              <td style="font-weight:750">${d.medicineName}</td>
               <td style="font-family:monospace;color:var(--muted)">${d.batchNumber}</td>
               <td style="color:var(--muted)">${d.expiryDate}</td>
               <td><fmt:formatNumber value="${d.unitPrice}" type="number" maxFractionDigits="0"/>đ</td>

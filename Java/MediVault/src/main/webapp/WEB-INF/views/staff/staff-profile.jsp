@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8"  pageEncoding="UTF-8" %>
 <%@ taglib prefix="c"   uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%
@@ -34,12 +34,45 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <script>
+      if (window.self !== window.top) {
+        document.documentElement.classList.add('in-iframe');
+        window.addEventListener('DOMContentLoaded', function() {
+          document.body.classList.add('in-iframe');
+          document.documentElement.classList.add('in-iframe');
+        });
+      }
+    </script>
+    <style>
+      html.in-iframe .sidebar,
+      body.in-iframe .sidebar,
+      html.in-iframe .topbar,
+      body.in-iframe .topbar,
+      html.in-iframe #mainSidebar,
+      body.in-iframe #mainSidebar {
+        display: none !important;
+      }
+      html.in-iframe .main,
+      body.in-iframe .main {
+        margin-left: 0 !important;
+        min-height: 100vh !important;
+        width: 100% !important;
+      }
+      html.in-iframe .content,
+      body.in-iframe .content {
+        padding: 12px 14px !important;
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta name="ctx" content="${pageContext.request.contextPath}">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title ><%= dn %> — Hồ sơ cá nhân — MediCare</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -48,43 +81,43 @@
   --muted:#7C6FAA;--border:#E2DCF5;--surface:#FAFAFA;
   --green:#059669;--red:#DC2626;--gold:#D97706;--sidebar:228px;
 }
-html,body{height:100%;font-family:'Outfit',sans-serif}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif}
 body{display:flex;background:var(--soft);color:var(--ink)}
 
 .sidebar{width:var(--sidebar);min-height:100vh;background:linear-gradient(175deg,#0E0520 0%,#1C0F3F 45%,#3B1FA0 100%);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;box-shadow:4px 0 24px rgba(0,0,0,.2)}
 .sidebar::after{content:'';position:absolute;top:0;right:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,rgba(167,139,250,.15) 30%,rgba(167,139,250,.15) 70%,transparent)}
 .sidebar-logo{height:66px;padding:0 20px;display:flex;align-items:center;gap:11px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
 .logo-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--light),var(--main));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;box-shadow:0 4px 16px rgba(109,40,217,.4)}
-.logo-text{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:#fff;letter-spacing:-.2px;line-height:1.1}
+.logo-text{font-family:'Lora',serif;font-size:16px;font-weight:800;color:#fff;letter-spacing:-.2px;line-height:1.1}
 .logo-text span{color:var(--light)}
-.logo-name{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:#fff;letter-spacing:-.2px;line-height:1.1}
+.logo-name{font-family:'Lora',serif;font-size:16px;font-weight:800;color:#fff;letter-spacing:-.2px;line-height:1.1}
 .logo-name span{color:var(--light)}
 .logo-sub{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:1.2px;text-transform:uppercase;margin-top:1px}
 .nav-section{padding:12px 0 4px;flex-shrink:0}
-.nav-label{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:500;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
+.nav-label{font-size:9px;font-weight:750;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.2);padding:0 20px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 20px;margin:1px 10px;border-radius:10px;font-size:13px;font-weight:750;color:rgba(255,255,255,.5);text-decoration:none;transition:all .18s;position:relative}
 .nav-item:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.06)}
-.nav-item.active{color:#fff;background:rgba(167,139,250,.15);font-weight:600}
+.nav-item.active{color:#fff;background:rgba(167,139,250,.15);font-weight:750}
 .nav-item.active::before{content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:56%;background:var(--light);border-radius:2px}
 .sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
 .user-card{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
 .user-av{width:34px;height:34px;flex-shrink:0;border-radius:9px;background:linear-gradient(135deg,var(--light),var(--main));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff}
-.user-name{font-size:12.5px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:108px}
+.user-name{font-size:12.5px;font-weight:750;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:108px}
 .user-role{font-size:10px;color:rgba(255,255,255,.35);margin-top:1px}
-.logout-btn-full{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:9px 14px;margin-top:10px;border-radius:10px;background:rgba(220,38,38,.15);border:1.5px solid rgba(220,38,38,.25);color:#FCA5A5;text-decoration:none;font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:700;letter-spacing:.3px;transition:all .2s}
+.logout-btn-full{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:9px 14px;margin-top:10px;border-radius:10px;background:rgba(220,38,38,.15);border:1.5px solid rgba(220,38,38,.25);color:#FCA5A5;text-decoration:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:750;letter-spacing:.3px;transition:all .2s}
 .logout-btn-full:hover{background:rgba(220,38,38,.32);color:#fff;border-color:#DC2626}
 
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0}
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding: 28px;gap:14px;position:sticky;top:0;z-index:50}
-.topbar-title{font-family:'Outfit',sans-serif;font-size:16px;color:var(--ink); font-weight: 800}
+.topbar-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;color:var(--ink); font-weight: 800}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-shrink:0}
-.back-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--soft);border:1.5px solid var(--border);border-radius:20px;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;transition:all .18s}
+.back-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--soft);border:1.5px solid var(--border);border-radius:20px;font-size:13px;font-weight:750;color:var(--muted);text-decoration:none;transition:all .18s}
 .back-btn:hover{border-color:var(--light);color:var(--main)}
 
 .content{padding:26px 28px;flex:1}
 .page-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px}
-.breadcrumb{font-size:11.5px;color:var(--muted);font-weight:500;margin-bottom:4px}
-.page-head h1{font-family:'Outfit',sans-serif;font-size:26px;color:var(--ink)}
+.breadcrumb{font-size:11.5px;color:var(--muted);font-weight:750;margin-bottom:4px}
+.page-head h1{font-family:'Plus Jakarta Sans',sans-serif;font-size:26px;color:var(--ink)}
 
 /* Layout grid */
 .detail-grid{display:grid;grid-template-columns:280px 1fr;gap:20px;align-items:start}
@@ -94,18 +127,18 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .profile-banner{height:80px;background:linear-gradient(135deg,#1C0F3F,#3B1FA0,#6D28D9)}
 .profile-body{padding:0 22px 22px;text-align:center}
 .profile-av-wrap{position:relative;display:inline-block;margin-top:-28px;margin-bottom:10px}
-.profile-av{width:56px;height:56px;border-radius:15px;background:linear-gradient(135deg,var(--light),var(--main));display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-size:22px;color:#fff;border:3px solid var(--white);box-shadow:0 4px 16px rgba(109,40,217,.3);overflow:hidden}
+.profile-av{width:56px;height:56px;border-radius:15px;background:linear-gradient(135deg,var(--light),var(--main));display:flex;align-items:center;justify-content:center;font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;color:#fff;border:3px solid var(--white);box-shadow:0 4px 16px rgba(109,40,217,.3);overflow:hidden}
 .profile-av-badge{position:absolute;bottom:-3px;right:-3px;width:18px;height:18px;border-radius:50%;background:var(--green);border:2px solid var(--white);display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:800}
-.profile-name{font-family:'Outfit',sans-serif;font-size:18px;color:var(--ink);margin-bottom:2px}
+.profile-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;color:var(--ink);margin-bottom:2px}
 .profile-username{font-size:12.5px;color:var(--muted);margin-bottom:8px}
-.profile-role{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;background:rgba(109,40,217,.1);color:var(--main);margin-bottom:6px}
-.profile-status{font-size:12px;color:var(--green);font-weight:500}
+.profile-role{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:750;background:rgba(109,40,217,.1);color:var(--main);margin-bottom:6px}
+.profile-status{font-size:12px;color:var(--green);font-weight:750}
 .profile-divider{height:1px;background:var(--border);margin:14px 0}
 .profile-meta{display:flex;flex-direction:column;gap:10px;text-align:left}
 .meta-row{display:flex;align-items:flex-start;gap:10px}
 .meta-icon{font-size:14px;margin-top:1px;flex-shrink:0;opacity:.7}
-.meta-lbl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
-.meta-val{font-size:13px;font-weight:500;color:var(--ink);margin-top:1px;word-break:break-all}
+.meta-lbl{font-size:10.5px;font-weight:750;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.meta-val{font-size:13px;font-weight:750;color:var(--ink);margin-top:1px;word-break:break-all}
 
 /* Info columns */
 .info-col{display:flex;flex-direction:column;gap:16px}
@@ -116,17 +149,17 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .ici-blue{background:rgba(58,189,224,.14)}
 .ici-green{background:rgba(5,150,105,.1)}
 .ici-gold{background:rgba(217,119,6,.1)}
-.info-card-title{font-family:'Outfit',sans-serif;font-size:15px;color:var(--ink)}
+.info-card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;color:var(--ink)}
 .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
 .info-field{padding:13px 20px;border-bottom:1px solid #F8F7FF}
 .info-field:nth-last-child(-n+2){border-bottom:none}
 .info-field.full{grid-column:1/-1}
-.field-lbl{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
-.field-val{font-size:13.5px;font-weight:500;color:var(--ink)}
+.field-lbl{font-size:10.5px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.field-val{font-size:13.5px;font-weight:750;color:var(--ink)}
 .field-val.empty{color:var(--muted);font-style:italic;font-weight:400}
 
 /* Badges */
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:750}
 .b-blue{background:rgba(21,88,168,.1);color:#1558A8}
 .b-gold{background:rgba(217,119,6,.1);color:var(--gold)}
 .b-green{background:rgba(5,150,105,.1);color:var(--green)}
@@ -140,7 +173,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 
 /* ── PHOTO VIEW SECTION (staff - xem only) ── */
 .photo-view-section{margin-top:14px;border-top:1px solid var(--border);padding-top:14px}
-.photo-view-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:10px;text-align:center}
+.photo-view-label{font-size:10px;font-weight:750;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:10px;text-align:center}
 .photo-view-frame{
   width:88px;height:88px;border-radius:50%;overflow:hidden;
   border:3px solid var(--border);margin:0 auto;
@@ -152,6 +185,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .photo-view-placeholder{font-size:26px;opacity:.3}
 .photo-view-note{text-align:center;font-size:11px;color:var(--muted);margin-top:7px;font-style:italic}
 </style>
+    
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>
@@ -189,12 +223,17 @@ body{display:flex;background:var(--soft);color:var(--ink)}
       <span class="nav-icon">🏖️</span> Xin nghỉ phép
     </a>
   </nav>
+  <% if (acc.getRoleId() == 2 || acc.getRoleId() == 3) { %>
   <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
     <a href="<%= request.getContextPath() %>/pos?uid=<%= _staffUid %>" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
     </a>
+    <a href="<%= request.getContextPath() %>/pos?uid=<%= _staffUid %>&view=invoices" class="nav-item">
+      <span class="nav-icon">🧾</span> Xem hóa đơn
+    </a>
   </nav>
+  <% } %>
   <div style="flex:1"></div>
   <div class="sidebar-footer">
     <a href="<%= request.getContextPath() %>/logout?from=staff" class="logout-btn-full" title="Đăng xuất">
@@ -398,7 +437,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
               <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start">
                 <div style="font-size:22px">⏳</div>
                 <div>
-                  <div style="font-weight:700;color:#b45309;margin-bottom:3px">Yêu cầu đổi khuôn mặt đang chờ duyệt</div>
+                  <div style="font-weight:750;color:#b45309;margin-bottom:3px">Yêu cầu đổi khuôn mặt đang chờ duyệt</div>
                   <div style="font-size:13px;color:#92400e;line-height:1.5">
                     Trong lúc chờ quản trị viên duyệt, bạn <b>không thể quét khuôn mặt để điểm danh</b>
                     (vẫn đăng nhập & bán hàng bình thường). Bạn sẽ nhận email khi được duyệt.
@@ -420,7 +459,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
                 Gửi yêu cầu <b>đăng ký lại khuôn mặt</b> — quản trị viên duyệt xong bạn sẽ quét lại từ đầu.
               </p>
               <button type="button" onclick="openReenrollModal()"
-                      style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:10px;padding:11px 20px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">
+                      style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:10px;padding:11px 20px;font-weight:750;font-size:14px;cursor:pointer;font-family:inherit">
                 🔄 Xin đăng ký lại khuôn mặt
               </button>
             <% } else { %>
@@ -450,15 +489,15 @@ body{display:flex;background:var(--soft);color:var(--ink)}
       Yêu cầu sẽ gửi tới quản trị viên qua email. Sau khi duyệt, khuôn mặt cũ bị xóa và bạn đăng ký lại từ đầu.
       Trong lúc chờ, bạn vẫn đăng nhập bình thường nhưng <b>tạm thời không quét mặt điểm danh được</b>.
     </p>
-    <label style="font-size:13px;font-weight:600;color:#334155;display:block;margin-bottom:6px">Lý do <span style="color:#dc2626">*</span></label>
+    <label style="font-size:13px;font-weight:750;color:#334155;display:block;margin-bottom:6px">Lý do <span style="color:#dc2626">*</span></label>
     <textarea id="reenrollReason" rows="3" placeholder="VD: đổi kiểu tóc / đeo kính mới / khuôn mặt cũ nhận diện không ra…"
               style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-family:inherit;font-size:14px;resize:vertical;box-sizing:border-box"></textarea>
     <div id="reenrollErr" style="color:#dc2626;font-size:12.5px;margin-top:6px;display:none"></div>
     <div style="display:flex;gap:10px;margin-top:18px">
       <button type="button" onclick="closeReenrollModal()"
-              style="flex:1;background:#f1f5f9;color:#475569;border:none;border-radius:10px;padding:11px;font-weight:700;cursor:pointer;font-family:inherit">Hủy</button>
+              style="flex:1;background:#f1f5f9;color:#475569;border:none;border-radius:10px;padding:11px;font-weight:750;cursor:pointer;font-family:inherit">Hủy</button>
       <button type="button" id="reenrollSubmitBtn" onclick="submitReenroll()"
-              style="flex:1;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:10px;padding:11px;font-weight:700;cursor:pointer;font-family:inherit">Gửi yêu cầu</button>
+              style="flex:1;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:10px;padding:11px;font-weight:750;cursor:pointer;font-family:inherit">Gửi yêu cầu</button>
     </div>
   </div>
 </div>

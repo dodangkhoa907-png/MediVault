@@ -16,7 +16,7 @@ public class ShiftTypeDAO implements IShiftTypeDAO {
     private ShiftType mapRow(ResultSet rs) throws SQLException {
         ShiftType s = new ShiftType();
         s.setShiftTypeId(rs.getInt("ShiftTypeID"));
-        s.setName(rs.getNString("Name"));
+        s.setName(rs.getString("Name"));
         s.setStartHour(rs.getInt("StartHour"));
         s.setStartMinute(rs.getInt("StartMinute"));
         s.setEndHour(rs.getInt("EndHour"));

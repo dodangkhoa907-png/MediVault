@@ -21,10 +21,14 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Medicare POS — Bán hàng</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -34,7 +38,7 @@
   --green:#059669;--red:#dc2626;--gold:#d97706;--orange:#f97316;
   --sw:64px;--rw:420px;
 }
-html,body{height:100%;font-family:'Outfit',sans-serif;overflow:hidden;background:var(--surface);color:var(--navy);font-size:14px}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden;background:var(--surface);color:var(--navy);font-size:14px}
 body{display:flex}
 
 /* SIDEBAR — hover-expand */
@@ -51,8 +55,8 @@ body{display:flex}
   margin-bottom:14px;cursor:pointer;text-decoration:none;overflow:hidden}
 .sb-logo-icon{width:38px;height:38px;min-width:38px;background:rgba(255,255,255,.15);
   border-radius:9px;display:flex;align-items:center;justify-content:center;
-  font-size:12px;font-weight:900;color:#fff;letter-spacing:-.5px;flex-shrink:0}
-.sb-logo-full{font-size:13.5px;font-weight:900;color:#fff;opacity:0;
+  font-size:12px;font-weight:800;color:#fff;letter-spacing:-.5px;flex-shrink:0}
+.sb-logo-full{font-size:13.5px;font-weight:800;color:#fff;opacity:0;
   transition:opacity .15s .07s;white-space:nowrap}
 .sidebar:hover .sb-logo-full{opacity:1}
 /* Nav buttons */
@@ -62,13 +66,13 @@ body{display:flex}
   border:none;font-family:inherit;width:calc(100% - 12px)}
 .sb-btn:hover,.sb-btn.active{color:#fff;background:rgba(255,255,255,.15)}
 .sb-icon{font-size:18px;min-width:28px;text-align:center;flex-shrink:0;line-height:1}
-.sb-label{font-size:12.5px;font-weight:600;color:rgba(255,255,255,.75);
+.sb-label{font-size:12.5px;font-weight:750;color:rgba(255,255,255,.75);
   white-space:nowrap;opacity:0;transition:opacity .14s .06s}
 .sb-btn:hover .sb-label,.sb-btn.active .sb-label{color:#fff}
 .sidebar:hover .sb-label{opacity:1}
 /* Tooltip (only when collapsed) */
 .sb-tip{position:absolute;left:62px;background:rgba(15,23,42,.92);color:#fff;
-  font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;
+  font-size:11px;font-weight:750;padding:4px 10px;border-radius:6px;
   white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:200}
 .sb-btn:hover .sb-tip{opacity:1}
 .sidebar:hover .sb-tip{opacity:0!important;pointer-events:none}
@@ -86,13 +90,13 @@ body{display:flex}
 .search-wrap input{width:100%;height:38px;padding:0 38px 0 14px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit;outline:none;background:var(--surface);transition:.2s}
 .search-wrap input:focus{border-color:var(--sky);background:#fff}
 .search-wrap::after{content:'🔍';position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:none}
-.med-count-badge{background:#eff6ff;color:var(--blue);font-size:13px;font-weight:700;padding:5px 12px;border-radius:7px;white-space:nowrap;flex-shrink:0}
+.med-count-badge{background:#eff6ff;color:var(--blue);font-size:13px;font-weight:750;padding:5px 12px;border-radius:7px;white-space:nowrap;flex-shrink:0}
 .topbar-date{font-size:12.5px;color:var(--muted);white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:4px}
 
 /* CATEGORY — pill style */
 .cat-bar{height:46px;padding:0 14px;display:flex;align-items:center;gap:6px;overflow-x:auto;flex-shrink:0;background:#fff;border-bottom:1px solid var(--border)}
 .cat-bar::-webkit-scrollbar{display:none}
-.cat-tab{height:30px;padding:0 15px;border-radius:100px;border:1.5px solid transparent;font-size:12.5px;font-weight:700;color:#64748b;background:#f1f5f9;cursor:pointer;white-space:nowrap;transition:.18s;flex-shrink:0;font-family:inherit;letter-spacing:.1px}
+.cat-tab{height:30px;padding:0 15px;border-radius:100px;border:1.5px solid transparent;font-size:12.5px;font-weight:750;color:#64748b;background:#f1f5f9;cursor:pointer;white-space:nowrap;transition:.18s;flex-shrink:0;font-family:inherit;letter-spacing:.1px}
 .cat-tab:hover{color:var(--blue);background:#dbeafe;border-color:#bfdbfe}
 .cat-tab.active{color:#fff;background:var(--blue);border-color:var(--blue);box-shadow:0 2px 8px rgba(37,99,235,.35)}
 
@@ -108,11 +112,11 @@ body{display:flex}
 .med-card.out-of-stock:hover{transform:none;border-color:var(--border);box-shadow:none}
 /* Top row: stock left, badge right */
 .mc-top{width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:3px}
-.mc-stock{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap}
+.mc-stock{font-size:10px;font-weight:750;padding:2px 7px;border-radius:20px;white-space:nowrap}
 .stock-ok{background:#d1fae5;color:#065f46}
 .stock-low{background:#fef3c7;color:#92400e}
 .stock-out{background:#fee2e2;color:#991b1b}
-.mc-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.mc-badge{font-size:10px;font-weight:750;padding:2px 7px;border-radius:20px;white-space:nowrap;flex-shrink:0}
 .mb-rx{background:#fee2e2;color:#991b1b}
 .mb-otc{background:#d1fae5;color:#065f46}
 /* Center: icon */
@@ -123,7 +127,7 @@ body{display:flex}
 .mc-unit{font-size:11px;color:#94a3b8;width:100%;margin-bottom:auto}
 /* Price — bottom, separated */
 .mc-price-row{width:100%;margin-top:9px;padding-top:8px;border-top:1px solid #f1f5f9;text-align:center}
-.mc-price{font-size:17px;font-weight:900;color:var(--blue);letter-spacing:-.4px}
+.mc-price{font-size:17px;font-weight:800;color:var(--blue);letter-spacing:-.4px}
 .empty-state{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted)}
 .empty-state .ei{font-size:44px;margin-bottom:12px}
 
@@ -133,22 +137,22 @@ body{display:flex}
 /* Header */
 .inv-head{padding:13px 16px;background:linear-gradient(135deg,#1e3a5f,#1a56db);flex-shrink:0}
 .inv-head-row{display:flex;align-items:center;justify-content:space-between}
-.inv-head h3{font-size:15px;font-weight:900;color:#fff}
+.inv-head h3{font-size:15px;font-weight:800;color:#fff}
 .inv-head-sub{font-size:12px;color:rgba(255,255,255,.6);margin-top:2px}
-.btn-clear{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:5px 11px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+.btn-clear{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:5px 11px;border-radius:7px;font-size:12px;font-weight:750;cursor:pointer;font-family:inherit;transition:.15s}
 .btn-clear:hover{background:rgba(255,255,255,.28)}
 
 /* Customer */
 .inv-customer{padding:9px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
-.f-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.f-label{font-size:11px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
 .cust-wrap{display:flex;gap:6px}
 .cust-wrap input{flex:1;height:34px;padding:0 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none}
 .cust-wrap input:focus{border-color:var(--sky)}
 .cust-btn{width:34px;height:34px;background:var(--blue);border:none;border-radius:8px;color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.cust-btn-add{background:linear-gradient(135deg,#0d9488,#0f766e);font-size:20px;font-weight:700;line-height:1}
+.cust-btn-add{background:linear-gradient(135deg,#0d9488,#0f766e);font-size:20px;font-weight:750;line-height:1}
 .cust-btn-add:hover{filter:brightness(1.08)}
 .cust-found-row{margin-top:6px;padding:6px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;display:none;align-items:center;gap:7px;font-size:13px}
-.cust-found-name{font-weight:700;color:var(--green);flex:1}
+.cust-found-name{font-weight:750;color:var(--green);flex:1}
 .cust-rm{color:var(--red);cursor:pointer;background:none;border:none;font-size:14px;line-height:1}
 
 /* Items */
@@ -160,14 +164,14 @@ body{display:flex}
 .inv-item{display:flex;align-items:flex-start;gap:8px;padding:8px 16px;border-bottom:1px solid #f3f4f6;transition:.1s}
 .inv-item:hover{background:#fafafa}
 .inv-i-info{flex:1;min-width:0}
-.inv-i-name{font-size:13px;font-weight:700;color:var(--navy)}
+.inv-i-name{font-size:13px;font-weight:750;color:var(--navy)}
 .inv-i-meta{font-size:10.5px;color:var(--muted);margin-top:2px}
-.inv-i-price{font-size:12px;color:var(--blue);font-weight:600}
+.inv-i-price{font-size:12px;color:var(--blue);font-weight:750}
 .qty-ctrl{display:flex;align-items:center;gap:4px;flex-shrink:0}
-.qty-btn{width:25px;height:25px;border-radius:6px;border:1.5px solid var(--border);background:#fff;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;color:var(--navy);transition:.15s}
+.qty-btn{width:25px;height:25px;border-radius:6px;border:1.5px solid var(--border);background:#fff;font-size:13px;font-weight:750;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;color:var(--navy);transition:.15s}
 .qty-btn:hover{border-color:var(--sky);color:var(--blue)}
 .qty-btn.minus:hover{border-color:var(--red);color:var(--red)}
-.qty-val{width:38px;height:25px;text-align:center;font-size:13px;font-weight:700;border:1.5px solid var(--border);border-radius:6px;outline:none;font-family:inherit;color:var(--navy);background:#fff;padding:0}
+.qty-val{width:38px;height:25px;text-align:center;font-size:13px;font-weight:750;border:1.5px solid var(--border);border-radius:6px;outline:none;font-family:inherit;color:var(--navy);background:#fff;padding:0}
 .qty-val:focus{border-color:var(--sky)}
 .qty-val::-webkit-inner-spin-button,.qty-val::-webkit-outer-spin-button{-webkit-appearance:none}
 .inv-i-sub{font-size:13px;font-weight:800;color:var(--navy);white-space:nowrap;flex-shrink:0}
@@ -178,7 +182,7 @@ body{display:flex}
 .inv-forms{padding:7px 14px;border-top:2px solid var(--border);background:#f9fafb;flex-shrink:0;display:flex;flex-direction:column;gap:6px}
 .form-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .form-row .f-label{margin-bottom:0;flex-shrink:0}
-.f-input{height:32px;padding:0 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;outline:none;color:var(--navy);background:#fff;transition:.15s}
+.f-input{height:32px;padding:0 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:750;font-family:inherit;outline:none;color:var(--navy);background:#fff;transition:.15s}
 .f-input:focus{border-color:var(--sky)}
 .f-input.discount{width:90px;text-align:right}
 .f-input.note{width:100%;height:30px;font-weight:400}
@@ -189,7 +193,7 @@ body{display:flex}
 .pay-method-card:hover{border-color:#93c5fd;background:#eff6ff}
 .pay-method-card.active{border-color:var(--blue);background:#eff6ff;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
 .pmc-icon{font-size:22px;line-height:1}
-.pmc-label{font-size:11.5px;font-weight:700;color:#64748b;text-align:center;letter-spacing:.1px}
+.pmc-label{font-size:11.5px;font-weight:750;color:#64748b;text-align:center;letter-spacing:.1px}
 .pay-method-card.active .pmc-label{color:var(--blue)}
 /* QR / Card detail panels (same weight as cash section) */
 .pay-detail-section{display:none;background:#f8fafc;border:1.5px solid var(--border);border-radius:13px;padding:14px 15px;margin-top:7px}
@@ -199,7 +203,7 @@ body{display:flex}
 .pdi-body{flex:1;min-width:0}
 .pdi-title{font-size:13px;font-weight:800;color:#0f172a;margin-bottom:4px}
 .pdi-sub{font-size:11.5px;color:#64748b;line-height:1.5}
-.pdi-amount{font-size:20px;font-weight:900;color:var(--blue);white-space:nowrap;flex-shrink:0}
+.pdi-amount{font-size:20px;font-weight:800;color:var(--blue);white-space:nowrap;flex-shrink:0}
 
 /* Medicine info button — bottom-right of card */
 .mc-info-btn{position:absolute;bottom:8px;right:8px;width:20px;height:20px;border-radius:50%;background:none;border:1.5px solid #D1D5DB;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#9CA3AF;transition:.18s;z-index:2;padding:0;line-height:1}
@@ -212,8 +216,8 @@ body{display:flex}
 .med-drawer.show{transform:translateX(0)}
 /* Drawer header */
 .mdd-head{padding:18px 20px 14px;border-bottom:1.5px solid #F1F5F9;flex-shrink:0;background:linear-gradient(135deg,#F8FAFC,#EFF6FF)}
-.mdd-rx{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;padding:2px 10px;border-radius:20px;margin-bottom:8px}
-.mdd-name{font-size:17px;font-weight:900;color:#0F172A;line-height:1.25;margin-bottom:3px}
+.mdd-rx{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:750;padding:2px 10px;border-radius:20px;margin-bottom:8px}
+.mdd-name{font-size:17px;font-weight:800;color:#0F172A;line-height:1.25;margin-bottom:3px}
 .mdd-code{font-size:11.5px;color:#94A3B8}
 .mdd-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:9px;background:#F1F5F9;border:none;font-size:16px;cursor:pointer;color:#64748B;display:flex;align-items:center;justify-content:center;transition:.15s;line-height:1}
 .mdd-close:hover{background:#E2E8F0;color:#0F172A}
@@ -229,38 +233,38 @@ body{display:flex}
 .mdd-contra .mdd-text{background:#FEF2F2;border-left-color:#F87171;color:#991B1B}
 .mdd-rows{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .mdd-row{background:#F8FAFC;border-radius:8px;padding:8px 10px}
-.mdd-row .dk{font-size:10.5px;color:#94A3B8;font-weight:600;margin-bottom:2px}
-.mdd-row .dv{font-size:12.5px;font-weight:700;color:#0F172A}
+.mdd-row .dk{font-size:10.5px;color:#94A3B8;font-weight:750;margin-bottom:2px}
+.mdd-row .dv{font-size:12.5px;font-weight:750;color:#0F172A}
 .mdd-row.full{grid-column:1/-1}
 /* Price + stock bar */
 .mdd-price-bar{display:flex;align-items:center;justify-content:space-between;background:#EFF6FF;border-radius:10px;padding:10px 14px;margin-bottom:14px}
-.mdd-price-lbl{font-size:11.5px;color:var(--blue);font-weight:600}
-.mdd-price-val{font-size:20px;font-weight:900;color:var(--blue)}
+.mdd-price-lbl{font-size:11.5px;color:var(--blue);font-weight:750}
+.mdd-price-val{font-size:20px;font-weight:800;color:var(--blue)}
 /* Footer */
 .mdd-foot{padding:12px 20px;border-top:1.5px solid #F1F5F9;flex-shrink:0;display:flex;gap:8px}
 .mdd-add-btn{flex:1;height:42px;border-radius:10px;border:none;background:linear-gradient(135deg,#1a56db,#1e3a5f);color:#fff;font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit;transition:.15s}
 .mdd-add-btn:hover{box-shadow:0 4px 14px rgba(26,86,219,.35)}
 .mdd-add-btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
-.mdd-close-btn{height:42px;padding:0 16px;border-radius:10px;border:1.5px solid #E2E8F0;background:#fff;color:#64748B;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
+.mdd-close-btn{height:42px;padding:0 16px;border-radius:10px;border:1.5px solid #E2E8F0;background:#fff;color:#64748B;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
 .mdd-close-btn:hover{background:#F1F5F9}
 
 /* Cash section */
 .cash-section{display:none;flex-direction:column;gap:7px;background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px}
 .cash-section.show{display:flex}
 .cash-total-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--border)}
-.cash-total-lbl{font-size:12px;color:var(--muted);font-weight:600}
-.cash-total-val{font-size:20px;font-weight:900;color:var(--blue)}
+.cash-total-lbl{font-size:12px;color:var(--muted);font-weight:750}
+.cash-total-val{font-size:20px;font-weight:800;color:var(--blue)}
 .cash-quick{display:flex;gap:5px;flex-wrap:wrap}
-.cash-q-btn{padding:4px 10px;background:#eff6ff;color:var(--blue);border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s}
+.cash-q-btn{padding:4px 10px;background:#eff6ff;color:var(--blue);border:none;border-radius:6px;font-size:12px;font-weight:750;cursor:pointer;font-family:inherit;transition:.15s}
 .cash-q-btn:hover{background:#dbeafe}
 .cash-input-row{display:flex;align-items:center;gap:8px}
-.cash-input-lbl{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}
+.cash-input-lbl{font-size:12px;font-weight:750;color:var(--muted);white-space:nowrap}
 .f-input.cash{flex:1;text-align:right;font-size:14px}
 .cash-change-row{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:8px;font-size:13px}
 .cash-change-ok{background:#f0fdf4;border:1px solid #bbf7d0}
 .cash-change-err{background:#fef2f2;border:1px solid #fecaca}
-.cash-change-lbl{color:var(--muted);font-weight:600}
-.cash-change-val{font-weight:900;font-size:15px}
+.cash-change-lbl{color:var(--muted);font-weight:750}
+.cash-change-val{font-weight:800;font-size:15px}
 .change-ok{color:var(--green)}
 .change-err{color:var(--red)}
 
@@ -268,11 +272,11 @@ body{display:flex}
 .inv-totals{padding:8px 16px 5px;border-top:1px solid var(--border);flex-shrink:0}
 .total-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:4px}
 .total-row.grand{font-size:15px;font-weight:800;color:var(--navy);margin-top:6px;padding-top:6px;border-top:2px solid var(--border)}
-.total-row.grand .tv{font-size:18px;font-weight:900;color:var(--blue)}
+.total-row.grand .tv{font-size:18px;font-weight:800;color:var(--blue)}
 
 /* Checkout button */
 .inv-action{padding:9px 16px 13px;flex-shrink:0}
-.btn-checkout{width:100%;height:50px;border-radius:12px;border:none;background:linear-gradient(135deg,#059669,#047857);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:9px;transition:.2s;letter-spacing:-.2px}
+.btn-checkout{width:100%;height:50px;border-radius:12px;border:none;background:linear-gradient(135deg,#059669,#047857);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:9px;transition:.2s;letter-spacing:-.2px}
 .btn-checkout:hover:not(:disabled){box-shadow:0 6px 22px rgba(5,150,105,.45);transform:translateY(-1px)}
 .btn-checkout:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
 
@@ -283,17 +287,17 @@ body{display:flex}
 .sm-panel{position:relative;width:380px;background:#fff;border-radius:18px;padding:28px 26px 24px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.22);animation:popIn .28s cubic-bezier(.34,1.56,.64,1)}
 @keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
 .sm-icon{font-size:52px;margin-bottom:10px;display:block}
-.sm-title{font-size:21px;font-weight:900;color:var(--navy);margin-bottom:4px}
+.sm-title{font-size:21px;font-weight:800;color:var(--navy);margin-bottom:4px}
 .sm-code{font-size:12px;color:var(--muted);margin-bottom:5px}
-.sm-change{font-size:14px;font-weight:700;color:var(--green);margin-bottom:12px;min-height:20px}
-.sm-total{font-size:32px;font-weight:900;color:var(--blue);margin-bottom:18px}
+.sm-change{font-size:14px;font-weight:750;color:var(--green);margin-bottom:12px;min-height:20px}
+.sm-total{font-size:32px;font-weight:800;color:var(--blue);margin-bottom:18px}
 .sm-btns{display:flex;gap:8px}
 .sm-btn-new{flex:1;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--orange),#ea580c);color:#fff;border:none;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit}
-.sm-btn-print{flex:1;height:44px;border-radius:10px;border:2px solid var(--border);background:#fff;color:var(--navy);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px}
+.sm-btn-print{flex:1;height:44px;border-radius:10px;border:2px solid var(--border);background:#fff;color:var(--navy);font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px}
 .sm-btn-print:hover{border-color:var(--blue);color:var(--blue)}
 
 /* TOAST */
-.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);padding:10px 18px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.2);z-index:600;animation:toastIn .25s ease;white-space:nowrap}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);padding:10px 18px;border-radius:10px;font-size:14px;font-weight:750;box-shadow:0 6px 24px rgba(0,0,0,.2);z-index:600;animation:toastIn .25s ease;white-space:nowrap}
 @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .toast-ok{background:#064e3b;color:#fff}
 .toast-err{background:#7f1d1d;color:#fff}
@@ -306,22 +310,22 @@ body{display:flex}
 .station-badge:hover{background:#dbeafe;border-color:var(--sky)}
 .station-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.85)}}
-.station-label{font-size:12px;font-weight:700;color:var(--blue);white-space:nowrap}
-.station-staff{font-size:10.5px;color:var(--muted);font-weight:600}
+.station-label{font-size:12px;font-weight:750;color:var(--blue);white-space:nowrap}
+.station-staff{font-size:10.5px;color:var(--muted);font-weight:750}
 
 /* STATION SELECTOR MODAL */
 .station-modal{display:none;position:fixed;inset:0;z-index:9500;align-items:center;justify-content:center}
 .station-modal.show{display:flex}
 .stm-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}
 .stm-panel{position:relative;width:420px;background:#fff;border-radius:20px;padding:28px 26px 24px;box-shadow:0 24px 64px rgba(0,0,0,.28);animation:popIn .25s cubic-bezier(.34,1.56,.64,1)}
-.stm-title{font-size:18px;font-weight:900;color:var(--navy);margin-bottom:4px}
+.stm-title{font-size:18px;font-weight:800;color:var(--navy);margin-bottom:4px}
 .stm-sub{font-size:13px;color:var(--muted);margin-bottom:18px}
 .station-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
 .station-opt{border:2px solid var(--border);border-radius:12px;padding:16px 14px;cursor:pointer;transition:.15s;display:flex;flex-direction:column;gap:4px;background:#fff}
 .station-opt:hover{border-color:var(--sky);background:#eff6ff}
 .station-opt.selected{border-color:var(--blue);background:#eff6ff}
-.so-num{font-size:22px;font-weight:900;color:var(--blue)}
-.so-label{font-size:12px;font-weight:600;color:var(--muted)}
+.so-num{font-size:22px;font-weight:800;color:var(--blue)}
+.so-label{font-size:12px;font-weight:750;color:var(--muted)}
 .btn-confirm-station{width:100%;height:44px;border-radius:11px;border:none;background:linear-gradient(135deg,#059669,#047857);color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
 
 /* FACE CHECK-IN MODAL */
@@ -340,12 +344,12 @@ body{display:flex}
 .face-ring.scanning{border-color:#3b82f6;animation:ringPulse 1.2s ease-in-out infinite}
 .face-ring.matched{border-color:#10b981}
 @keyframes ringPulse{0%,100%{box-shadow:0 0 0 2000px rgba(0,0,0,.3),0 0 0 0 rgba(59,130,246,.4)}50%{box-shadow:0 0 0 2000px rgba(0,0,0,.3),0 0 0 12px rgba(59,130,246,0)}}
-.fm-status{font-size:13px;font-weight:600;color:#94a3b8;text-align:center;min-height:20px;margin-bottom:10px}
+.fm-status{font-size:13px;font-weight:750;color:#94a3b8;text-align:center;min-height:20px;margin-bottom:10px}
 .fm-status.ok{color:#4ade80}
 .fm-status.err{color:#f87171}
 .fm-actions{display:flex;gap:8px}
 .fm-btn-cancel{flex:1;height:38px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:transparent;color:rgba(255,255,255,.5);font-size:13px;cursor:pointer;font-family:inherit}
-.fm-btn-checkin{flex:2;height:38px;border-radius:9px;border:none;background:linear-gradient(135deg,#059669,#047857);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:none}
+.fm-btn-checkin{flex:2;height:38px;border-radius:9px;border:none;background:linear-gradient(135deg,#059669,#047857);color:#fff;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;display:none}
 .fm-no-face{font-size:12px;color:#f87171;text-align:center;margin-bottom:8px;display:none}
 .fm-enrolled-count{font-size:11px;color:#475569;text-align:center;margin-bottom:8px}
 .fm-loader{display:flex;align-items:center;justify-content:center;gap:8px;color:#64748b;font-size:12px;padding:20px}
@@ -359,13 +363,13 @@ body{display:flex}
 
 /* Staff action menu in topbar */
 .staff-action-wrap{position:relative}
-.staff-action-btn{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:9px;padding:6px 12px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+.staff-action-btn{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:9px;padding:6px 12px;color:#fff;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;transition:.15s}
 .staff-action-btn:hover{background:rgba(255,255,255,.22)}
 .sa-arrow{font-size:11px;opacity:.7;transition:transform .2s}
 .staff-action-wrap.open .sa-arrow{transform:rotate(180deg)}
 .staff-action-menu{display:none;position:absolute;top:calc(100% + 8px);right:0;min-width:186px;background:#fff;border:1px solid #e5e7eb;border-radius:13px;box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:600;overflow:hidden}
 .staff-action-menu.open{display:block}
-.staff-action-menu button{display:block;width:100%;padding:10px 16px;background:none;border:none;text-align:left;cursor:pointer;font-family:inherit;font-size:13.5px;color:#374151;font-weight:600;transition:.1s}
+.staff-action-menu button{display:block;width:100%;padding:10px 16px;background:none;border:none;text-align:left;cursor:pointer;font-family:inherit;font-size:13.5px;color:#374151;font-weight:750;transition:.1s}
 .staff-action-menu button:hover{background:#f3f4f6}
 .sam-divider{height:1px;background:#e5e7eb;margin:2px 0}
 .staff-action-menu button.sam-danger{color:#dc2626}
@@ -381,25 +385,25 @@ body{display:flex}
 .qrm-header{display:flex;align-items:center;gap:8px;width:100%}
 .qrm-logo-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#0ea5e9,#2563eb);display:flex;align-items:center;justify-content:center;font-size:18px}
 .qrm-logo-txt{font-size:16px;font-weight:800;color:#0f172a;letter-spacing:-.3px}
-.qrm-logo-sub{font-size:11px;color:#94a3b8;font-weight:500}
+.qrm-logo-sub{font-size:11px;color:#94a3b8;font-weight:750}
 .qrm-logo-info{display:flex;flex-direction:column;gap:1px}
 
-.qrm-amount{font-size:34px;font-weight:900;color:#1d4ed8;letter-spacing:-1px;line-height:1}
-.qrm-amount-label{font-size:11.5px;color:#94a3b8;font-weight:500;margin-top:-6px}
+.qrm-amount{font-size:34px;font-weight:800;color:#1d4ed8;letter-spacing:-1px;line-height:1}
+.qrm-amount-label{font-size:11.5px;color:#94a3b8;font-weight:750;margin-top:-6px}
 
 .qrm-qr-box{background:#f8fafc;border:2.5px solid #e2e8f0;border-radius:16px;padding:14px;position:relative}
 .qrm-qr-box canvas,.qrm-qr-box img{display:block;border-radius:8px}
 .qrm-qr-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 0 3px #f8fafc}
 
 .qrm-banks{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
-.qrm-bank{background:#f1f5f9;border-radius:6px;padding:3px 9px;font-size:10.5px;font-weight:700;color:#475569}
+.qrm-bank{background:#f1f5f9;border-radius:6px;padding:3px 9px;font-size:10.5px;font-weight:750;color:#475569}
 
 .qrm-status-row{display:flex;align-items:center;gap:8px}
 .qrm-dot{width:9px;height:9px;border-radius:50%;background:#10b981;flex-shrink:0;box-shadow:0 0 0 0 rgba(16,185,129,.4);animation:qrmDot 1.4s ease infinite}
 @keyframes qrmDot{0%{box-shadow:0 0 0 0 rgba(16,185,129,.5)}70%{box-shadow:0 0 0 9px rgba(16,185,129,0)}100%{box-shadow:0 0 0 0 rgba(16,185,129,0)}}
 .qrm-dot.paid{background:#2563eb;animation:none;box-shadow:none}
 .qrm-dot.expired{background:#ef4444;animation:none;box-shadow:none}
-.qrm-status-txt{font-size:13px;font-weight:600;color:#334155}
+.qrm-status-txt{font-size:13px;font-weight:750;color:#334155}
 .qrm-timer{font-size:12px;color:#94a3b8}
 .qrm-timer b{color:#f59e0b}
 .qrm-divider{width:100%;height:1px;background:#f1f5f9}
@@ -412,7 +416,7 @@ body{display:flex}
 
 .qrm-checkout-link{font-size:11px;color:#94a3b8;text-decoration:none;display:flex;align-items:center;gap:4px}
 .qrm-checkout-link:hover{color:#3b82f6}
-.qrm-cancel-btn{width:100%;padding:12px;border:none;border-radius:11px;background:#f1f5f9;color:#64748b;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;letter-spacing:.1px}
+.qrm-cancel-btn{width:100%;padding:12px;border:none;border-radius:11px;background:#f1f5f9;color:#64748b;font-size:13.5px;font-weight:750;cursor:pointer;font-family:inherit;transition:.15s;letter-spacing:.1px}
 .qrm-cancel-btn:hover{background:#e2e8f0;color:#334155}
 
 /* ── END SHIFT REPORT MODAL ─────────────────────────────────────── */
@@ -430,26 +434,26 @@ body{display:flex}
 .esr-right{padding:20px 20px;background:#F8FAFF}
 .esr-sec-title{font-size:11px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:.8px;margin-bottom:11px}
 .esr-grand{background:linear-gradient(135deg,#0F172A,#1e3a5f);border-radius:12px;padding:12px 15px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
-.esr-grand-lbl{color:rgba(255,255,255,.6);font-size:11px;font-weight:600;margin-bottom:3px}
-.esr-grand-val{color:#fff;font-size:21px;font-weight:900;letter-spacing:-.4px}
-.esr-inv-chip{display:inline-flex;align-items:center;background:rgba(255,255,255,.12);border-radius:8px;padding:5px 10px;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.8);white-space:nowrap}
+.esr-grand-lbl{color:rgba(255,255,255,.6);font-size:11px;font-weight:750;margin-bottom:3px}
+.esr-grand-val{color:#fff;font-size:21px;font-weight:800;letter-spacing:-.4px}
+.esr-inv-chip{display:inline-flex;align-items:center;background:rgba(255,255,255,.12);border-radius:8px;padding:5px 10px;font-size:11.5px;font-weight:750;color:rgba(255,255,255,.8);white-space:nowrap}
 .esr-prows{display:flex;flex-direction:column;gap:7px;margin-bottom:13px}
 .esr-prow{display:flex;align-items:center;padding:9px 12px;background:#fff;border:1.5px solid #E2E8F0;border-radius:9px}
 .esr-prow-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
 .esr-prow-lbl{font-size:12.5px;color:#334155;flex:1;margin-left:8px}
 .esr-prow-val{font-size:13px;font-weight:800;color:#0F172A}
-.esr-prow-val.zero{color:#CBD5E1;font-weight:600}
+.esr-prow-val.zero{color:#CBD5E1;font-weight:750}
 .esr-note{font-size:11.5px;color:#94A3B8;line-height:1.5;padding:9px 11px;background:#F8FAFC;border-radius:9px;border:1px dashed #E2E8F0}
 .esr-crows{display:flex;flex-direction:column;gap:0;margin-bottom:11px}
 .esr-crow{display:flex;align-items:center;justify-content:space-between;padding:7px 0;font-size:13px;border-bottom:1px solid #F1F5F9}
 .esr-crow:last-child{border-bottom:none}
-.esr-crow-lbl{color:#64748B;font-weight:500}
-.esr-crow-val{font-weight:700;color:#0F172A}
+.esr-crow-lbl{color:#64748B;font-weight:750}
+.esr-crow-val{font-weight:750;color:#0F172A}
 .esr-expected-box{background:#F0FDF4;border:2px solid #BBF7D0;border-radius:12px;padding:12px 15px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
-.esr-exp-lbl{font-size:11.5px;font-weight:700;color:#15803D}
-.esr-exp-val{font-size:20px;font-weight:900;color:#15803D}
+.esr-exp-lbl{font-size:11.5px;font-weight:750;color:#15803D}
+.esr-exp-val{font-size:20px;font-weight:800;color:#15803D}
 .esr-inp-wrap{margin-bottom:11px}
-.esr-inp-lbl{font-size:12px;font-weight:700;color:#374151;margin-bottom:5px}
+.esr-inp-lbl{font-size:12px;font-weight:750;color:#374151;margin-bottom:5px}
 .esr-inp{width:100%;height:50px;border:2px solid #E2E8F0;border-radius:11px;font-size:19px;font-weight:800;text-align:right;padding:0 14px;color:#0F172A;font-family:inherit;box-sizing:border-box;transition:.15s}
 .esr-inp:focus{outline:none;border-color:#2563EB;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
 .esr-vbox{border-radius:11px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;transition:.2s;min-height:42px}
@@ -457,17 +461,18 @@ body{display:flex}
 .esr-vbox.zero{background:#F0FDF4;border:1.5px solid #BBF7D0}
 .esr-vbox.minus{background:#FEF2F2;border:1.5px solid #FECACA}
 .esr-vbox.plus{background:#FFFBEB;border:1.5px solid #FDE68A}
-.esr-vlbl{font-size:12.5px;font-weight:700}
+.esr-vlbl{font-size:12.5px;font-weight:750}
 .esr-vlbl.empty{color:#94A3B8}.esr-vlbl.zero{color:#16A34A}.esr-vlbl.minus{color:#DC2626}.esr-vlbl.plus{color:#D97706}
-.esr-vval{font-size:15px;font-weight:900}
+.esr-vval{font-size:15px;font-weight:800}
 .esr-vval.empty{color:#CBD5E1}.esr-vval.zero{color:#16A34A}.esr-vval.minus{color:#DC2626}.esr-vval.plus{color:#D97706}
 .esr-foot{padding:14px 22px;border-top:1.5px solid #F1F5F9;display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-shrink:0}
-.esr-cancel{height:42px;padding:0 18px;border-radius:10px;border:1.5px solid #E2E8F0;background:#fff;color:#64748B;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s}
+.esr-cancel{height:42px;padding:0 18px;border-radius:10px;border:1.5px solid #E2E8F0;background:#fff;color:#64748B;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;transition:.15s}
 .esr-cancel:hover{background:#F1F5F9}
 .esr-confirm{height:42px;padding:0 22px;border-radius:10px;border:none;background:linear-gradient(135deg,#DC2626,#B91C1C);color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;gap:7px}
 .esr-confirm:hover:not(:disabled){background:linear-gradient(135deg,#B91C1C,#991B1B)}
 .esr-confirm:disabled{background:#CBD5E1;cursor:not-allowed}
 </style>
+    
 </head>
 <body>
 
@@ -516,16 +521,16 @@ body{display:flex}
         <% if (isLoggedIn) { %>
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px">
           <div style="width:34px;height:34px;background:linear-gradient(135deg,#3f83f8,#1a56db);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff"><%= initials %></div>
-          <div><div style="font-size:13px;font-weight:700;color:#fff"><%= fullName %></div><div style="font-size:10.5px;color:rgba(255,255,255,.45)">Đang ca làm việc</div></div>
+          <div><div style="font-size:13px;font-weight:750;color:#fff"><%= fullName %></div><div style="font-size:10.5px;color:rgba(255,255,255,.45)">Đang ca làm việc</div></div>
         </div>
-        <a href="<%= ctx %>/staff-dashboard" style="display:block;padding:8px 11px;background:rgba(255,255,255,.1);border-radius:8px;color:#93c5fd;font-size:12.5px;font-weight:600;text-decoration:none;margin-bottom:5px;text-align:center">📅 Xem lịch ca</a>
-        <button onclick="openMyInvModal();toggleCheckinPanel();" style="display:block;width:100%;padding:8px 11px;background:rgba(255,255,255,.1);border-radius:8px;color:#a5f3fc;font-size:12.5px;font-weight:600;text-align:center;border:none;cursor:pointer;font-family:inherit;margin-bottom:5px">🧾 Hóa đơn của tôi</button>
-        <button onclick="openOpenCashModal();toggleCheckinPanel();" style="display:block;width:100%;padding:8px 11px;background:rgba(255,255,255,.1);border-radius:8px;color:#86efac;font-size:12.5px;font-weight:600;text-align:center;border:none;cursor:pointer;font-family:inherit;margin-bottom:5px">💵 Khai báo tiền đầu ca (tùy chọn)</button>
-        <button onclick="openEndShiftModal();toggleCheckinPanel();" style="display:block;width:100%;padding:8px 11px;background:rgba(239,68,68,.15);border-radius:8px;color:#fca5a5;font-size:12.5px;font-weight:600;text-align:center;border:none;cursor:pointer;font-family:inherit">⏻ Kết thúc ca</button>
+        <a href="<%= ctx %>/staff-dashboard" style="display:block;padding:8px 11px;background:rgba(255,255,255,.1);border-radius:8px;color:#93c5fd;font-size:12.5px;font-weight:750;text-decoration:none;margin-bottom:5px;text-align:center">📅 Xem lịch ca</a>
+        <button onclick="openMyInvModal();toggleCheckinPanel();" style="display:block;width:100%;padding:8px 11px;background:rgba(255,255,255,.1);border-radius:8px;color:#a5f3fc;font-size:12.5px;font-weight:750;text-align:center;border:none;cursor:pointer;font-family:inherit;margin-bottom:5px">🧾 Hóa đơn của tôi</button>
+        <button onclick="openOpenCashModal();toggleCheckinPanel();" style="display:block;width:100%;padding:8px 11px;background:rgba(255,255,255,.1);border-radius:8px;color:#86efac;font-size:12.5px;font-weight:750;text-align:center;border:none;cursor:pointer;font-family:inherit;margin-bottom:5px">💵 Khai báo tiền đầu ca (tùy chọn)</button>
+        <button onclick="openEndShiftModal();toggleCheckinPanel();" style="display:block;width:100%;padding:8px 11px;background:rgba(239,68,68,.15);border-radius:8px;color:#fca5a5;font-size:12.5px;font-weight:750;text-align:center;border:none;cursor:pointer;font-family:inherit">⏻ Kết thúc ca</button>
         <% } else { %>
         <div style="font-size:11.5px;color:rgba(255,255,255,.5);margin-bottom:11px">Điểm danh để ghi nhận doanh số theo nhân viên</div>
         <!-- Nút điểm danh khuôn mặt -->
-        <button onclick="openFaceModal();toggleCheckinPanel();" style="width:100%;padding:10px;background:linear-gradient(135deg,#059669,#047857);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:6px">
+        <button onclick="openFaceModal();toggleCheckinPanel();" style="width:100%;padding:10px;background:linear-gradient(135deg,#059669,#047857);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:6px">
           📷 Điểm danh khuôn mặt
         </button>
         <div style="font-size:10.5px;color:rgba(255,255,255,.25);margin-top:6px;text-align:center">POS hoạt động bình thường khi chưa đăng nhập</div>
@@ -568,10 +573,10 @@ body{display:flex}
   <div id="checkinBanner" style="padding:10px 16px;background:linear-gradient(90deg,#fffbeb,#fef3c7);border-bottom:2px solid #f59e0b;display:flex;align-items:center;gap:12px;flex-shrink:0">
     <span style="font-size:20px;flex-shrink:0">⏰</span>
     <div style="flex:1;min-width:0">
-      <div style="font-size:13px;font-weight:700;color:#92400e">Chưa điểm danh ca làm</div>
+      <div style="font-size:13px;font-weight:750;color:#92400e">Chưa điểm danh ca làm</div>
       <div style="font-size:11.5px;color:#b45309;margin-top:1px">Vui lòng điểm danh để ghi nhận doanh số theo nhân viên</div>
     </div>
-    <button onclick="openFaceModal()" style="padding:8px 18px;background:#f59e0b;border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:6px">
+    <button onclick="openFaceModal()" style="padding:8px 18px;background:#f59e0b;border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:6px">
       📷 Điểm danh ngay
     </button>
   </div>
@@ -585,9 +590,9 @@ body{display:flex}
         <h3 style="margin:0;font-size:18px;font-weight:800;color:#0f172a">Khai báo tiền đầu ca</h3>
       </div>
       <p style="font-size:12.5px;color:#64748b;margin:0 0 16px;line-height:1.5">Đếm tiền mặt hiện có trong két và nhập số tiền để mở ca. Số này dùng đối soát khi kết ca.</p>
-      <label style="font-size:12.5px;font-weight:700;color:#334155;display:block;margin-bottom:6px">Tiền mặt trong két (đ) <span style="color:#dc2626">*</span></label>
+      <label style="font-size:12.5px;font-weight:750;color:#334155;display:block;margin-bottom:6px">Tiền mặt trong két (đ) <span style="color:#dc2626">*</span></label>
       <input type="number" id="openCashInput" min="0" step="1000" placeholder="VD: 500000"
-             style="width:100%;border:1.5px solid #e2e8f0;border-radius:11px;padding:12px 14px;font-size:17px;font-weight:700;font-family:inherit;box-sizing:border-box"
+             style="width:100%;border:1.5px solid #e2e8f0;border-radius:11px;padding:12px 14px;font-size:17px;font-weight:750;font-family:inherit;box-sizing:border-box"
              onkeydown="if(event.key==='Enter')confirmOpenShift()">
       <div id="openCashErr" style="color:#dc2626;font-size:12px;margin-top:6px;display:none"></div>
       <button type="button" id="openShiftBtn" onclick="confirmOpenShift()"
@@ -629,23 +634,23 @@ body{display:flex}
         <h3 style="margin:0;font-size:17px;font-weight:800;color:#0f172a">Tạo nhanh khách hàng</h3>
       </div>
       <p style="font-size:12px;color:#64748b;margin:0 0 14px">Chỉ cần SĐT + Tên. Khách tự bổ sung hồ sơ tại Cổng khách hàng sau.</p>
-      <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin-bottom:5px">Số điện thoại <span style="color:#dc2626">*</span></label>
+      <label style="font-size:12px;font-weight:750;color:#334155;display:block;margin-bottom:5px">Số điện thoại <span style="color:#dc2626">*</span></label>
       <input type="tel" id="qcPhone" maxlength="10" inputmode="numeric" placeholder="0901234567"
              oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)"
-             style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:11px 13px;font-size:16px;font-weight:700;font-family:inherit;letter-spacing:1px;box-sizing:border-box">
-      <label style="font-size:12px;font-weight:700;color:#334155;display:block;margin:12px 0 5px">Họ tên khách <span style="color:#dc2626">*</span></label>
+             style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:11px 13px;font-size:16px;font-weight:750;font-family:inherit;letter-spacing:1px;box-sizing:border-box">
+      <label style="font-size:12px;font-weight:750;color:#334155;display:block;margin:12px 0 5px">Họ tên khách <span style="color:#dc2626">*</span></label>
       <input type="text" id="qcName" placeholder="VD: Đào Trần Thanh Trúc"
              onkeydown="if(event.key==='Enter')submitQuickCreate()"
              style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:11px 13px;font-size:14.5px;font-family:inherit;box-sizing:border-box">
       <div style="display:flex;gap:10px;margin-top:12px">
-        <label style="flex:1;display:flex;align-items:center;gap:7px;border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 12px;font-size:13px;font-weight:600;cursor:pointer">
+        <label style="flex:1;display:flex;align-items:center;gap:7px;border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 12px;font-size:13px;font-weight:750;cursor:pointer">
           <input type="radio" name="qcGender" value="M" style="accent-color:#0d9488"> 👨 Nam</label>
-        <label style="flex:1;display:flex;align-items:center;gap:7px;border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 12px;font-size:13px;font-weight:600;cursor:pointer">
+        <label style="flex:1;display:flex;align-items:center;gap:7px;border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 12px;font-size:13px;font-weight:750;cursor:pointer">
           <input type="radio" name="qcGender" value="F" style="accent-color:#0d9488"> 👩 Nữ</label>
       </div>
       <div id="qcErr" style="display:none;color:#dc2626;font-size:12px;margin-top:8px"></div>
       <div style="display:flex;gap:10px;margin-top:16px">
-        <button onclick="closeQuickCreate()" style="flex:1;background:#f1f5f9;color:#475569;border:none;border-radius:11px;padding:12px;font-weight:700;cursor:pointer;font-family:inherit">Hủy</button>
+        <button onclick="closeQuickCreate()" style="flex:1;background:#f1f5f9;color:#475569;border:none;border-radius:11px;padding:12px;font-weight:750;cursor:pointer;font-family:inherit">Hủy</button>
         <button id="qcSaveBtn" onclick="submitQuickCreate()" style="flex:2;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;border-radius:11px;padding:12px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit">💾 Lưu &amp; Chọn</button>
       </div>
     </div>
@@ -659,13 +664,13 @@ body{display:flex}
       <p id="nfcStatus" style="font-size:12.5px;color:#64748b;margin:0 0 14px;line-height:1.5">Chạm thẻ vào đầu đọc hoặc nhập mã thẻ…</p>
       <input type="text" id="nfcUidInput" placeholder="UID thẻ (tự nhận khi chạm)"
              onkeydown="if(event.key==='Enter')nfcLookup()"
-             style="width:100%;border:1.5px solid #e2e8f0;border-radius:11px;padding:12px 13px;font-size:15px;font-weight:700;font-family:inherit;letter-spacing:1px;text-align:center;box-sizing:border-box">
+             style="width:100%;border:1.5px solid #e2e8f0;border-radius:11px;padding:12px 13px;font-size:15px;font-weight:750;font-family:inherit;letter-spacing:1px;text-align:center;box-sizing:border-box">
       <button onclick="nfcLookup()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#1558A8,#3ABDE0);color:#fff;border:none;border-radius:11px;padding:12px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit">🔍 Tra thẻ</button>
       <div id="nfcStep2" style="display:none;margin-top:14px;padding-top:14px;border-top:1px dashed #e2e8f0">
         <input type="tel" id="nfcPhoneInput" maxlength="10" inputmode="numeric" placeholder="SĐT khách để liên kết thẻ"
                oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)"
                onkeydown="if(event.key==='Enter')nfcLinkSubmit()"
-               style="width:100%;border:1.5px solid #e2e8f0;border-radius:11px;padding:12px 13px;font-size:15px;font-weight:700;font-family:inherit;letter-spacing:1px;text-align:center;box-sizing:border-box">
+               style="width:100%;border:1.5px solid #e2e8f0;border-radius:11px;padding:12px 13px;font-size:15px;font-weight:750;font-family:inherit;letter-spacing:1px;text-align:center;box-sizing:border-box">
         <button onclick="nfcLinkSubmit()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;border-radius:11px;padding:12px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit">🔗 Liên kết thẻ</button>
       </div>
     </div>
@@ -696,7 +701,7 @@ body{display:flex}
       </div>
       <div id="cdBody" style="padding:20px;overflow-y:auto;flex:1"></div>
       <div style="padding:14px 20px;border-top:1px solid #eef2f7;display:flex;gap:10px">
-        <button onclick="closeCustDetail()" style="flex:1;background:#f1f5f9;color:#475569;border:none;border-radius:11px;padding:12px;font-weight:700;cursor:pointer;font-family:inherit">Đóng</button>
+        <button onclick="closeCustDetail()" style="flex:1;background:#f1f5f9;color:#475569;border:none;border-radius:11px;padding:12px;font-weight:750;cursor:pointer;font-family:inherit">Đóng</button>
         <button onclick="cdPickAndClose()" style="flex:2;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;border-radius:11px;padding:12px;font-weight:800;cursor:pointer;font-family:inherit">✓ Chọn khách này vào hóa đơn</button>
       </div>
     </div>
@@ -1106,6 +1111,9 @@ let cart = [];
 let selectedCustomer = null;
 let selectedPayment = 'CASH';
 let allMedicines = [];
+// Chặn submitSale() chạy chồng lẫn nhau — vd. khi 2 lượt poll QR cùng thấy PAID gần như đồng
+// thời (do lag mạng) và mỗi lượt tự lên lịch gọi submitSale() riêng → trừ kho 2 lần cho 1 đơn.
+let _saleInFlight = false;
 
 // ── Multi-POS state ──
 let currentStation = <%= posStation %>;  // 0 = belum pilih
@@ -1298,7 +1306,7 @@ function renderCart() {
       return '<div class="inv-item">'
         + '<div class="inv-i-info">'
           + '<div class="inv-i-name" style="display:flex;align-items:center;">' + rxBadge + escHtml(item.name) + '</div>'
-          + '<div class="inv-i-price" style="margin-top:3px;color:#475569;">M\u00E3: <span style="font-weight:700;color:#0F172A;">' + escHtml(item.code) + '</span> \u00B7 ' + fmtMoney(item.price) + ' / ' + escHtml(item.unit) + '</div>'
+          + '<div class="inv-i-price" style="margin-top:3px;color:#475569;">M\u00E3: <span style="font-weight:750;color:#0F172A;">' + escHtml(item.code) + '</span> \u00B7 ' + fmtMoney(item.price) + ' / ' + escHtml(item.unit) + '</div>'
           + metaHtml
         + '</div>'
         + '<div class="qty-ctrl">'
@@ -1557,11 +1565,11 @@ function custMgmtSearch() {
         + 'onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'\'">'
         + '<span style="font-size:18px">' + (c.hasNfc ? '📶' : '👤') + '</span>'
         + '<div onclick="posCustomerDetail(' + c.id + ')" style="flex:1;min-width:0;cursor:pointer">'
-        + '<div style="font-weight:700;font-size:13.5px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHtml(c.name) + '</div>'
+        + '<div style="font-weight:750;font-size:13.5px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHtml(c.name) + '</div>'
         + '<div style="font-size:12px;color:#64748b">' + escHtml(c.phone || '—') + '</div>'
         + '</div>'
-        + '<button onclick="posCustomerDetail(' + c.id + ')" style="flex-shrink:0;background:#eff6ff;color:#1558a8;border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">👁 Xem</button>'
-        + '<button onclick="pickCustomer(\'' + c.phone + '\')" style="flex-shrink:0;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;border-radius:8px;padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Chọn →</button>'
+        + '<button onclick="posCustomerDetail(' + c.id + ')" style="flex-shrink:0;background:#eff6ff;color:#1558a8;border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:750;cursor:pointer;font-family:inherit">👁 Xem</button>'
+        + '<button onclick="pickCustomer(\'' + c.phone + '\')" style="flex-shrink:0;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;border-radius:8px;padding:6px 11px;font-size:12px;font-weight:750;cursor:pointer;font-family:inherit">Chọn →</button>'
         + '</div>'
       ).join('');
     } catch (e) {
@@ -1592,14 +1600,14 @@ async function posCustomerDetail(id) {
 
     const gender = d.gender === 'M' ? 'Nam' : d.gender === 'F' ? 'Nữ' : '—';
     const money  = n => new Intl.NumberFormat('vi-VN').format(Math.round(n || 0)) + 'đ';
-    const stBadge = s => s === 'COMPLETED' ? '<span style="color:#059669;font-weight:700">✅ Hoàn tất</span>'
-                        : s === 'CANCELLED' ? '<span style="color:#dc2626;font-weight:700">❌ Đã hủy</span>'
-                        : '<span style="color:#d97706;font-weight:700">⏳ Xử lý</span>';
+    const stBadge = s => s === 'COMPLETED' ? '<span style="color:#059669;font-weight:750">✅ Hoàn tất</span>'
+                        : s === 'CANCELLED' ? '<span style="color:#dc2626;font-weight:750">❌ Đã hủy</span>'
+                        : '<span style="color:#d97706;font-weight:750">⏳ Xử lý</span>';
 
     let invRows = d.invoices.length
       ? d.invoices.map(iv =>
           '<tr style="border-bottom:1px solid #f1f5f9">'
-          + '<td style="padding:8px 6px;font-family:monospace;color:#1558a8;font-weight:700">' + escHtml(iv.code) + '</td>'
+          + '<td style="padding:8px 6px;font-family:monospace;color:#1558a8;font-weight:750">' + escHtml(iv.code) + '</td>'
           + '<td style="padding:8px 6px;color:#64748b;font-size:12px">' + escHtml(iv.time) + '</td>'
           + '<td style="padding:8px 6px;text-align:right;font-weight:800">' + money(iv.amount) + '</td>'
           + '<td style="padding:8px 6px;text-align:right">' + stBadge(iv.status) + '</td>'
@@ -1607,31 +1615,31 @@ async function posCustomerDetail(id) {
       : '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:22px">🛒 Chưa có hóa đơn nào.</td></tr>';
 
     const medBox = (label, val, warn) => val
-      ? '<div style="margin-top:8px"><div style="font-size:10.5px;font-weight:700;text-transform:uppercase;color:#7a90b0;margin-bottom:3px">' + label + '</div>'
-        + '<div style="padding:9px 11px;border-radius:9px;font-size:12.5px;font-weight:600;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b">' + escHtml(val) + '</div></div>'
+      ? '<div style="margin-top:8px"><div style="font-size:10.5px;font-weight:750;text-transform:uppercase;color:#7a90b0;margin-bottom:3px">' + label + '</div>'
+        + '<div style="padding:9px 11px;border-radius:9px;font-size:12.5px;font-weight:750;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b">' + escHtml(val) + '</div></div>'
       : '';
 
     body.innerHTML =
       '<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">'
-      + '<div style="width:58px;height:58px;border-radius:16px;background:linear-gradient(135deg,#3abde0,#1558a8);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;color:#fff;flex-shrink:0">' + escHtml((d.name||'?').charAt(0).toUpperCase()) + '</div>'
+      + '<div style="width:58px;height:58px;border-radius:16px;background:linear-gradient(135deg,#3abde0,#1558a8);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#fff;flex-shrink:0">' + escHtml((d.name||'?').charAt(0).toUpperCase()) + '</div>'
       + '<div style="flex:1;min-width:0">'
-      + '<div style="font-size:19px;font-weight:900;color:#0f172a">' + escHtml(d.name) + '</div>'
+      + '<div style="font-size:19px;font-weight:800;color:#0f172a">' + escHtml(d.name) + '</div>'
       + '<div style="font-size:13px;color:#64748b">📱 ' + escHtml(d.phone || '—')
-      + (d.tier ? ' · <span style="color:#d97706;font-weight:700">🏅 ' + escHtml(d.tier) + '</span>' : '')
-      + (d.hasNfc ? ' · <span style="color:#0d9488;font-weight:700">📶 có thẻ NFC</span>' : '') + '</div>'
+      + (d.tier ? ' · <span style="color:#d97706;font-weight:750">🏅 ' + escHtml(d.tier) + '</span>' : '')
+      + (d.hasNfc ? ' · <span style="color:#0d9488;font-weight:750">📶 có thẻ NFC</span>' : '') + '</div>'
       + '</div></div>'
       // KPI
       + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">'
-      + '<div style="background:#f5f3ff;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:900;color:#7c3aed">' + d.points + '</div><div style="font-size:10.5px;color:#7a90b0;font-weight:700;text-transform:uppercase">Điểm</div></div>'
-      + '<div style="background:#eff6ff;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:900;color:#1558a8">' + d.invoiceCount + '</div><div style="font-size:10.5px;color:#7a90b0;font-weight:700;text-transform:uppercase">Hóa đơn</div></div>'
-      + '<div style="background:#ecfdf5;border-radius:12px;padding:12px;text-align:center"><div style="font-size:16px;font-weight:900;color:#059669">' + money(d.totalSpent) + '</div><div style="font-size:10.5px;color:#7a90b0;font-weight:700;text-transform:uppercase">Đã chi</div></div>'
+      + '<div style="background:#f5f3ff;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:#7c3aed">' + d.points + '</div><div style="font-size:10.5px;color:#7a90b0;font-weight:750;text-transform:uppercase">Điểm</div></div>'
+      + '<div style="background:#eff6ff;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:#1558a8">' + d.invoiceCount + '</div><div style="font-size:10.5px;color:#7a90b0;font-weight:750;text-transform:uppercase">Hóa đơn</div></div>'
+      + '<div style="background:#ecfdf5;border-radius:12px;padding:12px;text-align:center"><div style="font-size:16px;font-weight:800;color:#059669">' + money(d.totalSpent) + '</div><div style="font-size:10.5px;color:#7a90b0;font-weight:750;text-transform:uppercase">Đã chi</div></div>'
       + '</div>'
       // Info
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;margin-bottom:6px">'
-      + '<div><span style="color:#7a90b0;font-size:11px;font-weight:700;text-transform:uppercase">Giới tính</span><div style="font-weight:700">' + gender + '</div></div>'
-      + '<div><span style="color:#7a90b0;font-size:11px;font-weight:700;text-transform:uppercase">Ngày sinh</span><div style="font-weight:700">' + (d.dob || '—') + '</div></div>'
-      + '<div><span style="color:#7a90b0;font-size:11px;font-weight:700;text-transform:uppercase">Email</span><div style="font-weight:700;word-break:break-all">' + (escHtml(d.email) || '—') + '</div></div>'
-      + '<div><span style="color:#7a90b0;font-size:11px;font-weight:700;text-transform:uppercase">Địa chỉ</span><div style="font-weight:700">' + (escHtml(d.address) || '—') + '</div></div>'
+      + '<div><span style="color:#7a90b0;font-size:11px;font-weight:750;text-transform:uppercase">Giới tính</span><div style="font-weight:750">' + gender + '</div></div>'
+      + '<div><span style="color:#7a90b0;font-size:11px;font-weight:750;text-transform:uppercase">Ngày sinh</span><div style="font-weight:750">' + (d.dob || '—') + '</div></div>'
+      + '<div><span style="color:#7a90b0;font-size:11px;font-weight:750;text-transform:uppercase">Email</span><div style="font-weight:750;word-break:break-all">' + (escHtml(d.email) || '—') + '</div></div>'
+      + '<div><span style="color:#7a90b0;font-size:11px;font-weight:750;text-transform:uppercase">Địa chỉ</span><div style="font-weight:750">' + (escHtml(d.address) || '—') + '</div></div>'
       + '</div>'
       + medBox('⚠️ Dị ứng', d.allergy, true)
       + medBox('⚠️ Bệnh mạn tính', d.chronic, true)
@@ -1761,7 +1769,7 @@ function nfcLinkSubmit() {
 
 // ── Checkout ──
 function doCheckout() {
-  if (cart.length === 0) return;
+  if (cart.length === 0 || _saleInFlight) return;
   const total = calcTotal();
   if (selectedPayment === 'CASH') {
     const cashEl = document.getElementById('cashInput');
@@ -1785,11 +1793,17 @@ function doCheckout() {
 }
 
 function submitSale() {
+  if (_saleInFlight) return; // đang có 1 lượt thanh toán chạy dở — không cho gọi chồng
+  _saleInFlight = true;
   const btn = document.getElementById('checkoutBtn');
   btn.disabled = true;
   btn.innerHTML = '⏳ Đang xử lý…';
+  const clientRequestId = (window.crypto && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : (Date.now() + '-' + Math.random().toString(36).slice(2));
   const fd = new URLSearchParams();
   fd.append('action', 'complete-sale');
+  fd.append('clientRequestId', clientRequestId);
   fd.append('paymentMethod', selectedPayment);
   fd.append('discount', document.getElementById('discountInput').value || '0');
   if (selectedCustomer) fd.append('customerId', selectedCustomer.id);
@@ -1860,14 +1874,17 @@ function submitSale() {
         document.getElementById('successModal').classList.add('show');
         showToast('✅ Thanh toán thành công!'
           + (data.earnedPoints > 0 ? ' Khách +' + data.earnedPoints + ' điểm ⭐' : ''), 'ok');
+        _saleInFlight = false;
       } else {
         showToast('❌ ' + (data.msg || 'Lỗi xử lý!'), 'err');
         btn.disabled = false; btn.innerHTML = '🛒 THANH TOÁN';
+        _saleInFlight = false;
       }
     })
     .catch(err => {
       showToast('❌ Lỗi kết nối!', 'err');
       btn.disabled = false; btn.innerHTML = '🛒 THANH TOÁN';
+      _saleInFlight = false;
       console.error(err);
     });
 }
@@ -1983,28 +2000,28 @@ function printReceipt() {
       + '<td style="text-align:center;padding:4px 6px">' + escHtml(item.unit) + '</td>'
       + '<td style="text-align:center;padding:4px 6px">' + item.qty + '</td>'
       + '<td style="text-align:right;padding:4px 6px">' + fmt(item.price) + '</td>'
-      + '<td style="text-align:right;padding:4px 6px;font-weight:700">' + fmt(item.price * item.qty) + '</td>'
+      + '<td style="text-align:right;padding:4px 6px;font-weight:750">' + fmt(item.price * item.qty) + '</td>'
       + '</tr>';
   });
 
   var html = '<!DOCTYPE html>'
     + '<html lang="vi"><head>'
     + '<meta charset="UTF-8">'
-    + '<title>Hóa đơn ' + escHtml(inv.code) + '</title>'
+    + '<title>Hóa đơn ' + escHtml(inv.code) + '</title>'
     + '<style>'
     + '* { margin:0; padding:0; box-sizing:border-box; }'
     + 'body { font-family: "Courier New", monospace; font-size: 12px; color: #000; padding: 8px; max-width: 320px; margin: 0 auto; }'
     + '.center { text-align: center; }'
     + '.bold { font-weight: bold; }'
-    + '.title { font-size: 15px; font-weight: 900; margin: 4px 0; }'
+    + '.title { font-size: 15px; font-weight:800; margin: 4px 0; }'
     + '.divider { border-top: 1px dashed #000; margin: 7px 0; }'
     + '.divider2 { border-top: 2px solid #000; margin: 7px 0; }'
     + 'table { width: 100%; border-collapse: collapse; font-size: 11px; }'
-    + 'th { background: #eee; padding: 4px 6px; font-weight: 700; border-bottom: 1px solid #000; }'
+    + 'th { background: #eee; padding: 4px 6px; font-weight:750; border-bottom: 1px solid #000; }'
     + 'td { vertical-align: top; }'
     + '.totals { margin-top: 6px; }'
     + '.totals-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 12px; }'
-    + '.totals-row.grand { font-size: 14px; font-weight: 900; border-top: 2px solid #000; padding-top: 5px; margin-top: 3px; }'
+    + '.totals-row.grand { font-size: 14px; font-weight:800; border-top: 2px solid #000; padding-top: 5px; margin-top: 3px; }'
     + '.footer { text-align: center; margin-top: 10px; font-style: italic; font-size: 11.5px; }'
     + '.kv { display: flex; justify-content: space-between; font-size: 11.5px; padding: 2px 0; }'
     + '@media print { body { padding: 0; } button { display: none; } }'
@@ -2050,8 +2067,8 @@ function printReceipt() {
     + '</div>'
     + '<div style="height:16px"></div>'
     + '<div class="center" style="margin-top:8px">'
-    + '<button onclick="window.print()" style="padding:8px 20px;background:#1a56db;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;font-family:sans-serif">🖶 In hóa đơn</button>'
-    + '<button onclick="window.close()" style="padding:8px 16px;background:#e5e7eb;color:#111;border:none;border-radius:6px;cursor:pointer;font-size:13px;margin-left:6px;font-family:sans-serif">✕ Đóng</button>'
+    + '<button onclick="window.print()" style="padding:8px 20px;background:#1a56db;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:750;font-family:&quot;Plus Jakarta Sans&quot;,sans-serif">🖶 In hóa đơn</button>'
+    + '<button onclick="window.close()" style="padding:8px 16px;background:#e5e7eb;color:#111;border:none;border-radius:6px;cursor:pointer;font-size:13px;margin-left:6px;font-family:&quot;Plus Jakarta Sans&quot;,sans-serif">✕ Đóng</button>'
     + '</div>'
     + '</body></html>';
 
@@ -2591,11 +2608,11 @@ async function openMyInvModal() {
         }
       }
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid #f1f5f9">'
-        + '<div><div style="font-weight:700;font-size:13.5px;color:#0f172a">' + iv.code + '</div>'
+        + '<div><div style="font-weight:750;font-size:13.5px;color:#0f172a">' + iv.code + '</div>'
         + '<div style="font-size:11.5px;color:#94a3b8;margin-top:2px">' + displayTime + ' · ' + (mLabel[iv.method] || iv.method) + '</div></div>'
         + '<div style="text-align:right"><div style="font-weight:800;font-size:14px;color:' + (refunded ? '#dc2626' : '#059669') + '">'
         + fmtMoney(parseFloat(iv.amount) || 0) + '</div>'
-        + (refunded ? '<div style="font-size:10.5px;color:#dc2626;font-weight:700">Hoàn trả</div>' : '')
+        + (refunded ? '<div style="font-size:10.5px;color:#dc2626;font-weight:750">Hoàn trả</div>' : '')
         + '</div></div>';
     }).join('');
   } catch (e) {
@@ -2637,8 +2654,13 @@ let _qrOrderCode    = null;
 let _qrPollIv       = null;
 let _qrCountdownIv  = null;
 let _qrQrInstance   = null;
+// Nhiều lượt poll (mỗi 2.5s) có thể đang CHỜ fetch cùng lúc nếu mạng/PayOS lag — nếu 2 lượt
+// cùng thấy PAID trước khi lượt đầu kịp clearInterval, mỗi lượt sẽ tự lên lịch submitSale()
+// riêng → trừ kho 2 lần. Cờ này đảm bảo chỉ lượt PHÁT HIỆN PAID ĐẦU TIÊN được xử lý.
+let _qrPaidHandled  = false;
 
 async function openQrModal(total) {
+  _qrPaidHandled = false;
   const btn = document.getElementById('checkoutBtn');
   btn.disabled = true;
   btn.innerHTML = '⏳ Tạo mã QR…';
@@ -2705,6 +2727,7 @@ async function openQrModal(total) {
 }
 
 async function pollQrStatus(orderCode, total) {
+  if (_qrPaidHandled) return; // đã có 1 lượt poll khác xử lý PAID rồi — bỏ qua lượt này
   try {
     const res  = await fetch(ctx + '/pos', {
       method: 'POST',
@@ -2712,8 +2735,10 @@ async function pollQrStatus(orderCode, total) {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     });
     const data = await res.json();
+    if (_qrPaidHandled) return; // 1 lượt poll khác đã xử lý xong PAID trong lúc chờ fetch này
 
     if (data.status === 'PAID') {
+      _qrPaidHandled = true;
       // Stop polling & countdown
       clearInterval(_qrPollIv);     _qrPollIv = null;
       clearInterval(_qrCountdownIv);_qrCountdownIv = null;

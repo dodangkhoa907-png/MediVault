@@ -28,7 +28,7 @@ public class ShiftDAO implements IShiftDAO {
             s.setEndTime(rs.getTimestamp("EndTime").toLocalDateTime());
         s.setOpeningCash(rs.getBigDecimal("OpeningCash"));
         s.setClosingCash(rs.getBigDecimal("ClosingCash"));
-        s.setNotes(rs.getNString("Notes"));
+        s.setNotes(rs.getString("Notes"));
         s.setGracePeriodMinutes(rs.getInt("GracePeriodMinutes"));
         try {
             String st = rs.getString("Status");

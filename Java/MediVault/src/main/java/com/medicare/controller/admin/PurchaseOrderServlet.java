@@ -45,11 +45,27 @@ public class PurchaseOrderServlet extends HttpServlet {
         if (action == null) action = "list";
 
         switch (action) {
-            case "list"   -> showList(req, resp);
-            case "detail" -> showDetail(req, resp);
-            case "new"    -> showForm(req, resp);
-            default       -> showList(req, resp);
+            case "list"        -> showList(req, resp);
+            case "detail"      -> showDetail(req, resp);
+            case "new"         -> showForm(req, resp);
+            case "check-batch" -> apiCheckBatchDuplicate(req, resp);
+            default            -> showList(req, resp);
         }
+    }
+
+    /**
+     * API: kiểm tra số lô đã tồn tại cho thuốc này chưa — gọi từ purchase-order-form.jsp
+     * (onblur ô "Số lô") để báo trùng NGAY khi gõ, thay vì đợi tới lúc lưu/xác nhận nhận
+     * hàng mới bị DB (UQ_Batch) từ chối bằng exception khó hiểu.
+     * GET /purchase-orders?action=check-batch&medicineId=X&batchNo=Y
+     */
+    private void apiCheckBatchDuplicate(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        int medicineId = parseIntOr(req.getParameter("medicineId"), 0);
+        String batchNo = req.getParameter("batchNo");
+        boolean duplicate = medicineId > 0 && batchNo != null && !batchNo.isBlank()
+                && batchesDAO.findByMedicineAndBatchNumber(medicineId, batchNo.trim()) != null;
+        resp.getWriter().print("{\"duplicate\":" + duplicate + "}");
     }
 
     @Override
@@ -84,7 +100,12 @@ public class PurchaseOrderServlet extends HttpServlet {
                     "Xác nhận hàng đã về — tạo " + created + " lô vào kho (đơn ID " + poId + ")");
             resp.sendRedirect(req.getContextPath() + "/purchase-orders?action=detail&id=" + poId + "&msg=received");
         } else {
-            resp.sendRedirect(req.getContextPath() + "/purchase-orders?action=detail&id=" + poId + "&msg=receive-fail");
+            String reason = poDAO.getLastConfirmError();
+            AuditHelper.log(req, "Nhận hàng nhập kho THẤT BẠI", "PurchaseOrder", poId,
+                    "Lý do: " + (reason != null ? reason : "không xác định"));
+            String url = req.getContextPath() + "/purchase-orders?action=detail&id=" + poId + "&msg=receive-fail";
+            if (reason != null) url += "&receiveErr=" + java.net.URLEncoder.encode(reason, "UTF-8");
+            resp.sendRedirect(url);
         }
     }
 
@@ -146,6 +167,11 @@ public class PurchaseOrderServlet extends HttpServlet {
             throws ServletException, IOException {
         req.setAttribute("suppliers", supplierDAO.findAllActive());
         req.setAttribute("medicines", medicineDAO.findAll()); // cho dropdown dòng hàng
+        // Hạn dùng THỰC TẾ (ngày) tính từ lịch sử lô đã nhập — ưu tiên hơn số tháng cấu hình
+        // tay, vì phản ánh đúng hạn dùng thật của thuốc đó trong kho.
+        req.setAttribute("avgShelfLifeDays", batchesDAO.getAvgShelfLifeDaysMap());
+        // Giá nhập TRUNG BÌNH thực tế từ lịch sử lô — đối chiếu giá nhập mới, cùng cơ chế với HSD.
+        req.setAttribute("avgImportPrice", batchesDAO.getAvgImportPriceMap());
         // Nhảy từ màn "thuốc đã tồn tại" sang: preselect thuốc vào dòng đầu tiên
         req.setAttribute("preselectMedicineId", parseIntOr(req.getParameter("medicineId"), 0));
         SidebarHelper.load(req);
@@ -176,6 +202,8 @@ public class PurchaseOrderServlet extends HttpServlet {
         List<Batches> lines = new ArrayList<>();
         BigDecimal totalGoods = BigDecimal.ZERO;
         int n = medIds != null ? medIds.length : 0;
+        // Chống trùng số lô NGAY TRONG cùng 1 phiếu (2 dòng cùng thuốc + cùng số lô)
+        Set<String> seenBatchKeys = new HashSet<>();
         for (int i = 0; i < n; i++) {
             String midS = medIds[i];
             if (ValidationUtil.isBlank(midS)) continue; // dòng trống → bỏ qua
@@ -189,6 +217,19 @@ public class PurchaseOrderServlet extends HttpServlet {
 
             if (qty <= 0)                         errors.add("Dòng " + row + ": số lượng phải > 0.");
             if (ValidationUtil.isBlank(batchNo))  errors.add("Dòng " + row + ": thiếu số lô.");
+
+            // ── Chặn trùng số lô NGAY LÚC TẠO PHIẾU — trước đây chỉ DB (UQ_Batch) phát hiện,
+            // nhưng phải đợi tới lúc "Xác nhận Hàng Đã Tới" mới báo (SQLServerException thô,
+            // khó hiểu). Kiểm tra sớm ở đây để báo ngay bằng tiếng Việt dễ hiểu. ──────────────
+            if (!ValidationUtil.isBlank(batchNo) && medId > 0) {
+                String key = medId + "|" + batchNo.trim().toUpperCase();
+                if (!seenBatchKeys.add(key)) {
+                    errors.add("Dòng " + row + ": số lô \"" + batchNo.trim() + "\" bị trùng với dòng khác trong CÙNG phiếu này (cùng 1 thuốc).");
+                } else if (batchesDAO.findByMedicineAndBatchNumber(medId, batchNo.trim()) != null) {
+                    errors.add("Dòng " + row + ": số lô \"" + batchNo.trim() + "\" đã tồn tại trong kho cho thuốc này — dùng số lô khác.");
+                }
+            }
+
             LocalDate expiry = null;
             if (ValidationUtil.isBlank(expiryS)) {
                 errors.add("Dòng " + row + ": thiếu hạn dùng.");
@@ -196,6 +237,11 @@ public class PurchaseOrderServlet extends HttpServlet {
                 try {
                     expiry = LocalDate.parse(expiryS);
                     if (!expiry.isAfter(LocalDate.now())) errors.add("Dòng " + row + ": HSD phải sau hôm nay.");
+                    // ── Mirror trigger DB trg_Batches_BlockShortExpiry (HSD < 2 tháng) —
+                    // báo NGAY lúc tạo phiếu thay vì đợi tới lúc nhập kho mới bị trigger chặn.
+                    // Nếu sửa ngưỡng ở đây, PHẢI sửa luôn ngưỡng "2" trong trigger DB cho khớp.
+                    else if (expiry.isBefore(LocalDate.now().plusMonths(2)))
+                        errors.add("Dòng " + row + ": HSD chỉ còn dưới 2 tháng — không được phép nhập kho (theo quy định HSD tối thiểu).");
                 } catch (Exception e) { errors.add("Dòng " + row + ": HSD không hợp lệ."); }
             }
             if (!errors.isEmpty()) continue;
@@ -237,11 +283,34 @@ public class PurchaseOrderServlet extends HttpServlet {
             AuditHelper.log(req, "Tạo phiếu nhập kho", "PurchaseOrder", poId,
                     "Phiếu nhập " + lines.size() + " lô từ NCC ID " + supId
                     + " — tổng " + totalGoods.toPlainString() + "đ");
-            resp.sendRedirect(req.getContextPath() + "/purchase-orders?action=detail&id=" + poId + "&msg=created");
+            String detailUrl = req.getContextPath() + "/purchase-orders?action=detail&id=" + poId + "&msg=created";
+
+            // ── Nhúng trong iframe modal (embed=1, xem medicine-list.jsp#poModal) ──
+            // KHÔNG được sendRedirect ở đây: redirect sẽ nạp purchase-order-detail.jsp
+            // (trang này KHÔNG hỗ trợ embed → tự vẽ nguyên bộ sidebar/topbar) ngay BÊN
+            // TRONG iframe nhỏ → người dùng thấy như "một trang mới" chồng lên trang cũ.
+            // Thay vào đó: thoát khỏi iframe bằng JS, điều hướng CHÍNH tab trình duyệt
+            // (window.top) sang trang chi tiết, đồng thời đóng modal ở trang cha.
+            if ("1".equals(req.getParameter("embed"))) {
+                resp.setContentType("text/html;charset=UTF-8");
+                resp.getWriter().print(
+                        "<script>" +
+                        "if (window.top !== window.self) { " +
+                        "  if (window.parent.closePoModal) window.parent.closePoModal();" +
+                        "  window.top.location.href = " + toJsStringLiteral(detailUrl) + ";" +
+                        "} else { window.location.href = " + toJsStringLiteral(detailUrl) + "; }" +
+                        "</script>");
+                return;
+            }
+            resp.sendRedirect(detailUrl);
         } else {
             req.setAttribute("errors", List.of("Lỗi khi lưu phiếu nhập — vui lòng thử lại."));
             showForm(req, resp);
         }
+    }
+
+    private String toJsStringLiteral(String s) {
+        return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
     }
 
     private BigDecimal parseMoney(String s) {

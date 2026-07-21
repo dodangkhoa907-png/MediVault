@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java"  pageEncoding="UTF-8" %>
 <% String activeNav = "shifts"; %>
 <%@ taglib prefix="fn"  uri="jakarta.tags.functions" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
@@ -17,11 +17,44 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <script>
+      if (window.self !== window.top) {
+        document.documentElement.classList.add('in-iframe');
+        window.addEventListener('DOMContentLoaded', function() {
+          document.body.classList.add('in-iframe');
+          document.documentElement.classList.add('in-iframe');
+        });
+      }
+    </script>
+    <style>
+      html.in-iframe .sidebar,
+      body.in-iframe .sidebar,
+      html.in-iframe .topbar,
+      body.in-iframe .topbar,
+      html.in-iframe #mainSidebar,
+      body.in-iframe #mainSidebar {
+        display: none !important;
+      }
+      html.in-iframe .main,
+      body.in-iframe .main {
+        margin-left: 0 !important;
+        min-height: 100vh !important;
+        width: 100% !important;
+      }
+      html.in-iframe .content,
+      body.in-iframe .content {
+        padding: 12px 14px !important;
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="ctx" content="${pageContext.request.contextPath}">
 <title>Xin nghỉ phép — medicare</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff-portal.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -31,16 +64,16 @@
   --green:#059669;--red:#DC2626;--amber:#D97706;
   --sidebar:228px;--radius:14px;
 }
-html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--soft);color:var(--ink)}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(--soft);color:var(--ink)}
 body{display:flex}
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50}
 .topbar-title{font-size:16px;font-weight:800;color:var(--ink)}
 .topbar-right{margin-left:auto}
-.btn-back{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border:1.5px solid var(--border);border-radius:9px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;transition:all .18s}
+.btn-back{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border:1.5px solid var(--border);border-radius:9px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;color:var(--muted);text-decoration:none;transition:all .18s}
 .btn-back:hover{border-color:var(--main);color:var(--main)}
 
 .content{padding:28px 32px;flex:1;max-width:680px}
-.page-title{font-size:22px;font-weight:900;color:var(--ink);margin-bottom:6px}
+.page-title{font-size:22px;font-weight:800;color:var(--ink);margin-bottom:6px}
 .page-sub{font-size:13.5px;color:var(--muted);margin-bottom:26px}
 
 /* ── FORM CARDS ── */
@@ -52,8 +85,8 @@ body{display:flex}
 
 /* Date picker */
 .fg{display:flex;flex-direction:column;gap:6px}
-.fg label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.fg input,.fg textarea{border:1.5px solid var(--border);border-radius:9px;padding:10px 14px;font-family:'Outfit',sans-serif;font-size:14px;color:var(--ink);background:#FAFAFA;outline:none;transition:border .18s,background .18s;width:100%}
+.fg label{font-size:11px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.fg input,.fg textarea{border:1.5px solid var(--border);border-radius:9px;padding:10px 14px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:var(--ink);background:#FAFAFA;outline:none;transition:border .18s,background .18s;width:100%}
 .fg input:focus,.fg textarea:focus{border-color:var(--main);background:#fff;box-shadow:0 0 0 3px rgba(109,40,217,.08)}
 
 /* Leave type cards */
@@ -69,7 +102,7 @@ body{display:flex}
 /* ── Date picker đẹp hơn ── */
 .date-pick-wrap{position:relative;display:flex;flex-direction:column;gap:8px}
 .date-pick-input{border:2px solid var(--border);border-radius:12px;padding:12px 16px;
-  font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;color:var(--ink);
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:750;color:var(--ink);
   background:#FAFAFA;outline:none;transition:all .2s;width:100%;
   cursor:pointer}
 .date-pick-input:focus{border-color:var(--main);background:#fff;
@@ -77,13 +110,13 @@ body{display:flex}
 .date-selected-preview{display:flex;align-items:center;gap:10px;
   padding:10px 14px;background:linear-gradient(135deg,rgba(109,40,217,.06),rgba(167,139,250,.06));
   border:1.5px solid rgba(109,40,217,.2);border-radius:10px;
-  font-size:13px;font-weight:600;color:#6D28D9;margin-top:4px}
+  font-size:13px;font-weight:750;color:#6D28D9;margin-top:4px}
 .date-selected-preview.hidden{display:none}
 .date-day-badge{background:#6D28D9;color:#fff;border-radius:8px;
-  padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+  padding:4px 10px;font-size:12px;font-weight:750;white-space:nowrap}
 /* ── Ca nghỉ picker ── */
 .shift-picker{margin-top:14px}
-.shift-picker-label{font-size:11px;font-weight:700;color:var(--muted);
+.shift-picker-label{font-size:11px;font-weight:750;color:var(--muted);
   text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:block}
 .shift-options{display:flex;flex-direction:column;gap:6px}
 .shift-opt{display:flex;align-items:center;gap:10px;padding:10px 14px;
@@ -93,9 +126,9 @@ body{display:flex}
   background:linear-gradient(135deg,rgba(109,40,217,.04),rgba(167,139,250,.04))}
 .shift-opt input{accent-color:var(--main);width:16px;height:16px;flex-shrink:0}
 .shift-opt-info{flex:1}
-.shift-opt-name{font-size:13px;font-weight:700;color:var(--ink)}
+.shift-opt-name{font-size:13px;font-weight:750;color:var(--ink)}
 .shift-opt-time{font-size:11.5px;color:var(--muted);margin-top:1px}
-.shift-opt-badge{font-size:10.5px;font-weight:600;padding:2px 8px;
+.shift-opt-badge{font-size:10.5px;font-weight:750;padding:2px 8px;
   border-radius:12px;background:#F3F4F6;color:#6B7280}
 
 
@@ -103,12 +136,12 @@ body{display:flex}
 .warn-box{background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:12px 16px;font-size:13px;color:#92400E;margin-bottom:16px;display:flex;align-items:flex-start;gap:8px}
 
 /* Submit */
-.btn-submit{width:100%;padding:13px 0;background:linear-gradient(135deg,var(--main),#5B21B6);color:#fff;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(109,40,217,.3);transition:all .2s}
+.btn-submit{width:100%;padding:13px 0;background:linear-gradient(135deg,var(--main),#5B21B6);color:#fff;border:none;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(109,40,217,.3);transition:all .2s}
 .btn-submit:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(109,40,217,.35)}
 .btn-submit:active{transform:translateY(0)}
 
 /* Toast */
-.toast{position:fixed;top:18px;right:22px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:700;color:#fff;z-index:9999;box-shadow:0 4px 18px rgba(0,0,0,.15);animation:slideIn .3s ease;display:flex;align-items:center;gap:8px}
+.toast{position:fixed;top:18px;right:22px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:750;color:#fff;z-index:9999;box-shadow:0 4px 18px rgba(0,0,0,.15);animation:slideIn .3s ease;display:flex;align-items:center;gap:8px}
 .toast-err{background:var(--red)}.toast-warn{background:var(--amber)}
 @keyframes slideIn{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
 
@@ -118,6 +151,7 @@ body{display:flex}
 .card:nth-child(2){animation:fadeUp .25s .1s ease both}
 .card:nth-child(3){animation:fadeUp .25s .15s ease both}
 </style>
+    
 </head>
 <body>
 
@@ -154,12 +188,17 @@ body{display:flex}
       <span class="nav-icon">🏖️</span> Xin nghỉ phép
     </a>
   </nav>
+  <% if (staffAcc.getRoleId() == 2 || staffAcc.getRoleId() == 3) { %>
   <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
     <a href="${pageContext.request.contextPath}/pos?uid=<%= uid %>" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
     </a>
+    <a href="${pageContext.request.contextPath}/pos?uid=<%= uid %>&view=invoices" class="nav-item">
+      <span class="nav-icon">🧾</span> Xem hóa đơn
+    </a>
   </nav>
+  <% } %>
   <div class="sidebar-footer">
     <a href="${pageContext.request.contextPath}/logout?from=staff&amp;uid=<%= uid %>" class="logout-btn-full">
       <span style="font-size:15px;line-height:1">⏻</span>
@@ -203,7 +242,7 @@ body{display:flex}
         </div>
         <div class="card-body">
           <div class="date-pick-wrap">
-            <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Chọn ngày</label>
+            <label style="font-size:11px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Chọn ngày</label>
             <input type="date" name="leaveDate" id="leaveDateInput"
                    class="date-pick-input"
                    value="<%= todayStr %>"

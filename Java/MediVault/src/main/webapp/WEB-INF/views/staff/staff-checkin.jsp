@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java"  pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
@@ -12,9 +12,42 @@
     String sRoleName = staffAcc.getRoleId() == 2 ? "Dược sĩ bán hàng" : "Thủ kho";
 %>
 <!DOCTYPE html><html lang="vi"><head>
+    <script>
+      if (window.self !== window.top) {
+        document.documentElement.classList.add('in-iframe');
+        window.addEventListener('DOMContentLoaded', function() {
+          document.body.classList.add('in-iframe');
+          document.documentElement.classList.add('in-iframe');
+        });
+      }
+    </script>
+    <style>
+      html.in-iframe .sidebar,
+      body.in-iframe .sidebar,
+      html.in-iframe .topbar,
+      body.in-iframe .topbar,
+      html.in-iframe #mainSidebar,
+      body.in-iframe #mainSidebar {
+        display: none !important;
+      }
+      html.in-iframe .main,
+      body.in-iframe .main {
+        margin-left: 0 !important;
+        min-height: 100vh !important;
+        width: 100% !important;
+      }
+      html.in-iframe .content,
+      body.in-iframe .content {
+        padding: 12px 14px !important;
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Điểm danh — MediCare</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
 <script src="${pageContext.request.contextPath}/js/face-api/face-api.min.js" defer></script>
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff-portal.css">
 <style>
@@ -26,13 +59,13 @@
   --green:#059669;--red:#DC2626;--gold:#D97706;--cyan:#5EEAD4;--blue:#2563EB;
   --sidebar:228px;--radius:14px;
 }
-html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--soft);color:var(--ink)}body{display:flex}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(--soft);color:var(--ink)}body{display:flex}
 .topbar{height:58px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding: 28px;gap:12px;position:sticky;top:0;z-index:50}
 .topbar-title{font-size:15px;font-weight:800;color:var(--ink)}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
 .content{padding:20px 24px;flex:1}
 
-.toast{position:fixed;top:18px;right:22px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:700;color:#fff;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 4px 18px rgba(0,0,0,.15);animation:slideIn .3s ease}
+.toast{position:fixed;top:18px;right:22px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:750;color:#fff;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 4px 18px rgba(0,0,0,.15);animation:slideIn .3s ease}
 .toast-ok{background:#059669}.toast-err{background:#DC2626}.toast-info{background:#1558A8}.toast-warn{background:#D97706}
 @keyframes slideIn{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
 
@@ -48,13 +81,13 @@ html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--soft);col
 .dot-live{width:8px;height:8px;border-radius:50%;background:#10B981;animation:pulse 1.4s infinite}
 .dot-idle{width:8px;height:8px;border-radius:50%;background:#93C5FD}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.sc-timer{font-size:36px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-1px;padding:0 20px;color:var(--green)}
-.sc-timer-idle{font-size:18px;font-weight:700;color:var(--blue)}
+.sc-timer{font-size:36px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-1px;padding:0 20px;color:var(--green)}
+.sc-timer-idle{font-size:18px;font-weight:750;color:var(--blue)}
 .sc-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 20px}
 .sc-meta-item{background:rgba(255,255,255,.7);border-radius:8px;padding:8px 12px}
-.sc-meta-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6EE7B7}
+.sc-meta-label{font-size:10px;font-weight:750;text-transform:uppercase;letter-spacing:.5px;color:#6EE7B7}
 .sc-meta-label-idle{color:#93C5FD}
-.sc-meta-val{font-size:13px;font-weight:700;color:#065F46;margin-top:2px}
+.sc-meta-val{font-size:13px;font-weight:750;color:#065F46;margin-top:2px}
 .sc-meta-val-idle{color:#1558A8}
 
 /* Forms */
@@ -63,26 +96,26 @@ html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--soft);col
 .form-head h3{font-size:13.5px;font-weight:800;color:var(--ink)}
 .form-body{padding:16px 18px}
 .fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
-.fg label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.fg input,.fg textarea{border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;transition:border .18s;width:100%}
+.fg label{font-size:11px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.fg input,.fg textarea{border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;transition:border .18s;width:100%}
 .fg input:focus,.fg textarea:focus{border-color:var(--blue);background:#fff}
-.btn-checkin{width:100%;padding:12px 0;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(5,150,105,.3);transition:all .18s}
+.btn-checkin{width:100%;padding:12px 0;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(5,150,105,.3);transition:all .18s}
 .btn-checkin:hover{opacity:.9;transform:translateY(-1px)}
-.btn-checkout{width:100%;padding:12px 0;background:linear-gradient(135deg,#DC2626,#B91C1C);color:#fff;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(220,38,38,.25);transition:all .18s}
+.btn-checkout{width:100%;padding:12px 0;background:linear-gradient(135deg,#DC2626,#B91C1C);color:#fff;border:none;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(220,38,38,.25);transition:all .18s}
 .btn-checkout:hover{opacity:.9;transform:translateY(-1px)}
 
 /* Schedule table */
-.table-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.table-card{background:#fff;border:1px solid rgba(213,224,240,.45);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 3px rgba(15,38,69,.03),0 4px 12px rgba(15,38,69,.04)}
 .table-card-head{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .table-card-head h2{font-size:13.5px;font-weight:800;color:var(--ink)}
 table{width:100%;border-collapse:collapse}
 thead th{padding:8px 14px;background:#F8FAFC;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);text-align:left;border-bottom:1px solid var(--border)}
 tbody td{padding:10px 14px;font-size:13px;border-bottom:1px solid #F1F5F9;vertical-align:middle}
 tbody tr:last-child td{border-bottom:none}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:750}
 .badge-today{background:#DBEAFE;color:#1E40AF}.badge-upcoming{background:#F5F3FF;color:#6D28D9}
 .badge-confirmed{background:#D1FAE5;color:#065F46}.badge-absent{background:#FEE2E2;color:#991B1B}
-.today-row td{background:#FFFBEB;font-weight:600}
+.today-row td{background:#FFFBEB;font-weight:750}
 .empty-box{padding:30px;text-align:center;color:var(--muted)}
 
 /* ── Face Check-in Card ── */
@@ -91,7 +124,7 @@ tbody tr:last-child td{border-bottom:none}
 .face-checkin-text{flex:1;min-width:0}
 .face-checkin-text strong{display:block;font-size:13.5px;color:var(--ink);margin-bottom:2px}
 .face-checkin-text span{font-size:12px;color:var(--muted)}
-.btn-face-checkin{flex-shrink:0;background:linear-gradient(135deg,var(--main),#4C1D95);color:#fff;border:none;padding:11px 18px;border-radius:10px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap;box-shadow:0 4px 12px rgba(109,40,217,.25)}
+.btn-face-checkin{flex-shrink:0;background:linear-gradient(135deg,var(--main),#4C1D95);color:#fff;border:none;padding:11px 18px;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap;box-shadow:0 4px 12px rgba(109,40,217,.25)}
 .btn-face-checkin:hover{opacity:.9;transform:translateY(-1px)}
 .face-checkin-disabled{opacity:.55;cursor:not-allowed}
 
@@ -100,20 +133,21 @@ tbody tr:last-child td{border-bottom:none}
 .face-modal-overlay.open{display:flex}
 .face-modal{background:#fff;border-radius:20px;width:420px;max-width:92vw;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .face-modal-head{padding:18px 22px;background:linear-gradient(90deg,var(--mid),var(--main));color:#fff;display:flex;align-items:center;justify-content:space-between}
-.face-modal-head h3{font-size:15px;font-weight:700}
+.face-modal-head h3{font-size:15px;font-weight:750}
 .face-modal-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:14px}
 .face-modal-body{padding:20px 22px}
 .face-video-wrap{position:relative;width:100%;aspect-ratio:4/3;background:#0B1628;border-radius:14px;overflow:hidden;margin-bottom:14px}
 .face-video-wrap video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
 .face-video-wrap canvas{position:absolute;top:0;left:0;width:100%;height:100%;transform:scaleX(-1)}
-.face-modal-status{text-align:center;font-size:13px;font-weight:600;color:var(--main);margin-bottom:6px;min-height:18px}
+.face-modal-status{text-align:center;font-size:13px;font-weight:750;color:var(--main);margin-bottom:6px;min-height:18px}
 .face-modal-sub{text-align:center;font-size:11.5px;color:var(--muted);margin-bottom:14px}
 .face-spinner{width:34px;height:34px;border:3px solid #E2DCF5;border-top-color:var(--main);border-radius:50%;margin:0 auto 12px;animation:faceSpin .8s linear infinite}
 @keyframes faceSpin{to{transform:rotate(360deg)}}
 .face-modal-actions{display:flex;gap:10px}
-.face-modal-actions button{flex:1;padding:11px 0;border-radius:11px;font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:700;cursor:pointer;border:none}
+.face-modal-actions button{flex:1;padding:11px 0;border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:750;cursor:pointer;border:none}
 .face-btn-cancel{background:var(--surface);color:var(--muted);border:1.5px solid var(--border)!important}
-</style></head>
+</style>    
+</head>
 <body>
 <aside class="sidebar">
   <div class="sidebar-logo">
@@ -147,12 +181,17 @@ tbody tr:last-child td{border-bottom:none}
       <span class="nav-icon">🏖️</span> Xin nghỉ phép
     </a>
   </nav>
+  <% if (staffAcc.getRoleId() == 2 || staffAcc.getRoleId() == 3) { %>
   <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
     <a href="${pageContext.request.contextPath}/pos?uid=${staffUid}" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
     </a>
+    <a href="${pageContext.request.contextPath}/pos?uid=${staffUid}&view=invoices" class="nav-item">
+      <span class="nav-icon">🧾</span> Xem hóa đơn
+    </a>
   </nav>
+  <% } %>
   <div class="sidebar-footer">
     <a href="${pageContext.request.contextPath}/logout?from=staff&uid=${staffUid}" class="logout-btn-full">
       <span style="font-size:15px;line-height:1">⏻</span>
@@ -181,7 +220,7 @@ tbody tr:last-child td{border-bottom:none}
     <div style="font-size:15px">✅</div>
     <span class="topbar-title">Điểm danh</span>
     <div class="topbar-right">
-      <span style="font-size:13px;font-weight:700;color:var(--muted)" id="clock"></span>
+      <span style="font-size:13px;font-weight:750;color:var(--muted)" id="clock"></span>
     </div>
   </header>
   <div class="content">
@@ -222,7 +261,7 @@ tbody tr:last-child td{border-bottom:none}
                   <div class="sc-meta-label">Quầy POS</div>
                   <c:choose>
                     <c:when test="${todaySchedule.posStation > 0}">
-                      <div class="sc-meta-val" style="color:#3B82F6;font-weight:700">🖥️ Quầy ${todaySchedule.posStation}</div>
+                      <div class="sc-meta-val" style="color:#3B82F6;font-weight:750">🖥️ Quầy ${todaySchedule.posStation}</div>
                     </c:when>
                     <c:otherwise>
                       <div class="sc-meta-val" style="color:#94A3B8;font-style:italic">Chưa phân công</div>
@@ -240,13 +279,13 @@ tbody tr:last-child td{border-bottom:none}
             </div>
             <div style="padding:16px 20px 8px">
               <c:if test="${not empty todaySchedule}">
-                <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:6px">📅 Ca hôm nay: ${todaySchedule.shiftTypeName}</div>
+                <div style="font-size:13px;font-weight:750;color:var(--blue);margin-bottom:6px">📅 Ca hôm nay: ${todaySchedule.shiftTypeName}</div>
                 <div style="font-size:12px;color:var(--muted);margin-bottom:4px">
                   🕐 ${fn:substring(todaySchedule.plannedStart.toString(),11,16)} – ${fn:substring(todaySchedule.plannedEnd.toString(),11,16)}
                 </div>
                 <c:choose>
                   <c:when test="${todaySchedule.posStation > 0}">
-                    <div style="font-size:12px;font-weight:700;color:#3B82F6;margin-bottom:4px">🖥️ Quầy POS ${todaySchedule.posStation}</div>
+                    <div style="font-size:12px;font-weight:750;color:#3B82F6;margin-bottom:4px">🖥️ Quầy POS ${todaySchedule.posStation}</div>
                   </c:when>
                   <c:otherwise>
                     <div style="font-size:12px;color:#94A3B8;margin-bottom:4px;font-style:italic">🖥️ Quầy POS: Chưa phân công</div>
@@ -260,7 +299,7 @@ tbody tr:last-child td{border-bottom:none}
             <div class="sc-meta">
               <div class="sc-meta-item" style="grid-column:1/-1">
                 <div class="sc-meta-label sc-meta-label-idle">Thời gian hiện tại</div>
-                <div class="sc-meta-val sc-meta-val-idle" id="currentTime" style="font-size:22px;font-weight:900">--:--</div>
+                <div class="sc-meta-val sc-meta-val-idle" id="currentTime" style="font-size:22px;font-weight:800">--:--</div>
               </div>
             </div>
           </div>
@@ -284,11 +323,11 @@ tbody tr:last-child td{border-bottom:none}
               <% } else { %>
                 <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:10px;padding:16px;text-align:center">
                   <div style="font-size:22px;margin-bottom:8px">📷</div>
-                  <div style="font-size:13.5px;font-weight:700;color:#991B1B;margin-bottom:6px">
+                  <div style="font-size:13.5px;font-weight:750;color:#991B1B;margin-bottom:6px">
                     Chưa đăng ký khuôn mặt
                   </div>
                   <a href="${pageContext.request.contextPath}/staff-dashboard?uid=${staffUid}"
-                     style="font-size:12.5px;color:var(--main);font-weight:700;text-decoration:none">
+                     style="font-size:12.5px;color:var(--main);font-weight:750;text-decoration:none">
                     Vào Dashboard để đăng ký ngay →
                   </a>
                 </div>
@@ -304,7 +343,7 @@ tbody tr:last-child td{border-bottom:none}
                 <c:when test="${not empty todaySchedule}">
                   <%-- Có lịch ca → cho check-in bằng khuôn mặt --%>
                   <div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:8px;padding:12px 16px;margin-bottom:14px">
-                    <div style="font-size:13px;font-weight:700;color:#065F46;margin-bottom:4px">
+                    <div style="font-size:13px;font-weight:750;color:#065F46;margin-bottom:4px">
                       ✅ Ca hôm nay: <strong>${todaySchedule.shiftTypeName}</strong>
                     </div>
                     <div style="font-size:12px;color:#059669">
@@ -323,11 +362,11 @@ tbody tr:last-child td{border-bottom:none}
                   <% } else { %>
                     <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:10px;padding:16px;text-align:center">
                       <div style="font-size:22px;margin-bottom:8px">📷</div>
-                      <div style="font-size:13.5px;font-weight:700;color:#991B1B;margin-bottom:6px">
+                      <div style="font-size:13.5px;font-weight:750;color:#991B1B;margin-bottom:6px">
                         Chưa đăng ký khuôn mặt
                       </div>
                       <a href="${pageContext.request.contextPath}/staff-dashboard?uid=${staffUid}"
-                         style="font-size:12.5px;color:var(--main);font-weight:700;text-decoration:none">
+                         style="font-size:12.5px;color:var(--main);font-weight:750;text-decoration:none">
                         Vào Dashboard để đăng ký ngay →
                       </a>
                     </div>
@@ -337,7 +376,7 @@ tbody tr:last-child td{border-bottom:none}
                   <%-- Không có lịch ca → ẩn nút, hiện alert --%>
                   <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:10px;padding:16px;text-align:center">
                     <div style="font-size:22px;margin-bottom:8px">🚫</div>
-                    <div style="font-size:13.5px;font-weight:700;color:#991B1B;margin-bottom:6px">
+                    <div style="font-size:13.5px;font-weight:750;color:#991B1B;margin-bottom:6px">
                       Hôm nay bạn không có lịch làm việc
                     </div>
                     <div style="font-size:12.5px;color:#B91C1C;line-height:1.6">
@@ -362,15 +401,15 @@ tbody tr:last-child td{border-bottom:none}
         </div>
         <div class="face-modal-body">
           <div class="fg">
-            <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">
+            <label style="font-size:11px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">
               Tiền mặt đầu ca <span style="color:#DC2626">*</span>
             </label>
             <input type="number" id="openingCashInput" min="0" step="1000" required
                    placeholder="Nhập số tiền mặt trong két lúc bắt đầu ca (VNĐ)"
                    style="border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;
-                          font-size:13px;width:100%;font-family:'Outfit',sans-serif;outline:none">
+                          font-size:13px;width:100%;font-family:'Plus Jakarta Sans',sans-serif;outline:none">
             <div id="openingCashPreview" style="display:none;margin-top:6px;padding:7px 12px;
-                 border-radius:8px;font-size:12.5px;font-weight:700;text-align:center"></div>
+                 border-radius:8px;font-size:12.5px;font-weight:750;text-align:center"></div>
           </div>
           <div class="face-modal-actions">
             <button type="button" class="face-btn-cancel" onclick="closeOpeningCashModal()">Hủy</button>
@@ -389,22 +428,22 @@ tbody tr:last-child td{border-bottom:none}
         </div>
         <div class="face-modal-body">
           <div class="fg">
-            <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">
+            <label style="font-size:11px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">
               💰 Tiền mặt bàn giao két <span style="color:#DC2626">*</span>
             </label>
             <input type="number" id="handoverCashInput" min="0" step="1000" required
                    placeholder="Nhập số tiền mặt trong két (VNĐ)"
                    oninput="updateHandoverPreview(this.value)"
                    style="border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;
-                          font-size:13px;width:100%;font-family:'Outfit',sans-serif;outline:none">
+                          font-size:13px;width:100%;font-family:'Plus Jakarta Sans',sans-serif;outline:none">
             <div id="handoverCashPreview" style="display:none;margin-top:6px;padding:7px 12px;
-                 border-radius:8px;font-size:12.5px;font-weight:700;text-align:center"></div>
+                 border-radius:8px;font-size:12.5px;font-weight:750;text-align:center"></div>
           </div>
           <div class="fg" style="margin-top:10px"><label>📝 Ghi chú bàn giao</label>
             <textarea id="handoverNotesInput" rows="2"
               placeholder="Ghi chú tình trạng ca, thuốc tủ khóa, vấn đề phát sinh..."
               style="border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;
-                     font-size:13px;width:100%;font-family:'Outfit',sans-serif;outline:none;resize:vertical"></textarea>
+                     font-size:13px;width:100%;font-family:'Plus Jakarta Sans',sans-serif;outline:none;resize:vertical"></textarea>
           </div>
           <div class="face-modal-actions">
             <button type="button" class="face-btn-cancel" onclick="closeHandoverCashModal()">Hủy</button>
@@ -457,7 +496,7 @@ tbody tr:last-child td{border-bottom:none}
                     <c:if test="${isToday}"><span class="badge badge-today">Hôm nay</span></c:if>
                   </td>
                   <td>${sc.shiftTypeName}</td>
-                  <td style="font-weight:600">
+                  <td style="font-weight:750">
                     ${fn:substring(sc.plannedStart.toString(),11,16)} – ${fn:substring(sc.plannedEnd.toString(),11,16)}
                   </td>
                   <td>

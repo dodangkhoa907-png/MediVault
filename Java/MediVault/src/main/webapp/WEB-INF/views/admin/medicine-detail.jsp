@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8"  pageEncoding="UTF-8" %>
   <% String activeNav="medicines" ; %>
     <%@ taglib prefix="c" uri="jakarta.tags.core" %>
       <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
@@ -14,13 +14,15 @@
           <html lang="vi">
 
           <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width,initial-scale=1.0">
             <title>${medicine.medicineName} — Lô hàng — medicare</title>
-            <link rel="preconnect" href="https://fonts.googleapis.com">
-            <link
-              href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap"
-              rel="stylesheet">
+            
+            
             <style>
               *,
               *::before,
@@ -48,7 +50,7 @@
               html,
               body {
                 min-height: 100%;
-                font-family: 'Outfit', sans-serif;
+                font-family:'Plus Jakarta Sans',sans-serif;
                 background: var(--surface);
                 color: var(--ink)
               }
@@ -100,7 +102,7 @@
               .logo-sub {
                 font-size: 10px;
                 color: rgba(255, 255, 255, .45);
-                font-weight: 500;
+                font-weight:750;
                 text-transform: uppercase
               }
 
@@ -110,7 +112,7 @@
 
               .nav-label {
                 font-size: 9.5px;
-                font-weight: 700;
+                font-weight:750;
                 color: rgba(255, 255, 255, .3);
                 letter-spacing: 1px;
                 text-transform: uppercase;
@@ -127,7 +129,7 @@
                 color: rgba(255, 255, 255, .6);
                 text-decoration: none;
                 font-size: 13.5px;
-                font-weight: 500;
+                font-weight:750;
                 transition: all .16s;
                 margin-bottom: 2px
               }
@@ -175,7 +177,7 @@
 
               .user-name {
                 font-size: 13px;
-                font-weight: 700;
+                font-weight:750;
                 color: #fff
               }
 
@@ -233,7 +235,7 @@
                 background: var(--white);
                 color: var(--ink);
                 font-size: 13px;
-                font-weight: 600;
+                font-weight:750;
                 text-decoration: none
               }
 
@@ -257,7 +259,7 @@
                 border: none;
                 border-radius: 9px;
                 font-size: 13px;
-                font-weight: 700;
+                font-weight:750;
                 cursor: pointer;
                 text-decoration: none;
                 display: inline-flex;
@@ -293,7 +295,7 @@
               }
 
               .med-title {
-                font-family: 'DM Serif Display', serif;
+                font-family:'Lora',serif;
                 font-size: 22px;
                 color: var(--ink)
               }
@@ -325,7 +327,7 @@
                 padding: 3px 9px;
                 border-radius: 20px;
                 font-size: 11px;
-                font-weight: 700
+                font-weight:750
               }
 
               .badge-green {
@@ -432,7 +434,7 @@
               thead th {
                 padding: 10px 14px;
                 font-size: 11px;
-                font-weight: 700;
+                font-weight:750;
                 text-transform: uppercase;
                 letter-spacing: .5px;
                 color: var(--muted);
@@ -489,7 +491,7 @@
                 padding: 0 10px;
                 border-radius: 8px;
                 font-size: 12px;
-                font-weight: 600;
+                font-weight:750;
                 cursor: pointer;
                 border: 1.5px solid;
                 font-family: inherit;
@@ -525,7 +527,7 @@
                 padding: 12px 20px;
                 border-radius: 12px;
                 font-size: 13.5px;
-                font-weight: 600;
+                font-weight:750;
                 box-shadow: 0 4px 24px rgba(0, 0, 0, .12)
               }
 
@@ -563,9 +565,9 @@
               }
 
               /* Expiry color coding */
-              .expiry-ok { color: #059669; font-weight: 700 }
-              .expiry-warn { color: #D97706; font-weight: 700 }
-              .expiry-err { color: #DC2626; font-weight: 700 }
+              .expiry-ok { color: #059669; font-weight:750 }
+              .expiry-warn { color: #D97706; font-weight:750 }
+              .expiry-err { color: #DC2626; font-weight:750 }
 
               /* Action buttons */
               .btn-stock { color: #059669; border-color: #A7F3D0; background: #F0FDF4 }
@@ -601,7 +603,7 @@
                 border: none;
                 border-radius: 5px;
                 font-size: 12px;
-                font-weight: 700;
+                font-weight:750;
                 cursor: pointer;
                 font-family: inherit
               }
@@ -620,7 +622,8 @@
               /* Batch sub-info */
               .batch-sub { font-size: 11.5px; color: var(--muted); margin-top: 2px }
             </style>
-          </head>
+              
+</head>
 
           <body>
             <% if ("batch-added".equals(msg)) { %>

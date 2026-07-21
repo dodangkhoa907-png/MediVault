@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java"  pageEncoding="UTF-8" %>
 <% String activeNav = "shifts"; %>
 <%@ taglib prefix="c"  uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
@@ -14,11 +14,44 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <script>
+      if (window.self !== window.top) {
+        document.documentElement.classList.add('in-iframe');
+        window.addEventListener('DOMContentLoaded', function() {
+          document.body.classList.add('in-iframe');
+          document.documentElement.classList.add('in-iframe');
+        });
+      }
+    </script>
+    <style>
+      html.in-iframe .sidebar,
+      body.in-iframe .sidebar,
+      html.in-iframe .topbar,
+      body.in-iframe .topbar,
+      html.in-iframe #mainSidebar,
+      body.in-iframe #mainSidebar {
+        display: none !important;
+      }
+      html.in-iframe .main,
+      body.in-iframe .main {
+        margin-left: 0 !important;
+        min-height: 100vh !important;
+        width: 100% !important;
+      }
+      html.in-iframe .content,
+      body.in-iframe .content {
+        padding: 12px 14px !important;
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="ctx" content="${pageContext.request.contextPath}">
 <title>Đơn nghỉ của tôi — MediCare</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff-portal.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -28,15 +61,15 @@
   --green:#059669;--red:#DC2626;--amber:#D97706;
   --sidebar:228px;--radius:14px;
 }
-html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--soft);color:var(--ink)}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(--soft);color:var(--ink)}
 body{display:flex}
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:50}
 .topbar-icon{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,rgba(109,40,217,.1),rgba(167,139,250,.1));display:flex;align-items:center;justify-content:center;font-size:16px}
 .topbar-title{font-size:16px;font-weight:800;color:var(--ink)}
 .topbar-right{margin-left:auto}
-.btn-new{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:var(--main);color:#fff;border:none;border-radius:9px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;box-shadow:0 3px 10px rgba(109,40,217,.25);transition:all .18s}
+.btn-new{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:var(--main);color:#fff;border:none;border-radius:9px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer;text-decoration:none;box-shadow:0 3px 10px rgba(109,40,217,.25);transition:all .18s}
 .btn-new:hover{background:#5B21B6;transform:translateY(-1px)}
-.btn-emergency{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:linear-gradient(135deg,#f97316,#dc2626);color:#fff;border:none;border-radius:9px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 3px 12px rgba(220,38,38,.3);transition:all .18s}
+.btn-emergency{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;background:linear-gradient(135deg,#f97316,#dc2626);color:#fff;border:none;border-radius:9px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 3px 12px rgba(220,38,38,.3);transition:all .18s}
 .btn-emergency:hover{transform:translateY(-1px);filter:brightness(1.05)}
 /* Emergency modal */
 .em-overlay{display:none;position:fixed;inset:0;background:rgba(18,8,42,.55);z-index:9700;align-items:center;justify-content:center;padding:20px}
@@ -46,7 +79,7 @@ body{display:flex}
 .em-head h3{margin:0;font-size:18px;font-weight:800}
 .em-head p{margin:4px 0 0;font-size:12.5px;opacity:.9}
 .em-body{padding:20px 24px}
-.em-lbl{font-size:13px;font-weight:700;color:var(--ink);display:block;margin:14px 0 6px}
+.em-lbl{font-size:13px;font-weight:750;color:var(--ink);display:block;margin:14px 0 6px}
 .em-lbl:first-child{margin-top:0}
 .em-input,.em-select,.em-textarea{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-family:inherit;font-size:14px;box-sizing:border-box}
 .em-textarea{resize:vertical;min-height:64px}
@@ -55,17 +88,17 @@ body{display:flex}
 .em-preview{max-width:100%;max-height:160px;border-radius:8px;margin-top:10px;display:none}
 .em-err{color:var(--red);font-size:12.5px;margin-top:8px;display:none}
 .em-actions{display:flex;gap:10px;margin-top:20px}
-.em-btn-cancel{flex:1;background:#f1f5f9;color:#475569;border:none;border-radius:10px;padding:11px;font-weight:700;cursor:pointer;font-family:inherit}
+.em-btn-cancel{flex:1;background:#f1f5f9;color:#475569;border:none;border-radius:10px;padding:11px;font-weight:750;cursor:pointer;font-family:inherit}
 .em-btn-submit{flex:1;background:linear-gradient(135deg,#f97316,#dc2626);color:#fff;border:none;border-radius:10px;padding:11px;font-weight:800;cursor:pointer;font-family:inherit}
 .content{padding:24px 28px;flex:1}
 
 /* ── TOAST ── */
-.toast{position:fixed;top:18px;right:22px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:700;color:#fff;z-index:9999;box-shadow:0 4px 18px rgba(0,0,0,.15);animation:slideIn .3s ease;display:flex;align-items:center;gap:8px}
+.toast{position:fixed;top:18px;right:22px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:750;color:#fff;z-index:9999;box-shadow:0 4px 18px rgba(0,0,0,.15);animation:slideIn .3s ease;display:flex;align-items:center;gap:8px}
 .toast-ok{background:#059669}.toast-err{background:#DC2626}.toast-warn{background:#D97706}
 @keyframes slideIn{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
 
 /* ── CARDS ── */
-.table-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.table-card{background:#fff;border:1px solid rgba(213,224,240,.45);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 3px rgba(15,38,69,.03),0 4px 12px rgba(15,38,69,.04)}
 .table-card-head{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .table-card-head h2{font-size:14px;font-weight:800;color:var(--ink)}
 .tc-sub{font-size:12px;color:var(--muted)}
@@ -76,7 +109,7 @@ tbody td{padding:12px 16px;font-size:13px;border-bottom:1px solid #F1F5F9;vertic
 tbody tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:#F8F5FF}
 
-.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:750}
 .badge-PENDING{background:#FEF3C7;color:#92400E}
 .badge-APPROVED{background:#ECFDF5;color:#065F46}
 .badge-REJECTED{background:#FEF2F2;color:#991B1B}
@@ -92,7 +125,22 @@ tbody tr:hover td{background:#F8F5FF}
 /* Animation */
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .table-card{animation:fadeUp .3s ease both}
+select,option{font-family:inherit;font-size:inherit}
+.cdd{position:relative;user-select:none;display:inline-block}
+.cdd-btn{display:flex;align-items:center;gap:6px;padding:9px 14px;background:var(--white,#fff);border:1.5px solid var(--border,#D5E0F0);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;color:var(--ink,#0B1628);cursor:pointer;transition:all .18s;white-space:nowrap}
+.cdd-btn:hover{border-color:var(--cyan,#3ABDE0);background:var(--cyan-soft,#EBF8FD)}
+.cdd-btn.open{border-color:var(--cyan,#3ABDE0);box-shadow:0 0 0 3px rgba(58,189,224,.12)}
+.cdd-arrow{font-size:9px;color:var(--muted,#7A90B0);transition:transform .2s}
+.cdd-btn.open .cdd-arrow{transform:rotate(180deg)}
+.cdd-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:100%;background:var(--white,#fff);border:1.5px solid var(--border,#D5E0F0);border-radius:12px;padding:6px;box-shadow:0 12px 36px rgba(15,38,69,.15);z-index:200;opacity:0;transform:translateY(-6px);pointer-events:none;transition:all .18s ease;max-height:260px;overflow-y:auto}
+.cdd-menu.show{opacity:1;transform:translateY(0);pointer-events:auto}
+.cdd-menu::-webkit-scrollbar{width:4px}
+.cdd-menu::-webkit-scrollbar-thumb{background:var(--border,#D5E0F0);border-radius:4px}
+.cdd-opt{padding:8px 14px;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;color:var(--ink,#0B1628);cursor:pointer;transition:all .12s;white-space:nowrap}
+.cdd-opt:hover{background:var(--surface,#F1F5FB);color:var(--blue,#1558A8)}
+.cdd-opt.active{background:linear-gradient(135deg,var(--blue,#1558A8),#0D3F85);color:#fff;font-weight:750}
 </style>
+    
 </head>
 <body>
 
@@ -132,12 +180,17 @@ tbody tr:hover td{background:#F8F5FF}
       <span class="nav-icon">🏖️</span> Xin nghỉ phép
     </a>
   </nav>
+  <% if (staffAcc.getRoleId() == 2 || staffAcc.getRoleId() == 3) { %>
   <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
     <a href="${pageContext.request.contextPath}/pos?uid=${staffUid}" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
     </a>
+    <a href="${pageContext.request.contextPath}/pos?uid=${staffUid}&view=invoices" class="nav-item">
+      <span class="nav-icon">🧾</span> Xem hóa đơn
+    </a>
   </nav>
+  <% } %>
   <div class="sidebar-footer">
     <a href="${pageContext.request.contextPath}/logout?from=staff&amp;uid=${staffUid}" class="logout-btn-full">
       <span style="font-size:15px;line-height:1">⏻</span>
@@ -203,7 +256,7 @@ tbody tr:hover td{background:#F8F5FF}
             <tbody>
               <c:forEach var="lr" items="${leaves}">
                 <tr>
-                  <td style="font-weight:700">${lr.leaveDate}</td>
+                  <td style="font-weight:750">${lr.leaveDate}</td>
                   <td>
                     <span class="badge badge-${lr.leaveType}">
                       <c:choose>
@@ -300,6 +353,10 @@ tbody tr:hover td{background:#F8F5FF}
 </div>
 
 <script>
+function toggleCdd(id){var w=document.getElementById(id),m=w.querySelector('.cdd-menu'),b=w.querySelector('.cdd-btn');var open=m.classList.contains('show');document.querySelectorAll('.cdd-menu.show').forEach(function(x){x.classList.remove('show');x.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')});if(!open){m.classList.add('show');b.classList.add('open');var act=m.querySelector('.cdd-opt.active');if(act)act.scrollIntoView({block:'nearest'})}}
+function pickCdd(wId,hId,el,autoSubmit){document.getElementById(hId).value=el.dataset.val;var w=document.getElementById(wId);w.querySelector('.cdd-label').textContent=el.textContent;w.querySelectorAll('.cdd-opt').forEach(function(o){o.classList.remove('active')});el.classList.add('active');w.querySelector('.cdd-menu').classList.remove('show');w.querySelector('.cdd-btn').classList.remove('open');if(autoSubmit){var f=w.closest('form');if(f)f.submit()}}
+document.addEventListener('click',function(e){if(!e.target.closest('.cdd')){document.querySelectorAll('.cdd-menu.show').forEach(function(m){m.classList.remove('show');m.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')})}});
+
 const t = document.getElementById('toast');
 if (t) setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3500);
 

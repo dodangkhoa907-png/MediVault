@@ -133,10 +133,10 @@ public class EncodingRepairServlet extends HttpServlet {
             errors,
             (rs, ps) -> {
                 int id = rs.getInt(1);
-                String name  = fix(rs.getNString(2));
-                String desc  = fix(rs.getNString(3));
-                String orig1 = rs.getNString(2);
-                String orig2 = rs.getNString(3);
+                String name  = fix(rs.getString(2));
+                String desc  = fix(rs.getString(3));
+                String orig1 = rs.getString(2);
+                String orig2 = rs.getString(3);
                 if (!Objects.equals(name, orig1) || !Objects.equals(desc, orig2)) {
                     ps.setNString(1, name);
                     ps.setNString(2, desc);
@@ -155,12 +155,12 @@ public class EncodingRepairServlet extends HttpServlet {
             errors,
             (rs, ps) -> {
                 int id  = rs.getInt(1);
-                String n1 = fix(rs.getNString(2)), o1 = rs.getNString(2);
-                String n2 = fix(rs.getNString(3)), o2 = rs.getNString(3);
-                String n3 = fix(rs.getNString(4)), o3 = rs.getNString(4);
-                String n4 = fix(rs.getNString(5)), o4 = rs.getNString(5);
-                String n5 = fix(rs.getNString(6)), o5 = rs.getNString(6);
-                String n6 = fix(rs.getNString(7)), o6 = rs.getNString(7);
+                String n1 = fix(rs.getString(2)), o1 = rs.getString(2);
+                String n2 = fix(rs.getString(3)), o2 = rs.getString(3);
+                String n3 = fix(rs.getString(4)), o3 = rs.getString(4);
+                String n4 = fix(rs.getString(5)), o4 = rs.getString(5);
+                String n5 = fix(rs.getString(6)), o5 = rs.getString(6);
+                String n6 = fix(rs.getString(7)), o6 = rs.getString(7);
                 if (!eq(n1,o1)||!eq(n2,o2)||!eq(n3,o3)||!eq(n4,o4)||!eq(n5,o5)||!eq(n6,o6)) {
                     ps.setNString(1, n1); ps.setNString(2, n2); ps.setNString(3, n3);
                     ps.setNString(4, n4); ps.setNString(5, n5); ps.setNString(6, n6);
@@ -179,8 +179,8 @@ public class EncodingRepairServlet extends HttpServlet {
             errors,
             (rs, ps) -> {
                 int id = rs.getInt(1);
-                String n1 = fix(rs.getNString(2)), o1 = rs.getNString(2);
-                String n2 = fix(rs.getNString(3)), o2 = rs.getNString(3);
+                String n1 = fix(rs.getString(2)), o1 = rs.getString(2);
+                String n2 = fix(rs.getString(3)), o2 = rs.getString(3);
                 if (!eq(n1,o1)||!eq(n2,o2)) {
                     ps.setNString(1, n1); ps.setNString(2, n2); ps.setInt(3, id);
                     return true;
@@ -197,9 +197,9 @@ public class EncodingRepairServlet extends HttpServlet {
             errors,
             (rs, ps) -> {
                 int id = rs.getInt(1);
-                String n1 = fix(rs.getNString(2)), o1 = rs.getNString(2);
-                String n2 = fix(rs.getNString(3)), o2 = rs.getNString(3);
-                String n3 = fix(rs.getNString(4)), o3 = rs.getNString(4);
+                String n1 = fix(rs.getString(2)), o1 = rs.getString(2);
+                String n2 = fix(rs.getString(3)), o2 = rs.getString(3);
+                String n3 = fix(rs.getString(4)), o3 = rs.getString(4);
                 if (!eq(n1,o1)||!eq(n2,o2)||!eq(n3,o3)) {
                     ps.setNString(1, n1); ps.setNString(2, n2); ps.setNString(3, n3);
                     ps.setInt(4, id);
@@ -217,8 +217,8 @@ public class EncodingRepairServlet extends HttpServlet {
             errors,
             (rs, ps) -> {
                 int id = rs.getInt(1);
-                String n1 = fix(rs.getNString(2)), o1 = rs.getNString(2);
-                String n2 = fix(rs.getNString(3)), o2 = rs.getNString(3);
+                String n1 = fix(rs.getString(2)), o1 = rs.getString(2);
+                String n2 = fix(rs.getString(3)), o2 = rs.getString(3);
                 if (!eq(n1,o1)||!eq(n2,o2)) {
                     ps.setNString(1, n1); ps.setNString(2, n2); ps.setInt(3, id);
                     return true;
@@ -235,11 +235,11 @@ public class EncodingRepairServlet extends HttpServlet {
             errors,
             (rs, ps) -> {
                 int id = rs.getInt(1);
-                String n1 = fix(rs.getNString(2)), o1 = rs.getNString(2);
-                String n2 = fix(rs.getNString(3)), o2 = rs.getNString(3);
-                String n3 = fix(rs.getNString(4)), o3 = rs.getNString(4);
-                String n4 = fix(rs.getNString(5)), o4 = rs.getNString(5);
-                String n5 = fix(rs.getNString(6)), o5 = rs.getNString(6);
+                String n1 = fix(rs.getString(2)), o1 = rs.getString(2);
+                String n2 = fix(rs.getString(3)), o2 = rs.getString(3);
+                String n3 = fix(rs.getString(4)), o3 = rs.getString(4);
+                String n4 = fix(rs.getString(5)), o4 = rs.getString(5);
+                String n5 = fix(rs.getString(6)), o5 = rs.getString(6);
                 if (!eq(n1,o1)||!eq(n2,o2)||!eq(n3,o3)||!eq(n4,o4)||!eq(n5,o5)) {
                     ps.setNString(1, n1); ps.setNString(2, n2); ps.setNString(3, n3);
                     ps.setNString(4, n4); ps.setNString(5, n5); ps.setInt(6, id);

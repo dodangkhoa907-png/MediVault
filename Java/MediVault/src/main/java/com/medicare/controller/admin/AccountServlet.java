@@ -198,6 +198,8 @@ public class AccountServlet extends HttpServlet {
             resp.sendRedirect(req.getContextPath()
                     + "/shift-schedules?action=new&accountId=" + created.getAccountId()
                     + "&msg=account-created");
+        } else if ("more".equals(redirect)) {
+            resp.sendRedirect(req.getContextPath() + "/accounts?action=new&msg=created-more");
         } else {
             resp.sendRedirect(req.getContextPath() + "/accounts?msg=created");
         }
@@ -260,15 +262,15 @@ public class AccountServlet extends HttpServlet {
 
         boolean isNew = (idStr == null || idStr.isEmpty());
 
-        // ── BƯỚC 1: Validate format ──────────────────────────────
-        // Khi edit: username readonly không đổi được, bỏ qua validate username
-        List<String> errors;
+        // Tạo mới (không có accountId) → delegate về handleCreate (đã xử lý validation + service)
         if (isNew) {
-            errors = new java.util.ArrayList<>(ValidationUtil.validateAccount(
-                    username, fullName, email, phone, citizenId, position));
-            if (!ValidationUtil.isValidPassword(password))
-                errors.addAll(ValidationUtil.validatePassword(password));
-        } else {
+            handleCreate(req, resp);
+            return;
+        }
+
+        // ── BƯỚC 1: Validate format (chỉ cho luồng EDIT) ────────
+        List<String> errors;
+        {
             errors = new java.util.ArrayList<>(ValidationUtil.validateAccount(
                     "skip", fullName, email, phone, citizenId, position));
             errors.removeIf(e -> e.toLowerCase().contains("tên đăng nhập"));
@@ -278,37 +280,23 @@ public class AccountServlet extends HttpServlet {
                 errors.addAll(ValidationUtil.validatePassword(password));
         }
 
-        // ── BƯỚC 2: Validate trùng lặp ──────────────────────────
-        Account current = null;
+        // ── BƯỚC 2: Validate trùng lặp (EDIT — chỉ check field thực sự thay đổi) ──
+        Account current = dao.findById(Integer.parseInt(idStr));
         boolean emailChanged = false, phoneChanged = false;
-        if (isNew) {
-            // Tạo mới: check username + email + phone + citizenId
-            if (ValidationUtil.notBlank(username) && dao.isUsernameTaken(username))
-                errors.add("Tên đăng nhập '" + username + "' đã tồn tại.");
-            if (ValidationUtil.notBlank(email) && dao.isEmailTaken(email, -1))
-                errors.add("Email '" + email + "' đã được dùng bởi tài khoản khác.");
-            if (ValidationUtil.notBlank(phone) && dao.isPhoneTaken(phone, -1))
-                errors.add("Số điện thoại '" + phone.trim() + "' đã được dùng bởi tài khoản khác.");
-            if (ValidationUtil.notBlank(citizenId) && dao.isCitizenIdTaken(citizenId, -1))
-                errors.add("Số CCCD '" + citizenId.trim() + "' đã được dùng bởi tài khoản khác.");
-        } else {
-            // Edit: chỉ query DB nếu field THỰC SỰ thay đổi so với giá trị cũ
-            current = dao.findById(Integer.parseInt(idStr));
-            if (current != null) {
-                emailChanged = ValidationUtil.notBlank(email)
-                        && !email.trim().equals(current.getEmail() != null ? current.getEmail() : "");
-                phoneChanged = ValidationUtil.notBlank(phone)
-                        && !phone.trim().equals(current.getPhone() != null ? current.getPhone() : "");
-                boolean citizenIdChanged = ValidationUtil.notBlank(citizenId)
-                        && !citizenId.trim().equals(current.getCitizenId() != null ? current.getCitizenId() : "");
+        if (current != null) {
+            emailChanged = ValidationUtil.notBlank(email)
+                    && !email.trim().equals(current.getEmail() != null ? current.getEmail() : "");
+            phoneChanged = ValidationUtil.notBlank(phone)
+                    && !phone.trim().equals(current.getPhone() != null ? current.getPhone() : "");
+            boolean citizenIdChanged = ValidationUtil.notBlank(citizenId)
+                    && !citizenId.trim().equals(current.getCitizenId() != null ? current.getCitizenId() : "");
 
-                if (emailChanged && dao.isEmailTaken(email, Integer.parseInt(idStr)))
-                    errors.add("Email '" + email + "' đã được dùng bởi tài khoản khác.");
-                if (phoneChanged && dao.isPhoneTaken(phone, Integer.parseInt(idStr)))
-                    errors.add("Số điện thoại '" + phone.trim() + "' đã được dùng bởi tài khoản khác.");
-                if (citizenIdChanged && dao.isCitizenIdTaken(citizenId, Integer.parseInt(idStr)))
-                    errors.add("Số CCCD '" + citizenId.trim() + "' đã được dùng bởi tài khoản khác.");
-            }
+            if (emailChanged && dao.isEmailTaken(email, Integer.parseInt(idStr)))
+                errors.add("Email '" + email + "' đã được dùng bởi tài khoản khác.");
+            if (phoneChanged && dao.isPhoneTaken(phone, Integer.parseInt(idStr)))
+                errors.add("Số điện thoại '" + phone.trim() + "' đã được dùng bởi tài khoản khác.");
+            if (citizenIdChanged && dao.isCitizenIdTaken(citizenId, Integer.parseInt(idStr)))
+                errors.add("Số CCCD '" + citizenId.trim() + "' đã được dùng bởi tài khoản khác.");
         }
         // ── BƯỚC 3: Nếu có lỗi → GỬI LẠI FORM + GIỮ DỮ LIỆU ──
         if (!errors.isEmpty()) {
@@ -333,14 +321,10 @@ public class AccountServlet extends HttpServlet {
             return;
         }
 
-        // ── BƯỚC 4: Dữ liệu hợp lệ → Lưu DB ────────────────────
+        // ── BƯỚC 4: Lưu chỉnh sửa ────────────────────────────────
         Account a = new Account();
-        if (isNew) {
-            a.setUsername(username != null ? username.trim() : "");
-        } else {
-            // Khi edit: lấy username hiện tại từ DB, không cho thay đổi
-            a.setUsername(current != null ? current.getUsername() : (username != null ? username.trim() : ""));
-        }
+        // Khi edit: lấy username hiện tại từ DB, không cho thay đổi
+        a.setUsername(current != null ? current.getUsername() : (username != null ? username.trim() : ""));
         a.setFullName(fullName.trim());
         a.setEmail(email != null ? email.trim() : null);
         a.setPhone(phone != null ? phone.trim() : null);
@@ -348,25 +332,7 @@ public class AccountServlet extends HttpServlet {
         a.setPosition(position != null ? position.trim() : null);
         a.setRoleId(Integer.parseInt(roleStr));
 
-
-
-        if (isNew) {
-            // ── TẠO MỚI: admin tự cấp MK, lưu thẳng không OTP ──
-            a.setPasswordHash(PasswordUtil.hashPassword(password));
-            boolean ok = dao.insert(a);
-            if (ok) {
-                AuditHelper.log(req, "Tạo tài khoản", "Account",
-                        "Admin tạo @" + (username != null ? username : "") + " (" + fullName + ")");
-                resp.sendRedirect(req.getContextPath() + "/accounts?msg=created");
-            } else {
-                req.setAttribute("errors", java.util.List.of("Tạo tài khoản thất bại — kiểm tra log!"));
-                req.setAttribute("account", a);
-                SidebarHelper.load(req);
-
-                req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
-            }
-
-        } else {
+        {
             // ── CHỈNH SỬA ──────────────────────────────────────────────────────
             int editId = Integer.parseInt(idStr);
             a.setAccountId(editId);

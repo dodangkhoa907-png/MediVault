@@ -17,7 +17,7 @@ public class ReturnsDAO implements IReturnsDAO {
         int invId = rs.getInt("InvoiceID");
         r.setInvoiceId(rs.wasNull() ? null : invId);
         r.setQuantity(rs.getInt("Quantity"));
-        r.setReason(rs.getNString("Reason"));
+        r.setReason(rs.getString("Reason"));
         r.setAccountId(rs.getInt("AccountID"));
         r.setRestoreStock(rs.getBoolean("RestoreStock"));
         if (rs.getTimestamp("CreatedAt") != null)
