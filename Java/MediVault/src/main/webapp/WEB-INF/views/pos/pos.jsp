@@ -1815,19 +1815,28 @@ function submitSale() {
     })
     .then(data => {
       if (data.ok) {
-        const total    = calcTotal();
+        // Tổng in trên hóa đơn LẤY THEO SERVER (data.total = FinalAmount đã kẹp [0, subtotal]),
+        // không dùng số client tự tính — nếu server đã chặn giảm giá quá tay thì hóa đơn/tiền
+        // thối phải phản ánh đúng con số thật đã ghi vào DB.
+        const total    = (data.total != null && !isNaN(parseFloat(data.total)))
+                            ? parseFloat(data.total) : calcTotal();
         const disc     = parseFloat(document.getElementById('discountInput').value) || 0;
         const received = selectedPayment === 'CASH' ? (parseFloat(document.getElementById('cashInput').value) || 0) : 0;
         const change   = received > 0 ? Math.max(0, received - total) : 0;
         const now      = new Date();
 
         // Snapshot cart và customer trước khi xóa
+        const subtotalSnap = cart.reduce((s,i) => s + i.price*i.qty, 0);
+        // Giảm giá IN trên hóa đơn suy ra từ (subtotal − total server) để 3 dòng
+        // subtotal/giảm giá/tổng LUÔN khớp nhau và khớp số thật đã thu — kể cả khi
+        // server đã kẹp khoản giảm quá tay.
+        const discShown = Math.max(0, subtotalSnap - total);
         currentInvoice = {
           id:           data.invoiceId || 0,
           code:         data.invoiceCode || '',
           total:        total,
-          subtotal:     cart.reduce((s,i) => s + i.price*i.qty, 0),
-          discount:     disc,
+          subtotal:     subtotalSnap,
+          discount:     discShown,
           cashReceived: received,
           change:       change,
           date:         now,
@@ -2017,7 +2026,22 @@ function printReceipt() {
     + '.totals-row.grand { font-size: 14px; font-weight:800; border-top: 2px solid #000; padding-top: 5px; margin-top: 3px; }'
     + '.footer { text-align: center; margin-top: 10px; font-style: italic; font-size: 11.5px; }'
     + '.kv { display: flex; justify-content: space-between; font-size: 11.5px; padding: 2px 0; }'
-    + '@media print { body { padding: 0; } button { display: none; } }'
+    // Khối chính sách cố định + khối ghi chú dược sĩ (động)
+    + '.policy { font-size: 10.5px; line-height: 1.45; margin-top: 4px; }'
+    + '.policy-title { font-weight: 800; text-align: center; margin-bottom: 2px; letter-spacing: .5px; }'
+    + '.rx-notes { font-size: 11px; line-height: 1.5; padding: 4px 6px; border: 1px dashed #000; border-radius: 4px; }'
+    + '.rx-notes-title { font-weight: 800; margin-bottom: 3px; }'
+    + '.rx-note-line { padding: 1px 0; word-break: break-word; }'
+    // In cho máy nhiệt khổ 80mm: cố định khổ giấy, in cả nền/màu, không cắt ngang khối
+    + '@page { size: 80mm auto; margin: 0; }'
+    + '@media print {'
+    +   ' html, body { width: 80mm; margin: 0; }'
+    +   ' body { padding: 0 3mm; }'
+    +   ' button { display: none !important; }'
+    +   ' * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }'
+    +   ' .rx-notes, .policy, .totals, table, tr { break-inside: avoid; page-break-inside: avoid; }'
+    +   ' thead { display: table-header-group; }'
+    + ' }'
     + '</style>'
     + '</head><body>'
     + '<div class="center">'
@@ -2053,11 +2077,7 @@ function printReceipt() {
           + '<div class="totals-row"><span>Tiền khách đưa:</span><span>' + fmt(inv.cashReceived) + '</span></div>'
           + '<div class="totals-row"><span>Tiền thối:</span><span>' + fmt(inv.change) + '</span></div>'
         : '')
-    + '<div class="divider"></div>'
-    + '<div class="footer">'
-    + '<div>-- Chúc quý khách sức khỏe và một ngày tốt lành --</div>'
-    + '<div style="margin-top:4px;font-size:10px;color:#555">Hẹn gặp lại quý khách!</div>'
-    + '</div>'
+    + renderReceiptFooter(inv)
     + '<div style="height:16px"></div>'
     + '<div class="center" style="margin-top:8px">'
     + '<button onclick="window.print()" style="padding:8px 20px;background:#1a56db;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:750;font-family:&quot;Plus Jakarta Sans&quot;,sans-serif">🖶 In hóa đơn</button>'
@@ -2076,6 +2096,47 @@ function printReceipt() {
 }
 
 function fmt(n) { return new Intl.NumberFormat('vi-VN').format(Math.round(n||0)) + 'đ'; }
+
+// ── Receipt footer ─────────────────────────────────────────────────────────
+// Lọc lời dặn dược sĩ về danh sách dòng CÓ NỘI DUNG THẬT. Coi là rỗng nếu:
+// null | undefined | '' | toàn khoảng trắng | [] | mảng toàn phần tử rỗng.
+function normalizeInstructions(v) {
+  if (v == null) return [];
+  const arr = Array.isArray(v) ? v : String(v).split('\n');
+  return arr.filter(x => typeof x === 'string' || typeof x === 'number')
+            .map(x => String(x).trim())
+            .filter(x => x.length > 0);
+}
+
+// Dựng FOOTER hóa đơn 80mm:
+//  • Khối chính sách → LUÔN in (cố định).
+//  • Khối lời dặn dược sĩ → CHỈ in khi có nội dung; rỗng ⇒ KHÔNG tạo DOM/viền/khoảng
+//    trắng nào (yêu cầu "collapse completely" — không phí giấy in nhiệt).
+function renderReceiptFooter(inv) {
+  const notes = normalizeInstructions(inv && inv.instructions);
+
+  const noteBlock = notes.length === 0 ? '' : (
+      '<div class="divider"></div>'
+    + '<div class="rx-notes">'
+    +   '<div class="rx-notes-title">📋 LỜI DẶN CỦA DƯỢC SĨ</div>'
+    +   notes.map(n => '<div class="rx-note-line">• ' + escHtml(n) + '</div>').join('')
+    + '</div>'
+  );
+
+  return noteBlock
+    + '<div class="divider"></div>'
+    + '<div class="policy">'
+    +   '<div class="policy-title">LƯU Ý</div>'
+    +   '<div>• Kiểm tra thuốc và hạn dùng trước khi rời quầy.</div>'
+    +   '<div>• Bảo quản nơi khô ráo, nhiệt độ dưới 30°C.</div>'
+    +   '<div>• Để thuốc xa tầm tay trẻ em.</div>'
+    +   '<div>• Đọc kỹ hướng dẫn trước khi dùng.</div>'
+    + '</div>'
+    + '<div class="footer">'
+    +   '<div>-- Chúc quý khách sức khỏe và một ngày tốt lành --</div>'
+    +   '<div style="margin-top:4px;font-size:10px;color:#555">Hẹn gặp lại quý khách!</div>'
+    + '</div>';
+}
 
 function showToast(msg, type) {
   const t = document.createElement('div');

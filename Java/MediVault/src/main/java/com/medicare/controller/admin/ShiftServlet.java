@@ -527,24 +527,32 @@ public class ShiftServlet extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/shifts?msg=" + (ok ? "updated" : "error") + suffix);
     }
 
-    /** Sửa nhiều ca đã chọn (bulk update) */
+    /**
+     * Sửa nhiều ca đã chọn — MỖI CA CÓ GIÁ TRỊ RIÊNG (không còn áp 1 giá trị chung cho tất
+     * cả như trước). FE (shift-list.jsp, modal "Sửa ca") chỉ gửi lên những ca THỰC SỰ có
+     * thay đổi (đã lọc dirty ở client) qua 4 mảng song song cùng độ dài, khớp theo INDEX:
+     *   scheduleIds[i] ↔ shiftTypeIds[i] ↔ lateTols[i] ↔ notesArr[i]
+     */
     private void handleScheduleBulkUpdate(HttpServletRequest req, HttpServletResponse resp)
             throws IOException {
-        Account admin    = (Account) req.getSession(false).getAttribute("adminAccount");
-        String[] ids     = req.getParameterValues("scheduleIds");
-        int shiftTypeId  = parseIntOr(req.getParameter("shiftTypeId"), 0);
-        int lateTol      = parseIntOr(req.getParameter("lateToleranceMinutes"), -1); // -1 = giữ nguyên
-        String notes     = req.getParameter("notes");
+        Account admin      = (Account) req.getSession(false).getAttribute("adminAccount");
+        String[] ids       = req.getParameterValues("scheduleIds");
+        String[] typeIds   = req.getParameterValues("shiftTypeIds");
+        String[] lateTols  = req.getParameterValues("lateTols");
+        String[] notesArr  = req.getParameterValues("notesArr");
 
         if (ids == null || ids.length == 0) {
             resp.sendRedirect(req.getContextPath() + "/shifts?msg=invalid"); return;
         }
         int updated = 0;
-        for (String id : ids) {
-            int sid = parseIntOr(id, 0);
+        for (int i = 0; i < ids.length; i++) {
+            int sid = parseIntOr(ids[i], 0);
             if (sid == 0) continue;
-            // Nếu không chọn loại ca mới → chỉ update lateTol và notes
-            // scheduleDAO.update() với shiftTypeId=0 → giữ nguyên shiftType hiện tại
+            int shiftTypeId = (typeIds  != null && i < typeIds.length)  ? parseIntOr(typeIds[i], 0)   : 0;
+            int lateTol     = (lateTols != null && i < lateTols.length) ? parseIntOr(lateTols[i], -1) : -1;
+            String notes    = (notesArr != null && i < notesArr.length) ? notesArr[i] : null;
+
+            // Nếu không chọn loại ca mới → giữ nguyên shiftType hiện tại của CHÍNH ca đó
             int effectiveLateTol = lateTol >= 0 ? lateTol : 10; // fallback 10 phút
             boolean ok = scheduleDAO.update(
                     sid,
@@ -555,7 +563,7 @@ public class ShiftServlet extends HttpServlet {
             if (ok) updated++;
         }
         AuditHelper.log(req, "Sửa hàng loạt lịch ca", "ShiftSchedule",
-                "Đã sửa " + updated + " ca");
+                "Đã sửa " + updated + " ca (mỗi ca giá trị riêng)");
         resp.sendRedirect(req.getContextPath() + "/shifts?msg=updated&count=" + updated);
     }
 

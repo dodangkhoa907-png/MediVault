@@ -126,12 +126,14 @@ public class MedicineServlet extends HttpServlet {
         Map<Integer, Integer> stockMap =
                 com.medicare.config.CacheManager.getShort("med.stockMap", batchesDAO::getTotalQuantityMap);
 
-        // Batch summaries cho hover card + tab badge counts
-        Map<Integer, Integer> activeBatchCountMap  = new HashMap<>();
-        Map<Integer, Integer> expiringSoonCountMap  = new HashMap<>();
-        Map<Integer, Integer> expiredBatchCountMap  = new HashMap<>();
-        Map<Integer, String>  nearestExpiryMap      = new HashMap<>();
-        batchesDAO.loadBatchSummary(activeBatchCountMap, expiringSoonCountMap, expiredBatchCountMap, nearestExpiryMap);
+        // Batch summaries cho hover card + tab badge counts — cache 30s, dùng CHUNG key với
+        // InventorySSEServlet để tránh chạy lại y hệt query này ngay sau khi trang vừa load
+        // xong (SSE tự kết nối ngay khi trang mở, trước đây gọi lại loadBatchSummary() lần nữa).
+        BatchesDAO.BatchSummaryBundle bsb = batchesDAO.getCachedBatchSummary();
+        Map<Integer, Integer> activeBatchCountMap   = bsb.activeCount;
+        Map<Integer, Integer> expiringSoonCountMap  = bsb.soonCount;
+        Map<Integer, Integer> expiredBatchCountMap  = bsb.expiredCount;
+        Map<Integer, String>  nearestExpiryMap      = bsb.nearestExpiry;
 
         // Counts cho tab badge (toàn bộ DB, không phụ thuộc page)
         int totalOutOfStock   = (int) stockMap.values().stream().filter(s -> s == null || s == 0).count();
@@ -162,8 +164,8 @@ public class MedicineServlet extends HttpServlet {
         req.setAttribute("pageSize", pageSize);
         req.setAttribute("pageFrom", (page - 1) * pageSize + 1);
         req.setAttribute("pageTo",   Math.min(page * pageSize, total));
-        req.setAttribute("totalActive", medicineDAO.countAll());
-        req.setAttribute("lowStock", medicineDAO.countLowStock());
+        req.setAttribute("totalActive", com.medicare.config.CacheManager.getShort("med.countAll", medicineDAO::countAll));
+        req.setAttribute("lowStock", com.medicare.config.CacheManager.getShort("med.countLowStock", medicineDAO::countLowStock));
         SidebarHelper.load(req);
 
         req.getRequestDispatcher("/WEB-INF/views/admin/medicine-list.jsp").forward(req, resp);

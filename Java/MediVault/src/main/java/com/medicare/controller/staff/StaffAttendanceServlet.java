@@ -43,7 +43,9 @@ public class StaffAttendanceServlet extends HttpServlet {
     // ── Grace periods (phút) ─────────────────────────────────────────────────
     private static final int CHECKIN_GRACE_MINUTES  = 5;   // 5p sau PlannedStart vẫn OK
     private static final int CHECKOUT_GRACE_MINUTES = 5;   // 5p sau PlannedEnd vẫn OK
-    private static final int AUTO_CLOSE_MINUTES     = 20;  // 20p sau PlannedEnd → tự đóng
+    // Auto-close ca ĐANG ACTIVE bị bỏ quên chưa checkout nằm ở ShiftAutoCloseService riêng,
+    // không phải ở đây — hằng số 20p trước đây bị dùng SAI làm mốc chặn CHECK-IN (đã sửa,
+    // xem performCheckIn) nên xóa luôn để khỏi gây hiểu nhầm lần sau.
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -130,7 +132,15 @@ public class StaffAttendanceServlet extends HttpServlet {
         if (now.isBefore(plannedStart)) {
             return "too-early";
         }
-        if (now.isAfter(plannedEnd.plusMinutes(AUTO_CLOSE_MINUTES))) {
+        // BUG CŨ: dùng plannedEnd + AUTO_CLOSE_MINUTES (20p) làm mốc chặn check-in — nhưng
+        // AUTO_CLOSE_MINUTES là hằng số của luồng CHECK-OUT/tự đóng ca ĐANG ACTIVE (xem class
+        // JavaDoc), không liên quan gì tới việc có nên cho BẮT ĐẦU check-in mới hay không. Hệ
+        // quả: nhân viên vẫn bấm check-in được tới 20 phút SAU KHI ca đã kết thúc hoàn toàn
+        // (vd. ca 18:00–23:00 vẫn cho check-in tới 23:20) — vô lý vì ca gần như không còn thời
+        // gian để làm việc. Mốc đúng: chặn NGAY khi đã qua giờ kết thúc ca (plannedEnd) — trong
+        // suốt khoảng ca đang diễn ra (kể cả trễ nặng, quá LateToleranceMinutes) vẫn cho check-in
+        // và đánh dấu ABSENT + phạt đủ, đúng như JavaDoc mô tả — chỉ chặn hẳn sau khi ca đã hết giờ.
+        if (now.isAfter(plannedEnd)) {
             return "too-late";
         }
 

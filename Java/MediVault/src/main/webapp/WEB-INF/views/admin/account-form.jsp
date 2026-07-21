@@ -20,6 +20,7 @@
     java.lang.String vCertNo    = form != null && form.getProfessionalCertNo() != null ? form.getProfessionalCertNo() : "";
     java.lang.String vCertExp   = form != null && form.getProfessionalCertExp() != null ? form.getProfessionalCertExp().toString() : "";
     java.lang.String vTraining  = form != null && form.getTrainingDate() != null ? form.getTrainingDate().toString() : "";
+    java.lang.String vLicenseFilePath = form != null ? form.getLicenseFilePath() : null;
     int    vRoleId    = form != null ? form.getRoleId() : 2;
     boolean isFaceEnrolled = form != null && form.isFaceEnrolled();
     int    vAccountIdForFace = form != null ? form.getAccountId() : 0;
@@ -443,7 +444,7 @@ select,option{font-family:inherit;font-size:inherit}
         </div>
         <% } %>
 
-        <form method="post" action="${pageContext.request.contextPath}/accounts" novalidate id="mainForm">
+        <form method="post" action="${pageContext.request.contextPath}/accounts" enctype="multipart/form-data" novalidate id="mainForm">
             <c:if test="${not empty account and account.accountId > 0}">
                 <input type="hidden" name="accountId" value="${account.accountId}">
             </c:if>
@@ -594,6 +595,48 @@ select,option{font-family:inherit;font-size:inherit}
                     </div>
                 </div>
             </div>
+
+            <% if (!isNew && vRoleId == 2) { %>
+            <!-- Card: Chứng chỉ hành nghề (chỉ Dược sĩ, cần accountId có sẵn để lưu file) -->
+            <div class="form-card">
+                <div class="form-card-head">
+                    <div class="form-card-head-icon">📜</div>
+                    <div>
+                        <h2>Chứng chỉ hành nghề</h2>
+                        <p>Số chứng chỉ, hạn dùng, ngày đào tạo — và file PDF gốc làm bằng chứng</p>
+                    </div>
+                </div>
+                <div class="form-body">
+                    <div class="form-grid">
+                        <div class="field">
+                            <label class="field-label" for="professionalCertNo">Số chứng chỉ hành nghề</label>
+                            <input type="text" id="professionalCertNo" name="professionalCertNo" class="field-input"
+                                   value="<%= vCertNo %>" placeholder="VD: CCHN-0012345">
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="professionalCertExp">Ngày hết hạn</label>
+                            <input type="date" id="professionalCertExp" name="professionalCertExp" class="field-input"
+                                   value="<%= vCertExp %>">
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="trainingDate">Ngày hoàn thành đào tạo</label>
+                            <input type="date" id="trainingDate" name="trainingDate" class="field-input"
+                                   value="<%= vTraining %>">
+                        </div>
+                        <div class="field span-2">
+                            <label class="field-label" for="licenseFile">File PDF giấy phép hành nghề (bằng chứng gốc)</label>
+                            <input type="file" id="licenseFile" name="licenseFile" class="field-input" accept="application/pdf">
+                            <span class="field-note">📄 Chỉ nhận file .pdf, tối đa 5MB. Upload bản scan/chụp giấy chứng chỉ thật — đáng tin cậy hơn chỉ gõ số tay ở trên.</span>
+                            <% if (vLicenseFilePath != null && !vLicenseFilePath.isEmpty()) { %>
+                            <span class="field-note" style="color:#059669;font-weight:750">
+                                ✅ Đã có file — <a href="${pageContext.request.contextPath}/<%= vLicenseFilePath %>" target="_blank" style="color:#059669">Xem file hiện tại</a> (upload file mới sẽ thay thế file này).
+                            </span>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <% } %>
 
             <% if (!isNew) { %>
             <!-- Card 3: Đăng ký khuôn mặt (chỉ khi edit, cần accountId có sẵn) -->

@@ -188,6 +188,7 @@ MediVault/
     │       ├── NotificationUtil.java    # Push thông báo nội bộ
     │       ├── OtpUtil.java             # Generate + validate OTP 6 số
     │       ├── PasswordUtil.java        # BCrypt hash/check
+    │       ├── PricingUtil.java         # Tính tiền VND: kẹp giảm giá [0,subtotal], sàn total=0 (settle/calculateFinalTotal)
     │       ├── SessionTracker.java      # Theo dõi nhân viên đang online (in-memory Set)
     │       ├── SidebarHelper.java       # Load badge counts cho sidebar (cache 30s)
     │       ├── StaffNotifHelper.java    # Helper gửi thông báo chuẩn (created/reset/face)

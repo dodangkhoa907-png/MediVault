@@ -87,24 +87,32 @@ public class InvoiceDAO implements IInvoiceDAO {
 
     /**
      * Bước 3: Chốt hóa đơn → COMPLETED.
-     * Tính FinalAmount = tổng SubTotal - discount.
+     * FinalAmount = subtotal (đọc từ DB) − discount đã KẸP về [0, subtotal] qua PricingUtil.settle()
+     * ⇒ không bao giờ âm, DiscountAmount ghi vào DB luôn trung thực. Xem chú thích ở
+     * {@link #completeSaleTransaction} về lý do không tin số client gửi.
      */
     public boolean complete(int invoiceId, BigDecimal discountAmount) {
-        String sql = "UPDATE Invoices SET " +
-                "  Status = 'COMPLETED', " +
-                "  DiscountAmount = ?, " +
-                "  FinalAmount = (" +
-                "      SELECT ISNULL(SUM(SubTotal), 0) FROM InvoiceDetails WHERE InvoiceID = ?" +
-                "  ) - ? " +
-                "WHERE InvoiceID = ? AND Status = 'PENDING'";
-        try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
-            BigDecimal disc = discountAmount != null ? discountAmount : BigDecimal.ZERO;
-            ps.setBigDecimal(1, disc);
-            ps.setInt(2, invoiceId);
-            ps.setBigDecimal(3, disc);
-            ps.setInt(4, invoiceId);
-            return ps.executeUpdate() > 0;
+        try (Connection cn = DBContext.getConnection()) {
+            BigDecimal subtotal = BigDecimal.ZERO;
+            try (PreparedStatement ps = cn.prepareStatement(
+                    "SELECT ISNULL(SUM(SubTotal), 0) FROM InvoiceDetails WHERE InvoiceID = ?")) {
+                ps.setInt(1, invoiceId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) subtotal = rs.getBigDecimal(1);
+                }
+            }
+            com.medicare.util.PricingUtil.PriceResult priced =
+                    com.medicare.util.PricingUtil.settle(subtotal, discountAmount);
+
+            String sql = "UPDATE Invoices SET Status = 'COMPLETED', " +
+                    "DiscountAmount = ?, FinalAmount = ? " +
+                    "WHERE InvoiceID = ? AND Status = 'PENDING'";
+            try (PreparedStatement ps = cn.prepareStatement(sql)) {
+                ps.setBigDecimal(1, priced.discount);
+                ps.setBigDecimal(2, priced.total);
+                ps.setInt(3, invoiceId);
+                return ps.executeUpdate() > 0;
+            }
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
 
@@ -263,16 +271,32 @@ public class InvoiceDAO implements IInvoiceDAO {
             }
 
             // Bước 3: Complete Invoice
-            java.math.BigDecimal disc = discount != null ? discount : java.math.BigDecimal.ZERO;
+            //
+            // AN TOÀN TÀI CHÍNH: subtotal được đọc TỪ DB (SUM SubTotal của các dòng vừa thêm),
+            // KHÔNG tin số client gửi. Số tiền giảm (discount) client gửi lên được kẹp lại qua
+            // PricingUtil.settle() vào khoảng [0, subtotal] nên FinalAmount không bao giờ âm và
+            // DiscountAmount ghi vào DB cũng luôn trung thực (giảm quá tay ⇒ lưu đúng bằng subtotal,
+            // giảm âm ⇒ lưu 0). Trước đây UPDATE tính thẳng "SUM(SubTotal) - discount" nên client
+            // gửi discount > subtotal (hoặc discount âm) sẽ ghi ra hóa đơn âm/thổi phồng.
+            java.math.BigDecimal subtotal = java.math.BigDecimal.ZERO;
+            String sqlSubtotal = "SELECT ISNULL(SUM(SubTotal),0) FROM InvoiceDetails WHERE InvoiceID = ?";
+            try (PreparedStatement ps = cn.prepareStatement(sqlSubtotal)) {
+                ps.setInt(1, invoiceId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) subtotal = rs.getBigDecimal(1);
+                }
+            }
+
+            com.medicare.util.PricingUtil.PriceResult priced =
+                    com.medicare.util.PricingUtil.settle(subtotal, discount);
+
             String sqlComplete = "UPDATE Invoices SET Status = 'COMPLETED', " +
-                    "DiscountAmount = ?, " +
-                    "FinalAmount = (SELECT ISNULL(SUM(SubTotal),0) FROM InvoiceDetails WHERE InvoiceID = ?) - ? " +
+                    "DiscountAmount = ?, FinalAmount = ? " +
                     "WHERE InvoiceID = ? AND Status = 'PENDING'";
             try (PreparedStatement ps = cn.prepareStatement(sqlComplete)) {
-                ps.setBigDecimal(1, disc);
-                ps.setInt(2, invoiceId);
-                ps.setBigDecimal(3, disc);
-                ps.setInt(4, invoiceId);
+                ps.setBigDecimal(1, priced.discount);
+                ps.setBigDecimal(2, priced.total);
+                ps.setInt(3, invoiceId);
                 if (ps.executeUpdate() == 0) throw new Exception("Không complete được hóa đơn (ID=" + invoiceId + ")");
             }
 
