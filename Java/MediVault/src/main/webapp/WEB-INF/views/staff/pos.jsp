@@ -522,6 +522,8 @@ body{display:flex}
           <div><div style="font-size:13px;font-weight:750;color:#fff"><%= fullName %></div><div style="font-size:10.5px;color:rgba(255,255,255,.45)">Đang ca làm việc</div></div>
         </div>
         <a href="<%= ctx %>/staff-dashboard" style="display:block;padding:8px 11px;background:rgba(255,255,255,.1);border-radius:8px;color:#93c5fd;font-size:12.5px;font-weight:750;text-decoration:none;margin-bottom:5px;text-align:center">📅 Xem lịch ca</a>
+        <button onclick="openMyInvModal();toggleCheckinPanel();" style="display:block;width:100%;padding:8px 11px;background:rgba(255,255,255,.1);border-radius:8px;color:#a5f3fc;font-size:12.5px;font-weight:750;text-align:center;border:none;cursor:pointer;font-family:inherit;margin-bottom:5px">🧾 Hóa đơn của tôi</button>
+        <button onclick="openOpenCashModal();toggleCheckinPanel();" style="display:block;width:100%;padding:8px 11px;background:rgba(255,255,255,.1);border-radius:8px;color:#86efac;font-size:12.5px;font-weight:750;text-align:center;border:none;cursor:pointer;font-family:inherit;margin-bottom:5px">💵 Khai báo tiền đầu ca (tùy chọn)</button>
         <button onclick="openEndShiftModal();toggleCheckinPanel();" style="display:block;width:100%;padding:8px 11px;background:rgba(239,68,68,.15);border-radius:8px;color:#fca5a5;font-size:12.5px;font-weight:750;text-align:center;border:none;cursor:pointer;font-family:inherit">⏻ Kết thúc ca</button>
         <% } else { %>
         <div style="font-size:11.5px;color:rgba(255,255,255,.5);margin-bottom:11px">Điểm danh để ghi nhận doanh số theo nhân viên</div>
@@ -577,6 +579,50 @@ body{display:flex}
     </button>
   </div>
   <% } %>
+
+  <%-- Modal: Khai báo tiền đầu ca (mở ca) --%>
+  <div id="openCashModal" style="display:none;position:fixed;inset:0;z-index:9600;background:rgba(11,22,40,.55);align-items:center;justify-content:center;padding:20px">
+    <div style="background:#fff;border-radius:18px;max-width:400px;width:100%;padding:28px;box-shadow:0 24px 70px rgba(0,0,0,.35)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="font-size:26px">💵</span>
+        <h3 style="margin:0;font-size:18px;font-weight:800;color:#0f172a">Khai báo tiền đầu ca</h3>
+      </div>
+      <p style="font-size:12.5px;color:#64748b;margin:0 0 16px;line-height:1.5">Đếm tiền mặt hiện có trong két và nhập số tiền để mở ca. Số này dùng đối soát khi kết ca.</p>
+      <label style="font-size:12.5px;font-weight:700;color:#334155;display:block;margin-bottom:6px">Tiền mặt trong két (đ) <span style="color:#dc2626">*</span></label>
+      <input type="number" id="openCashInput" min="0" step="1000" placeholder="VD: 500000"
+             style="width:100%;border:1.5px solid #e2e8f0;border-radius:11px;padding:12px 14px;font-size:17px;font-weight:700;font-family:inherit;box-sizing:border-box"
+             onkeydown="if(event.key==='Enter')confirmOpenShift()">
+      <div id="openCashErr" style="color:#dc2626;font-size:12px;margin-top:6px;display:none"></div>
+      <button type="button" id="openShiftBtn" onclick="confirmOpenShift()"
+              style="width:100%;margin-top:16px;padding:13px;background:linear-gradient(135deg,#059669,#047857);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">✓ Mở ca &amp; bắt đầu bán hàng</button>
+    </div>
+  </div>
+
+  <%-- Modal: Hóa đơn của tôi (bill trong ca hôm nay của chính nhân viên) --%>
+  <div id="myInvModal" style="display:none;position:fixed;inset:0;z-index:9600;background:rgba(11,22,40,.55);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeMyInvModal()">
+    <div style="background:#fff;border-radius:18px;max-width:520px;width:100%;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden">
+      <div style="padding:18px 22px;background:linear-gradient(135deg,#1558A8,#3ABDE0);color:#fff;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <h3 style="margin:0;font-size:17px;font-weight:800">🧾 Hóa đơn của tôi</h3>
+          <div id="myInvSummary" style="font-size:12px;opacity:.85;margin-top:3px">Đang tải…</div>
+        </div>
+        <button onclick="closeMyInvModal()" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:32px;height:32px;border-radius:9px;font-size:16px;cursor:pointer">✕</button>
+      </div>
+      <!-- Bộ chọn thời gian -->
+      <div style="padding:10px 18px;border-bottom:1px solid #e2e8f0;background:#f8fafc;display:flex;align-items:center;gap:8px">
+        <label for="myInvRange" style="font-size:13px;font-weight:700;color:#475569">Thời gian:</label>
+        <select id="myInvRange" onchange="openMyInvModal()" style="padding:6px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;color:#1e293b;background:#fff;cursor:pointer">
+          <option value="today">Hôm nay</option>
+          <option value="yesterday">Hôm qua</option>
+          <option value="7days">7 ngày qua</option>
+          <option value="30days">30 ngày qua</option>
+        </select>
+      </div>
+      <div id="myInvList" style="flex:1;overflow-y:auto;padding:14px 18px">
+        <div style="color:#94a3b8;font-size:13px;text-align:center;padding:26px 0">Đang tải…</div>
+      </div>
+    </div>
+  </div>
 
   <!-- Medicine grid -->
   <div class="med-grid" id="medGrid">
@@ -1577,61 +1623,89 @@ function printReceipt() {
       + '</tr>';
   });
 
-  var html = '<!DOCTYPE html>'
-    + '<html lang="vi"><head>
-    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
-    
-    
-    '
-    + '<meta charset="UTF-8">'
-    + '<title>Hóa đơn ' + escHtml(inv.code) + '</title>'
-    + '<style>'
-    + '* { margin:0; padding:0; box-sizing:border-box; }'
-    + 'body { font-family: "Courier New", monospace; font-size: 12px; color: #000; padding: 8px; max-width: 320px; margin: 0 auto; }'
-    + '.center { text-align: center; }'
-    + '.bold { font-weight: bold; }'
-    + '.title { font-size: 15px; font-weight:800; margin: 4px 0; }'
-    + '.divider { border-top: 1px dashed #000; margin: 7px 0; }'
-    + '.divider2 { border-top: 2px solid #000; margin: 7px 0; }'
-    + 'table { width: 100%; border-collapse: collapse; font-size: 11px; }'
-    + 'th { background: #eee; padding: 4px 6px; font-weight:750; border-bottom: 1px solid #000; }'
-    + 'td { vertical-align: top; }'
-    + '.totals { margin-top: 6px; }'
-    + '.totals-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 12px; }'
-    + '.totals-row.grand { font-size: 14px; font-weight:800; border-top: 2px solid #000; padding-top: 5px; margin-top: 3px; }'
-    + '.footer { text-align: center; margin-top: 10px; font-style: italic; font-size: 11.5px; }'
-    + '.kv { display: flex; justify-content: space-between; font-size: 11.5px; padding: 2px 0; }'
-    + '@media print { body { padding: 0; } button { display: none; } }'
-    + '</style>'
-    + '    
-</head><body>'
-    + '<div class="center">'
-    + '<div class="bold" style="font-size:14px">NHÀ THUỐC Medicare</div>'
-    + '<div>Địa chỉ: 123 Đường Ba Cu, P.4, TP. Vũng Tàu</div>'
-    + '<div>Điện thoại: 0901.234.567</div>'
-    + '</div>'
-    + '<div class="divider2"></div>'
-    + '<div class="center"><div class="title">HÓA ĐƠN BÁN LẾ</div></div>'
-    + '<div class="divider"></div>'
-    + '<div class="kv"><span class="bold">Số HĐ:</span><span>#' + escHtml(inv.code) + '</span></div>'
-    + '<div class="kv"><span class="bold">Ngày lập:</span><span>' + dateStr + '</span></div>'
-    + '<div class="kv"><span class="bold">Khách hàng:</span><span>' + (inv.customer ? escHtml(inv.customer.name) : 'Khách lẻ') + '</span></div>'
-    + (inv.customer ? '<div class="kv"><span class="bold">SĐT:</span><span>' + escHtml(inv.customer.phone) + '</span></div>' : '')
-    + '<div class="kv"><span class="bold">Dược sĩ bán:</span><span>' + escHtml(sellerName) + '</span></div>'
-    + '<div class="divider"></div>'
-    + '<table><thead><tr>'
-    + '<th style="text-align:center;width:24px">STT</th>'
-    + '<th>Tên Thuốc / Vật Tư</th>'
-    + '<th style="text-align:center;width:30px">ĐVT</th>'
-    + '<th style="text-align:center;width:24px">SL</th>'
-    + '<th style="text-align:right;width:60px">Đơn Giá</th>'
-    + '<th style="text-align:right;width:66px">Thành Tiền</th>'
-    + '</tr></thead><tbody>' + itemRows + '</tbody></table>'
-    + '<div class="divider"></div>'
-    + '<div class="totals">'
-    + '<div class="totals-row"><span>Tổng tiền hàng:</span><span>' + fmt(inv.subtotal) + '</span></div>'
-    + '<div class="totals-row"><span>Giảm giá:</span><span>-' + fmt(inv.discount) + '</span></div>'
-    + '<div class="totals-row grand"><span>TỔNG THANH TOÁN:</span><span>' + fmt(inv.total) + '</span></div>'
+  var html = `<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <title>Hóa đơn \${escHtml(inv.code)}</title>
+    <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; color: #000; padding: 8px; max-width: 320px; margin: 0 auto; }
+    .center { text-align: center; }
+    .bold { font-weight: bold; }
+    .title { font-size: 15px; font-weight:800; margin: 4px 0; }
+    .divider { border-top: 1px dashed #000; margin: 7px 0; }
+    .divider2 { border-top: 2px solid #000; margin: 7px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th { background: #eee; padding: 4px 6px; font-weight:750; border-bottom: 1px solid #000; }
+    td { vertical-align: top; padding: 4px 6px; }
+    .totals { margin-top: 6px; }
+    .totals-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 12px; }
+    .totals-row.grand { font-size: 14px; font-weight:800; border-top: 2px solid #000; padding-top: 5px; margin-top: 3px; }
+    .footer { text-align: center; margin-top: 10px; font-style: italic; font-size: 11.5px; }
+    .kv { display: flex; justify-content: space-between; font-size: 11.5px; padding: 2px 0; }
+    @media print { body { padding: 0; } .print-actions { display: none !important; } }
+    </style>
+</head>
+<body>
+    <div class="center">
+        <div class="bold" style="font-size:14px">NHÀ THUỐC Medicare</div>
+        <div>Địa chỉ: 123 Đường Ba Cu, P.4, TP. Vũng Tàu</div>
+        <div>Điện thoại: 0901.234.567</div>
+    </div>
+    <div class="divider2"></div>
+    <div class="center"><div class="title">HÓA ĐƠN BÁN LẺ</div></div>
+    <div class="divider"></div>
+    <div class="kv"><span class="bold">Số HĐ:</span><span>#\${escHtml(inv.code)}</span></div>
+    <div class="kv"><span class="bold">Ngày lập:</span><span>\${dateStr}</span></div>
+    <div class="kv"><span class="bold">Khách hàng:</span><span>\${inv.customer ? escHtml(inv.customer.name) : 'Khách lẻ'}</span></div>
+    \${inv.customer ? '<div class="kv"><span class="bold">SĐT:</span><span>' + escHtml(inv.customer.phone) + '</span></div>' : ''}
+    <div class="kv"><span class="bold">Dược sĩ bán:</span><span>\${escHtml(sellerName)}</span></div>
+    <div class="divider"></div>
+    <table>
+        <thead>
+            <tr>
+                <th style="text-align:center;width:24px">STT</th>
+                <th>Tên Thuốc / Vật Tư</th>
+                <th style="text-align:center;width:30px">ĐVT</th>
+                <th style="text-align:center;width:24px">SL</th>
+                <th style="text-align:right;width:60px">Đơn Giá</th>
+                <th style="text-align:right;width:66px">Thành Tiền</th>
+            </tr>
+        </thead>
+        <tbody>\${itemRows}</tbody>
+    </table>
+    <div class="divider"></div>
+    <div class="totals">
+        <div class="totals-row"><span>Tổng tiền hàng:</span><span>\${fmt(inv.subtotal)}</span></div>
+        <div class="totals-row"><span>Giảm giá:</span><span>-\${fmt(inv.discount)}</span></div>
+        <div class="totals-row grand"><span>TỔNG THANH TOÁN:</span><span>\${fmt(inv.total)}</span></div>
+    </div>
+    \${inv.cashReceived > 0 ? '<div class="divider"></div><div class="totals-row"><span>Tiền khách đưa:</span><span>' + fmt(inv.cashReceived) + '</span></div><div class="totals-row"><span>Tiền thối:</span><span>' + fmt(inv.change) + '</span></div>' : ''}
+    <div class="divider"></div>
+    <div class="footer">
+        <div>-- Chúc quý khách sức khỏe và một ngày tốt lành --</div>
+        <div style="margin-top:4px;font-size:10px;color:#555">Hẹn gặp lại quý khách!</div>
+    </div>
+    <div style="height:16px"></div>
+    <div class="center print-actions" style="margin-top:8px">
+        <button onclick="window.print()" style="padding:8px 20px;background:#1a56db;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:750;font-family:'Plus Jakarta Sans',sans-serif">🖶 In hóa đơn</button>
+        <button onclick="window.close()" style="padding:8px 16px;background:#e5e7eb;color:#111;border:none;border-radius:6px;cursor:pointer;font-size:13px;margin-left:6px;font-family:'Plus Jakarta Sans',sans-serif">✕ Đóng</button>
+    </div>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank', 'width=380,height=600,toolbar=0,menubar=0,scrollbars=1');
+  if (win) {
+    win.document.write(html);
+    win.document.close();
+  } else {
+    showToast('⚠️ Trình duyệt chặn popup — vui lòng cho phép!', 'err');
+  }
+  closeSuccess();otal) + '</span></div>'
     + '</div>'
     + (inv.cashReceived > 0
         ? '<div class="divider"></div>'
@@ -2320,6 +2394,100 @@ async function confirmEndShift() {
     showToast('❌ Lỗi kết nối', 'err');
     btn.disabled = false;
     btn.textContent = '⏻ Xác nhận & Đóng ca';
+  }
+}
+
+// ── OPEN SHIFT & MY INVOICES MODALS ─────────────────────────────────────────
+function openOpenCashModal() {
+  const m = document.getElementById('openCashModal');
+  m.style.display = 'flex';
+  const inp = document.getElementById('openCashInput');
+  inp.value = '';
+  document.getElementById('openCashErr').style.display = 'none';
+  setTimeout(() => inp.focus(), 120);
+}
+async function confirmOpenShift() {
+  const inp = document.getElementById('openCashInput');
+  const err = document.getElementById('openCashErr');
+  const val = parseFloat(inp.value);
+  if (isNaN(val) || val < 0) {
+    err.textContent = 'Vui lòng nhập số tiền hợp lệ (≥ 0).';
+    err.style.display = 'block';
+    inp.focus();
+    return;
+  }
+  const btn = document.getElementById('openShiftBtn');
+  btn.disabled = true; btn.textContent = '⏳ Đang mở ca…';
+  try {
+    const res = await fetch(ctx + '/pos', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'open-shift', openingCash: val }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('openCashModal').style.display = 'none';
+      if (typeof hideShiftLock === 'function') hideShiftLock();
+      else location.reload();
+      showToast('🔓 Đã mở ca — tiền đầu ca ' + fmtMoney(val), 'ok');
+    } else {
+      err.textContent = data.reason === 'not_logged_in'
+        ? 'Chưa điểm danh — hãy điểm danh khuôn mặt trước.'
+        : ('Lỗi: ' + (data.reason || 'không mở được ca'));
+      err.style.display = 'block';
+      btn.disabled = false; btn.textContent = '✓ Mở ca & bắt đầu bán hàng';
+    }
+  } catch (e) {
+    err.textContent = 'Lỗi kết nối: ' + e.message;
+    err.style.display = 'block';
+    btn.disabled = false; btn.textContent = '✓ Mở ca & bắt đầu bán hàng';
+  }
+}
+function closeMyInvModal() { document.getElementById('myInvModal').style.display = 'none'; }
+async function openMyInvModal() {
+  const modal = document.getElementById('myInvModal');
+  const list  = document.getElementById('myInvList');
+  const sum   = document.getElementById('myInvSummary');
+  modal.style.display = 'flex';
+  list.innerHTML = '<div style="color:#94a3b8;font-size:13px;text-align:center;padding:26px 0">Đang tải…</div>';
+  sum.textContent = 'Đang tải…';
+  try {
+    const range = document.getElementById('myInvRange') ? document.getElementById('myInvRange').value : 'today';
+    const res = await fetch(ctx + '/pos?action=my-invoices&range=' + range);
+    const data = await res.json();
+    if (!data.ok) {
+      list.innerHTML = '<div style="color:#dc2626;font-size:13px;text-align:center;padding:26px 0">'
+        + (data.reason === 'not_logged_in' ? 'Chưa điểm danh ca làm.' : 'Lỗi tải dữ liệu.') + '</div>';
+      sum.textContent = '';
+      return;
+    }
+    sum.textContent = data.count + ' hóa đơn · Doanh thu: ' + fmtMoney(parseFloat(data.totalRevenue) || 0);
+    if (!data.invoices.length) {
+      list.innerHTML = '<div style="text-align:center;padding:32px 0;color:#94a3b8"><div style="font-size:34px;margin-bottom:8px">🧾</div><div style="font-size:13px">Không có hóa đơn nào trong khoảng thời gian này.</div></div>';
+      return;
+    }
+    const mLabel = { 'CASH': '💵 Tiền mặt', 'QR_CODE': '📱 QR', 'CARD': '💳 Thẻ' };
+    list.innerHTML = data.invoices.map(iv => {
+      const refunded = iv.status !== 'COMPLETED';
+      let displayTime = iv.time;
+      if (displayTime && displayTime.includes('-')) {
+        const parts = displayTime.split(' ');
+        if (parts.length >= 2) {
+          const dateParts = parts[0].split('-');
+          displayTime = dateParts[2] + '/' + dateParts[1] + ' ' + parts[1];
+        }
+      }
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid #f1f5f9">'
+        + '<div><div style="font-weight:700;font-size:13.5px;color:#0f172a">' + iv.code + '</div>'
+        + '<div style="font-size:11.5px;color:#94a3b8;margin-top:2px">' + displayTime + ' · ' + (mLabel[iv.method] || iv.method) + '</div></div>'
+        + '<div style="text-align:right"><div style="font-weight:800;font-size:14px;color:' + (refunded ? '#dc2626' : '#059669') + '">'
+        + fmtMoney(parseFloat(iv.amount) || 0) + '</div>'
+        + (refunded ? '<div style="font-size:10.5px;color:#dc2626;font-weight:700">Hoàn trả</div>' : '')
+        + '</div></div>';
+    }).join('');
+  } catch (e) {
+    list.innerHTML = '<div style="color:#dc2626;font-size:13px;text-align:center;padding:26px 0">Lỗi kết nối.</div>';
+    sum.textContent = '';
   }
 }
 </script>

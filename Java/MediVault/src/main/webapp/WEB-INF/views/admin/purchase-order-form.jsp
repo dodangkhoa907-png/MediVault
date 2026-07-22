@@ -239,7 +239,10 @@ select,option{font-family:inherit;font-size:inherit}
     </div>
 
     <div class="card">
-      <div class="card-title">Danh sách thuốc nhập</div>
+      <div class="card-title" style="justify-content:space-between">
+        <span>Danh sách thuốc nhập</span>
+        <button type="button" class="btn-add-row" style="margin:0" onclick="openBarcodeScan()">📷 Quét mã vạch</button>
+      </div>
       <div style="overflow-x:auto">
         <table class="line-table">
           <thead><tr>
@@ -337,6 +340,21 @@ select,option{font-family:inherit;font-size:inherit}
   </tr>
 </template>
 
+<%-- Modal: Quét mã vạch bằng camera --%>
+<div id="barcodeScanModal" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(11,22,40,.7);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeBarcodeScan()">
+  <div style="background:#fff;border-radius:18px;max-width:420px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden">
+    <div style="padding:16px 20px;background:linear-gradient(135deg,#1558A8,#3ABDE0);color:#fff;display:flex;align-items:center;justify-content:space-between">
+      <h3 style="margin:0;font-size:16px;font-weight:800">📷 Quét mã vạch nhập kho</h3>
+      <button type="button" onclick="closeBarcodeScan()" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:30px;height:30px;border-radius:9px;font-size:15px;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:16px 20px">
+      <div id="barcodeReaderBox" style="width:100%;min-height:260px;border-radius:12px;overflow:hidden;background:#0b1628"></div>
+      <div id="barcodeScanStatus" style="margin-top:10px;font-size:12.5px;color:#64748b;text-align:center">Đưa mã vạch vào giữa khung hình — quét liên tục, mỗi lần khớp sẽ thêm/tăng SL 1 dòng.</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 function toggleCdd(id){var w=document.getElementById(id),m=w.querySelector('.cdd-menu'),b=w.querySelector('.cdd-btn');var open=m.classList.contains('show');document.querySelectorAll('.cdd-menu.show').forEach(function(x){x.classList.remove('show');x.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')});if(!open){m.classList.add('show');b.classList.add('open');var act=m.querySelector('.cdd-opt.active');if(act)act.scrollIntoView({block:'nearest'})}}
 function pickCdd(wId,hId,el,autoSubmit){document.getElementById(hId).value=el.dataset.val;var w=document.getElementById(wId);w.querySelector('.cdd-label').textContent=el.textContent;w.querySelectorAll('.cdd-opt').forEach(function(o){o.classList.remove('active')});el.classList.add('active');w.querySelector('.cdd-menu').classList.remove('show');w.querySelector('.cdd-btn').classList.remove('open');if(autoSubmit){var f=w.closest('form');if(f)f.submit()}}
@@ -358,6 +376,15 @@ const SHELF_LIFE_MONTHS = {
 const MEDICINE_UNITS = {
 <c:forEach var="m" items="${medicines}" varStatus="st">${m.medicineId}: "${fn:escapeXml(m.unit)}"<c:if test="${!st.last}">,</c:if></c:forEach>
 };
+
+// Danh sách {id, barcode, name} — dùng để tra cứu khi quét mã vạch (camera). Build không điều
+// kiện trong JSP (mọi thuốc đều xuất hiện 1 phần tử) rồi lọc barcode rỗng ở JS, tránh lỗi dấu
+// phẩy thừa khi dùng c:if lồng trong c:forEach.
+const MED_BARCODE_LIST = [
+<c:forEach var="m" items="${medicines}" varStatus="st">{id:${m.medicineId},barcode:"<c:out value='${m.barcode}'/>",name:"${fn:escapeXml(m.medicineName)}"}<c:if test="${!st.last}">,</c:if></c:forEach>
+];
+const BARCODE_TO_MED = {};
+MED_BARCODE_LIST.forEach(m => { if (m.barcode) BARCODE_TO_MED[m.barcode] = m; });
 
 // ── Hạn dùng THỰC TẾ (ngày) — tính từ trung bình (ExpiryDate - ImportDate) của các lô ĐÃ
 // TỪNG nhập cho thuốc đó trong bảng Batches. Nguồn dữ liệu THẬT, ưu tiên hơn hẳn số tháng
@@ -556,6 +583,82 @@ function addRow(){
   document.getElementById('lineBody').appendChild(tpl.content.cloneNode(true));
   recalc();
 }
+
+// ── Quét mã vạch bằng camera (html5-qrcode) — thêm nhanh thuốc vào phiếu nhập ──
+let barcodeScanner = null;
+function openBarcodeScan() {
+  document.getElementById('barcodeScanModal').style.display = 'flex';
+  const status = document.getElementById('barcodeScanStatus');
+  status.textContent = 'Đưa mã vạch vào giữa khung hình…';
+  if (typeof Html5Qrcode === 'undefined') {
+    status.textContent = '⚠️ Không tải được thư viện quét mã vạch — kiểm tra kết nối mạng.';
+    return;
+  }
+  barcodeScanner = new Html5Qrcode('barcodeReaderBox');
+  const config = {
+    fps: 10,
+    qrbox: { width: 260, height: 140 },
+    formatsToSupport: [
+      Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
+      Html5QrcodeSupportedFormats.QR_CODE
+    ]
+  };
+  let lastCode = '', lastTime = 0;
+  barcodeScanner.start(
+    { facingMode: 'environment' },
+    config,
+    (decodedText) => {
+      const now = Date.now();
+      if (decodedText === lastCode && now - lastTime < 2000) return; // tránh cộng trùng khi camera lặp khung hình cũ
+      lastCode = decodedText; lastTime = now;
+      handleBarcodeScanned(decodedText, status);
+    },
+    () => {} // lỗi giải mã từng khung hình — bỏ qua, camera vẫn tiếp tục quét
+  ).catch(err => {
+    status.textContent = '⚠️ Không mở được camera: ' + (err.message || err);
+  });
+}
+function closeBarcodeScan() {
+  document.getElementById('barcodeScanModal').style.display = 'none';
+  if (barcodeScanner) {
+    const s = barcodeScanner;
+    barcodeScanner = null;
+    s.stop().then(() => s.clear()).catch(() => {});
+  }
+}
+// Quét khớp 1 thuốc → nếu đã có dòng chọn sẵn thuốc đó thì +1 SL; nếu chưa, điền vào dòng
+// trống đầu tiên (hoặc thêm dòng mới) rồi để trống Giá/Số lô/HSD cho người dùng nhập tay.
+function handleBarcodeScanned(code, status) {
+  const med = BARCODE_TO_MED[code];
+  if (!med) {
+    status.textContent = '⚠️ Không tìm thấy thuốc với mã: ' + code;
+    return;
+  }
+  const rows = Array.from(document.querySelectorAll('#lineBody tr'));
+  const existingRow = rows.find(tr => tr.querySelector('[name=lineMedicineId]').value === String(med.id));
+  if (existingRow) {
+    const qtyInp = existingRow.querySelector('[name=lineQty]');
+    qtyInp.value = (parseFloat(qtyInp.value) || 0) + 1;
+    recalc();
+    status.textContent = '✅ +1 SL: ' + med.name + ' (tổng ' + qtyInp.value + ')';
+    return;
+  }
+  let targetRow = rows.find(tr => !tr.querySelector('[name=lineMedicineId]').value);
+  if (!targetRow) {
+    addRow();
+    targetRow = document.querySelector('#lineBody tr:last-child');
+  }
+  const sel = targetRow.querySelector('[name=lineMedicineId]');
+  sel.value = String(med.id);
+  targetRow.querySelector('[name=lineQty]').value = 1;
+  recalc();
+  checkQtyUnitForRow(targetRow);
+  checkLinePriceForRow(targetRow);
+  status.textContent = '✅ Đã thêm: ' + med.name + ' — nhập giá/số lô/HSD cho dòng này.';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBarcodeScan(); });
 function delRow(btn){
   const rows=document.querySelectorAll('#lineBody tr');
   if(rows.length<=1){
