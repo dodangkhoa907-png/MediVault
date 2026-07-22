@@ -34,7 +34,12 @@ public class InvoiceDAO implements IInvoiceDAO {
         inv.setStatus(rs.getString("Status"));
         if (rs.getTimestamp("CreatedAt") != null)
             inv.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
-        try { inv.setPosStation((Integer) rs.getObject("PosStation")); } catch (SQLException ignored) {}
+        // PosStation là TINYINT trong SQL Server → driver trả về Short qua getObject(), không
+        // phải Integer; ép kiểu cứng (Integer) từng làm crash toàn bộ danh sách hóa đơn.
+        try {
+            Object posStation = rs.getObject("PosStation");
+            inv.setPosStation(posStation == null ? null : ((Number) posStation).intValue());
+        } catch (SQLException ignored) {}
         return inv;
     }
 
@@ -348,11 +353,11 @@ public class InvoiceDAO implements IInvoiceDAO {
     public BigDecimal sumGrossRevenueByDateRange(LocalDate from, LocalDate to) {
         String sql = "SELECT ISNULL(SUM(id.SubTotal), 0) " +
                 "FROM InvoiceDetails id JOIN Invoices inv ON inv.InvoiceID = id.InvoiceID " +
-                "WHERE inv.Status = 'COMPLETED' AND CAST(inv.CreatedAt AS DATE) BETWEEN ? AND ?";
+                "WHERE inv.Status = 'COMPLETED' AND inv.CreatedAt >= ? AND inv.CreatedAt < ?";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setDate(1, Date.valueOf(from));
-            ps.setDate(2, Date.valueOf(to));
+            ps.setDate(2, Date.valueOf(to.plusDays(1)));
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getBigDecimal(1);
             }
@@ -366,12 +371,12 @@ public class InvoiceDAO implements IInvoiceDAO {
                 "FROM InvoiceDetails id " +
                 "JOIN Invoices inv ON inv.InvoiceID = id.InvoiceID " +
                 "JOIN Batches b    ON b.BatchID = id.BatchID " +
-                "WHERE inv.Status = 'COMPLETED' AND CAST(inv.CreatedAt AS DATE) BETWEEN ? AND ?";
+                "WHERE inv.Status = 'COMPLETED' AND inv.CreatedAt >= ? AND inv.CreatedAt < ?";
         BigDecimal gross = BigDecimal.ZERO;
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setDate(1, Date.valueOf(from));
-            ps.setDate(2, Date.valueOf(to));
+            ps.setDate(2, Date.valueOf(to.plusDays(1)));
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) gross = rs.getBigDecimal(1);
             }
@@ -389,11 +394,11 @@ public class InvoiceDAO implements IInvoiceDAO {
                 "JOIN Batches b   ON b.BatchID = r.BatchID " +
                 "JOIN Invoices inv ON inv.InvoiceID = r.InvoiceID " +
                 "WHERE r.ReturnType = 'CUSTOMER_RETURN' AND inv.Status = 'COMPLETED' " +
-                "  AND CAST(r.CreatedAt AS DATE) BETWEEN ? AND ?";
+                "  AND r.CreatedAt >= ? AND r.CreatedAt < ?";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setDate(1, Date.valueOf(from));
-            ps.setDate(2, Date.valueOf(to));
+            ps.setDate(2, Date.valueOf(to.plusDays(1)));
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getBigDecimal(1);
             }
@@ -404,11 +409,11 @@ public class InvoiceDAO implements IInvoiceDAO {
     @Override
     public BigDecimal sumDiscountByDateRange(LocalDate from, LocalDate to) {
         String sql = "SELECT ISNULL(SUM(DiscountAmount), 0) FROM Invoices " +
-                "WHERE Status = 'COMPLETED' AND CAST(CreatedAt AS DATE) BETWEEN ? AND ?";
+                "WHERE Status = 'COMPLETED' AND CreatedAt >= ? AND CreatedAt < ?";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setDate(1, Date.valueOf(from));
-            ps.setDate(2, Date.valueOf(to));
+            ps.setDate(2, Date.valueOf(to.plusDays(1)));
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getBigDecimal(1);
             }
@@ -423,11 +428,11 @@ public class InvoiceDAO implements IInvoiceDAO {
         String sql = "SELECT ISNULL(SUM(r.Quantity * id.UnitPrice), 0) " +
                 "FROM Returns r " +
                 "JOIN InvoiceDetails id ON id.InvoiceID = r.InvoiceID AND id.BatchID = r.BatchID " +
-                "WHERE r.ReturnType = 'CUSTOMER_RETURN' AND CAST(r.CreatedAt AS DATE) BETWEEN ? AND ?";
+                "WHERE r.ReturnType = 'CUSTOMER_RETURN' AND r.CreatedAt >= ? AND r.CreatedAt < ?";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setDate(1, Date.valueOf(from));
-            ps.setDate(2, Date.valueOf(to));
+            ps.setDate(2, Date.valueOf(to.plusDays(1)));
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getBigDecimal(1);
             }
@@ -438,11 +443,11 @@ public class InvoiceDAO implements IInvoiceDAO {
     @Override
     public int countInvoicesByDateRange(LocalDate from, LocalDate to) {
         String sql = "SELECT COUNT(*) FROM Invoices " +
-                "WHERE Status = 'COMPLETED' AND CAST(CreatedAt AS DATE) BETWEEN ? AND ?";
+                "WHERE Status = 'COMPLETED' AND CreatedAt >= ? AND CreatedAt < ?";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setDate(1, Date.valueOf(from));
-            ps.setDate(2, Date.valueOf(to));
+            ps.setDate(2, Date.valueOf(to.plusDays(1)));
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);
             }
@@ -459,12 +464,12 @@ public class InvoiceDAO implements IInvoiceDAO {
                 "JOIN Batches b         ON b.BatchID = id.BatchID " +
                 "JOIN Medicines me      ON me.MedicineID = b.MedicineID " +
                 "JOIN Manufacturers m   ON m.ManufacturerID = me.ManufacturerID " +
-                "WHERE inv.Status = 'COMPLETED' AND CAST(inv.CreatedAt AS DATE) BETWEEN ? AND ? " +
+                "WHERE inv.Status = 'COMPLETED' AND inv.CreatedAt >= ? AND inv.CreatedAt < ? " +
                 "GROUP BY m.Name ORDER BY Rev DESC";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setDate(1, Date.valueOf(from));
-            ps.setDate(2, Date.valueOf(to));
+            ps.setDate(2, Date.valueOf(to.plusDays(1)));
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) result.put(rs.getString("Label"), rs.getBigDecimal("Rev"));
             }
@@ -481,12 +486,12 @@ public class InvoiceDAO implements IInvoiceDAO {
                 "JOIN Batches b      ON b.BatchID = id.BatchID " +
                 "JOIN Medicines me   ON me.MedicineID = b.MedicineID " +
                 "JOIN Categories c   ON c.CategoryID = me.CategoryID " +
-                "WHERE inv.Status = 'COMPLETED' AND CAST(inv.CreatedAt AS DATE) BETWEEN ? AND ? " +
+                "WHERE inv.Status = 'COMPLETED' AND inv.CreatedAt >= ? AND inv.CreatedAt < ? " +
                 "GROUP BY c.CategoryName ORDER BY Rev DESC";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setDate(1, Date.valueOf(from));
-            ps.setDate(2, Date.valueOf(to));
+            ps.setDate(2, Date.valueOf(to.plusDays(1)));
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) result.put(rs.getString("Label"), rs.getBigDecimal("Rev"));
             }
@@ -498,20 +503,20 @@ public class InvoiceDAO implements IInvoiceDAO {
     public java.util.TreeMap<Integer, BigDecimal> revenueByHour(LocalDate from, LocalDate to) {
         java.util.TreeMap<Integer, BigDecimal> result = new java.util.TreeMap<>();
         for (int h = 0; h < 24; h++) result.put(h, BigDecimal.ZERO); // luôn đủ 24 mốc giờ
-        // +7h để quy đổi CreatedAt (UTC trên server) → giờ VN — PHẢI áp dụng +7h cho CẢ điều
-        // kiện lọc ngày (WHERE) LẪN khung giờ (GROUP BY) cùng 1 mốc thời gian VN nhất quán.
-        // Trước đây WHERE lọc theo ngày UTC (chưa +7h) trong khi GROUP BY lấy giờ đã +7h — lệch
-        // nhau khiến hóa đơn tạo lúc 00h-06h59 giờ VN (tức khoảng 17h-23h59 UTC hôm trước) bị
-        // RỚT KHỎI bộ lọc "hôm nay" dù rõ ràng là hóa đơn của hôm nay theo giờ VN.
+        // +7h để quy đổi CreatedAt (UTC trên server) → giờ VN. Thay vì bọc DATEADD quanh CreatedAt
+        // trong WHERE (khiến SQL Server không seek được index), ta dịch NGƯỢC biên lọc sang giờ UTC
+        // ở phía Java rồi so sánh trực tiếp trên cột CreatedAt — cùng kết quả nhưng sargable.
+        Timestamp fromUtc         = Timestamp.valueOf(from.atStartOfDay().minusHours(7));
+        Timestamp toUtcExclusive  = Timestamp.valueOf(to.plusDays(1).atStartOfDay().minusHours(7));
         String sql = "SELECT DATEPART(HOUR, DATEADD(HOUR, 7, inv.CreatedAt)) AS Hr, " +
                 "       SUM(inv.FinalAmount) AS Rev " +
                 "FROM Invoices inv " +
-                "WHERE inv.Status = 'COMPLETED' AND CAST(DATEADD(HOUR, 7, inv.CreatedAt) AS DATE) BETWEEN ? AND ? " +
+                "WHERE inv.Status = 'COMPLETED' AND inv.CreatedAt >= ? AND inv.CreatedAt < ? " +
                 "GROUP BY DATEPART(HOUR, DATEADD(HOUR, 7, inv.CreatedAt))";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
-            ps.setDate(1, Date.valueOf(from));
-            ps.setDate(2, Date.valueOf(to));
+            ps.setTimestamp(1, fromUtc);
+            ps.setTimestamp(2, toUtcExclusive);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) result.put(rs.getInt("Hr"), rs.getBigDecimal("Rev"));
             }
@@ -524,12 +529,12 @@ public class InvoiceDAO implements IInvoiceDAO {
         java.util.TreeMap<String, BigDecimal> result = new java.util.TreeMap<>();
         String sql = "SELECT CAST(inv.CreatedAt AS DATE) AS Day, SUM(inv.FinalAmount) AS Rev " +
                 "FROM Invoices inv " +
-                "WHERE inv.Status = 'COMPLETED' AND CAST(inv.CreatedAt AS DATE) BETWEEN ? AND ? " +
+                "WHERE inv.Status = 'COMPLETED' AND inv.CreatedAt >= ? AND inv.CreatedAt < ? " +
                 "GROUP BY CAST(inv.CreatedAt AS DATE) ORDER BY Day";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setDate(1, Date.valueOf(from));
-            ps.setDate(2, Date.valueOf(to));
+            ps.setDate(2, Date.valueOf(to.plusDays(1)));
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) result.put(rs.getDate("Day").toString(), rs.getBigDecimal("Rev"));
             }
@@ -541,13 +546,13 @@ public class InvoiceDAO implements IInvoiceDAO {
     public java.util.TreeMap<String, BigDecimal[]> dailyFinanceByDateRange(LocalDate from, LocalDate to) {
         java.util.TreeMap<String, BigDecimal[]> result = new java.util.TreeMap<>();
         String sqlRev = "SELECT CAST(CreatedAt AS DATE) AS Day, ISNULL(SUM(FinalAmount),0) AS Rev FROM Invoices " +
-                "WHERE Status = 'COMPLETED' AND CAST(CreatedAt AS DATE) BETWEEN ? AND ? " +
+                "WHERE Status = 'COMPLETED' AND CreatedAt >= ? AND CreatedAt < ? " +
                 "GROUP BY CAST(CreatedAt AS DATE)";
         String sqlCogs = "SELECT CAST(inv.CreatedAt AS DATE) AS Day, SUM(id.Quantity * b.ImportPrice) AS Cogs " +
                 "FROM InvoiceDetails id " +
                 "JOIN Invoices inv ON inv.InvoiceID = id.InvoiceID " +
                 "JOIN Batches b    ON b.BatchID = id.BatchID " +
-                "WHERE inv.Status = 'COMPLETED' AND CAST(inv.CreatedAt AS DATE) BETWEEN ? AND ? " +
+                "WHERE inv.Status = 'COMPLETED' AND inv.CreatedAt >= ? AND inv.CreatedAt < ? " +
                 "GROUP BY CAST(inv.CreatedAt AS DATE)";
         // Giá vốn hàng ĐÃ TRẢ LẠI theo ngày trả — trừ ngược vào bucket ngày tương ứng, cùng
         // quy ước "ghi nhận theo ngày trả" như sumRefundByDateRange (không phải ngày bán gốc),
@@ -557,12 +562,12 @@ public class InvoiceDAO implements IInvoiceDAO {
                 "JOIN Batches b    ON b.BatchID = r.BatchID " +
                 "JOIN Invoices inv ON inv.InvoiceID = r.InvoiceID " +
                 "WHERE r.ReturnType = 'CUSTOMER_RETURN' AND inv.Status = 'COMPLETED' " +
-                "  AND CAST(r.CreatedAt AS DATE) BETWEEN ? AND ? " +
+                "  AND r.CreatedAt >= ? AND r.CreatedAt < ? " +
                 "GROUP BY CAST(r.CreatedAt AS DATE)";
         try (Connection cn = DBContext.getConnection()) {
             try (PreparedStatement ps = cn.prepareStatement(sqlRev)) {
                 ps.setDate(1, Date.valueOf(from));
-                ps.setDate(2, Date.valueOf(to));
+                ps.setDate(2, Date.valueOf(to.plusDays(1)));
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         String day = rs.getDate("Day").toString();
@@ -572,7 +577,7 @@ public class InvoiceDAO implements IInvoiceDAO {
             }
             try (PreparedStatement ps = cn.prepareStatement(sqlCogs)) {
                 ps.setDate(1, Date.valueOf(from));
-                ps.setDate(2, Date.valueOf(to));
+                ps.setDate(2, Date.valueOf(to.plusDays(1)));
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         String day = rs.getDate("Day").toString();
@@ -582,7 +587,7 @@ public class InvoiceDAO implements IInvoiceDAO {
             }
             try (PreparedStatement ps = cn.prepareStatement(sqlReturnedCogs)) {
                 ps.setDate(1, Date.valueOf(from));
-                ps.setDate(2, Date.valueOf(to));
+                ps.setDate(2, Date.valueOf(to.plusDays(1)));
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         String day = rs.getDate("Day").toString();

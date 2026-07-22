@@ -52,7 +52,11 @@ public class AttendanceDAO implements IAttendanceDAO {
             Timestamp pe = rs.getTimestamp("PlannedEnd");
             if (pe != null) a.setPlannedEnd(pe.toLocalDateTime());
         } catch (SQLException e) {}
-        try { a.setPosStation((Integer) rs.getObject("PosStation")); } catch (SQLException ignored) {}
+        // PosStation là TINYINT → getObject() trả về Short, không phải Integer.
+        try {
+            Object posStation = rs.getObject("PosStation");
+            a.setPosStation(posStation == null ? null : ((Number) posStation).intValue());
+        } catch (SQLException ignored) {}
         return a;
     }
 
@@ -152,7 +156,8 @@ public class AttendanceDAO implements IAttendanceDAO {
              PreparedStatement ps = cn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                Integer station = (Integer) rs.getObject("PosStation");
+                Object stationObj = rs.getObject("PosStation");
+                Integer station = stationObj == null ? null : ((Number) stationObj).intValue();
                 if (station != null) map.put(station, rs.getString("StaffName"));
             }
         } catch (Exception e) { e.printStackTrace(); }
