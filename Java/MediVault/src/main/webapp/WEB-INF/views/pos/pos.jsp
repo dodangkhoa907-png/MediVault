@@ -1110,9 +1110,14 @@ body{display:flex}
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
+<%-- defer: cả 3 lib này chỉ dùng bên trong hàm gọi lúc người dùng thao tác (quét mã vạch,
+     thanh toán QR, check-in khuôn mặt) — không cái nào cần ngay lúc trang vừa load. Để mặc
+     định (blocking) thì HTML parser phải dừng lại chờ tải xong CẢ 3 lib từ CDN ngoài trước
+     khi chạy tới khối <script> chính bên dưới (search, giỏ hàng, addToCart...), làm chậm
+     tương tác ban đầu của toàn bộ trang POS dù cashier chưa chắc dùng tới. --%>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js" defer></script>
 <script>
 const ctx = '<%= ctx %>';
 const screenState = '${screenState}';
