@@ -548,8 +548,9 @@ body{display:flex}
   <!-- Topbar -->
   <div class="topbar">
     <div class="search-wrap">
-      <input type="text" id="searchInput" placeholder="Tìm thuốc theo tên hoặc mã vạch…" autocomplete="off" autofocus>
+      <input type="text" id="searchInput" placeholder="Tìm thuốc theo tên hoặc mã vạch…" autocomplete="off">
     </div>
+    <button type="button" class="btn-clear" style="background:var(--blue);border-color:var(--blue);color:#fff;white-space:nowrap;flex-shrink:0" onclick="openBarcodeScan()" title="Quét mã vạch bằng camera">📷 Quét mã vạch</button>
     <!-- Station badge -->
     <div class="station-badge" onclick="openStationModal()" id="stationBadge" title="Chọn quầy POS">
       <span class="station-dot"></span>
@@ -728,11 +729,11 @@ body{display:flex}
            data-name="<c:out value='${m.medicineName}' />"
            data-price="${m.sellingPrice}"
            data-unit="<c:out value='${m.unit}' />"
+           data-barcode="<c:out value='${m.barcode}' />"
            data-cat="${m.categoryId}"
            data-rx="${m.prescriptionRequired}"
            data-dosage="<c:out value='${m.dosage}' />"
            data-code="<c:out value='${m.medicineCode}' />"
-           data-barcode="<c:out value='${m.barcode}' />"
            data-stock="${mStock}"
            data-batchno="<c:out value='${mBatch}' />"
            data-expiry="${mExpiry}"
@@ -1095,6 +1096,21 @@ body{display:flex}
   </div>
 </div>
 
+<%-- Modal: Quét mã vạch bằng camera (bán hàng) --%>
+<div id="barcodeScanModal" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(11,22,40,.7);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeBarcodeScan()">
+  <div style="background:#fff;border-radius:18px;max-width:420px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden">
+    <div style="padding:16px 20px;background:linear-gradient(135deg,#1e3a5f,#1a56db);color:#fff;display:flex;align-items:center;justify-content:space-between">
+      <h3 style="margin:0;font-size:16px;font-weight:800">📷 Quét mã vạch bán hàng</h3>
+      <button type="button" onclick="closeBarcodeScan()" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:30px;height:30px;border-radius:9px;font-size:15px;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:16px 20px">
+      <div id="barcodeReaderBox" style="width:100%;min-height:260px;border-radius:12px;overflow:hidden;background:#0b1628"></div>
+      <div id="barcodeScanStatus" style="margin-top:10px;font-size:12.5px;color:#64748b;text-align:center">Đưa mã vạch vào giữa khung hình — mỗi lần khớp sẽ tự thêm 1 vào giỏ hàng.</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
 <script>
@@ -1142,7 +1158,7 @@ document.querySelectorAll('.med-card').forEach(card => {
     expiry:  card.dataset.expiry  || '',
     dosage:  card.dataset.dosage  || '',
     code:    card.dataset.code    || '',
-    barcode: card.dataset.barcode || '',
+    barcode:  card.dataset.barcode  || '',
     generic:  card.dataset.generic  || '',
     contra:   card.dataset.contra   || '',
     warning:  card.dataset.warning  || '',
@@ -1152,52 +1168,93 @@ document.querySelectorAll('.med-card').forEach(card => {
 });
 document.getElementById('medCountBadge').textContent = allMedicines.length + ' thuốc';
 
-// ── Search (tên / mã thuốc / mã vạch) ──
+// ── Search (khớp theo tên, mã thuốc, hoặc mã vạch — hỗ trợ cả gõ tay lẫn máy quét mã vạch
+// kiểu bàn phím gõ nhanh số + Enter) ──
 let searchTimer;
-function filterMedicines(q) {
-  q = (q || '').toLowerCase().trim();
-  allMedicines.forEach(m => {
-    const show = !q
-      || m.name.toLowerCase().includes(q)
-      || m.code.toLowerCase().includes(q)
-      || (m.barcode && m.barcode.toLowerCase().includes(q));
-    m.el.style.display = (show && (activeCat === 0 || m.catId === activeCat)) ? '' : 'none';
-  });
-  checkEmpty();
-}
 document.getElementById('searchInput').addEventListener('input', function() {
   clearTimeout(searchTimer);
-  const q = this.value;
-  searchTimer = setTimeout(() => filterMedicines(q), 200);
+  const q = this.value.toLowerCase().trim();
+  searchTimer = setTimeout(() => {
+    allMedicines.forEach(m => {
+      const show = !q || m.name.toLowerCase().includes(q) || m.code.toLowerCase().includes(q)
+        || (m.barcode && m.barcode.toLowerCase().includes(q));
+      m.el.style.display = (show && (activeCat === 0 || m.catId === activeCat)) ? '' : 'none';
+    });
+    checkEmpty();
+  }, 200);
 });
-
-// Máy quét mã vạch USB gõ nhanh toàn bộ mã rồi tự bắn Enter — bắt Enter để THÊM NGAY vào
-// giỏ hàng thay vì chỉ lọc danh sách rồi bắt cashier tự click, giống nghiệp vụ quét mã thật.
+// Máy quét mã vạch (kiểu bàn phím) gõ mã rồi gửi Enter — nếu khớp đúng 1 thuốc, tự thêm vào giỏ.
 document.getElementById('searchInput').addEventListener('keydown', function(e) {
   if (e.key !== 'Enter') return;
-  e.preventDefault();
-  clearTimeout(searchTimer);
   const q = this.value.trim();
   if (!q) return;
-  filterMedicines(q);
-
-  // Ưu tiên khớp CHÍNH XÁC mã vạch trước (đáng tin cậy nhất — máy quét luôn gõ đủ mã) —
-  // rồi mới tới trường hợp lọc theo tên/mã thuốc chỉ còn đúng 1 kết quả hiển thị.
-  let target = allMedicines.find(m => m.barcode && m.barcode.toLowerCase() === q.toLowerCase());
-  if (!target) {
-    const visible = allMedicines.filter(m => m.el.style.display !== 'none');
-    if (visible.length === 1) target = visible[0];
-  }
-
-  if (target) {
-    addToCart(target.el);
+  const med = allMedicines.find(m => m.barcode && m.barcode === q);
+  if (med) {
+    e.preventDefault();
+    addToCart(med.el);
     this.value = '';
-    filterMedicines('');
-    this.focus();
-  } else {
-    showToast('❌ Không tìm thấy thuốc khớp mã "' + q + '"', 'err');
+    this.dispatchEvent(new Event('input'));
   }
 });
+
+// ── Quét mã vạch bằng camera (html5-qrcode) — thêm thẳng thuốc vào giỏ hàng khi bán ──
+let barcodeScanner = null;
+function openBarcodeScan() {
+  document.getElementById('barcodeScanModal').style.display = 'flex';
+  const status = document.getElementById('barcodeScanStatus');
+  status.textContent = 'Đưa mã vạch vào giữa khung hình…';
+  if (typeof Html5Qrcode === 'undefined') {
+    status.textContent = '⚠️ Không tải được thư viện quét mã vạch — kiểm tra kết nối mạng.';
+    return;
+  }
+  barcodeScanner = new Html5Qrcode('barcodeReaderBox');
+  const config = {
+    fps: 10,
+    qrbox: { width: 260, height: 140 },
+    formatsToSupport: [
+      Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
+      Html5QrcodeSupportedFormats.QR_CODE
+    ]
+  };
+  let lastCode = '', lastTime = 0;
+  barcodeScanner.start(
+    { facingMode: 'environment' },
+    config,
+    (decodedText) => {
+      const now = Date.now();
+      if (decodedText === lastCode && now - lastTime < 1500) return; // tránh cộng trùng khi camera lặp khung hình cũ
+      lastCode = decodedText; lastTime = now;
+      handleBarcodeScanned(decodedText, status);
+    },
+    () => {} // lỗi giải mã từng khung hình — bỏ qua, camera vẫn tiếp tục quét
+  ).catch(err => {
+    status.textContent = '⚠️ Không mở được camera: ' + (err.message || err);
+  });
+}
+function closeBarcodeScan() {
+  document.getElementById('barcodeScanModal').style.display = 'none';
+  if (barcodeScanner) {
+    const s = barcodeScanner;
+    barcodeScanner = null;
+    s.stop().then(() => s.clear()).catch(() => {});
+  }
+}
+function handleBarcodeScanned(code, status) {
+  const med = allMedicines.find(m => m.barcode && m.barcode === code);
+  if (!med) {
+    status.textContent = '⚠️ Không tìm thấy thuốc với mã vạch: ' + code;
+    return;
+  }
+  if (med.stock <= 0) {
+    status.textContent = '❌ ' + med.name + ' đã hết hàng!';
+    return;
+  }
+  addToCart(med.el);
+  status.textContent = '✅ Đã thêm vào giỏ: ' + med.name;
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBarcodeScan(); });
 
 // ── Category filter ──
 let activeCat = 0;
@@ -1209,7 +1266,7 @@ function filterCat(btn, catId) {
   allMedicines.forEach(m => {
     const matchCat  = catId === 0 || m.catId === catId;
     const matchName = !q || m.name.toLowerCase().includes(q) || m.code.toLowerCase().includes(q)
-        || (m.barcode && m.barcode.toLowerCase().includes(q));
+      || (m.barcode && m.barcode.toLowerCase().includes(q));
     m.el.style.display = (matchCat && matchName) ? '' : 'none';
   });
   checkEmpty();
@@ -1257,6 +1314,7 @@ function addToCart(card) {
       batchNo: card.dataset.batchno || '',
       expiry:  card.dataset.expiry  || '',
       dosage:  card.dataset.dosage  || '',
+      warning: card.dataset.warning || '',
       code:    card.dataset.code    || '',
       rx:      card.dataset.rx === 'true',
       qty: 1
@@ -2031,16 +2089,33 @@ function printReceipt() {
                   (d.getMonth()+1).toString().padStart(2,'0') + '/' + d.getFullYear();
 
   let itemRows = '';
+  // Hướng dẫn sử dụng / liều dùng — tách khỏi bảng thành khối riêng phía dưới
+  // để dễ đọc, không bị bó hẹp trong cột nhỏ của bảng.
+  let usageLines = '';
   inv.items.forEach((item, idx) => {
     itemRows += '<tr>'
-      + '<td style="text-align:center;padding:4px 6px">' + (idx+1) + '</td>'
-      + '<td style="padding:4px 6px">' + escHtml(item.name) + '</td>'
-      + '<td style="text-align:center;padding:4px 6px">' + escHtml(item.unit) + '</td>'
-      + '<td style="text-align:center;padding:4px 6px">' + item.qty + '</td>'
-      + '<td style="text-align:right;padding:4px 6px">' + fmt(item.price) + '</td>'
-      + '<td style="text-align:right;padding:4px 6px;font-weight:750">' + fmt(item.price * item.qty) + '</td>'
+      + '<td style="text-align:center">' + (idx+1) + '</td>'
+      + '<td>' + escHtml(item.name) + '</td>'
+      + '<td style="text-align:center">' + escHtml(item.unit) + '</td>'
+      + '<td style="text-align:center">' + item.qty + '</td>'
+      + '<td style="text-align:right;font-weight:750">' + fmt(item.price * item.qty) + '</td>'
       + '</tr>';
+
+    if (item.dosage || item.warning) {
+      usageLines += '<div class="rx-note-line">'
+        + '<span class="bold">' + (idx+1) + '. ' + escHtml(item.name) + ':</span> '
+        + (item.dosage ? escHtml(item.dosage) : '')
+        + (item.warning ? '<div style="font-weight:750;margin-top:1px">⚠ ' + escHtml(item.warning) + '</div>' : '')
+        + '</div>';
+    }
   });
+  const usageBlock = usageLines === '' ? '' : (
+      '<div class="divider"></div>'
+    + '<div class="rx-notes">'
+    +   '<div class="rx-notes-title">HƯỚNG DẪN SỬ DỤNG THUỐC</div>'
+    +   usageLines
+    + '</div>'
+  );
 
   var html = '<!DOCTYPE html>'
     + '<html lang="vi"><head>'
@@ -2048,25 +2123,25 @@ function printReceipt() {
     + '<title>Hóa đơn ' + escHtml(inv.code) + '</title>'
     + '<style>'
     + '* { margin:0; padding:0; box-sizing:border-box; }'
-    + 'body { font-family: "Courier New", monospace; font-size: 12px; color: #000; padding: 8px; max-width: 320px; margin: 0 auto; }'
+    + 'body { font-family: "Courier New", monospace; font-size: 12px; color: #000; padding: 6px; max-width: 320px; margin: 0 auto; }'
     + '.center { text-align: center; }'
     + '.bold { font-weight: bold; }'
-    + '.title { font-size: 15px; font-weight:800; margin: 4px 0; }'
-    + '.divider { border-top: 1px dashed #000; margin: 7px 0; }'
-    + '.divider2 { border-top: 2px solid #000; margin: 7px 0; }'
-    + 'table { width: 100%; border-collapse: collapse; font-size: 11px; }'
-    + 'th { background: #eee; padding: 4px 6px; font-weight:750; border-bottom: 1px solid #000; }'
-    + 'td { vertical-align: top; }'
-    + '.totals { margin-top: 6px; }'
-    + '.totals-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 12px; }'
-    + '.totals-row.grand { font-size: 14px; font-weight:800; border-top: 2px solid #000; padding-top: 5px; margin-top: 3px; }'
-    + '.footer { text-align: center; margin-top: 10px; font-style: italic; font-size: 11.5px; }'
-    + '.kv { display: flex; justify-content: space-between; font-size: 11.5px; padding: 2px 0; }'
+    + '.title { font-size: 15px; font-weight:800; margin: 3px 0; }'
+    + '.divider { border-top: 1px dashed #000; margin: 4px 0; }'
+    + '.divider2 { border-top: 2px solid #000; margin: 4px 0; }'
+    + 'table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 11px; }'
+    + 'th { background: #eee; padding: 3px 4px; font-weight:750; border-bottom: 1px solid #000; }'
+    + 'td { vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; padding: 3px 4px; }'
+    + '.totals { margin-top: 3px; }'
+    + '.totals-row { display: flex; justify-content: space-between; padding: 1px 0; font-size: 12px; }'
+    + '.totals-row.grand { font-size: 14px; font-weight:800; border-top: 2px solid #000; padding-top: 4px; margin-top: 2px; }'
+    + '.footer { text-align: center; margin-top: 6px; font-style: italic; font-size: 11.5px; }'
+    + '.kv { display: flex; justify-content: space-between; font-size: 11.5px; padding: 1px 0; }'
     // Khối chính sách cố định + khối ghi chú dược sĩ (động)
-    + '.policy { font-size: 10.5px; line-height: 1.45; margin-top: 4px; }'
+    + '.policy { font-size: 10.5px; line-height: 1.3; margin-top: 3px; }'
     + '.policy-title { font-weight: 800; text-align: center; margin-bottom: 2px; letter-spacing: .5px; }'
-    + '.rx-notes { font-size: 11px; line-height: 1.5; padding: 4px 6px; border: 1px dashed #000; border-radius: 4px; }'
-    + '.rx-notes-title { font-weight: 800; margin-bottom: 3px; }'
+    + '.rx-notes { font-size: 11px; line-height: 1.35; padding: 3px 6px; border: 1px dashed #000; border-radius: 4px; }'
+    + '.rx-notes-title { font-weight: 800; margin-bottom: 2px; }'
     + '.rx-note-line { padding: 1px 0; word-break: break-word; }'
     // In cho máy nhiệt khổ 80mm: cố định khổ giấy, in cả nền/màu, không cắt ngang khối
     + '@page { size: 80mm auto; margin: 0; }'
@@ -2095,12 +2170,11 @@ function printReceipt() {
     + '<div class="kv"><span class="bold">Dược sĩ bán:</span><span>' + escHtml(sellerName) + '</span></div>'
     + '<div class="divider"></div>'
     + '<table><thead><tr>'
-    + '<th style="text-align:center;width:24px">STT</th>'
-    + '<th>Tên Thuốc / Vật Tư</th>'
-    + '<th style="text-align:center;width:30px">ĐVT</th>'
-    + '<th style="text-align:center;width:24px">SL</th>'
-    + '<th style="text-align:right;width:60px">Đơn Giá</th>'
-    + '<th style="text-align:right;width:66px">Thành Tiền</th>'
+    + '<th style="text-align:center;width:8%">STT</th>'
+    + '<th style="width:44%">Tên Thuốc / Vật Tư</th>'
+    + '<th style="text-align:center;width:12%">ĐVT</th>'
+    + '<th style="text-align:center;width:10%">SL</th>'
+    + '<th style="text-align:right;width:26%">Thành Tiền</th>'
     + '</tr></thead><tbody>' + itemRows + '</tbody></table>'
     + '<div class="divider"></div>'
     + '<div class="totals">'
@@ -2113,9 +2187,9 @@ function printReceipt() {
           + '<div class="totals-row"><span>Tiền khách đưa:</span><span>' + fmt(inv.cashReceived) + '</span></div>'
           + '<div class="totals-row"><span>Tiền thối:</span><span>' + fmt(inv.change) + '</span></div>'
         : '')
-    + renderReceiptFooter(inv)
-    + '<div style="height:16px"></div>'
-    + '<div class="center" style="margin-top:8px">'
+    + renderReceiptFooter(inv, usageBlock)
+    + '<div style="height:8px"></div>'
+    + '<div class="center" style="margin-top:6px">'
     + '<button onclick="window.print()" style="padding:8px 20px;background:#1a56db;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:750;font-family:&quot;Plus Jakarta Sans&quot;,sans-serif">🖶 In hóa đơn</button>'
     + '<button onclick="window.close()" style="padding:8px 16px;background:#e5e7eb;color:#111;border:none;border-radius:6px;cursor:pointer;font-size:13px;margin-left:6px;font-family:&quot;Plus Jakarta Sans&quot;,sans-serif">✕ Đóng</button>'
     + '</div>'
@@ -2148,18 +2222,19 @@ function normalizeInstructions(v) {
 //  • Khối chính sách → LUÔN in (cố định).
 //  • Khối lời dặn dược sĩ → CHỈ in khi có nội dung; rỗng ⇒ KHÔNG tạo DOM/viền/khoảng
 //    trắng nào (yêu cầu "collapse completely" — không phí giấy in nhiệt).
-function renderReceiptFooter(inv) {
+function renderReceiptFooter(inv, usageBlock) {
   const notes = normalizeInstructions(inv && inv.instructions);
 
   const noteBlock = notes.length === 0 ? '' : (
       '<div class="divider"></div>'
     + '<div class="rx-notes">'
-    +   '<div class="rx-notes-title">📋 LỜI DẶN CỦA DƯỢC SĨ</div>'
+    +   '<div class="rx-notes-title">LỜI DẶN CỦA DƯỢC SĨ</div>'
     +   notes.map(n => '<div class="rx-note-line">• ' + escHtml(n) + '</div>').join('')
     + '</div>'
   );
 
   return noteBlock
+    + (usageBlock || '')
     + '<div class="divider"></div>'
     + '<div class="policy">'
     +   '<div class="policy-title">LƯU Ý</div>'
@@ -2333,11 +2408,6 @@ function initNfcBridge() {
     nfcBridge.onerror = () => {};
   } catch (e) {}
 }
-
-// Đóng NFC bridge khi rời trang — giải phóng AsyncContext trên server ngay thay vì
-// chờ tới heartbeat kế tiếp (xem InventorySSEServlet: cùng lớp bug zombie-connection).
-window.addEventListener('pagehide', () => { if (nfcBridge) { try { nfcBridge.close(); } catch (_) {} nfcBridge = null; } });
-window.addEventListener('beforeunload', () => { if (nfcBridge) { try { nfcBridge.close(); } catch (_) {} nfcBridge = null; } });
 
 /** Nhận UID từ điện thoại: tra thẻ, thấy khách thì fill; thẻ trắng thì mở liên kết. */
 async function onNfcScanned(uid) {
