@@ -857,6 +857,7 @@ document.addEventListener('click',function(e){if(!e.target.closest('.cdd')){docu
 
     // ── Real-time online status polling (mỗi 15s) ──
     async function refreshOnlineStatus() {
+        if (document.hidden) return; // tab ở nền — khỏi bắn request, đỡ tốn 1/6 connection-per-origin
         try {
             const res = await fetch('${pageContext.request.contextPath}/accounts?action=online-status', {
                 headers: {'X-Requested-With': 'XMLHttpRequest'}
@@ -901,9 +902,10 @@ document.addEventListener('click',function(e){if(!e.target.closest('.cdd')){docu
         } catch(e) { /* silent fail */ }
     }
 
-    // Chạy ngay + mỗi 15 giây
+    // Chạy ngay + mỗi 15 giây (bỏ qua khi tab ở nền); refresh ngay khi quay lại tab
     refreshOnlineStatus();
     setInterval(refreshOnlineStatus, 15000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshOnlineStatus(); });
 
     function updateClock() {
         const now = new Date();

@@ -151,12 +151,14 @@ public class ShiftServlet extends HttpServlet {
             }
         }
 
-        // Map accountId → Account để hiển thị tên nhân viên
+        // Map accountId → Account để hiển thị tên nhân viên — batch 1 query thay vì
+        // findById() từng account riêng lẻ trong loop.
         Map<Integer, Account> accountMap = new HashMap<>();
-        for (Shift s : allShifts) {
-            if (!accountMap.containsKey(s.getAccountId())) {
-                Account a = accountDAO.findById(s.getAccountId());
-                if (a != null) accountMap.put(s.getAccountId(), a);
+        Set<Integer> shiftAccountIds = new HashSet<>();
+        for (Shift s : allShifts) shiftAccountIds.add(s.getAccountId());
+        if (!shiftAccountIds.isEmpty()) {
+            for (Account a : accountDAO.findAccountsByIds(new ArrayList<>(shiftAccountIds))) {
+                accountMap.put(a.getAccountId(), a);
             }
         }
 
@@ -172,7 +174,8 @@ public class ShiftServlet extends HttpServlet {
         req.setAttribute("openShifts",   openShifts);
         req.setAttribute("openCount",    openShifts.size());
         req.setAttribute("totalCount",   allShifts.size());
-        req.setAttribute("allStaff",     accountDAO.findAllStaff());
+        req.setAttribute("allStaff",
+                com.medicare.config.CacheManager.getShort("ref.allStaff", accountDAO::findAllStaff));
         req.setAttribute("filterFrom",   fromStr);
         req.setAttribute("filterTo",     toStr);
         req.setAttribute("filterAcc",    accountStr);
@@ -236,19 +239,22 @@ public class ShiftServlet extends HttpServlet {
         req.setAttribute("calStart",       calStart.toString());
         req.setAttribute("calEnd",         calEnd.toString());
 
-        // ── Dữ liệu cho Tab Loại ca ──────────────────────────────────────────
-        req.setAttribute("shiftTypes",   shiftTypeDAO.findAll());
+        // ── Dữ liệu cho Tab Loại ca — cache 30s, gần như không đổi ───────────
+        req.setAttribute("shiftTypes",
+                com.medicare.config.CacheManager.getShort("ref.shiftTypes", shiftTypeDAO::findAll));
 
         // ── Dữ liệu cho Tab Nghỉ phép ────────────────────────────────────────
+        // KHÔNG set "pendingLeaveCount" thủ công — để SidebarHelper.load() bên dưới
+        // set qua cache 30s dùng chung với sidebar (set trước sẽ vô hiệu hoá cache đó).
         java.util.List<com.medicare.entity.LeaveRequest> pendingLeaves = leaveDAO.findPending();
-        req.setAttribute("pendingLeaves",     pendingLeaves);
-        req.setAttribute("pendingLeaveCount", pendingLeaves.size());
+        req.setAttribute("pendingLeaves", pendingLeaves);
 
         // ── Dữ liệu sơ đồ quầy POS hôm nay ──────────────────────────────────
         java.util.List<ShiftSchedule> todaySchedules =
                 ((ShiftScheduleDAO) scheduleDAO).findTodayAll();
         req.setAttribute("todaySchedules", todaySchedules);
-        req.setAttribute("posStations",   posStationDAO.findAllActive());
+        req.setAttribute("posStations",
+                com.medicare.config.CacheManager.getShort("ref.posStationsActive", posStationDAO::findAllActive));
 
         SidebarHelper.load(req);
 

@@ -98,7 +98,15 @@
     -->
             
     
-    <Connector connectionTimeout="20000" maxParameterCount="1000" port="8080" protocol="HTTP/1.1"/>
+    <!-- Gzip: nén HTML/CSS/JS/JSON >1KB trước khi truyền (giảm ~29KB catalog → ~5KB).
+         Chỉ tác dụng khi client gửi Accept-Encoding: gzip. Verify: DevTools → Network →
+         xem Response Header có "Content-Encoding: gzip". Lưu ý: file này do SmartTomcat
+         quản lý; nếu bị regen mất thì cấu hình gzip nên chuyển sang Nginx (Pillar 5). -->
+    <Connector connectionTimeout="20000" maxParameterCount="1000" port="8080" protocol="HTTP/1.1"
+               compression="on"
+               compressionMinSize="1024"
+               noCompressionUserAgents="gozilla, traviata"
+               compressibleMimeType="text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json,image/svg+xml"/>
             
     
     <!-- A "Connector" using the shared thread pool-->

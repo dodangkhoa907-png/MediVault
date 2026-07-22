@@ -4003,6 +4003,7 @@ function initPosMap() {
 }
 
 async function refreshPosOnlineStatus() {
+  if (document.hidden) return; // tab ở nền — khỏi bắn request, đỡ tốn 1/6 connection-per-origin
   try {
     const res  = await fetch(_posCtx + '/shifts?action=pos-online', { headers: {'X-Requested-With':'XMLHttpRequest'} });
     if (!res.ok) return;

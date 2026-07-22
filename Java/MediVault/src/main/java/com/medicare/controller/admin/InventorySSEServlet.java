@@ -40,8 +40,14 @@ public class InventorySSEServlet extends HttpServlet {
             t.setDaemon(true);
             return t;
         });
-        // Heartbeat comment every 25s — keeps connections alive through proxies & firewalls
-        scheduler.scheduleAtFixedRate(InventorySSEServlet::sendHeartbeat, 25, 25, TimeUnit.SECONDS);
+        // Heartbeat mỗi 8s — vẫn dưới ngưỡng kill của proxy/firewall (thường 30-60s), nhưng
+        // quan trọng hơn: đây là cách DUY NHẤT server phát hiện client đã rớt kết nối (AsyncContext
+        // không có timeout — setTimeout(0)). Trước đây 25s: 1 EventSource "zombie" (client đã đóng
+        // nhưng server chưa biết) có thể tồn tại tới 25s, chiếm 1/6 connection-per-origin của browser
+        // (giới hạn HTTP/1.1) → mọi request khác cùng origin (kể cả điều hướng sang trang khác) phải
+        // XẾP HÀNG chờ tới khi zombie bị dọn — đây là nguyên nhân chính gây lag 10-30s khi chuyển
+        // trang từ medicine-list.jsp (nơi duy nhất mở EventSource này) sang trang khác.
+        scheduler.scheduleAtFixedRate(InventorySSEServlet::sendHeartbeat, 8, 8, TimeUnit.SECONDS);
     }
 
     @Override

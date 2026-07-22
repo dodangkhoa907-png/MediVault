@@ -149,7 +149,8 @@ public class InvoiceServlet extends HttpServlet {
         req.setAttribute("invoices",    invoices);
         req.setAttribute("accountMap",  accountMap);
         req.setAttribute("customerMap", customerMap);
-        req.setAttribute("allStaff",    accountDAO.findAllStaff());
+        req.setAttribute("allStaff",
+                com.medicare.config.CacheManager.getShort("ref.allStaff", accountDAO::findAllStaff));
         req.setAttribute("totalCount",  totalCount);
         req.setAttribute("currentPage", page);
         req.setAttribute("totalPages",  totalPages);

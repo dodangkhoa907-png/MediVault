@@ -538,6 +538,7 @@ attachTimers();
   }
 
   async function refreshLive() {
+    if (document.hidden) return; // tab ở nền — khỏi bắn request, đỡ tốn 1/6 connection-per-origin
     try {
       const r = await fetch(_ctx + '/attendance?action=api-live', { cache: 'no-store' });
       if (r.ok) renderCards(await r.json());
@@ -545,6 +546,7 @@ attachTimers();
   }
 
   setInterval(refreshLive, 30000); // 30s thay vì reload cả trang mỗi 60s
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshLive(); });
 })();
 </script>
 </body></html>
