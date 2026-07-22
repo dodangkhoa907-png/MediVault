@@ -4,6 +4,7 @@ import com.medicare.dao.*;
 import com.medicare.dao.interfaces.*;
 import com.medicare.entity.*;
 import com.medicare.util.AuditHelper;
+import com.medicare.util.SidebarHelper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -32,7 +33,6 @@ public class ShiftScheduleServlet extends HttpServlet {
     private final IShiftScheduleDAO scheduleDAO = new ShiftScheduleDAO();
     private final IShiftTypeDAO     typeDAO     = new ShiftTypeDAO();
     private final IAccountDAO       accountDAO  = new AccountDAO();
-    private final ILeaveRequestDAO  leaveDAO    = new LeaveRequestDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -95,7 +95,7 @@ public class ShiftScheduleServlet extends HttpServlet {
         req.setAttribute("weekStart",  monday);
         req.setAttribute("weekEnd",    sunday);
         req.setAttribute("today",      today);
-        req.setAttribute("allStaff",   accountDAO.findAllStaff());
+        req.setAttribute("allStaff",   com.medicare.config.CacheManager.getShort("ref.allStaff", accountDAO::findAllStaff));
         req.setAttribute("shiftTypes", typeDAO.findAllActive());
         loadNavBadges(req);
         req.getRequestDispatcher("/WEB-INF/views/admin/shift-schedule-week.jsp").forward(req, resp);
@@ -141,7 +141,7 @@ public class ShiftScheduleServlet extends HttpServlet {
         req.setAttribute("filterTo",    to.toString());
         req.setAttribute("filterAcc",   accIdStr);
         req.setAttribute("filterStatus",statusStr);
-        req.setAttribute("allStaff",    accountDAO.findAllStaff());
+        req.setAttribute("allStaff",    com.medicare.config.CacheManager.getShort("ref.allStaff", accountDAO::findAllStaff));
         loadNavBadges(req);
         req.getRequestDispatcher("/WEB-INF/views/admin/shift-schedule-list.jsp").forward(req, resp);
     }
@@ -163,7 +163,7 @@ public class ShiftScheduleServlet extends HttpServlet {
     // ── FORM TẠO MỚI ─────────────────────────────────────────────────────────
     private void showCreateForm(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        req.setAttribute("allStaff",   accountDAO.findAllStaff());
+        req.setAttribute("allStaff",   com.medicare.config.CacheManager.getShort("ref.allStaff", accountDAO::findAllStaff));
         req.setAttribute("shiftTypes", typeDAO.findAllActive());
         req.setAttribute("today",      LocalDate.now().toString());
         // Pre-fill ngày từ tham số (nếu click từ tuần grid)
@@ -184,7 +184,7 @@ public class ShiftScheduleServlet extends HttpServlet {
         }
         req.setAttribute("schedule",   sc);
         req.setAttribute("shiftTypes", typeDAO.findAllActive());
-        req.setAttribute("allStaff",   accountDAO.findAllStaff());
+        req.setAttribute("allStaff",   com.medicare.config.CacheManager.getShort("ref.allStaff", accountDAO::findAllStaff));
         loadNavBadges(req);
         req.getRequestDispatcher("/WEB-INF/views/admin/shift-schedule-edit.jsp").forward(req, resp);
     }
@@ -296,10 +296,11 @@ public class ShiftScheduleServlet extends HttpServlet {
     }
 
     // ── Helper ────────────────────────────────────────────────────────────────
+    // Trước đây tự set "pendingLeaveCount" không qua cache, và KHÔNG set 3 badge còn
+    // lại (pendingLateCount/expiryCount/pendingResetCount) → sidebar trống ở trang này.
+    // Dùng chung SidebarHelper (cache 30s) như mọi servlet admin khác.
     private void loadNavBadges(HttpServletRequest req) {
-        try {
-            req.setAttribute("pendingLeaveCount", leaveDAO.findPending().size());
-        } catch (Exception ignored) {}
+        SidebarHelper.load(req);
     }
 
     private int parseInt(String s, int def) {

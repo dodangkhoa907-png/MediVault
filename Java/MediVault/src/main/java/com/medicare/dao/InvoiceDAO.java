@@ -192,14 +192,16 @@ public class InvoiceDAO implements IInvoiceDAO {
 
     public List<Invoice> findByDateRange(LocalDate from, LocalDate to) {
         List<Invoice> list = new ArrayList<>();
+        // Range trực tiếp trên CreatedAt (không CAST(...AS DATE)) — cho phép SQL Server
+        // seek index thay vì full scan. Dùng ở DashboardServlet (gọi mỗi lần vào trang chủ).
         String sql = "SELECT * FROM Invoices " +
                 "WHERE Status = 'COMPLETED' " +
-                "  AND CAST(CreatedAt AS DATE) BETWEEN ? AND ? " +
+                "  AND CreatedAt >= ? AND CreatedAt < ? " +
                 "ORDER BY CreatedAt DESC";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setDate(1, Date.valueOf(from));
-            ps.setDate(2, Date.valueOf(to));
+            ps.setDate(2, Date.valueOf(to.plusDays(1)));
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) list.add(mapRow(rs));
             }
@@ -210,11 +212,11 @@ public class InvoiceDAO implements IInvoiceDAO {
     // Doanh thu trong khoảng ngày — dùng cho ReportServlet
     public BigDecimal sumRevenueByDateRange(LocalDate from, LocalDate to) {
         String sql = "SELECT ISNULL(SUM(FinalAmount), 0) FROM Invoices " +
-                "WHERE Status = 'COMPLETED' AND CAST(CreatedAt AS DATE) BETWEEN ? AND ?";
+                "WHERE Status = 'COMPLETED' AND CreatedAt >= ? AND CreatedAt < ?";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setDate(1, Date.valueOf(from));
-            ps.setDate(2, Date.valueOf(to));
+            ps.setDate(2, Date.valueOf(to.plusDays(1)));
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getBigDecimal(1);
             }
@@ -652,9 +654,11 @@ public class InvoiceDAO implements IInvoiceDAO {
                                       LocalDate from, LocalDate to, String status, String paymentMethod,
                                       Integer accountId, String keyword) {
         if (from != null && to != null) {
-            sql.append(" AND CAST(inv.CreatedAt AS DATE) BETWEEN ? AND ?");
+            // Range trực tiếp — cho phép index seek trên CreatedAt (findFiltered/countFiltered
+            // chạy mỗi lần vào /invoices có lọc theo ngày, filter phổ biến nhất ở trang này).
+            sql.append(" AND inv.CreatedAt >= ? AND inv.CreatedAt < ?");
             params.add(Date.valueOf(from));
-            params.add(Date.valueOf(to));
+            params.add(Date.valueOf(to.plusDays(1)));
         }
         if (status != null && !status.isEmpty()) {
             sql.append(" AND inv.Status = ?");

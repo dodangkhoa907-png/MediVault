@@ -548,7 +548,7 @@ body{display:flex}
   <!-- Topbar -->
   <div class="topbar">
     <div class="search-wrap">
-      <input type="text" id="searchInput" placeholder="Tìm thuốc theo tên hoặc mã vạch…" autocomplete="off">
+      <input type="text" id="searchInput" placeholder="Tìm thuốc theo tên hoặc mã vạch…" autocomplete="off" autofocus>
     </div>
     <!-- Station badge -->
     <div class="station-badge" onclick="openStationModal()" id="stationBadge" title="Chọn quầy POS">
@@ -732,6 +732,7 @@ body{display:flex}
            data-rx="${m.prescriptionRequired}"
            data-dosage="<c:out value='${m.dosage}' />"
            data-code="<c:out value='${m.medicineCode}' />"
+           data-barcode="<c:out value='${m.barcode}' />"
            data-stock="${mStock}"
            data-batchno="<c:out value='${mBatch}' />"
            data-expiry="${mExpiry}"
@@ -1141,6 +1142,7 @@ document.querySelectorAll('.med-card').forEach(card => {
     expiry:  card.dataset.expiry  || '',
     dosage:  card.dataset.dosage  || '',
     code:    card.dataset.code    || '',
+    barcode: card.dataset.barcode || '',
     generic:  card.dataset.generic  || '',
     contra:   card.dataset.contra   || '',
     warning:  card.dataset.warning  || '',
@@ -1150,18 +1152,51 @@ document.querySelectorAll('.med-card').forEach(card => {
 });
 document.getElementById('medCountBadge').textContent = allMedicines.length + ' thuốc';
 
-// ── Search ──
+// ── Search (tên / mã thuốc / mã vạch) ──
 let searchTimer;
+function filterMedicines(q) {
+  q = (q || '').toLowerCase().trim();
+  allMedicines.forEach(m => {
+    const show = !q
+      || m.name.toLowerCase().includes(q)
+      || m.code.toLowerCase().includes(q)
+      || (m.barcode && m.barcode.toLowerCase().includes(q));
+    m.el.style.display = (show && (activeCat === 0 || m.catId === activeCat)) ? '' : 'none';
+  });
+  checkEmpty();
+}
 document.getElementById('searchInput').addEventListener('input', function() {
   clearTimeout(searchTimer);
-  const q = this.value.toLowerCase().trim();
-  searchTimer = setTimeout(() => {
-    allMedicines.forEach(m => {
-      const show = !q || m.name.toLowerCase().includes(q) || m.code.toLowerCase().includes(q);
-      m.el.style.display = (show && (activeCat === 0 || m.catId === activeCat)) ? '' : 'none';
-    });
-    checkEmpty();
-  }, 200);
+  const q = this.value;
+  searchTimer = setTimeout(() => filterMedicines(q), 200);
+});
+
+// Máy quét mã vạch USB gõ nhanh toàn bộ mã rồi tự bắn Enter — bắt Enter để THÊM NGAY vào
+// giỏ hàng thay vì chỉ lọc danh sách rồi bắt cashier tự click, giống nghiệp vụ quét mã thật.
+document.getElementById('searchInput').addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  clearTimeout(searchTimer);
+  const q = this.value.trim();
+  if (!q) return;
+  filterMedicines(q);
+
+  // Ưu tiên khớp CHÍNH XÁC mã vạch trước (đáng tin cậy nhất — máy quét luôn gõ đủ mã) —
+  // rồi mới tới trường hợp lọc theo tên/mã thuốc chỉ còn đúng 1 kết quả hiển thị.
+  let target = allMedicines.find(m => m.barcode && m.barcode.toLowerCase() === q.toLowerCase());
+  if (!target) {
+    const visible = allMedicines.filter(m => m.el.style.display !== 'none');
+    if (visible.length === 1) target = visible[0];
+  }
+
+  if (target) {
+    addToCart(target.el);
+    this.value = '';
+    filterMedicines('');
+    this.focus();
+  } else {
+    showToast('❌ Không tìm thấy thuốc khớp mã "' + q + '"', 'err');
+  }
 });
 
 // ── Category filter ──
@@ -1173,7 +1208,8 @@ function filterCat(btn, catId) {
   const q = document.getElementById('searchInput').value.toLowerCase().trim();
   allMedicines.forEach(m => {
     const matchCat  = catId === 0 || m.catId === catId;
-    const matchName = !q || m.name.toLowerCase().includes(q) || m.code.toLowerCase().includes(q);
+    const matchName = !q || m.name.toLowerCase().includes(q) || m.code.toLowerCase().includes(q)
+        || (m.barcode && m.barcode.toLowerCase().includes(q));
     m.el.style.display = (matchCat && matchName) ? '' : 'none';
   });
   checkEmpty();
@@ -2297,6 +2333,11 @@ function initNfcBridge() {
     nfcBridge.onerror = () => {};
   } catch (e) {}
 }
+
+// Đóng NFC bridge khi rời trang — giải phóng AsyncContext trên server ngay thay vì
+// chờ tới heartbeat kế tiếp (xem InventorySSEServlet: cùng lớp bug zombie-connection).
+window.addEventListener('pagehide', () => { if (nfcBridge) { try { nfcBridge.close(); } catch (_) {} nfcBridge = null; } });
+window.addEventListener('beforeunload', () => { if (nfcBridge) { try { nfcBridge.close(); } catch (_) {} nfcBridge = null; } });
 
 /** Nhận UID từ điện thoại: tra thẻ, thấy khách thì fill; thẻ trắng thì mở liên kết. */
 async function onNfcScanned(uid) {
