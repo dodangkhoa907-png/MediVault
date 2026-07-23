@@ -59,8 +59,9 @@ public class DashboardServlet extends HttpServlet {
         req.setAttribute("todayRevenue",  todayRevenueSum.longValue());
         req.setAttribute("todayInvoices", todayInvoiceList.size());
 
-        // ── Accounts ──
-        List<Account> allAccounts = accountDAO.findAllStaff();
+        // ── Accounts (cache 30s — dùng chung key với các trang admin khác) ──
+        List<Account> allAccounts = com.medicare.config.CacheManager.getShort(
+                "ref.allStaff", accountDAO::findAllStaff);
         req.setAttribute("accounts",       allAccounts);
         long activeCount = allAccounts.stream().filter(Account::isActive).count();
         req.setAttribute("activeAccounts", activeCount);
@@ -73,15 +74,18 @@ public class DashboardServlet extends HttpServlet {
         req.setAttribute("onlineStaffCount", onlineStaffStr.size());
 
         // ── Pending Resets & Leave ──
+        // KHÔNG set "pendingResetCount"/"pendingLeaveCount" thủ công ở đây — để
+        // SidebarHelper.load(req) bên dưới set qua cache 30s dùng chung với sidebar
+        // (trước đây set trước làm vô hiệu hoá cache của SidebarHelper cho riêng
+        // trang Dashboard — chính là trang admin vào nhiều nhất, nên full-scan mỗi lần).
         List<PasswordResetRequest> pendingResets = resetDAO.findAllPending();
-        req.setAttribute("pendingResets",     pendingResets);
-        req.setAttribute("pendingResetCount", pendingResets.size());
+        req.setAttribute("pendingResets", pendingResets);
         List<LeaveRequest> pendingLeaves = leaveDAO.findPending();
-        req.setAttribute("pendingLeaves",     pendingLeaves);
-        req.setAttribute("pendingLeaveCount", pendingLeaves.size());
+        req.setAttribute("pendingLeaves", pendingLeaves);
 
-        // ── Yêu cầu đăng ký lại khuôn mặt (nhân viên gửi lên) ──
-        List<Account> pendingReenroll = ((AccountDAO) accountDAO).findPendingFaceReenroll();
+        // ── Yêu cầu đăng ký lại khuôn mặt (nhân viên gửi lên) — cache 30s ──
+        List<Account> pendingReenroll = com.medicare.config.CacheManager.getShort(
+                "dash.pendingReenroll", () -> ((AccountDAO) accountDAO).findPendingFaceReenroll());
         req.setAttribute("pendingReenroll",      pendingReenroll);
         req.setAttribute("pendingReenrollCount", pendingReenroll.size());
 
@@ -128,14 +132,19 @@ public class DashboardServlet extends HttpServlet {
         resp.setContentType("application/json;charset=UTF-8");
         resp.setHeader("Cache-Control", "no-cache");
         LocalDate today = LocalDate.now();
-        List<Invoice> list = invoiceDAO.findByDateRange(today, today);
+        // Cache 30s — endpoint này được poll mỗi 60s từ mỗi tab admin đang mở dashboard;
+        // không cần query DB mới cho mỗi lượt poll của mỗi tab.
+        List<Invoice> list = com.medicare.config.CacheManager.getShort(
+                "dash.todayInvoices", () -> invoiceDAO.findByDateRange(today, today));
         long revenue = 0;
         for (Invoice inv : list) {
             if (inv.getFinalAmount() != null) revenue += inv.getFinalAmount().longValue();
         }
+        int expiring = com.medicare.config.CacheManager.get("dash.expiry",
+                () -> batchesDAO.findExpiringSoon().size());
         resp.getWriter().write(String.format(
                 "{\"revenue\":%d,\"orders\":%d,\"warnings\":%d}",
-                revenue, list.size(), batchesDAO.findExpiringSoon().size()
+                revenue, list.size(), expiring
         ));
     }
 

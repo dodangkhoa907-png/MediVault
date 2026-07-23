@@ -264,10 +264,13 @@ public class MedicineDAO implements IMedicineDAO {
     }
 
     public boolean update(Medicines m) {
+        // KHÔNG update ImageUrl ở đây — cột này không tồn tại trên schema DB thật (đã xác nhận
+        // qua INFORMATION_SCHEMA.COLUMNS), và form sửa thuốc cũng không có field ảnh. Ảnh đại
+        // diện thuốc (nếu có) đi qua updateImageUrl() riêng, không gộp vào update() chung.
         String sql = "UPDATE Medicines SET MedicineName=?, GenericName=?, Barcode=?, " +
                 "RegistrationNumber=?, CategoryID=?, ManufacturerID=?, Unit=?, ShelfID=?, " +
                 "Dosage=?, Contraindications=?, StorageConditions=?, IsPrescriptionRequired=?, " +
-                "SellingPrice=?, MinInventory=?, ExpiryAlertDays=?, PackagingSpec=?, ImageUrl=?, " +
+                "SellingPrice=?, MinInventory=?, ExpiryAlertDays=?, PackagingSpec=?, " +
                 "ShelfLifeMonths=? " +
                 "WHERE MedicineID=?";
         try (Connection cn = DBContext.getConnection();
@@ -288,9 +291,8 @@ public class MedicineDAO implements IMedicineDAO {
             ps.setInt(14, m.getMinInventory());
             ps.setInt(15, m.getExpiryAlertDays());
             ps.setNString(16, m.getPackagingSpec());
-            ps.setString(17, m.getImageUrl());
-            setIntOrNull(ps, 18, m.getShelfLifeMonths());
-            ps.setInt(19, m.getMedicineId());
+            setIntOrNull(ps, 17, m.getShelfLifeMonths());
+            ps.setInt(18, m.getMedicineId());
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
             e.printStackTrace();

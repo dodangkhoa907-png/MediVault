@@ -545,6 +545,7 @@ document.getElementById('searchInput').addEventListener('keydown', e => {
 <script>
 // Polling online status mỗi 15s — không reload trang
 async function refreshOnlineStatus() {
+  if (document.hidden) return; // tab ở nền — khỏi bắn request, đỡ tốn 1/6 connection-per-origin
   try {
     const res = await fetch('${pageContext.request.contextPath}/accounts?action=online-status', {
       headers: {'X-Requested-With': 'XMLHttpRequest'}
@@ -576,6 +577,7 @@ async function refreshOnlineStatus() {
 }
 refreshOnlineStatus();
 setInterval(refreshOnlineStatus, 15000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshOnlineStatus(); });
 </script>
 
 <!-- ═══════════════ FACE ENROLLMENT MODAL (Admin) ═══════════════ -->

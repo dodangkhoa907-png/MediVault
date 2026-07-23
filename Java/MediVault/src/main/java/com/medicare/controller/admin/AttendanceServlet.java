@@ -5,6 +5,7 @@ import com.medicare.dao.*;
 import com.medicare.dao.interfaces.*;
 import com.medicare.entity.*;
 import com.medicare.util.AuditHelper;
+import com.medicare.util.SidebarHelper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -41,6 +42,9 @@ public class AttendanceServlet extends HttpServlet {
 
         String action = req.getParameter("action");
         if (action == null) action = "live";
+
+        // api-live là AJAX poll JSON — không cần badge sidebar (view JSP mới cần).
+        if (!"api-live".equals(action)) SidebarHelper.load(req);
 
         switch (action) {
             case "live"     -> showLive(req, resp);
@@ -106,25 +110,17 @@ public class AttendanceServlet extends HttpServlet {
             if (toStr   != null && !toStr.isEmpty())   to   = LocalDate.parse(toStr);
         } catch (DateTimeParseException ignored) {}
 
-        List<Attendance> list;
-        if (accIdStr != null && !accIdStr.isEmpty()) {
-            list = attendanceDAO.findByAccountAndDateRange(
-                    Integer.parseInt(accIdStr), from, to);
-        } else {
-            // Lấy tất cả: loop qua mỗi nhân viên (đơn giản hóa)
-            list = new java.util.ArrayList<>();
-            for (Account staff : accountDAO.findAllStaff()) {
-                list.addAll(attendanceDAO.findByAccountAndDateRange(
-                        staff.getAccountId(), from, to));
-            }
-            list.sort((a, b) -> b.getCheckInTime().compareTo(a.getCheckInTime()));
-        }
+        // accountId=0 → DAO tự trả về TẤT CẢ nhân viên trong 1 query duy nhất (đã
+        // ORDER BY CheckInTime DESC sẵn) — trước đây loop gọi DAO cho từng nhân viên
+        // (N+1), N = tổng số nhân viên, mỗi lần mở tab "Lịch sử điểm danh" không lọc.
+        int filterAccId = (accIdStr != null && !accIdStr.isEmpty()) ? Integer.parseInt(accIdStr) : 0;
+        List<Attendance> list = attendanceDAO.findByAccountAndDateRange(filterAccId, from, to);
 
         req.setAttribute("attendanceList", list);
         req.setAttribute("filterFrom",     from.toString());
         req.setAttribute("filterTo",       to.toString());
         req.setAttribute("filterAcc",      accIdStr);
-        req.setAttribute("allStaff",       accountDAO.findAllStaff());
+        req.setAttribute("allStaff",       com.medicare.config.CacheManager.getShort("ref.allStaff", accountDAO::findAllStaff));
         req.getRequestDispatcher("/WEB-INF/views/admin/attendance-list.jsp")
                 .forward(req, resp);
     }
@@ -141,12 +137,19 @@ public class AttendanceServlet extends HttpServlet {
                 year  = Integer.parseInt(req.getParameter("year"));
         } catch (NumberFormatException ignored) {}
 
-        // Tổng hợp điểm danh từng nhân viên trong tháng
-        List<Account> allStaff = accountDAO.findAllStaff();
+        // Tổng hợp điểm danh từng nhân viên trong tháng — 1 query duy nhất (accountId=0
+        // = tất cả nhân viên) rồi nhóm theo AccountID trong Java, thay vì loop gọi DAO
+        // cho từng nhân viên (N+1, N = tổng số nhân viên, mỗi lần mở tab "Tổng hợp tháng").
+        List<Account> allStaff = com.medicare.config.CacheManager.getShort("ref.allStaff", accountDAO::findAllStaff);
+        List<Attendance> monthRecords = attendanceDAO.findByAccountAndMonth(0, month, year);
+        java.util.Map<Integer, List<Attendance>> byAccount = new java.util.HashMap<>();
+        for (Attendance a : monthRecords) {
+            byAccount.computeIfAbsent(a.getAccountId(), k -> new java.util.ArrayList<>()).add(a);
+        }
+
         List<java.util.Map<String, Object>> summary = new java.util.ArrayList<>();
         for (Account staff : allStaff) {
-            List<Attendance> records =
-                    attendanceDAO.findByAccountAndMonth(staff.getAccountId(), month, year);
+            List<Attendance> records = byAccount.getOrDefault(staff.getAccountId(), java.util.Collections.emptyList());
             double totalHours = records.stream()
                     .filter(a -> a.getActualHours() != null)
                     .mapToDouble(Attendance::getActualHours).sum();

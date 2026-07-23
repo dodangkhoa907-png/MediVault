@@ -408,6 +408,40 @@ public class BatchesDAO implements IBatchesDAO {
         } catch (Exception e) { e.printStackTrace(); }
     }
 
+    /** Gói 4 map kết quả của loadBatchSummary() lại thành 1 object để cache chung được. */
+    public static class BatchSummaryBundle {
+        public final Map<Integer, Integer> activeCount;
+        public final Map<Integer, Integer> soonCount;
+        public final Map<Integer, Integer> expiredCount;
+        public final Map<Integer, String>  nearestExpiry;
+        public BatchSummaryBundle(Map<Integer, Integer> activeCount, Map<Integer, Integer> soonCount,
+                                   Map<Integer, Integer> expiredCount, Map<Integer, String> nearestExpiry) {
+            this.activeCount = activeCount;
+            this.soonCount = soonCount;
+            this.expiredCount = expiredCount;
+            this.nearestExpiry = nearestExpiry;
+        }
+    }
+
+    /**
+     * Bản cache 30s của loadBatchSummary() — dùng CHUNG key "med.batchSummary" với cả trang
+     * danh sách thuốc (MedicineServlet) lẫn kết nối SSE ban đầu (InventorySSEServlet), tránh
+     * chạy lại query GROUP BY tốn kém này 2 lần liên tiếp mỗi khi vào trang Kho hàng — trang
+     * gọi loadBatchSummary() 1 lần, rồi ngay sau đó SSE tự kết nối và gọi lại y hệt query đó
+     * lần nữa nếu không cache chung. broadcast() sau khi bán hàng PHẢI invalidate key này
+     * trước khi gọi lại, để không đẩy dữ liệu cũ.
+     */
+    public BatchSummaryBundle getCachedBatchSummary() {
+        return com.medicare.config.CacheManager.getShort("med.batchSummary", () -> {
+            Map<Integer, Integer> activeCount  = new HashMap<>();
+            Map<Integer, Integer> soonCount    = new HashMap<>();
+            Map<Integer, Integer> expiredCount = new HashMap<>();
+            Map<Integer, String>  nearestExpiry = new HashMap<>();
+            loadBatchSummary(activeCount, soonCount, expiredCount, nearestExpiry);
+            return new BatchSummaryBundle(activeCount, soonCount, expiredCount, nearestExpiry);
+        });
+    }
+
     /** Tổng số lô theo thuốc */
     public int countByMedicine(int medicineId) {
         String sql = "SELECT COUNT(*) FROM Batches WHERE MedicineID = ?";

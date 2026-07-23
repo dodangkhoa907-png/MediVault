@@ -29,12 +29,29 @@ public class LoginServlet extends HttpServlet {
                 return;
             }
         }
+
+        // Chặn theo IP — CHỈ admin, không ảnh hưởng /staff-login. Chặn ngay từ lúc hiện form,
+        // không đợi tới lúc submit sai IP mới báo.
+        if (!AuthFilter.isAdminIpAllowed(req)) {
+            req.setAttribute("error", "Truy cập đăng nhập Admin bị chặn từ địa chỉ mạng này.");
+            req.getRequestDispatcher("/WEB-INF/views/login.jsp").forward(req, resp);
+            return;
+        }
+
         req.getRequestDispatcher("/WEB-INF/views/login.jsp").forward(req, resp);
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
+        // Chặn theo IP — CHỈ admin. Chặn TRƯỚC KHI kiểm tra username/password, để không cho
+        // dò mật khẩu admin từ ngoài whitelist dù có đúng tài khoản cũng không lọt qua được.
+        if (!AuthFilter.isAdminIpAllowed(req)) {
+            req.setAttribute("error", "Truy cập đăng nhập Admin bị chặn từ địa chỉ mạng này.");
+            req.getRequestDispatcher("/WEB-INF/views/login.jsp").forward(req, resp);
+            return;
+        }
+
         String username = req.getParameter("username");
         String password = req.getParameter("password");
 

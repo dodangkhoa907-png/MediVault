@@ -201,6 +201,24 @@ public class PosServlet extends HttpServlet {
             return;
         }
 
+        // Ai đang đứng quầy nào (chưa check-out hôm nay) — hiện trong modal chọn quầy, để
+        // biết trước quầy nào đang có người trước khi chọn (tránh chọn nhầm quầy người khác).
+        if ("station-staff".equals(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            PrintWriter out = resp.getWriter();
+            Map<Integer, String> staffByStation = attendanceDAO.findActiveStaffByStation();
+            StringBuilder sb = new StringBuilder("{");
+            boolean first = true;
+            for (Map.Entry<Integer, String> e : staffByStation.entrySet()) {
+                if (!first) sb.append(",");
+                sb.append("\"").append(e.getKey()).append("\":\"").append(esc(e.getValue())).append("\"");
+                first = false;
+            }
+            sb.append("}");
+            out.print(sb);
+            return;
+        }
+
         if ("inventory".equals(action)) {
             // Single JOIN query: medicine + all batches — thay 1000+ queries
             resp.setContentType("application/json;charset=UTF-8");

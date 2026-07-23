@@ -139,6 +139,13 @@ public class OtpServlet extends HttpServlet {
 
         // Set đúng key theo role — KHÔNG dùng "account" chung nữa
         if (pending.getRoleId() == 1) {
+            // Chặn theo IP — CHỈ admin, đồng bộ với LoginServlet (xem AuthFilter#isAdminIpAllowed).
+            if (!AuthFilter.isAdminIpAllowed(req)) {
+                req.setAttribute("error", "Truy cập đăng nhập Admin bị chặn từ địa chỉ mạng này.");
+                session.invalidate();
+                resp.sendRedirect(req.getContextPath() + "/login");
+                return;
+            }
             session.setAttribute("adminAccount", pending);
         } else {
             session.setAttribute("staffAccount", pending);

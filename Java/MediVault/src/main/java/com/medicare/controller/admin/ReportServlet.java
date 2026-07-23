@@ -1,5 +1,6 @@
 package com.medicare.controller.admin;
 
+import com.medicare.config.CacheManager;
 import com.medicare.dao.AccountDAO;
 import com.medicare.dao.InvoiceDAO;
 import com.medicare.dao.ShiftDAO;
@@ -37,6 +38,54 @@ public class ReportServlet extends HttpServlet {
     private final IShiftDAO   shiftDAO   = new ShiftDAO();
     private final IAccountDAO accountDAO = new AccountDAO();
 
+    /** Gộp các chỉ số tài chính của 1 kỳ (from-to) để tính 1 lần, dùng chung cho SSR + chart-data. */
+    private static final class FinKpi {
+        final BigDecimal gross, discount, refund, cogs;
+        final int invoiceCount;
+        FinKpi(BigDecimal gross, BigDecimal discount, BigDecimal refund, BigDecimal cogs, int invoiceCount) {
+            this.gross = gross; this.discount = discount; this.refund = refund;
+            this.cogs = cogs; this.invoiceCount = invoiceCount;
+        }
+    }
+
+    // ── Cache 15 phút — chuyển tab qua lại hoặc showOverview → chart-data gọi lại
+    // cùng kỳ (from-to) sẽ không query DB lần 2. Dữ liệu chỉ đổi khi có hóa đơn mới,
+    // trễ tối đa 15 phút là chấp nhận được cho trang báo cáo (không phải real-time POS).
+    private FinKpi loadFinKpi(LocalDate from, LocalDate to) {
+        String key = "report.kpi." + from + "_" + to;
+        return CacheManager.get15(key, () -> new FinKpi(
+                invoiceDAO.sumGrossRevenueByDateRange(from, to),
+                invoiceDAO.sumDiscountByDateRange(from, to),
+                invoiceDAO.sumRefundByDateRange(from, to),
+                invoiceDAO.sumCOGSByDateRange(from, to),
+                invoiceDAO.countInvoicesByDateRange(from, to)));
+    }
+
+    private List<Shift> loadShifts(LocalDate from, LocalDate to) {
+        String key = "report.shifts." + from + "_" + to;
+        return CacheManager.get15(key, () -> shiftDAO.findByDateRange(from, to));
+    }
+
+    private TreeMap<String, BigDecimal[]> loadDailyFinance(LocalDate from, LocalDate to) {
+        String key = "report.dailyFin." + from + "_" + to;
+        return CacheManager.get15(key, () -> invoiceDAO.dailyFinanceByDateRange(from, to));
+    }
+
+    private LinkedHashMap<String, BigDecimal> loadRevenueByManufacturer(LocalDate from, LocalDate to) {
+        String key = "report.mfg." + from + "_" + to;
+        return CacheManager.get15(key, () -> invoiceDAO.revenueByManufacturer(from, to));
+    }
+
+    private LinkedHashMap<String, BigDecimal> loadRevenueByCategory(LocalDate from, LocalDate to) {
+        String key = "report.cat." + from + "_" + to;
+        return CacheManager.get15(key, () -> invoiceDAO.revenueByCategory(from, to));
+    }
+
+    private TreeMap<Integer, BigDecimal> loadRevenueByHour(LocalDate from, LocalDate to) {
+        String key = "report.hourly." + from + "_" + to;
+        return CacheManager.get15(key, () -> invoiceDAO.revenueByHour(from, to));
+    }
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
@@ -65,14 +114,15 @@ public class ReportServlet extends HttpServlet {
         LocalDate from = LocalDate.of(year, month, 1);
         LocalDate to   = from.withDayOfMonth(from.lengthOfMonth());
 
-        // ── Chỉ số tài chính ──────────────────────────────────────────────
-        BigDecimal grossRevenue = invoiceDAO.sumGrossRevenueByDateRange(from, to);   // trước giảm giá
-        BigDecimal discount     = invoiceDAO.sumDiscountByDateRange(from, to);
-        BigDecimal refund       = invoiceDAO.sumRefundByDateRange(from, to);
-        BigDecimal cogs         = invoiceDAO.sumCOGSByDateRange(from, to);
+        // ── Chỉ số tài chính (cache 15 phút — dùng chung với handleChartData) ──
+        FinKpi kpi = loadFinKpi(from, to);
+        BigDecimal grossRevenue = kpi.gross;      // trước giảm giá
+        BigDecimal discount     = kpi.discount;
+        BigDecimal refund       = kpi.refund;
+        BigDecimal cogs         = kpi.cogs;
         BigDecimal netRevenue   = grossRevenue.subtract(discount).subtract(refund);   // doanh thu thuần
         BigDecimal grossProfit  = netRevenue.subtract(cogs);                          // lợi nhuận gộp
-        int invoiceCount        = invoiceDAO.countInvoicesByDateRange(from, to);
+        int invoiceCount        = kpi.invoiceCount;
 
         req.setAttribute("grossRevenue", grossRevenue);
         req.setAttribute("discount",     discount);
@@ -85,10 +135,11 @@ public class ReportServlet extends HttpServlet {
         // ── So với tháng trước (trend badge trên KPI) ──────────────────────
         LocalDate prevFrom = from.minusMonths(1).withDayOfMonth(1);
         LocalDate prevTo   = prevFrom.withDayOfMonth(prevFrom.lengthOfMonth());
-        BigDecimal prevGrossRevenue = invoiceDAO.sumGrossRevenueByDateRange(prevFrom, prevTo);
-        BigDecimal prevDiscount     = invoiceDAO.sumDiscountByDateRange(prevFrom, prevTo);
-        BigDecimal prevRefund       = invoiceDAO.sumRefundByDateRange(prevFrom, prevTo);
-        BigDecimal prevCogs         = invoiceDAO.sumCOGSByDateRange(prevFrom, prevTo);
+        FinKpi prevKpi = loadFinKpi(prevFrom, prevTo);
+        BigDecimal prevGrossRevenue = prevKpi.gross;
+        BigDecimal prevDiscount     = prevKpi.discount;
+        BigDecimal prevRefund       = prevKpi.refund;
+        BigDecimal prevCogs         = prevKpi.cogs;
         BigDecimal prevNetRevenue   = prevGrossRevenue.subtract(prevDiscount).subtract(prevRefund);
         BigDecimal prevGrossProfit  = prevNetRevenue.subtract(prevCogs);
         req.setAttribute("netRevenuePct",  percentChange(prevNetRevenue, netRevenue));
@@ -103,12 +154,13 @@ public class ReportServlet extends HttpServlet {
         req.setAttribute("deductPct", deductPct);
 
         // ── Đối soát quỹ ca (chuyển nguyên từ shift-list.jsp tab Doanh thu) ──
-        List<Shift> monthShifts = shiftDAO.findByDateRange(from, to);
+        List<Shift> monthShifts = loadShifts(from, to);
+        Set<Integer> shiftAccountIds = new HashSet<>();
+        for (Shift s : monthShifts) shiftAccountIds.add(s.getAccountId());
         Map<Integer, Account> accountMap = new HashMap<>();
-        for (Shift s : monthShifts) {
-            if (!accountMap.containsKey(s.getAccountId())) {
-                Account a = accountDAO.findById(s.getAccountId());
-                if (a != null) accountMap.put(s.getAccountId(), a);
+        if (!shiftAccountIds.isEmpty()) {
+            for (Account a : accountDAO.findAccountsByIds(new ArrayList<>(shiftAccountIds))) {
+                accountMap.put(a.getAccountId(), a);
             }
         }
         req.setAttribute("monthShifts", monthShifts);
@@ -133,7 +185,8 @@ public class ReportServlet extends HttpServlet {
         StringBuilder json = new StringBuilder("{");
 
         // 1) Đối soát quỹ ca — tiền đầu/cuối ca theo ngày (logic cũ, chuyển từ ShiftServlet)
-        List<Shift> shifts = shiftDAO.findByDateRange(from, to);
+        // dùng chung cache với showOverview (cùng kỳ from-to) — tránh query trùng lặp.
+        List<Shift> shifts = loadShifts(from, to);
         TreeMap<String, long[]> dailyCash = new TreeMap<>();
         for (Shift s : shifts) {
             if (s.getStartTime() == null) continue;
@@ -155,7 +208,7 @@ public class ReportServlet extends HttpServlet {
         json.append("\"cashClosing\":").append(jsonNumArray(cashClosing)).append(",");
 
         // 2) Doanh thu — Giá vốn — Lợi nhuận gộp theo ngày (Grouped Column Chart, theo khuyến nghị #1)
-        TreeMap<String, BigDecimal[]> dailyFin = invoiceDAO.dailyFinanceByDateRange(from, to);
+        TreeMap<String, BigDecimal[]> dailyFin = loadDailyFinance(from, to);
         List<String> finLabels  = new ArrayList<>();
         List<BigDecimal> finRev = new ArrayList<>();
         List<BigDecimal> finCogs = new ArrayList<>();
@@ -173,9 +226,11 @@ public class ReportServlet extends HttpServlet {
         json.append("\"finProfit\":").append(jsonNumArray(finProfit)).append(",");
 
         // 2b) Số liệu cho Waterfall Chart (Doanh thu gộp → Giảm giá → Trả hàng → Doanh thu thuần)
-        BigDecimal wfGross    = invoiceDAO.sumGrossRevenueByDateRange(from, to);
-        BigDecimal wfDiscount = invoiceDAO.sumDiscountByDateRange(from, to);
-        BigDecimal wfRefund   = invoiceDAO.sumRefundByDateRange(from, to);
+        // dùng chung cache KPI với showOverview — tránh tính lại gross/discount/refund lần 2.
+        FinKpi wfKpi = loadFinKpi(from, to);
+        BigDecimal wfGross    = wfKpi.gross;
+        BigDecimal wfDiscount = wfKpi.discount;
+        BigDecimal wfRefund   = wfKpi.refund;
         BigDecimal wfNet      = wfGross.subtract(wfDiscount).subtract(wfRefund);
         json.append("\"wfGross\":").append(wfGross).append(",");
         json.append("\"wfDiscount\":").append(wfDiscount).append(",");
@@ -183,15 +238,17 @@ public class ReportServlet extends HttpServlet {
         json.append("\"wfNet\":").append(wfNet).append(",");
 
         // 3) Doanh thu theo Hãng sản xuất (top 7 + "Khác")
-        LinkedHashMap<String, BigDecimal> mfg = invoiceDAO.revenueByManufacturer(from, to);
+        LinkedHashMap<String, BigDecimal> mfg = loadRevenueByManufacturer(from, to);
         appendGroupedJson(json, "mfg", mfg);
 
         // 4) Doanh thu theo Nhóm thuốc (top 7 + "Khác")
-        LinkedHashMap<String, BigDecimal> cat = invoiceDAO.revenueByCategory(from, to);
+        LinkedHashMap<String, BigDecimal> cat = loadRevenueByCategory(from, to);
         appendGroupedJson(json, "cat", cat);
 
-        // 5) Doanh thu theo khung giờ (0h → 23h, giờ VN)
-        TreeMap<Integer, BigDecimal> hourly = invoiceDAO.revenueByHour(from, to);
+        // 5) Doanh thu theo khung giờ (0h → 23h, giờ VN) — CẢ THÁNG đang chọn (cộng dồn tất cả
+        // các ngày trong tháng vào cùng 1 khung giờ, phục vụ phân tích "giờ vàng" — KHÔNG phải
+        // riêng hôm nay, dễ gây hiểu nhầm nên có thêm bản "hôm nay" riêng ngay bên dưới.
+        TreeMap<Integer, BigDecimal> hourly = loadRevenueByHour(from, to);
         List<String> hourLabels = new ArrayList<>();
         List<BigDecimal> hourValues = new ArrayList<>();
         for (Map.Entry<Integer, BigDecimal> e : hourly.entrySet()) {
@@ -199,7 +256,17 @@ public class ReportServlet extends HttpServlet {
             hourValues.add(e.getValue());
         }
         json.append("\"hourLabels\":").append(jsonStrArray(hourLabels)).append(",");
-        json.append("\"hourValues\":").append(jsonNumArray(hourValues));
+        json.append("\"hourValues\":").append(jsonNumArray(hourValues)).append(",");
+
+        // 5b) Doanh thu theo khung giờ — CHỈ RIÊNG HÔM NAY (ngày thực tế hiện tại, không phụ
+        // thuộc tháng/năm đang xem trên bộ lọc) — phục vụ nút chuyển "Hôm nay" trên biểu đồ.
+        LocalDate today = LocalDate.now();
+        TreeMap<Integer, BigDecimal> hourlyToday = loadRevenueByHour(today, today);
+        List<BigDecimal> hourTodayValues = new ArrayList<>();
+        for (Map.Entry<Integer, BigDecimal> e : hourlyToday.entrySet()) {
+            hourTodayValues.add(e.getValue());
+        }
+        json.append("\"hourTodayValues\":").append(jsonNumArray(hourTodayValues));
 
         json.append("}");
 

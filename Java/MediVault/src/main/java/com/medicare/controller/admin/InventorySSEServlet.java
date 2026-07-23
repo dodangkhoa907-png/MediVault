@@ -40,8 +40,14 @@ public class InventorySSEServlet extends HttpServlet {
             t.setDaemon(true);
             return t;
         });
-        // Heartbeat comment every 25s — keeps connections alive through proxies & firewalls
-        scheduler.scheduleAtFixedRate(InventorySSEServlet::sendHeartbeat, 25, 25, TimeUnit.SECONDS);
+        // Heartbeat mỗi 8s — vẫn dưới ngưỡng kill của proxy/firewall (thường 30-60s), nhưng
+        // quan trọng hơn: đây là cách DUY NHẤT server phát hiện client đã rớt kết nối (AsyncContext
+        // không có timeout — setTimeout(0)). Trước đây 25s: 1 EventSource "zombie" (client đã đóng
+        // nhưng server chưa biết) có thể tồn tại tới 25s, chiếm 1/6 connection-per-origin của browser
+        // (giới hạn HTTP/1.1) → mọi request khác cùng origin (kể cả điều hướng sang trang khác) phải
+        // XẾP HÀNG chờ tới khi zombie bị dọn — đây là nguyên nhân chính gây lag 10-30s khi chuyển
+        // trang từ medicine-list.jsp (nơi duy nhất mở EventSource này) sang trang khác.
+        scheduler.scheduleAtFixedRate(InventorySSEServlet::sendHeartbeat, 8, 8, TimeUnit.SECONDS);
     }
 
     @Override
@@ -89,6 +95,15 @@ public class InventorySSEServlet extends HttpServlet {
     public static void broadcast() {
         if (clients.isEmpty()) return;
         try {
+            // BẮT BUỘC invalidate cache trước — buildStatsJson()/buildStockMapJson() giờ đọc
+            // qua CacheManager (cache 30s, dùng chung với MedicineServlet để tránh query trùng
+            // lúc load trang). Nếu không xóa cache ở đây, sau khi bán hàng có thể vẫn đẩy số
+            // liệu CŨ (trong vòng 30s trước đó) thay vì tồn kho vừa trừ xong.
+            com.medicare.config.CacheManager.invalidate("med.batchSummary");
+            com.medicare.config.CacheManager.invalidate("med.stockMap");
+            com.medicare.config.CacheManager.invalidate("med.countAll");
+            com.medicare.config.CacheManager.invalidate("med.countLowStock");
+
             String statsJson    = buildStatsJson();
             String stockMapJson = buildStockMapJson();
             push(statsJson, stockMapJson);
@@ -141,15 +156,17 @@ public class InventorySSEServlet extends HttpServlet {
         w.write("data: "  + data + "\n\n");
     }
 
+    // Đọc CHUNG key cache 30s với MedicineServlet — trang Kho hàng vừa tự query xong các số
+    // liệu này lúc render, rồi ngay lập tức EventSource kết nối tới đây và gọi lại y hệt (2 lần
+    // liên tiếp cùng dữ liệu) nếu không dùng chung cache. Đây là nguyên nhân chính khiến vào
+    // trang Kho hàng bị "pending" rất lâu — mỗi lần vào trang chạy 2 lượt query giống hệt nhau.
     private static String buildStatsJson() {
         try {
-            Map<Integer, Integer> expiringSoonMap = new HashMap<>();
-            Map<Integer, Integer> expiredMap      = new HashMap<>();
-            batchesDAO.loadBatchSummary(new HashMap<>(), expiringSoonMap, expiredMap, new HashMap<>());
-            int total        = medicineDAO.countAll();
-            int lowStock     = medicineDAO.countLowStock();
-            int expiringSoon = (int) expiringSoonMap.values().stream().filter(v -> v > 0).count();
-            int expired      = (int) expiredMap.values().stream().filter(v -> v > 0).count();
+            com.medicare.dao.BatchesDAO.BatchSummaryBundle bsb = batchesDAO.getCachedBatchSummary();
+            int total        = com.medicare.config.CacheManager.getShort("med.countAll", medicineDAO::countAll);
+            int lowStock     = com.medicare.config.CacheManager.getShort("med.countLowStock", medicineDAO::countLowStock);
+            int expiringSoon = (int) bsb.soonCount.values().stream().filter(v -> v > 0).count();
+            int expired      = (int) bsb.expiredCount.values().stream().filter(v -> v > 0).count();
             String ts = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
             return String.format(
                 "{\"total\":%d,\"lowStock\":%d,\"expiringSoon\":%d,\"expired\":%d,\"ts\":\"%s\"}",
@@ -161,7 +178,9 @@ public class InventorySSEServlet extends HttpServlet {
 
     private static String buildStockMapJson() {
         try {
-            Map<Integer, Integer> stockMap = batchesDAO.getTotalQuantityMap();
+            // Cùng key "med.stockMap" mà MedicineServlet đã dùng — lý do tương tự ở trên.
+            Map<Integer, Integer> stockMap =
+                    com.medicare.config.CacheManager.getShort("med.stockMap", batchesDAO::getTotalQuantityMap);
             StringBuilder sb = new StringBuilder("{");
             boolean first = true;
             for (Map.Entry<Integer, Integer> entry : stockMap.entrySet()) {

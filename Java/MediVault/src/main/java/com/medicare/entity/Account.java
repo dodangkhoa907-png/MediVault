@@ -16,6 +16,9 @@ public class Account {
     private LocalDate professionalCertExp;
     private String position;
     private LocalDate trainingDate;
+    // File PDF giấy phép hành nghề (Chứng chỉ hành nghề Dược) — bằng chứng thật thay vì chỉ
+    // gõ tay số chứng chỉ. Lưu đường dẫn tương đối trong webapp, giống FaceEnrollmentPath.
+    private String licenseFilePath;
     private boolean isActive;
     private String faceEnrollmentPath;
     private String faceVector;
@@ -149,6 +152,14 @@ public class Account {
 
     public void setTrainingDate(LocalDate trainingDate) {
         this.trainingDate = trainingDate;
+    }
+
+    public String getLicenseFilePath() {
+        return licenseFilePath;
+    }
+
+    public void setLicenseFilePath(String licenseFilePath) {
+        this.licenseFilePath = licenseFilePath;
     }
 
     public boolean isActive() {

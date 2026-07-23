@@ -15,20 +15,24 @@ import com.medicare.util.AuditHelper;
 import com.medicare.util.StaffNotifHelper;
 import com.medicare.util.SidebarHelper;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Part;
 import com.medicare.util.EmailUtil;
 import com.medicare.util.OtpUtil;
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 
 
 @WebServlet("/accounts")
+@MultipartConfig(fileSizeThreshold = 1024 * 512, maxFileSize = 5 * 1024 * 1024, maxRequestSize = 8 * 1024 * 1024)
 public class AccountServlet extends HttpServlet {
 
     private final IAccountDAO      dao             = new AccountDAO();
@@ -337,12 +341,15 @@ public class AccountServlet extends HttpServlet {
             int editId = Integer.parseInt(idStr);
             a.setAccountId(editId);
 
-            // Giữ lại thông tin chuyên môn từ DB (không có trong form edit)
-            if (current != null) {
-                if (current.getProfessionalCertNo()  != null) a.setProfessionalCertNo(current.getProfessionalCertNo());
-                if (current.getProfessionalCertExp() != null) a.setProfessionalCertExp(current.getProfessionalCertExp());
-                if (current.getTrainingDate()        != null) a.setTrainingDate(current.getTrainingDate());
-            }
+            // Thông tin chuyên môn (chỉ hiện trên form cho Dược sĩ) — áp dụng giá trị mới nếu
+            // có gửi lên, nếu không (vd. role Thủ kho không có phần này trên form) thì giữ
+            // nguyên giá trị cũ trong DB thay vì xóa mất.
+            a.setProfessionalCertNo(ValidationUtil.notBlank(certNo) ? certNo.trim()
+                    : (current != null ? current.getProfessionalCertNo() : null));
+            a.setProfessionalCertExp(parseDateOrKeep(certExpStr,
+                    current != null ? current.getProfessionalCertExp() : null));
+            a.setTrainingDate(parseDateOrKeep(trainingStr,
+                    current != null ? current.getTrainingDate() : null));
 
             // ── Admin có muốn đổi MK không? ────────────────────────────────────
             // JS gửi hidden field "confirmWord" = "update" (viết thường chính xác)
@@ -412,13 +419,24 @@ public class AccountServlet extends HttpServlet {
             }
 
             // ── Luồng thông tin thường (không đổi MK) ──────────────────────────
+            boolean certChanged = current != null && (
+                    !eq(a.getProfessionalCertNo(), current.getProfessionalCertNo())
+                    || !java.util.Objects.equals(a.getProfessionalCertExp(), current.getProfessionalCertExp())
+                    || !java.util.Objects.equals(a.getTrainingDate(), current.getTrainingDate()));
+
+            Part licensePart = null;
+            try { licensePart = req.getPart("licenseFile"); } catch (Exception ignored) {}
+            boolean hasLicenseFile = licensePart != null && licensePart.getSize() > 0;
+
             boolean nothingChanged = current != null
                     && eq(fullName,   current.getFullName())
                     && eq(email,      current.getEmail())
                     && eq(phone,      current.getPhone())
                     && eq(citizenId,  current.getCitizenId())
                     && eq(position,   current.getPosition())
-                    && a.getRoleId() == current.getRoleId();
+                    && a.getRoleId() == current.getRoleId()
+                    && !certChanged
+                    && !hasLicenseFile;
 
             if (nothingChanged) {
                 resp.sendRedirect(req.getContextPath() + "/accounts?msg=nochange");
@@ -446,6 +464,17 @@ public class AccountServlet extends HttpServlet {
                 req.getRequestDispatcher("/WEB-INF/views/admin/account-form.jsp").forward(req, resp);
                 return;
             }
+            // Lưu file PDF giấy phép hành nghề nếu admin có upload — bằng chứng thật thay vì
+            // chỉ gõ tay số chứng chỉ ở trên.
+            if (hasLicenseFile) {
+                String licensePath = saveLicenseFile(licensePart, editId);
+                if (licensePath != null) {
+                    dao.updateLicenseFilePath(editId, licensePath);
+                    AuditHelper.log(req, "Cập nhật giấy phép hành nghề", "Account",
+                            "Upload file PDF giấy phép cho @" + (current != null ? current.getUsername() : editId));
+                }
+            }
+
             AuditHelper.log(req, "Cập nhật tài khoản", "Account",
                     "Cập nhật thông tin @" + (current != null ? current.getUsername() : editId));
             resp.sendRedirect(req.getContextPath() + "/accounts?msg=updated");
@@ -458,6 +487,33 @@ public class AccountServlet extends HttpServlet {
         String a = formVal != null ? formVal.trim() : "";
         String b = dbVal   != null ? dbVal.trim()   : "";
         return a.equals(b);
+    }
+
+    /** Parse "yyyy-MM-dd" từ input type=date; rỗng/không hợp lệ → giữ nguyên giá trị cũ. */
+    private static java.time.LocalDate parseDateOrKeep(String s, java.time.LocalDate keep) {
+        if (s == null || s.isBlank()) return keep;
+        try { return java.time.LocalDate.parse(s.trim()); }
+        catch (Exception e) { return keep; }
+    }
+
+    // ── Lưu file PDF giấy phép hành nghề — giống saveImage() bên MedicineServlet ──────────
+    private String saveLicenseFile(Part filePart, int accountId) {
+        try {
+            if (filePart == null || filePart.getSize() == 0) return null;
+            String ct = filePart.getContentType();
+            if (ct == null || !ct.equals("application/pdf")) return null;
+
+            String uploadDir = getServletContext().getRealPath("/uploads/licenses");
+            File dir = new File(uploadDir);
+            if (!dir.exists()) dir.mkdirs();
+
+            String filename = accountId + ".pdf";
+            filePart.write(uploadDir + File.separator + filename);
+            return "uploads/licenses/" + filename;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     // ── AJAX: Gửi OTP xác nhận đổi email/phone ──────────────────────
