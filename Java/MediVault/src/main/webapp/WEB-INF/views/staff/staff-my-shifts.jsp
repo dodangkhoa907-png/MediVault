@@ -13,6 +13,9 @@
         staffAcc = (com.medicare.entity.Account) session.getAttribute("staffAccount_" + uid);
     if (staffAcc == null) { response.sendRedirect(request.getContextPath() + "/staff-login"); return; }
     if (staffAcc.getRoleId() == 1) { response.sendRedirect(request.getContextPath() + "/dashboard"); return; }
+    // roleId 3 (Thủ kho) có portal riêng — "Trang chủ"/"Dashboard" phải đưa đúng về
+    // /warehouse-dashboard, không phải /staff-dashboard, để không lạc sang portal khác.
+    String sHomeUrl = staffAcc.getRoleId() == 3 ? "/warehouse-dashboard" : "/staff-dashboard";
 
     java.lang.String dn      = staffAcc.getFullName() != null ? staffAcc.getFullName() : staffAcc.getUsername();
     java.lang.String initials = dn.length() >= 2
@@ -183,7 +186,7 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
   </div>
   <nav class="nav-block">
     <div class="nav-label">Tổng quan</div>
-    <a href="<%= request.getContextPath() %>/staff-dashboard?uid=<%= uid %>" class="nav-item">
+    <a href="<%= request.getContextPath() %><%= sHomeUrl %>?uid=<%= uid %>" class="nav-item">
       <span class="nav-icon">🏠</span> Trang chủ
     </a>
   </nav>
@@ -226,7 +229,7 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
   <header class="topbar">
     <span class="topbar-title">📅 Ca làm việc của tôi</span>
     <div class="topbar-right">
-      <a href="<%= request.getContextPath() %>/staff-dashboard?uid=<%= uid %>" class="back-btn">← Dashboard</a>
+      <a href="<%= request.getContextPath() %><%= sHomeUrl %>?uid=<%= uid %>" class="back-btn">← Dashboard</a>
     </div>
   </header>
 

@@ -4,10 +4,12 @@ import com.medicare.dao.AttendanceDAO;
 import com.medicare.dao.LeaveRequestDAO;
 import com.medicare.dao.BatchesDAO;
 import com.medicare.dao.PasswordResetDAO;
+import com.medicare.dao.TaskDAO;
 import com.medicare.dao.interfaces.IAttendanceDAO;
 import com.medicare.dao.interfaces.ILeaveRequestDAO;
 import com.medicare.dao.interfaces.IBatchesDAO;
 import com.medicare.dao.interfaces.IPasswordResetDAO;
+import com.medicare.dao.interfaces.ITaskDAO;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
@@ -20,6 +22,7 @@ import jakarta.servlet.http.HttpServletRequest;
  *   pendingLateCount   — điểm danh trễ chờ duyệt (LATE_UNEXCUSED)
  *   pendingResetCount  — yêu cầu reset mật khẩu chờ duyệt
  *   expiryCount        — thuốc sắp hết hạn
+ *   taskWatchdogCount  — task/dự án Thủ kho sắp/đã quá hạn báo xong (≤48h)
  */
 public class SidebarHelper {
 
@@ -27,6 +30,7 @@ public class SidebarHelper {
     private static final IAttendanceDAO   attDAO     = new AttendanceDAO();
     private static final IBatchesDAO      batchDAO   = new BatchesDAO();
     private static final IPasswordResetDAO resetDAO  = new PasswordResetDAO();
+    private static final ITaskDAO         taskDAO    = new TaskDAO();
 
     public static void load(HttpServletRequest req) {
         // Mỗi badge được wrap riêng — 1 bảng chưa tạo không crash cả sidebar.
@@ -75,6 +79,18 @@ public class SidebarHelper {
                 // Bảng PasswordResetRequests chưa tạo → set 0, không crash
                 req.setAttribute("pendingResetCount", 0);
                 System.err.println("[SidebarHelper] pendingReset (table missing?): " + e.getMessage());
+            }
+        }
+
+        if (req.getAttribute("taskWatchdogCount") == null) {
+            try {
+                req.setAttribute("taskWatchdogCount",
+                        com.medicare.config.CacheManager.getShort("sidebar.taskWatchdog",
+                                () -> taskDAO.findWatchdog().size()));
+            } catch (Exception e) {
+                // Cột IsProject/ParentTaskID/... chưa migrate → set 0, không crash
+                req.setAttribute("taskWatchdogCount", 0);
+                System.err.println("[SidebarHelper] taskWatchdog (chưa chạy tasks_projects_migration.sql?): " + e.getMessage());
             }
         }
     }

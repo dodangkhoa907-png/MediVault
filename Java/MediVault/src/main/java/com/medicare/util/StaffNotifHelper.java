@@ -72,4 +72,19 @@ public class StaffNotifHelper {
     public static void general(int accountId, String title, String message) {
         dao.insert(accountId, "GENERAL", title, message);
     }
+
+    /**
+     * Nhắc hạn chót Task/Dự án — gọi khi 1 task chuyển sang vùng WARNING (24-48h)
+     * hoặc CRITICAL/OVERDUE (mục II.2 tài liệu "Giao Task & Tiến độ kho").
+     * @param zone WARNING | CRITICAL | OVERDUE (xem Task.getZone())
+     */
+    public static void taskDeadlineWarning(int accountId, String taskTitle, String zone) {
+        String title = switch (zone) {
+            case "OVERDUE"  -> "🚨 Task đã quá hạn báo xong";
+            case "CRITICAL" -> "🔴 Task sắp tới hạn (còn dưới 24h)";
+            default          -> "🟡 Task cần báo xong trước ngày mai";
+        };
+        dao.insert(accountId, "TASK_DEADLINE", title,
+                "\"" + taskTitle + "\" — hãy vào mục Nhiệm vụ & SOP để xử lý/báo hoàn thành.");
+    }
 }

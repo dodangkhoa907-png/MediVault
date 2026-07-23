@@ -117,6 +117,8 @@ public class AuthFilter implements Filter {
         // ── 1. Public URLs — không cần đăng nhập ──
         boolean isPublic = uri.equals(ctx + "/login")
                 || uri.equals(ctx + "/staff-login")
+                || uri.equals(ctx + "/warehouse-login")
+                || uri.equals(ctx + "/warehouse-forgot-password")
                 || uri.startsWith(ctx + "/assets")
                 || uri.startsWith(ctx + "/css")
                 || uri.startsWith(ctx + "/js")
@@ -218,7 +220,12 @@ public class AuthFilter implements Filter {
             if (adminAcc != null) {
                 resp.sendRedirect(ctx + "/dashboard");      // đã login admin → vào dashboard
             } else if (staffAcc != null) {
-                resp.sendRedirect(ctx + "/staff-dashboard?uid=" + staffAcc.getAccountId());
+                // roleId 3 (Thủ kho) → portal Quản lý kho; roleId 2 (Dược sĩ bán hàng) → portal nhân viên
+                if (staffAcc.getRoleId() == 3) {
+                    resp.sendRedirect(ctx + "/warehouse-dashboard?uid=" + staffAcc.getAccountId());
+                } else {
+                    resp.sendRedirect(ctx + "/staff-dashboard?uid=" + staffAcc.getAccountId());
+                }
             } else {
                 resp.sendRedirect(ctx + "/login");           // chưa login → về login
             }
@@ -292,6 +299,23 @@ public class AuthFilter implements Filter {
             }
             if (adminAcc.getRoleId() != 1) {
                 resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Không có quyền!");
+                return;
+            }
+            chain.doFilter(request, response);
+            return;
+        }
+
+        // ── 7b. Trang chỉ dành cho Quản lý kho (roleId 3 = Thủ kho) ──
+        if (uri.startsWith(ctx + "/warehouse-dashboard")
+                || uri.startsWith(ctx + "/warehouse-profile")
+                || uri.startsWith(ctx + "/warehouse-inventory")
+                || uri.startsWith(ctx + "/warehouse-reorder")
+                || uri.startsWith(ctx + "/warehouse-stock-movement")
+                || uri.startsWith(ctx + "/warehouse-recall")
+                || uri.startsWith(ctx + "/warehouse-task")
+                || uri.startsWith(ctx + "/warehouse-import")) {
+            if (staffAcc == null || staffAcc.getRoleId() != 3) {
+                resp.sendRedirect(ctx + "/warehouse-login");
                 return;
             }
             chain.doFilter(request, response);

@@ -28,12 +28,16 @@ public class LogoutServlet extends HttpServlet {
 
         if (session != null) {
 
-            // ── STAFF logout: chỉ xóa staffAccount của uid này, KHÔNG đụng admin ──
-            if ("staff".equals(from) || staffUid != null) {
+            // ── STAFF/WAREHOUSE logout: chỉ xóa staffAccount của uid này, KHÔNG đụng admin ──
+            // Cả 2 role dùng chung session "staffAccount_<uid>", nên xác định đúng trang đăng
+            // nhập để quay lại phải dựa vào roleId THẬT của tài khoản, KHÔNG dựa vào tham số
+            // "from" (dễ bị JSP gọi sai/hardcode nhầm, như warehouse-sidebar.jsp trước đây).
+            if ("staff".equals(from) || "warehouse".equals(from) || staffUid != null) {
                 redirectUrl = "/staff-login";
                 if (staffUid != null && !staffUid.isEmpty()) {
                     Account staffAcc = (Account) session.getAttribute("staffAccount_" + staffUid);
                     if (staffAcc != null) {
+                        if (staffAcc.getRoleId() == 3) redirectUrl = "/warehouse-login";
                         AuditHelper.log(req, "Đăng xuất", "Auth",
                                 "Staff @" + staffAcc.getUsername() + " đăng xuất",
                                 staffAcc.getAccountId());
