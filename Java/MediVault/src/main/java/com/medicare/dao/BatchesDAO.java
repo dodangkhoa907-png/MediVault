@@ -99,7 +99,7 @@ public class BatchesDAO implements IBatchesDAO {
 
     public List<Batches> findExpiringSoon() {
         List<Batches> list = new ArrayList<>();
-        String sql = "SELECT * FROM Batches WHERE ExpiryDate <= DATEADD(day, 30, GETDATE()) AND CurrentQuantity > 0 AND Status = 'ACTIVE' ORDER BY ExpiryDate ASC";
+        String sql = "SELECT * FROM Batches WHERE ExpiryDate >= CAST(GETDATE() AS DATE) AND ExpiryDate <= DATEADD(day, 30, GETDATE()) AND CurrentQuantity > 0 AND Status = 'ACTIVE' ORDER BY ExpiryDate ASC";
         try (Connection cn = DBContext.getConnection();
                 PreparedStatement ps = cn.prepareStatement(sql);
                 ResultSet rs = ps.executeQuery()) {

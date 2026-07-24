@@ -104,13 +104,20 @@ public class TaskManagementServlet extends HttpServlet {
         if (title.length() > 255) title = title.substring(0, 255);
 
         String description = req.getParameter("description");
-        if (description != null && description.length() > 1000) description = description.substring(0, 1000);
+        if (description == null || description.isBlank()) return "Mô tả không được để trống — ghi rõ yêu cầu cho Thủ kho.";
+        description = description.trim();
+        if (description.length() > 1000) description = description.substring(0, 1000);
 
         String priority = req.getParameter("priority");
         if (!"HIGH".equals(priority) && !"MEDIUM".equals(priority) && !"LOW".equals(priority)) priority = "MEDIUM";
 
         Integer assignedTo = parseIntOrNull(req.getParameter("assignedTo"));
-        LocalDateTime dueDate = parseDateTimeOrNull(req.getParameter("dueDate"));
+
+        String dueDateRaw = req.getParameter("dueDate");
+        if (dueDateRaw == null || dueDateRaw.isBlank()) return "Hạn báo xong trước không được để trống.";
+        LocalDateTime dueDate = parseDateTimeOrNull(dueDateRaw);
+        if (dueDate == null) return "Hạn báo xong trước không hợp lệ.";
+        if (dueDate.isBefore(LocalDateTime.now())) return "Hạn báo xong trước phải là một thời điểm trong TƯƠNG LAI, không thể chọn ngày/giờ đã qua.";
 
         int taskId = taskDAO.insertManualTask(title, description, priority, assignedTo, admin.getAccountId(), dueDate);
         if (taskId > 0) {
@@ -127,21 +134,41 @@ public class TaskManagementServlet extends HttpServlet {
         if (title.length() > 255) title = title.substring(0, 255);
 
         String description = req.getParameter("description");
-        if (description != null && description.length() > 1000) description = description.substring(0, 1000);
+        if (description == null || description.isBlank()) return "Mô tả không được để trống — ghi rõ bối cảnh/mục tiêu chiến dịch.";
+        description = description.trim();
+        if (description.length() > 1000) description = description.substring(0, 1000);
 
         String priority = req.getParameter("priority");
         if (!"HIGH".equals(priority) && !"MEDIUM".equals(priority) && !"LOW".equals(priority)) priority = "MEDIUM";
 
         Integer assignedTo = parseIntOrNull(req.getParameter("assignedTo"));
         if (assignedTo == null) return "Dự án dài hạn bắt buộc phải giao cho 1 Thủ kho cụ thể.";
-        LocalDateTime dueDate = parseDateTimeOrNull(req.getParameter("dueDate"));
+
+        String dueDateRaw = req.getParameter("dueDate");
+        if (dueDateRaw == null || dueDateRaw.isBlank()) return "Hạn báo cáo tổng không được để trống.";
+        LocalDateTime dueDate = parseDateTimeOrNull(dueDateRaw);
+        if (dueDate == null) return "Hạn báo cáo tổng không hợp lệ.";
+        if (dueDate.isBefore(LocalDateTime.now())) return "Hạn báo cáo tổng phải là một thời điểm trong TƯƠNG LAI, không thể chọn ngày/giờ đã qua.";
+
+        // Mốc con (milestones) — validate TRƯỚC KHI tạo Dự án, tránh tạo dở dang nếu 1 mốc sai
+        String[] mTitles = req.getParameterValues("milestoneTitle");
+        String[] mDueDates = req.getParameterValues("milestoneDueDate");
+        if (mTitles != null) {
+            for (int i = 0; i < mTitles.length; i++) {
+                if (mTitles[i] == null || mTitles[i].isBlank()) continue;
+                String mDueRaw = (mDueDates != null && i < mDueDates.length) ? mDueDates[i] : null;
+                if (mDueRaw != null && !mDueRaw.isBlank()) {
+                    LocalDateTime mDue = parseDateTimeOrNull(mDueRaw);
+                    if (mDue == null) return "Hạn mốc \"" + mTitles[i].trim() + "\" không hợp lệ.";
+                    if (mDue.isBefore(LocalDateTime.now()))
+                        return "Hạn mốc \"" + mTitles[i].trim() + "\" phải ở tương lai, không thể chọn ngày/giờ đã qua.";
+                }
+            }
+        }
 
         int projectId = taskDAO.insertProject(title, description, priority, assignedTo, admin.getAccountId(), dueDate);
         if (projectId <= 0) return "Không thể tạo Dự án, vui lòng thử lại.";
 
-        // Mốc con (milestones) — 2 mảng song song milestoneTitle[]/milestoneDueDate[]
-        String[] mTitles = req.getParameterValues("milestoneTitle");
-        String[] mDueDates = req.getParameterValues("milestoneDueDate");
         int created = 0;
         if (mTitles != null) {
             for (int i = 0; i < mTitles.length; i++) {

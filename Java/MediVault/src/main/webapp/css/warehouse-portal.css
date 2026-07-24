@@ -1,22 +1,20 @@
 /* ============================================================
    warehouse-portal.css — Chrome dùng chung cho portal Quản lý kho.
    Load SAU staff-portal.css (kế thừa .sidebar / .nav-* / .main / .sidebar-footer).
-   Tông "Indigo / Deep Cobalt" — điểm giao giữa Xanh Da Trời (Admin) và Tím (Staff),
-   thể hiện Quản lý kho là cầu nối vận hành giữa 2 role. Glass effect (backdrop-blur)
-   dùng cho topbar + card để tạo chiều sâu, không phẳng.
+   Tông "Medical Teal" — lạnh, điềm tĩnh, không mang ngữ nghĩa "cảnh báo" như đỏ/cam,
+   khác Admin (xanh dương) và Staff (tím) đủ rõ. Teal CHỈ làm điểm nhấn (sidebar/nút/
+   focus/icon-box/tiêu đề); nền/card/input giữ TRUNG TÍNH để có tương phản — tránh lặp
+   lại lỗi "tông xuyệt tông" của các bản indigo/ruby/terracotta cũ.
    ============================================================ */
 :root{
   --sidebar:228px;
-  --ink:#1E1B3A; --deep:#3730A3; --main:#4338CA; --light:#6366F1; --accent:#6366F1;
-  /* Indigo CHỈ dùng làm điểm nhấn (sidebar/nút/focus/tiêu đề) — nền, card, input
-     giữ TRUNG TÍNH để có tương phản, tránh "tông xuyệt tông" phủ tím toàn trang. */
-  --soft:#E0E7FF;                        /* nền icon-box indigo nhạt (điểm nhấn nhỏ) */
-  --surface:#F4F5F8;                     /* nền phụ trung tính: thead, hover, chip */
-  --bg:#F6F7FB; --white:#fff; --muted:#6E6D85;
-  --border:#E6E7EF; --line:#EEF0F5; --jade:#0F766E;
+  --ink:#1C2B29; --deep:#115E59; --main:#0F766E; --light:#14B8A6; --accent:#14B8A6;
+  --soft:#CCFBF1;                        /* nền icon-box teal nhạt (điểm nhấn nhỏ) */
+  --surface:#F1F4F3;                     /* nền phụ trung tính: thead, hover, chip */
+  --bg:#F6F8F8; --white:#fff; --muted:#69756F;
+  --border:#E2E7E5; --line:#EAEFED; --jade:#64748B; /* "jade" cũ trùng brand -> đổi thành xám trung tính cho tier nhẹ nhất */
   --gold:#B45309; --goldbg:#FEF3C7;
-  /* Danger/Ok là màu NGHIỆP VỤ (cảnh báo/thành công) — độc lập với brand indigo,
-     không dùng chung hex với --main nữa (bản ruby cũ lỡ trùng vì ruby=đỏ=danger). */
+  /* Danger/Ok là màu NGHIỆP VỤ — GIỮ NGUYÊN như Admin/Staff để nhất quán ý nghĩa. */
   --danger:#DC2626; --dangerbg:#FEE2E2;
   --ok:#059669; --okbg:#D1FAE5;
 }
@@ -25,23 +23,23 @@
 body.wh{
   margin:0; font-family:'Plus Jakarta Sans',system-ui,sans-serif;
   color:var(--ink); display:flex; min-height:100vh;
-  background:var(--bg);   /* nền trung tính phẳng — sidebar là điểm indigo duy nhất */
+  background:var(--bg);   /* nền trung tính phẳng — sidebar là điểm teal duy nhất */
 }
 
-/* Sidebar: khung/nav từ staff-portal.css, tông Indigo + lớp phủ glass mờ tạo chiều sâu */
+/* Sidebar: khung/nav từ staff-portal.css, tông Teal (rêu đậm → teal sáng) */
 .wh .sidebar{
   background:
     linear-gradient(180deg, rgba(255,255,255,.06) 0%, transparent 30%),
-    linear-gradient(175deg,#1E1B4B 0%,#3730A3 45%,#4F46E5 100%);
+    linear-gradient(175deg,#042F2E 0%,#115E59 45%,#0F766E 100%);
   box-shadow: inset -1px 0 0 rgba(255,255,255,.06);
 }
-.wh .logo-gem{background:linear-gradient(135deg,#818CF8,var(--main));box-shadow:0 4px 16px rgba(67,56,202,.4)}
-.wh .nav-item.active{background:rgba(99,102,241,.18)}
-.wh .nav-item.active::before{background:#A5B4FC}
+.wh .logo-gem{background:linear-gradient(135deg,#2DD4BF,var(--main));box-shadow:0 4px 16px rgba(15,118,110,.4)}
+.wh .nav-item.active{background:rgba(20,184,166,.20)}
+.wh .nav-item.active::before{background:#5EEAD4}
 .wh .nav-item.active .nav-icon{opacity:1}
 
-/* Nút Đăng xuất — đỏ mặc định của staff-portal.css tương phản tốt trên nền Indigo lạnh
-   (đỏ ấm vs. xanh chàm lạnh), không cần override riêng như bản ruby cũ (đỏ-trên-đỏ). */
+/* Nút Đăng xuất — GIỮ đỏ mặc định của staff-portal.css: teal (lạnh) + đỏ (nóng) tương
+   phản rõ, không cần override như 2 bản trước (ruby đỏ-trên-đỏ, terracotta ấm-trên-ấm). */
 
 /* Topbar — nền trắng nổi nhẹ trên nội dung cuộn (glass mờ, viền trung tính) */
 .wh-topbar{
@@ -59,7 +57,7 @@ body.wh{
 .wh-clock .sep{animation:whblink 1s step-end infinite}
 @keyframes whblink{50%{opacity:.25}}
 .wh-clock .date{font-size:11px;font-weight:750;color:var(--muted);border-left:1px solid var(--border);padding-left:8px;margin-left:2px}
-.wh-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#818CF8,var(--main));
+.wh-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#2DD4BF,var(--main));
   color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;
   text-decoration:none;transition:.15s}
 .wh-av:hover{transform:scale(1.05)}
@@ -68,17 +66,14 @@ body.wh{
 .wh-content{padding:28px 32px}
 @media(max-width:640px){.wh-content{padding:18px}}
 
-/* ── Card chuẩn: nền TRẮNG đặc + viền trung tính + shadow mềm để nổi trên nền xám nhạt
-   (không dùng translucent/tinted nữa — trên nền phẳng sẽ mất tương phản, đục màu). ── */
+/* ── Card chuẩn: nền TRẮNG đặc + viền trung tính + shadow mềm ── */
 .wh-glass{
   background:#fff;
-  border:1px solid #E7E8F1;
-  box-shadow:0 1px 2px rgba(30,27,75,.04), 0 12px 30px -18px rgba(30,27,75,.14);
+  border:1px solid #E4E9E7;
+  box-shadow:0 1px 2px rgba(4,47,46,.04), 0 12px 30px -18px rgba(4,47,46,.14);
 }
 
-/* ── Icon-box chuẩn cho card-head (thay 3 kiểu icon khác nhau đang trộn lẫn
-   giữa các trang: emoji trần trong h2 / span.ic không khung / div có khung —
-   giờ CHỈ dùng 1 kiểu này, đồng bộ với .stat .ic / .action .aic đã có ở dashboard) ── */
+/* ── Icon-box chuẩn cho card-head ── */
 .wh-ic{
   width:32px;height:32px;border-radius:9px;flex:none;
   display:flex;align-items:center;justify-content:center;font-size:15px;
@@ -87,20 +82,19 @@ body.wh{
 .wh-ic.warn{background:var(--goldbg);color:var(--gold)}
 .wh-ic.danger{background:var(--dangerbg);color:var(--danger)}
 .wh-ic.ok{background:var(--okbg);color:var(--ok)}
-.wh-ic.jade{background:#CCFBF1;color:var(--jade)}
+.wh-ic.jade{background:#F1F5F9;color:var(--jade)}
 
-/* ── Icon bên trong ô input/select — quy ước sẵn có của toàn hệ thống
-   (staff-login.jsp/forgot-password.jsp), áp dụng cho form portal Kho ── */
+/* ── Icon bên trong ô input/select ── */
 .wh-field{position:relative}
 .wh-field .wh-field-ic{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;opacity:.55;pointer-events:none}
 .wh-field input,.wh-field select{padding-left:38px !important}
 
-/* ── Trạng thái focus rõ ràng cho bàn phím (Tab) — áp dụng cho toàn portal Kho ── */
+/* ── Trạng thái focus rõ ràng cho bàn phím (Tab) ── */
 .wh a:focus-visible,.wh button:focus-visible,
 .wh input:focus-visible,.wh select:focus-visible,.wh textarea:focus-visible{
   outline:2.5px solid var(--main);outline-offset:2px;
 }
-.wh .nav-item:focus-visible{outline:2px solid #A5B4FC;outline-offset:-2px}
+.wh .nav-item:focus-visible{outline:2px solid #5EEAD4;outline-offset:-2px}
 
 /* ── Tôn trọng prefers-reduced-motion ── */
 @media (prefers-reduced-motion: reduce){

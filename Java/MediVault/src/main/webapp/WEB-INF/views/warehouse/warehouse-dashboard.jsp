@@ -30,21 +30,21 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<%= ctx %>/css/staff-portal.css">
-<link rel="stylesheet" href="<%= ctx %>/css/warehouse-portal.css?v=3">
+<link rel="stylesheet" href="<%= ctx %>/css/warehouse-portal.css?v=5">
 <style>
 /* CSS riêng cho trang chủ Kho (chrome dùng chung ở warehouse-portal.css) */
 
-/* ── Banner chào hỏi — mượn từ staff-dashboard.jsp, tông Indigo/Deep Cobalt ── */
+/* ── Banner chào hỏi ── */
 .welcome{
-  border-radius:20px;padding:28px 32px;margin-bottom:22px;
-  background:linear-gradient(140deg,#1E1B4B 0%,#3730A3 55%,#4338CA 100%);
+  border-radius:20px;padding:28px 32px;margin-bottom:20px;
+  background:linear-gradient(140deg,#042F2E 0%,#115E59 55%,#0F766E 100%);
   display:flex;align-items:center;gap:20px;color:#fff;
   position:relative;overflow:hidden;
 }
 .welcome::before{content:'';position:absolute;top:-60px;right:-40px;width:240px;height:240px;
-  border-radius:50%;background:rgba(129,140,248,.14);pointer-events:none}
+  border-radius:50%;background:rgba(45,212,191,.14);pointer-events:none}
 .welcome::after{content:'';position:absolute;bottom:-80px;right:100px;width:180px;height:180px;
-  border-radius:50%;background:rgba(99,102,241,.18);pointer-events:none}
+  border-radius:50%;background:rgba(20,184,166,.18);pointer-events:none}
 .welcome-av{width:58px;height:58px;border-radius:16px;flex-shrink:0;
   background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.25);
   display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff}
@@ -56,72 +56,68 @@
 .wrb-icon{font-size:22px;display:block;margin-bottom:5px}
 .wrb-text{font-size:12px;font-weight:750;color:rgba(255,255,255,.85)}
 
-/* ── Lịch làm việc tuần này — mượn từ staff-dashboard.jsp ── */
-.wk-panel{background:var(--white);border:1px solid var(--border);border-radius:18px;margin-bottom:22px;overflow:hidden}
-.wk-panel-head{background:linear-gradient(135deg,#3730A3 0%,#4338CA 100%);padding:13px 20px;
-  display:flex;align-items:center;justify-content:space-between}
-.wk-panel-title{font-size:14.5px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px}
-.wk-panel-meta{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.wk-panel-range{font-size:11.5px;color:rgba(255,255,255,.65);font-weight:750}
-.wk-panel-count{font-size:11px;font-weight:750;background:rgba(255,255,255,.18);color:#fff;padding:2px 10px;border-radius:20px}
-.wk-cols{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--border)}
-.wk-col{border-right:1px solid #EDEDFA;padding:10px 7px 12px;min-height:110px;position:relative}
-.wk-col:last-child{border-right:none}
-.wk-col-head{text-align:center;margin-bottom:9px}
-.wk-col-dayname{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#9694B5;margin-bottom:4px}
-.wk-col-num{font-size:24px;font-weight:800;color:var(--ink);line-height:1}
-.wk-col.wk-today{background:linear-gradient(180deg,var(--surface) 0%,#F8F8FF 100%)}
-.wk-col.wk-today .wk-col-dayname{color:var(--main)}
-.wk-col.wk-today .wk-col-num{color:var(--main)}
-.wk-today-dot{display:inline-block;width:5px;height:5px;background:var(--main);border-radius:50%;margin-left:3px;vertical-align:middle;margin-bottom:1px}
-.wk-col.wk-active-col{background:linear-gradient(180deg,#ECFDF5 0%,#F0FDF4 100%)}
-.wk-col.wk-active-col .wk-col-dayname{color:var(--ok)}
-.wk-col.wk-active-col .wk-col-num{color:var(--ok)}
-.wk-live{position:absolute;top:7px;right:5px;font-size:8.5px;font-weight:750;background:var(--ok);color:#fff;padding:1px 6px;border-radius:8px;letter-spacing:.2px}
-.wk-chip{background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:6px 7px;margin-bottom:5px}
-.wk-today .wk-chip{border-color:#C7D2FE;background:#FAFAFF}
-.wk-active-col .wk-chip{border-color:#A7F3D0;background:#F0FDF9}
-.wk-chip-name{font-size:10.5px;font-weight:750;color:var(--deep);line-height:1.3;margin-bottom:3px}
-.wk-active-col .wk-chip-name{color:#065F46}
-.wk-chip-time{font-size:10px;color:#64748B;margin-bottom:4px;line-height:1.3}
-.wk-chip-pos{display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:800;color:#fff;background:var(--main);padding:2px 7px;border-radius:5px;white-space:nowrap}
-.wk-active-col .wk-chip-pos{background:var(--ok)}
-.wk-no-shift{text-align:center;padding-top:18px;color:#D1D5DB;font-size:20px}
+/* ── Widget 1: Task &amp; SLA Deadline ── */
+.sla-card{border-radius:16px;padding:16px 20px;margin-bottom:14px;background:#FFFBEB;border:1px solid #FDE68A}
+.sla-head{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.sla-head .ic{font-size:17px}
+.sla-head strong{font-size:13.5px;color:#92400E}
+.sla-list{display:flex;flex-direction:column;gap:8px}
+.sla-item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;
+  border:1px solid #FDE68A;border-radius:10px;padding:9px 13px}
+.sla-item .si-title{font-size:12.5px;font-weight:700;color:var(--ink)}
+.sla-item .si-due{font-size:11px;color:var(--muted);margin-top:1px}
+.sla-item .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:750;white-space:nowrap}
+.badge.danger{background:var(--dangerbg);color:var(--danger)}
+.badge.warn{background:var(--goldbg);color:var(--gold)}
+.sla-cta{display:inline-block;margin-top:10px;font-size:12.5px;font-weight:750;color:var(--main);text-decoration:none}
+.sla-cta:hover{text-decoration:underline}
 
-.hero{margin-bottom:24px}
+/* ── Widget 2: Cảnh báo thu hồi khẩn cấp ── */
+.recall-card{border-radius:16px;padding:16px 20px;margin-bottom:20px;background:#FEF2F2;border:1.5px solid #FCA5A5}
+.recall-head{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.recall-head .ic{font-size:18px}
+.recall-head strong{font-size:13.5px;color:#991B1B}
+.recall-item{font-size:12.5px;color:#7F1D1D;padding:5px 0}
+.recall-item b{font-weight:800}
+.recall-cta{display:inline-block;margin-top:6px;font-size:12.5px;font-weight:750;color:#991B1B;text-decoration:underline}
+
+.hero{margin-bottom:20px}
 .hero h1{font-size:24px;font-weight:800;letter-spacing:-.5px}
 .hero h1 span{color:var(--main)}
 .hero p{color:var(--muted);font-size:14px;margin-top:5px}
 .status-chip{display:inline-flex;align-items:center;gap:7px;margin-top:12px;padding:6px 13px;border-radius:20px;font-size:12.5px;font-weight:700}
 .status-chip.on{background:var(--okbg);color:var(--ok)}
-.status-chip.off{background:#F1F5F4;color:var(--muted)}
+.status-chip.off{background:#F3EFEB;color:var(--muted)}
 .status-chip .d{width:8px;height:8px;border-radius:50%;background:currentColor}
 
-.bottom-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:20px;align-items:start}
+/* ── Bố cục 2 cột: Chỉ số &amp; biểu đồ (60%) | Thao tác nhanh (40%) ── */
+.bottom-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:20px;align-items:start}
 @media(max-width:900px){.bottom-grid{grid-template-columns:1fr}}
-.card{background:#fff;border:1px solid #E7E8F1;border-radius:16px;box-shadow:0 1px 2px rgba(30,27,75,.04),0 12px 30px -18px rgba(30,27,75,.12)}
+.card{background:#fff;border:1px solid #E4E9E7;border-radius:16px;box-shadow:0 1px 2px rgba(4,47,46,.04),0 12px 30px -18px rgba(4,47,46,.12);margin-bottom:20px}
 .card-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
 .card-head h2{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
-.shift-body{padding:20px}
-.shift-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #EDEDFA}
-.shift-row:last-child{border-bottom:none}
-.shift-row .ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:17px;flex:none}
-.shift-row.on .ic{background:var(--okbg);color:var(--ok)}
-.shift-row.off .ic{background:var(--surface);color:var(--muted)}
-.shift-row .lbl{font-size:12px;color:var(--muted);font-weight:600}
-.shift-row .val{font-size:14px;font-weight:750;color:var(--ink)}
-.shift-cta{margin:4px 20px 20px;display:flex;gap:10px}
-.shift-cta a{flex:1;text-align:center;padding:10px;border-radius:10px;font-size:13px;font-weight:750;text-decoration:none;transition:.15s}
-.shift-cta .primary{background:linear-gradient(135deg,var(--main),var(--deep));color:#fff}
-.shift-cta .primary:hover{opacity:.92}
-.shift-cta .secondary{background:var(--surface);color:var(--deep);border:1px solid var(--border)}
-.pf-field{padding:13px 20px;border-bottom:1px solid #EDEDFA;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.chart-body{padding:16px 20px}
+.pf-field{padding:13px 20px;border-bottom:1px solid #EAEFED;display:flex;align-items:center;justify-content:space-between;gap:10px}
 .pf-field:last-child{border-bottom:none}
 .pf-label{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:650;color:var(--ink)}
 .pf-label .ic{font-size:15px}
 .pf-value{font-size:16px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
 .pf-value.warn{color:var(--gold)}
 .pf-value.danger{color:var(--danger)}
+
+/* ── Thao tác nhanh (cột phải) ── */
+.qa-list{padding:14px}
+.qa-item{display:flex;align-items:center;gap:13px;padding:13px 14px;border-radius:12px;margin-bottom:9px;
+  text-decoration:none;color:inherit;border:1px solid var(--border);background:var(--surface);transition:.15s}
+.qa-item:last-child{margin-bottom:0}
+.qa-item:hover{border-color:var(--main);background:#fff;box-shadow:0 4px 14px -6px rgba(15,118,110,.2)}
+.qa-item.primary{background:linear-gradient(135deg,var(--main),var(--deep));border-color:transparent;color:#fff}
+.qa-item.primary .qa-ic{background:rgba(255,255,255,.18);color:#fff}
+.qa-ic{width:38px;height:38px;border-radius:10px;flex:none;display:grid;place-items:center;font-size:17px;background:var(--soft);color:var(--main)}
+.qa-body{flex:1;min-width:0}
+.qa-title{font-size:13.5px;font-weight:750}
+.qa-sub{font-size:11.5px;opacity:.7;margin-top:1px}
+.qa-arrow{font-size:15px;opacity:.5;flex:none}
 </style>
 </head>
 <body class="wh">
@@ -142,7 +138,7 @@
 
   <div class="wh-content">
 
-    <!-- Welcome banner — mượn từ staff-dashboard.jsp -->
+    <!-- Welcome banner -->
     <div class="welcome">
       <div class="welcome-av"><%= initials %></div>
       <div class="welcome-body">
@@ -155,66 +151,39 @@
       </div>
     </div>
 
-    <!-- Lịch làm việc tuần này — mượn từ staff-dashboard.jsp -->
-    <div class="wk-panel">
-      <div class="wk-panel-head">
-        <div class="wk-panel-title">📅 Lịch làm việc tuần này</div>
-        <div class="wk-panel-meta">
-          <span class="wk-panel-range" id="wkRange"></span>
-          <span class="wk-panel-count" id="wkCount"></span>
+    <!-- ══ Widget 1: Task & SLA Deadline — nổi bật ngay dưới banner chào hỏi ══ -->
+    <c:if test="${not empty urgentTasks}">
+      <div class="sla-card">
+        <div class="sla-head"><span class="ic">🚨</span><strong>${urgentTasks.size()} nhiệm vụ Admin giao sắp/đã đến hạn báo xong</strong></div>
+        <div class="sla-list">
+          <c:forEach var="t" items="${urgentTasks}">
+            <div class="sla-item">
+              <div>
+                <div class="si-title">${fn:escapeXml(t.title)}</div>
+                <div class="si-due">Hạn: ${t.dueDateDisplay}</div>
+              </div>
+              <span class="badge ${t.zoneCssClass}">${t.zoneLabel}</span>
+            </div>
+          </c:forEach>
         </div>
+        <a class="sla-cta" href="<%= ctx %>/warehouse-task?uid=<%= uid %>">Xem &amp; Báo cáo ngay →</a>
       </div>
-      <div class="wk-cols" id="wkCols"></div>
-    </div>
-    <script>
-    const _wkSched=[<c:forEach var="sc" items="${upcomingSchedules}" varStatus="lp">{date:'${sc.workDate}',name:'<c:out value="${sc.shiftTypeName}"/>',start:'${not empty sc.plannedStart ? fn:substring(sc.plannedStart.toString(),11,16) : ""}',end:'${not empty sc.plannedEnd ? fn:substring(sc.plannedEnd.toString(),11,16) : ""}',pos:${sc.posStation},status:'${sc.status}'}${!lp.last?',':''}</c:forEach>];
-    (function(){
-      var cols=document.getElementById('wkCols');
-      var rangEl=document.getElementById('wkRange');
-      var cntEl=document.getElementById('wkCount');
-      if(!cols)return;
-      var dn=['CN','T2','T3','T4','T5','T6','T7'];
-      var today=new Date().toISOString().split('T')[0];
-      var base=new Date(); base.setHours(0,0,0,0);
-      var days=[];
-      for(var i=0;i<7;i++){var dd=new Date(base);dd.setDate(base.getDate()+i);days.push({key:dd.toISOString().split('T')[0],d:dd});}
-      var fmt=function(d){return d.getDate()+'/'+(d.getMonth()+1);};
-      if(rangEl)rangEl.textContent=fmt(days[0].d)+' – '+fmt(days[6].d)+'/'+days[6].d.getFullYear();
-      var byDate={};
-      _wkSched.forEach(function(s){if(!byDate[s.date])byDate[s.date]=[];byDate[s.date].push(s);});
-      var total=_wkSched.length;
-      if(cntEl)cntEl.textContent=total>0?total+' ca lịch':'Chưa có ca';
-      days.forEach(function(item){
-        var key=item.key, d=item.d;
-        var isToday=key===today;
-        var shifts=byDate[key]||[];
-        var isActive=shifts.some(function(s){return s.status==='CONFIRMED';});
-        var cls='wk-col'+(isActive?' wk-active-col':isToday?' wk-today':'');
-        var liveBadge=isActive?'<span class="wk-live">● Đang ca</span>':'';
-        var todayDot=isToday?'<span class="wk-today-dot"></span>':'';
-        var shiftsHtml='';
-        if(shifts.length){
-          shifts.forEach(function(s){
-            var posHtml=s.pos>0
-              ?'<div class="wk-chip-pos">🖥️ Quầy '+s.pos+'</div>'
-              :'<div class="wk-chip-pos" style="background:#94A3B8">Chưa có quầy</div>';
-            shiftsHtml+='<div class="wk-chip"><div class="wk-chip-name">'+s.name+'</div>'
-              +'<div class="wk-chip-time">⏰ '+s.start+(s.end?' – '+s.end:'')+'</div>'
-              +posHtml+'</div>';
-          });
-        }else{
-          shiftsHtml='<div class="wk-no-shift">—</div>';
-        }
-        cols.innerHTML+='<div class="'+cls+'">'+liveBadge
-          +'<div class="wk-col-head"><div class="wk-col-dayname">'+dn[d.getDay()]+todayDot+'</div>'
-          +'<div class="wk-col-num">'+d.getDate()+'</div></div>'+shiftsHtml+'</div>';
-      });
-    })();
-    </script>
+    </c:if>
+
+    <!-- ══ Widget 2: Cảnh báo thu hồi khẩn cấp ══ -->
+    <c:if test="${not empty activeRecalls}">
+      <div class="recall-card">
+        <div class="recall-head"><span class="ic">🚨</span><strong>CẢNH BÁO: ${activeRecalls.size()} lô đang bị khóa khẩn cấp — cần cách ly ngay!</strong></div>
+        <c:forEach var="r" items="${activeRecalls}" end="2">
+          <div class="recall-item">Lô <b>${fn:escapeXml(r.batchNumber)}</b> (${fn:escapeXml(r.medicineName)}) đang bị thu hồi.</div>
+        </c:forEach>
+        <a class="recall-cta" href="<%= ctx %>/warehouse-recall?uid=<%= uid %>">Xem chi tiết thu hồi →</a>
+      </div>
+    </c:if>
 
     <div class="hero">
       <h1>Không gian làm việc <span>Quản lý kho</span></h1>
-      <p>Nhập kho, kiểm soát tồn &amp; bán hàng — mọi thao tác kho ở đây.</p>
+      <p>Nhập kho, kiểm soát tồn &amp; xử lý nhiệm vụ — mọi thao tác kho ở đây.</p>
       <% if (working) { %>
         <span class="status-chip on"><span class="d"></span> Đang trong ca làm việc</span>
       <% } else { %>
@@ -223,47 +192,58 @@
     </div>
 
     <div class="bottom-grid">
-      <div class="card">
-        <div class="card-head"><div class="wh-ic ok">🕒</div><h2>Ca làm việc hôm nay</h2></div>
-        <div class="shift-body">
-          <div class="shift-row <%= working ? "on" : "off" %>">
-            <div class="ic"><%= working ? "✅" : "⏳" %></div>
-            <div>
-              <div class="lbl">Trạng thái điểm danh</div>
-              <div class="val"><%= working ? "Đang làm việc" : "Chưa điểm danh" %></div>
-            </div>
-          </div>
-          <div class="shift-row <%= currentShift != null ? "on" : "off" %>">
-            <div class="ic">🗓️</div>
-            <div>
-              <div class="lbl">Ca đang mở</div>
-              <div class="val"><%= currentShift != null ? "Có ca đang mở" : "Không có ca nào đang mở" %></div>
-            </div>
-          </div>
+      <!-- ══ CỘT 1 (60%): Biểu đồ Nhập-Xuất + Tổng quan tồn kho ══ -->
+      <div>
+        <div class="card">
+          <div class="card-head"><div class="wh-ic">📈</div><h2>Nhập - Xuất kho 7 ngày gần nhất</h2></div>
+          <div class="chart-body"><canvas id="stockTrendChart" height="90"></canvas></div>
         </div>
-        <div class="shift-cta">
-          <a class="primary" href="<%= ctx %>/staff-checkin?uid=<%= uid %>">🕒 Điểm danh ngay</a>
-          <a class="secondary" href="<%= ctx %>/pos?uid=<%= uid %>">🛒 Mở màn bán hàng</a>
+
+        <div class="card">
+          <div class="card-head"><div class="wh-ic">📦</div><h2>Tổng quan tồn kho</h2></div>
+          <div class="pf-field">
+            <span class="pf-label"><span class="ic">💊</span> Thuốc đang kinh doanh</span>
+            <span class="pf-value"><%= totalMed != null ? totalMed : 0 %></span>
+          </div>
+          <div class="pf-field">
+            <span class="pf-label"><span class="ic">📉</span> Sắp hết hàng</span>
+            <span class="pf-value <%= (lowStock != null && ((Integer) lowStock) > 0) ? "warn" : "" %>"><%= lowStock != null ? lowStock : 0 %></span>
+          </div>
+          <div class="pf-field">
+            <span class="pf-label"><span class="ic">⏳</span> Lô cận hạn dùng</span>
+            <span class="pf-value <%= (expiry != null && ((Integer) expiry) > 0) ? "warn" : "" %>"><%= expiry != null ? expiry : 0 %></span>
+          </div>
+          <div class="pf-field">
+            <span class="pf-label"><span class="ic">⛔</span> Lô đã hết hạn</span>
+            <span class="pf-value <%= (expired != null && ((Integer) expired) > 0) ? "danger" : "" %>"><%= expired != null ? expired : 0 %></span>
+          </div>
         </div>
       </div>
 
+      <!-- ══ CỘT 2 (40%): Thao tác nhanh ══ -->
       <div class="card">
-        <div class="card-head"><div class="wh-ic">📦</div><h2>Tổng quan tồn kho</h2></div>
-        <div class="pf-field">
-          <span class="pf-label"><span class="ic">💊</span> Thuốc đang kinh doanh</span>
-          <span class="pf-value"><%= totalMed != null ? totalMed : 0 %></span>
-        </div>
-        <div class="pf-field">
-          <span class="pf-label"><span class="ic">📉</span> Sắp hết hàng</span>
-          <span class="pf-value <%= (lowStock != null && ((Integer) lowStock) > 0) ? "warn" : "" %>"><%= lowStock != null ? lowStock : 0 %></span>
-        </div>
-        <div class="pf-field">
-          <span class="pf-label"><span class="ic">⏳</span> Lô cận hạn dùng</span>
-          <span class="pf-value <%= (expiry != null && ((Integer) expiry) > 0) ? "warn" : "" %>"><%= expiry != null ? expiry : 0 %></span>
-        </div>
-        <div class="pf-field">
-          <span class="pf-label"><span class="ic">⛔</span> Lô đã hết hạn</span>
-          <span class="pf-value <%= (expired != null && ((Integer) expired) > 0) ? "danger" : "" %>"><%= expired != null ? expired : 0 %></span>
+        <div class="card-head"><div class="wh-ic ok">⚡</div><h2>Thao tác nhanh</h2></div>
+        <div class="qa-list">
+          <a class="qa-item primary" href="<%= ctx %>/warehouse-stock-movement?uid=<%= uid %>">
+            <div class="qa-ic">📦</div>
+            <div class="qa-body"><div class="qa-title">Xuất / Điều chỉnh kho nhanh</div><div class="qa-sub">Xuất hàng, hủy hết hạn, điều chỉnh kiểm kê</div></div>
+            <div class="qa-arrow">→</div>
+          </a>
+          <a class="qa-item" href="<%= ctx %>/warehouse-task?uid=<%= uid %>">
+            <div class="qa-ic">📋</div>
+            <div class="qa-body"><div class="qa-title">Cập nhật báo cáo Task</div><div class="qa-sub">Xem &amp; báo hoàn thành nhiệm vụ được giao</div></div>
+            <div class="qa-arrow">→</div>
+          </a>
+          <a class="qa-item" href="<%= ctx %>/warehouse-reorder?uid=<%= uid %>">
+            <div class="qa-ic">💡</div>
+            <div class="qa-body"><div class="qa-title">Gợi ý đặt hàng (ROP)</div><div class="qa-sub">Xem đề xuất tự động, Admin duyệt phiếu nhập</div></div>
+            <div class="qa-arrow">→</div>
+          </a>
+          <a class="qa-item" href="<%= ctx %>/staff-checkin?uid=<%= uid %>">
+            <div class="qa-ic">🕒</div>
+            <div class="qa-body"><div class="qa-title">Điểm danh &amp; Ca làm việc</div><div class="qa-sub"><%= currentShift != null ? "Có ca đang mở" : "Không có ca nào đang mở" %></div></div>
+            <div class="qa-arrow">→</div>
+          </a>
         </div>
       </div>
     </div>
@@ -281,6 +261,36 @@ function tickClock(){
   if(wd) wd.textContent=days[d.getDay()]+' '+pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear();
 }
 tickClock(); setInterval(tickClock,1000);
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+(function(){
+  if (typeof Chart === 'undefined') return;
+  var trend = <%=request.getAttribute("stockTrendJson")%>;
+  var canvas = document.getElementById('stockTrendChart');
+  if (!canvas || !trend) return;
+  Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+  Chart.defaults.color = '#69756F';
+  new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: trend.labels,
+      datasets: [
+        { label: 'Nhập kho', data: trend.nhap, backgroundColor: 'rgba(5,150,105,.75)', borderRadius: 5, maxBarThickness: 22 },
+        { label: 'Xuất kho', data: trend.xuat, backgroundColor: 'rgba(15,118,110,.75)', borderRadius: 5, maxBarThickness: 22 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 11.5, weight: '700' } } } },
+      scales: {
+        y: { beginAtZero: true, grid: { color: 'rgba(226,229,238,.6)' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+})();
 </script>
 </body>
 </html>

@@ -78,6 +78,7 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
 .fi{display:flex;flex-direction:column;gap:5px}
 .fi.grow{flex:1;min-width:260px}
 .fi label{font-size:11px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.req{color:var(--red)}
 .fi input,.fi select,.fi textarea{border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--surface);outline:none;width:100%}
 .fi textarea{min-height:60px;resize:vertical}
 .fi input:focus,.fi select:focus,.fi textarea:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(21,88,168,.1)}
@@ -159,13 +160,13 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
         <form method="post" action="${pageContext.request.contextPath}/task-management" id="formTask">
           <input type="hidden" name="action" value="create-task">
           <div class="form-row" style="margin-bottom:12px">
-            <div class="fi grow"><label>Tiêu đề</label>
+            <div class="fi grow"><label>Tiêu đề <span class="req">*</span></label>
               <input type="text" name="title" maxlength="255" placeholder="VD: Kiểm tra nhiệt độ tủ lạnh vắc-xin" required></div>
             <div class="fi"><label>Ưu tiên</label>
               <select name="priority"><option value="HIGH">🔴 Cao</option><option value="MEDIUM" selected>🟡 Trung bình</option><option value="LOW">🔵 Thấp</option></select></div>
           </div>
           <div class="form-row" style="margin-bottom:12px">
-            <div class="fi grow"><label>Mô tả</label><textarea name="description" maxlength="1000" placeholder="Ghi rõ yêu cầu…"></textarea></div>
+            <div class="fi grow"><label>Mô tả <span class="req">*</span></label><textarea name="description" maxlength="1000" placeholder="Ghi rõ yêu cầu…" required></textarea></div>
           </div>
           <div class="form-row">
             <div class="fi"><label>Giao cho</label>
@@ -173,7 +174,8 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
                 <option value="">— Để chung —</option>
                 <c:forEach var="a" items="${warehouseStaff}"><option value="${a.accountId}">${fn:escapeXml(a.fullName)}</option></c:forEach>
               </select></div>
-            <div class="fi"><label>Hạn báo xong trước</label><input type="datetime-local" name="dueDate"></div>
+            <div class="fi"><label>Hạn báo xong trước <span class="req">*</span></label>
+              <input type="datetime-local" name="dueDate" class="due-input" required></div>
             <button type="submit" class="btn-primary">Giao task</button>
           </div>
         </form>
@@ -182,21 +184,22 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
         <form method="post" action="${pageContext.request.contextPath}/task-management" id="formProject" style="display:none">
           <input type="hidden" name="action" value="create-project">
           <div class="form-row" style="margin-bottom:12px">
-            <div class="fi grow"><label>Tên Dự án</label>
+            <div class="fi grow"><label>Tên Dự án <span class="req">*</span></label>
               <input type="text" name="title" maxlength="255" placeholder="VD: Xử lý 50 Lô cận hạn Q3/2026" required></div>
             <div class="fi"><label>Ưu tiên</label>
               <select name="priority"><option value="HIGH">🔴 Cao</option><option value="MEDIUM" selected>🟡 Trung bình</option><option value="LOW">🔵 Thấp</option></select></div>
           </div>
           <div class="form-row" style="margin-bottom:12px">
-            <div class="fi grow"><label>Mô tả</label><textarea name="description" maxlength="1000" placeholder="Bối cảnh, mục tiêu chiến dịch…"></textarea></div>
+            <div class="fi grow"><label>Mô tả <span class="req">*</span></label><textarea name="description" maxlength="1000" placeholder="Bối cảnh, mục tiêu chiến dịch…" required></textarea></div>
           </div>
           <div class="form-row" style="margin-bottom:12px">
-            <div class="fi"><label>Giao cho (bắt buộc)</label>
+            <div class="fi"><label>Giao cho <span class="req">*</span></label>
               <select name="assignedTo" required>
                 <option value="">— Chọn Thủ kho —</option>
                 <c:forEach var="a" items="${warehouseStaff}"><option value="${a.accountId}">${fn:escapeXml(a.fullName)}</option></c:forEach>
               </select></div>
-            <div class="fi"><label>Hạn báo cáo tổng</label><input type="datetime-local" name="dueDate"></div>
+            <div class="fi"><label>Hạn báo cáo tổng <span class="req">*</span></label>
+              <input type="datetime-local" name="dueDate" class="due-input" required></div>
           </div>
           <label style="font-size:11px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Các mốc (milestones)</label>
           <div class="milestone-rows" id="milestoneRows"></div>
@@ -315,6 +318,19 @@ function switchType(type){
   document.getElementById('tabTask').classList.toggle('active', type === 'task');
   document.getElementById('tabProject').classList.toggle('active', type === 'project');
 }
+// Chặn chọn ngày/giờ quá khứ ngay từ UI (guard phía client — server vẫn tự kiểm tra
+// lại bằng LocalDateTime.now(), không tin riêng client). Định dạng min cần đúng
+// "YYYY-MM-DDTHH:MM" mà input datetime-local yêu cầu.
+function nowLocalIso(){
+  var d = new Date(), pad = function(n){ return String(n).padStart(2,'0'); };
+  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate())
+       + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+function applyMinToDateInputs(scope){
+  var min = nowLocalIso();
+  (scope || document).querySelectorAll('input[type=datetime-local]').forEach(function(el){ el.min = min; });
+}
+
 function addMilestoneRow(){
   var wrap = document.getElementById('milestoneRows');
   var row = document.createElement('div');
@@ -323,8 +339,10 @@ function addMilestoneRow(){
     '<input type="datetime-local" name="milestoneDueDate">' +
     '<button type="button" class="ms-remove" onclick="this.parentElement.remove()">✕</button>';
   wrap.appendChild(row);
+  applyMinToDateInputs(row);
 }
 addMilestoneRow(); // luôn có sẵn 1 dòng mốc trống khi mở form Dự án
+applyMinToDateInputs(document);
 setTimeout(function(){ var t=document.getElementById('toast'); if(t) t.style.display='none'; }, 3500);
 </script>
 </body></html>

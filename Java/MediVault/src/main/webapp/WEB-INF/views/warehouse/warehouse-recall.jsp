@@ -22,14 +22,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<%= ctx %>/css/staff-portal.css">
-<link rel="stylesheet" href="<%= ctx %>/css/warehouse-portal.css?v=3">
+<link rel="stylesheet" href="<%= ctx %>/css/warehouse-portal.css?v=5">
 <style>
 a{text-decoration:none;color:inherit}
 
-.topbar{background:linear-gradient(120deg,#3730A3 0%,#4338CA 62%,#0F766E 116%);color:#fff;
+.topbar{background:linear-gradient(120deg,#115E59 0%,#0F766E 62%,#0F766E 116%);color:#fff;
   padding:13px 28px;display:flex;align-items:center;justify-content:space-between;
   backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);
-  box-shadow:0 4px 18px -6px rgba(67,56,202,.4);position:sticky;top:0;z-index:10}
+  box-shadow:0 4px 18px -6px rgba(15,118,110,.4);position:sticky;top:0;z-index:10}
 .tb-brand{display:flex;align-items:center;gap:12px}
 .tb-icon{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:19px;
   background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2)}
@@ -52,7 +52,7 @@ a{text-decoration:none;color:inherit}
 .banner.ok{background:var(--okbg);color:var(--ok);border:1px solid #A7F3D0}
 .banner.err{background:var(--dangerbg);color:var(--danger);border:1.5px solid #FCA5B1}
 
-.card{background:#fff;border:1px solid #E7E8F1;border-radius:16px;overflow:hidden;margin-bottom:22px;box-shadow:0 1px 2px rgba(30,27,75,.04),0 12px 30px -18px rgba(30,27,75,.12)}
+.card{background:#fff;border:1px solid #E4E9E7;border-radius:16px;overflow:hidden;margin-bottom:22px;box-shadow:0 1px 2px rgba(4,47,46,.04),0 12px 30px -18px rgba(4,47,46,.12)}
 .card-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
   padding:16px 20px;border-bottom:1px solid var(--line)}
 .card-head h2{font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px}
@@ -64,7 +64,7 @@ a{text-decoration:none;color:inherit}
 .field select,.field input{padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;
   font-family:inherit;font-size:14px;background:var(--surface);color:var(--ink)}
 .field select:focus,.field input:focus{outline:none;border-color:var(--main);background:#fff;
-  box-shadow:0 0 0 3px rgba(67,56,202,.12)}
+  box-shadow:0 0 0 3px rgba(15,118,110,.12)}
 .btn{padding:11px 20px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--main),var(--deep));
   color:#fff;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit}
 .btn:hover{filter:brightness(1.06)}

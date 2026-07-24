@@ -2,7 +2,10 @@ package com.medicare.controller.warehouse;
 
 import com.medicare.config.CacheManager;
 import com.medicare.dao.BatchesDAO;
+import com.medicare.dao.CategoryDAO;
+import com.medicare.dao.ManufacturerDAO;
 import com.medicare.dao.MedicineDAO;
+import com.medicare.dao.ShelfDAO;
 import com.medicare.dao.interfaces.IBatchesDAO;
 import com.medicare.dao.interfaces.IMedicineDAO;
 import com.medicare.entity.Account;
@@ -13,6 +16,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,8 +34,11 @@ public class WarehouseInventoryServlet extends HttpServlet {
 
     private static final int ROLE_WAREHOUSE = 3;
 
-    private final IMedicineDAO medicineDAO = new MedicineDAO();
-    private final IBatchesDAO  batchesDAO  = new BatchesDAO();
+    private final IMedicineDAO medicineDAO   = new MedicineDAO();
+    private final IBatchesDAO  batchesDAO    = new BatchesDAO();
+    private final CategoryDAO     categoryDAO     = new CategoryDAO();
+    private final ManufacturerDAO manufacturerDAO = new ManufacturerDAO();
+    private final ShelfDAO        shelfDAO        = new ShelfDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -43,6 +50,12 @@ public class WarehouseInventoryServlet extends HttpServlet {
                 ? (Account) session.getAttribute("staffAccount_" + uid) : null;
         if (acc == null || acc.getRoleId() != ROLE_WAREHOUSE) {
             resp.sendRedirect(req.getContextPath() + "/warehouse-login");
+            return;
+        }
+
+        // ── AJAX: chi tiết đầy đủ 1 thuốc + toàn bộ lô (modal "👁️ Xem chi tiết" trên bảng) ──
+        if ("detail".equals(req.getParameter("action"))) {
+            apiGetDetail(req, resp);
             return;
         }
 
@@ -79,5 +92,84 @@ public class WarehouseInventoryServlet extends HttpServlet {
 
         req.getRequestDispatcher("/WEB-INF/views/warehouse/warehouse-inventory.jsp")
                 .forward(req, resp);
+    }
+
+    // ── AJAX: toàn bộ thông tin sản phẩm + toàn bộ lô (kể cả hết hàng/hết hạn) cho modal
+    // "👁️ Xem chi tiết" — thủ kho cần thấy hết mọi lô đang có, không chỉ lô FEFO gần nhất
+    // (khác với warehouse-stock-movement chỉ gợi ý 1 lô để xuất/điều chỉnh). ──
+    private void apiGetDetail(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        resp.setHeader("Cache-Control", "no-store");
+        PrintWriter out = resp.getWriter();
+        try {
+            int id = Integer.parseInt(req.getParameter("id"));
+            Medicines m = medicineDAO.findById(id);
+            if (m == null) { out.print("{\"error\":\"not found\"}"); return; }
+
+            String catName = "", mfrName = "", shelfName = "";
+            if (m.getCategoryId() != null) {
+                var cat = categoryDAO.findById(m.getCategoryId());
+                if (cat != null) catName = cat.getCategoryName();
+            }
+            if (m.getManufacturerId() != null) {
+                var mfr = manufacturerDAO.findById(m.getManufacturerId());
+                if (mfr != null) mfrName = mfr.getName();
+            }
+            if (m.getShelfId() != null) {
+                var shelf = shelfDAO.findById(m.getShelfId());
+                if (shelf != null) shelfName = shelf.getShelfName();
+            }
+
+            List<Batches> batches = batchesDAO.findAllByMedicine(id); // kể cả hết hàng/hết hạn
+            // findById() ở trên là SELECT * thường, KHÔNG join tồn kho — m.getTotalStock() sẽ luôn
+            // là 0 nếu dùng trực tiếp. Phải lấy qua getTotalQuantityMap() (cùng nguồn dữ liệu với
+            // bảng danh sách) để số ở modal khớp đúng số cột "Tồn kho" thủ kho vừa nhìn thấy.
+            int totalStock = batchesDAO.getTotalQuantityMap().getOrDefault(id, 0);
+
+            StringBuilder sb = new StringBuilder("{");
+            sb.append("\"medicine\":{");
+            sb.append("\"id\":").append(m.getMedicineId()).append(',');
+            sb.append("\"medicineCode\":").append(jsonStr(m.getMedicineCode())).append(',');
+            sb.append("\"medicineName\":").append(jsonStr(m.getMedicineName())).append(',');
+            sb.append("\"genericName\":").append(jsonStr(m.getGenericName())).append(',');
+            sb.append("\"barcode\":").append(jsonStr(m.getBarcode())).append(',');
+            sb.append("\"registrationNumber\":").append(jsonStr(m.getRegistrationNumber())).append(',');
+            sb.append("\"unit\":").append(jsonStr(m.getUnit())).append(',');
+            sb.append("\"categoryName\":").append(jsonStr(catName)).append(',');
+            sb.append("\"manufacturerName\":").append(jsonStr(mfrName)).append(',');
+            sb.append("\"shelfName\":").append(jsonStr(shelfName)).append(',');
+            sb.append("\"sellingPrice\":").append(m.getSellingPrice() != null ? m.getSellingPrice().toPlainString() : "0").append(',');
+            sb.append("\"minInventory\":").append(m.getMinInventory()).append(',');
+            sb.append("\"totalStock\":").append(totalStock).append(',');
+            sb.append("\"isPrescriptionRequired\":").append(m.isPrescriptionRequired()).append(',');
+            sb.append("\"dosage\":").append(jsonStr(m.getDosage())).append(',');
+            sb.append("\"dosageWarning\":").append(jsonStr(m.getDosageWarning())).append(',');
+            sb.append("\"contraindications\":").append(jsonStr(m.getContraindications())).append(',');
+            sb.append("\"storageConditions\":").append(jsonStr(m.getStorageConditions())).append(',');
+            sb.append("\"packagingSpec\":").append(jsonStr(m.getPackagingSpec()));
+            sb.append("},\"batches\":[");
+            for (int i = 0; i < batches.size(); i++) {
+                Batches b = batches.get(i);
+                if (i > 0) sb.append(',');
+                sb.append('{');
+                sb.append("\"batchNumber\":").append(jsonStr(b.getBatchNumber())).append(',');
+                sb.append("\"expiryDate\":").append(jsonStr(b.getExpiryDate() != null ? b.getExpiryDate().toString() : "")).append(',');
+                sb.append("\"importDate\":").append(jsonStr(b.getImportDate() != null ? b.getImportDate().toString() : "")).append(',');
+                sb.append("\"currentQuantity\":").append(b.getCurrentQuantity()).append(',');
+                sb.append("\"initialQuantity\":").append(b.getInitialQuantity()).append(',');
+                sb.append("\"status\":").append(jsonStr(b.getStatus()));
+                sb.append('}');
+            }
+            sb.append("]}");
+            out.print(sb);
+        } catch (Exception e) {
+            out.print("{\"error\":\"" + e.getMessage() + "\"}");
+        }
+    }
+
+    private static String jsonStr(String s) {
+        if (s == null) return "\"\"";
+        return "\"" + s.replace("\\","\\\\").replace("\"","\\\"")
+                       .replace("\n","\\n").replace("\r","\\r").replace("\t","\\t") + "\"";
     }
 }

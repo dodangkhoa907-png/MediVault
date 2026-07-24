@@ -26,7 +26,7 @@
 <meta name="ctx" content="${pageContext.request.contextPath}">
 <title>Xuất kho &amp; Điều chỉnh tồn — MediCare Kho</title>
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff-portal.css">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/warehouse-portal.css?v=3">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/warehouse-portal.css?v=5">
 <style>
 a{text-decoration:none;color:inherit}
 
@@ -45,28 +45,28 @@ a{text-decoration:none;color:inherit}
 @media(max-width:920px){.sm-grid{grid-template-columns:1fr}}
 .sm-side{display:flex;flex-direction:column;gap:22px}
 
-.card{background:#fff;border:1px solid #E7E8F1;border-radius:16px;overflow:hidden;
-  box-shadow:0 1px 2px rgba(30,27,75,.04),0 12px 30px -18px rgba(30,27,75,.14)}
-.card-head{padding:15px 20px;border-bottom:1px solid #EEF0F5;display:flex;align-items:center;gap:11px}
+.card{background:#fff;border:1px solid #E4E9E7;border-radius:16px;overflow:hidden;
+  box-shadow:0 1px 2px rgba(4,47,46,.04),0 12px 30px -18px rgba(4,47,46,.14)}
+.card-head{padding:15px 20px;border-bottom:1px solid #EAEFED;display:flex;align-items:center;gap:11px}
 .card-head h2{font-size:14.5px;font-weight:800;color:var(--ink)}
 .card-head h2 small{color:var(--muted);font-weight:600;font-size:12px;margin-left:5px}
 .card-body{padding:22px 20px}
 
 .fg{display:flex;flex-direction:column;gap:7px;margin-bottom:17px}
 .fg > label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.fg input,.fg select,.fg textarea{border:1.5px solid #E2E5EE;border-radius:10px;padding:11px 14px;
+.fg input,.fg select,.fg textarea{border:1.5px solid #DCE8E5;border-radius:10px;padding:11px 14px;
   font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:var(--ink);background:#fff;
   width:100%;transition:border .16s,box-shadow .16s}
-.fg input::placeholder,.fg textarea::placeholder{color:#A9AABD}
+.fg input::placeholder,.fg textarea::placeholder{color:#94A3A0}
 .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--main);outline:none;
-  box-shadow:0 0 0 3.5px rgba(67,56,202,.12)}
+  box-shadow:0 0 0 3.5px rgba(15,118,110,.12)}
 .fg textarea{min-height:84px;resize:vertical}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:520px){.row2{grid-template-columns:1fr}}
 
 /* ── FEFO nudge — hộp highlight nhắc lấy đúng lô (💡), chỉ hiện sau khi chọn thuốc ── */
 .fefo-nudge{display:none;align-items:center;gap:11px;margin:-2px 0 17px;padding:12px 15px;border-radius:11px;
-  background:linear-gradient(100deg,#EEF2FF,#F5F3FF);border:1px solid #C7D2FE;border-left:4px solid var(--main);
+  background:linear-gradient(100deg,#E6FFFA,#ECFDF9);border:1px solid #99F6E4;border-left:4px solid var(--main);
   font-size:13px;color:var(--deep);line-height:1.45}
 .fefo-nudge.show{display:flex}
 .fefo-nudge .fn-ic{font-size:18px;flex:none}
@@ -74,14 +74,14 @@ a{text-decoration:none;color:inherit}
 
 .direction-row{display:none;gap:10px;margin:-2px 0 17px}
 .direction-row.show{display:flex}
-.dir-opt{flex:1;display:flex;align-items:center;gap:8px;padding:11px 13px;border:1.5px solid #E2E5EE;
+.dir-opt{flex:1;display:flex;align-items:center;gap:8px;padding:11px 13px;border:1.5px solid #DCE8E5;
   border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;color:var(--ink);background:#fff}
 .dir-opt input{accent-color:var(--main)}
-.dir-opt:has(input:checked){border-color:var(--main);background:#EEF2FF}
+.dir-opt:has(input:checked){border-color:var(--main);background:#E6FFFA}
 
 .btn-submit{width:100%;height:48px;background:linear-gradient(135deg,var(--main),var(--deep));
   color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;
-  font-family:inherit;transition:filter .15s,transform .05s;box-shadow:0 8px 20px -8px rgba(67,56,202,.5)}
+  font-family:inherit;transition:filter .15s,transform .05s;box-shadow:0 8px 20px -8px rgba(15,118,110,.5)}
 .btn-submit:hover{filter:brightness(1.07)}
 .btn-submit:active{transform:translateY(1px)}
 
@@ -96,7 +96,7 @@ a{text-decoration:none;color:inherit}
 .bi-batch{font-size:23px;font-weight:800;color:var(--ink);letter-spacing:-.3px;
   font-family:ui-monospace,Consolas,monospace;margin-bottom:17px;word-break:break-all}
 .bi-rows{display:flex;flex-direction:column;gap:0}
-.bi-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #EEF0F5}
+.bi-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #EAEFED}
 .bi-row:last-child{border-bottom:none}
 .bi-lbl{font-size:12.5px;color:var(--muted);font-weight:650;display:flex;align-items:center;gap:7px}
 .bi-val{font-size:14px;font-weight:800;color:var(--ink)}
@@ -110,7 +110,7 @@ a{text-decoration:none;color:inherit}
 
 /* ── Lịch sử di chuyển kho (mini, gọn trong cột phải) ── */
 .mini-list{display:flex;flex-direction:column}
-.mini-row{display:flex;align-items:center;gap:11px;padding:11px 18px;border-bottom:1px solid #F1F2F7}
+.mini-row{display:flex;align-items:center;gap:11px;padding:11px 18px;border-bottom:1px solid #F2ECE7}
 .mini-row:last-child{border-bottom:none}
 .mini-ic{width:34px;height:34px;border-radius:9px;flex:none;display:grid;place-items:center;font-size:14px}
 .mi-OUT{background:var(--dangerbg)}

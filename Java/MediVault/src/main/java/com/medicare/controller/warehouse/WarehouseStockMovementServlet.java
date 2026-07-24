@@ -260,6 +260,12 @@ public class WarehouseStockMovementServlet extends HttpServlet {
         req.setAttribute("movementRows", rows);
         req.setAttribute("staffAcc", staffAcc);
         req.setAttribute("uid", req.getParameter("uid"));
+        // Pre-chọn thuốc khi vào trang qua link "?medicineId=X" (nút 👁️ ở warehouse-inventory.jsp) —
+        // trước đây f_medicineId chỉ được set trong doPost() lúc redisplay form sau lỗi validate,
+        // nên đi thẳng từ link ngoài vào (GET thường) không pre-select được gì, ô "Chọn thuốc" trống trơn.
+        if (req.getAttribute("f_medicineId") == null) {
+            req.setAttribute("f_medicineId", req.getParameter("medicineId"));
+        }
 
         req.getRequestDispatcher("/WEB-INF/views/warehouse/warehouse-stock-movement.jsp")
                 .forward(req, resp);

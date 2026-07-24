@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<%= ctx %>/css/staff-portal.css">
-<link rel="stylesheet" href="<%= ctx %>/css/warehouse-portal.css?v=3">
+<link rel="stylesheet" href="<%= ctx %>/css/warehouse-portal.css?v=5">
 <style>
 a{text-decoration:none;color:inherit}
 
@@ -36,7 +36,7 @@ a{text-decoration:none;color:inherit}
 .banner.ok{background:var(--okbg);color:var(--ok);border:1px solid #A7F3D0}
 .banner.err{background:var(--dangerbg);color:var(--danger);border:1.5px solid #FCA5B1}
 
-.card{background:#fff;border:1px solid #E7E8F1;border-radius:16px;overflow:hidden;margin-bottom:22px;box-shadow:0 1px 2px rgba(30,27,75,.04),0 12px 30px -18px rgba(30,27,75,.12)}
+.card{background:#fff;border:1px solid #E4E9E7;border-radius:16px;overflow:hidden;margin-bottom:22px;box-shadow:0 1px 2px rgba(4,47,46,.04),0 12px 30px -18px rgba(4,47,46,.12)}
 .card-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
   padding:16px 20px;border-bottom:1px solid var(--line)}
 .card-head h2{font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px}
@@ -79,7 +79,7 @@ a{text-decoration:none;color:inherit}
   font-family:inherit;font-size:14px;background:var(--surface);color:var(--ink)}
 .field textarea{resize:vertical;min-height:44px}
 .field select:focus,.field input:focus,.field textarea:focus{outline:none;border-color:var(--main);background:#fff;
-  box-shadow:0 0 0 3px rgba(67,56,202,.12)}
+  box-shadow:0 0 0 3px rgba(15,118,110,.12)}
 
 .filterbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .filterbar select{padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;

@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<%= ctx %>/css/staff-portal.css">
-<link rel="stylesheet" href="<%= ctx %>/css/warehouse-portal.css?v=3">
+<link rel="stylesheet" href="<%= ctx %>/css/warehouse-portal.css?v=5">
 <style>
 a{text-decoration:none;color:inherit}
 
@@ -30,7 +30,7 @@ a{text-decoration:none;color:inherit}
 .head h1 span{color:var(--main)}
 .head p{color:var(--muted);font-size:14px;margin-top:4px}
 
-.card{background:#fff;border:1px solid #E7E8F1;border-radius:16px;overflow:hidden;margin-bottom:22px;box-shadow:0 1px 2px rgba(30,27,75,.04),0 12px 30px -18px rgba(30,27,75,.12)}
+.card{background:#fff;border:1px solid #E4E9E7;border-radius:16px;overflow:hidden;margin-bottom:22px;box-shadow:0 1px 2px rgba(4,47,46,.04),0 12px 30px -18px rgba(4,47,46,.12)}
 .card-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
   padding:16px 20px;border-bottom:1px solid var(--line)}
 .card-head h2{font-size:15px;font-weight:800}
