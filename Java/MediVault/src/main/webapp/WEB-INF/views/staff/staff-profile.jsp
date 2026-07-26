@@ -160,6 +160,8 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .photo-view-note{text-align:center;font-size:11px;color:var(--muted);margin-top:7px;font-style:italic}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>

@@ -471,6 +471,8 @@ body{display:flex}
 .esr-confirm:disabled{background:#CBD5E1;cursor:not-allowed}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 
@@ -1840,19 +1842,21 @@ function updateStationUI() {
 
 // ── FACE RECOGNITION CHECK-IN ─────────────────────────────────────────────────
 const FACE_MODEL_URL = ctx + '/models';  // local — same as staff-checkin.jsp
-const FACE_THRESHOLD  = 0.45;          // chặt hơn chuẩn 0.6 — chống nhận nhầm người
-const FACE_MARGIN     = 0.08;          // người gần nhì phải xa hơn ít nhất chừng này
-const FACE_STABLE_FRAMES = 3;          // cần 3 khung hình liên tiếp khớp CÙNG một người
+// Ngưỡng "vẫn là cùng một người giữa 2 khung hình liên tiếp" — chỉ dùng để biết mặt
+// đang đứng yên, KHÔNG dùng để nhận diện. Việc "đây là ai" nay do SERVER quyết định
+// (ngưỡng khớp/chống nhập nhằng nằm ở FaceVerifier), client không giữ dữ liệu mặt của ai.
+const FACE_SAME_PERSON   = 0.35;
+const FACE_STABLE_FRAMES = 3;          // cần 3 khung liên tiếp cùng một người rồi mới hỏi server
 
-let faceModelsLoaded  = false;
-let faceDescriptors   = [];
+let faceModelsLoaded   = false;
+let faceEnrolledCount  = 0;
+let facePrevDescriptor = null;      // descriptor khung TRƯỚC (chỉ để đo độ ổn định)
 let faceVideoStream   = null;
 let faceDetectLoopId  = null;
 let faceMatchedId     = null;
 let faceMatchedName   = null;
 let faceMatchedDescriptor = null;   // descriptor trung bình của các khung khớp — gửi lên server verify
-let faceStreakId      = null;       // accountId đang khớp liên tiếp
-let faceStreakCount   = 0;          // số khung liên tiếp khớp cùng người
+let faceStreakCount   = 0;          // số khung liên tiếp cùng một người
 let faceStreakSamples = [];         // descriptor của từng khung trong streak
 
 async function loadFaceModels() {
@@ -1864,24 +1868,21 @@ async function loadFaceModels() {
   faceModelsLoaded = true;
 }
 
-async function loadFaceDescriptors() {
+// Chỉ lấy SỐ LƯỢNG người đã đăng ký (cho nhãn hiển thị). Trước đây hàm này tải TOÀN BỘ
+// vector khuôn mặt của mọi nhân viên về trình duyệt để tự so khớp — nghĩa là ai mở được
+// /pos cũng lấy được cả bộ dữ liệu sinh trắc học của công ty. Nay việc so khớp làm ở server.
+async function loadEnrolledCount() {
   try {
-    const res  = await fetch(ctx + '/pos?action=face-descriptors');
+    const res  = await fetch(ctx + '/pos?action=face-enrolled-count');
     const data = await res.json();
-    faceDescriptors = data
-      .filter(d => d.descriptor)
-      .map(d => ({
-        accountId:  d.accountId,
-        name:       d.name,
-        descriptor: new Float32Array(JSON.parse(d.descriptor))
-      }));
-    const el = document.getElementById('fmEnrolledCount');
-    if (el) el.textContent = faceDescriptors.length > 0
-      ? faceDescriptors.length + ' nhân viên đã đăng ký khuôn mặt'
-      : '⚠ Chưa có nhân viên nào đăng ký khuôn mặt';
+    faceEnrolledCount = data.count || 0;
   } catch(e) {
-    faceDescriptors = [];
+    faceEnrolledCount = 0;
   }
+  const el = document.getElementById('fmEnrolledCount');
+  if (el) el.textContent = faceEnrolledCount > 0
+    ? faceEnrolledCount + ' nhân viên đã đăng ký khuôn mặt'
+    : '⚠ Chưa có nhân viên nào đăng ký khuôn mặt';
 }
 
 async function openFaceModal() {
@@ -1893,7 +1894,7 @@ async function openFaceModal() {
 
   try {
     await loadFaceModels();
-    await loadFaceDescriptors();
+    await loadEnrolledCount();
   } catch(e) {
     setFmStatus('❌ Lỗi tải mô hình: ' + e.message, 'err');
     document.getElementById('fmLoading').style.display = 'none';
@@ -1963,6 +1964,8 @@ function startFaceDetection() {
       if (!detection) {
         noFaceEl.style.display = 'block';
         ring.className = 'face-ring';
+        // Mặt rời khung hình → xoá mốc so sánh, đếm ổn định lại từ đầu
+        faceStreakCount = 0; faceStreakSamples = []; facePrevDescriptor = null;
         faceDetectLoopId = requestAnimationFrame(loop);
         return;
       }
@@ -1970,61 +1973,65 @@ function startFaceDetection() {
       ring.className = 'face-ring scanning';
       faceapi.draw.drawDetections(canvas, [detection.detection]);
 
-      if (faceDescriptors.length === 0) {
+      if (faceEnrolledCount === 0) {
         setFmStatus('⚠ Chưa có nhân viên nào đăng ký khuôn mặt', 'err');
         faceDetectLoopId = requestAnimationFrame(loop);
         return;
       }
 
-      // Tìm người khớp nhất VÀ người gần nhì (để check margin chống nhầm người)
-      let bestDist = Infinity, bestMatch = null, secondDist = Infinity;
-      for (const ref of faceDescriptors) {
-        const dist = faceapi.euclideanDistance(detection.descriptor, ref.descriptor);
-        if (dist < bestDist) { secondDist = bestDist; bestDist = dist; bestMatch = ref; }
-        else if (dist < secondDist) { secondDist = dist; }
-      }
+      // Bước 1 — ổn định: so khung NÀY với khung TRƯỚC. Chỉ cần biết "vẫn là cùng một
+      // người đang đứng yên", KHÔNG cần biết là ai → client không cần dữ liệu mặt của ai.
+      const sameAsPrev = facePrevDescriptor
+        && faceapi.euclideanDistance(detection.descriptor, facePrevDescriptor) <= FACE_SAME_PERSON;
+      facePrevDescriptor = detection.descriptor;
 
-      const clearMatch = bestMatch
-        && bestDist <= FACE_THRESHOLD
-        && (secondDist - bestDist >= FACE_MARGIN || secondDist > FACE_THRESHOLD);
+      if (sameAsPrev) { faceStreakCount++; }
+      else { faceStreakCount = 1; faceStreakSamples = []; }
+      faceStreakSamples.push(Array.from(detection.descriptor));
 
-      if (clearMatch) {
-        // Yêu cầu FACE_STABLE_FRAMES khung liên tiếp khớp CÙNG một người
-        if (faceStreakId === bestMatch.accountId) {
-          faceStreakCount++;
-        } else {
-          faceStreakId = bestMatch.accountId;
-          faceStreakCount = 1;
-          faceStreakSamples = [];
-        }
-        faceStreakSamples.push(Array.from(detection.descriptor));
-
-        if (faceStreakCount >= FACE_STABLE_FRAMES) {
-          ring.className = 'face-ring matched';
-          faceMatchedId   = bestMatch.accountId;
-          faceMatchedName = bestMatch.name;
-          // Descriptor trung bình của các khung — ổn định hơn 1 khung đơn lẻ
-          const dim = faceStreakSamples[0].length;
-          const avg = new Array(dim).fill(0);
-          for (const s of faceStreakSamples) for (let i = 0; i < dim; i++) avg[i] += s[i];
-          for (let i = 0; i < dim; i++) avg[i] /= faceStreakSamples.length;
-          faceMatchedDescriptor = avg;
-          setFmStatus('✓ Nhận ra: ' + bestMatch.name, 'ok');
-          document.getElementById('fmCheckinBtn').style.display = 'flex';
-          return; // dừng loop sau khi nhận ra
-        }
+      if (faceStreakCount < FACE_STABLE_FRAMES) {
         ring.className = 'face-ring scanning';
-        setFmStatus('Đang xác nhận ' + bestMatch.name + '… (' + faceStreakCount + '/' + FACE_STABLE_FRAMES + ')');
-      } else {
-        faceStreakId = null; faceStreakCount = 0; faceStreakSamples = [];
-        faceMatchedId = null; faceMatchedName = null; faceMatchedDescriptor = null;
-        if (bestMatch && bestDist <= FACE_THRESHOLD) {
-          setFmStatus('⚠ Khuôn mặt chưa đủ rõ để phân biệt — nhìn thẳng camera', 'err');
-        } else {
-          setFmStatus('Đang quét… (' + (bestDist === Infinity ? '—' : bestDist.toFixed(2)) + ')');
-        }
+        setFmStatus('Đang quét… (' + faceStreakCount + '/' + FACE_STABLE_FRAMES + ')');
         document.getElementById('fmCheckinBtn').style.display = 'none';
+        faceDetectLoopId = requestAnimationFrame(loop);
+        return;
       }
+
+      // Bước 2 — đủ ổn định: lấy descriptor trung bình rồi hỏi SERVER "đây là ai".
+      // Chỉ hỏi 1 lần khi đã ổn định, không phải mỗi khung hình.
+      const dim = faceStreakSamples[0].length;
+      const avg = new Array(dim).fill(0);
+      for (const s of faceStreakSamples) for (let i = 0; i < dim; i++) avg[i] += s[i];
+      for (let i = 0; i < dim; i++) avg[i] /= faceStreakSamples.length;
+
+      setFmStatus('Đang đối chiếu…');
+      let who = null;
+      try {
+        // Gửi dạng x-www-form-urlencoded (KHÔNG dùng FormData): PosServlet không có
+        // @MultipartConfig nên getParameter() không đọc được body multipart.
+        const r = await fetch(ctx + '/pos', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body:    new URLSearchParams({ action: 'identify-face', descriptor: JSON.stringify(avg) })
+        });
+        who = await r.json();
+      } catch(e) { who = null; }
+
+      if (who && who.ok) {
+        ring.className = 'face-ring matched';
+        faceMatchedId         = who.accountId;
+        faceMatchedName       = who.name;
+        faceMatchedDescriptor = avg;
+        setFmStatus('✓ Nhận ra: ' + who.name, 'ok');
+        document.getElementById('fmCheckinBtn').style.display = 'flex';
+        return; // dừng loop sau khi nhận ra
+      }
+
+      // Server không dám kết luận (không đủ giống ai, hoặc 2 người quá giống nhau)
+      faceStreakCount = 0; faceStreakSamples = []; facePrevDescriptor = null;
+      faceMatchedId = null; faceMatchedName = null; faceMatchedDescriptor = null;
+      setFmStatus('⚠ Chưa nhận ra khuôn mặt — nhìn thẳng camera rồi thử lại', 'err');
+      document.getElementById('fmCheckinBtn').style.display = 'none';
     }
     faceDetectLoopId = requestAnimationFrame(loop);
   }
@@ -2104,7 +2111,7 @@ async function confirmFaceCheckin() {
       };
       showToast(reasonMap[data.reason] || ('❌ ' + (data.reason || 'Điểm danh thất bại')), 'err');
       // Reset streak và quét lại từ đầu (loop đã dừng sau khi match)
-      faceStreakId = null; faceStreakCount = 0; faceStreakSamples = [];
+      faceStreakCount = 0; faceStreakSamples = []; facePrevDescriptor = null;
       faceMatchedId = null; faceMatchedDescriptor = null;
       document.getElementById('fmCheckinBtn').style.display = 'none';
       btn.disabled    = false;

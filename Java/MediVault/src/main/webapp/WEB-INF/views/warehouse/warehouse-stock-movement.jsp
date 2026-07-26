@@ -123,6 +123,8 @@ a{text-decoration:none;color:inherit}
 .q-neg{color:var(--danger)}.q-pos{color:var(--ok)}
 .mini-empty{padding:28px 20px;text-align:center;color:var(--muted);font-size:12.5px}
 </style>
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body class="wh">
 <%@ include file="warehouse-sidebar.jsp" %>
@@ -160,6 +162,7 @@ a{text-decoration:none;color:inherit}
       </div>
       <div class="card-body">
         <form method="post" action="${pageContext.request.contextPath}/warehouse-stock-movement" id="mvForm">
+          <input type="hidden" name="_csrf" value="${csrfToken}">
           <input type="hidden" name="uid" value="<%= uid %>"/>
 
           <div class="fg">

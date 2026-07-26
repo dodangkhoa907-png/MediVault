@@ -165,6 +165,8 @@ select.field-input{cursor:pointer}
 .warn-box{background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#92400E;display:flex;align-items:center;gap:10px}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>

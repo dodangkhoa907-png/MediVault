@@ -39,6 +39,8 @@ button:hover{transform:translateY(-1px)}
 .note{font-size:11.5px;color:#94a3b8;text-align:center;margin-top:18px;line-height:1.6}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <div class="login-card">
@@ -52,6 +54,7 @@ button:hover{transform:translateY(-1px)}
   <p class="sub">Nhập số điện thoại đã đăng ký tại quầy để xem điểm tích lũy, lịch sử mua hàng và ưu đãi của bạn.</p>
 
   <form method="post" action="${pageContext.request.contextPath}/portal">
+    <input type="hidden" name="_csrf" value="${csrfToken}">
     <input type="hidden" name="action" value="login">
     <label for="phone">Số điện thoại</label>
     <div class="phone-wrap">

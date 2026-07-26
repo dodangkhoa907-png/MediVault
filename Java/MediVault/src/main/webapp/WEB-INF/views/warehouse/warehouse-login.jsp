@@ -104,6 +104,8 @@ body{display:grid;grid-template-columns:56% 44%;min-height:100vh;background:var(
   .right{padding:28px 20px}
 }
 </style>
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
   <div class="left">
@@ -148,6 +150,7 @@ body{display:grid;grid-template-columns:56% 44%;min-height:100vh;background:var(
       <% } %>
 
       <form method="post" action="<%= ctx %>/warehouse-login" autocomplete="off">
+        <input type="hidden" name="_csrf" value="${csrfToken}">
         <div class="field">
           <label for="username">Tên đăng nhập</label>
           <div class="input">

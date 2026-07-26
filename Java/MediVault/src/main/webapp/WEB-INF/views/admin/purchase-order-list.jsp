@@ -79,6 +79,8 @@ tbody tr:hover td{background:#F7FBFF}
 .toast-ok{background:var(--green)}.toast-err{background:var(--red)}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 

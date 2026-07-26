@@ -127,6 +127,8 @@ tbody tr:hover td{background:#F7FBFF}
 .empty-row{text-align:center;padding:44px;color:var(--muted)}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>

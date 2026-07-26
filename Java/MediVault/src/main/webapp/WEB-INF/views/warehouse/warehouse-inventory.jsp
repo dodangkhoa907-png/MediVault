@@ -125,6 +125,8 @@ tbody tr:hover{background:#E6FFFA}
 .dm-batch-status.RECALLED{background:var(--dangerbg);color:var(--danger)}
 .dm-batch-status.CANCELLED,.dm-batch-status.EXPIRED{background:#F1F5F4;color:var(--muted)}
 </style>
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body class="wh">
 <%@ include file="warehouse-sidebar.jsp" %>

@@ -98,6 +98,8 @@ tbody tr:hover{background:var(--surface)}
 .empty{padding:36px;text-align:center;color:var(--muted);font-size:14px}
 .reason-cell{white-space:normal;max-width:280px}
 </style>
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body class="wh">
 <%@ include file="warehouse-sidebar.jsp" %>
@@ -126,6 +128,7 @@ tbody tr:hover{background:var(--surface)}
       <div class="card-head"><div class="wh-ic">🔎</div><h2>Tìm lô cần thu hồi</h2></div>
       <div class="card-body">
         <form method="post" action="<%= ctx %>/warehouse-recall">
+          <input type="hidden" name="_csrf" value="${csrfToken}">
           <input type="hidden" name="uid" value="${staffUid}">
           <input type="hidden" name="action" value="search">
           <div class="formrow">
@@ -169,6 +172,7 @@ tbody tr:hover{background:var(--surface)}
 
           <c:if test="${foundBatch.status == 'ACTIVE'}">
             <form method="post" action="<%= ctx %>/warehouse-recall" id="recallForm">
+              <input type="hidden" name="_csrf" value="${csrfToken}">
               <input type="hidden" name="uid" value="${staffUid}">
               <input type="hidden" name="action" value="confirm-recall">
               <input type="hidden" name="batchId" value="${foundBatch.batchId}">

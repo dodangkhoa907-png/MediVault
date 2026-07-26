@@ -72,6 +72,45 @@ public final class FaceVerifier {
     }
 
     /**
+     * Nhận diện 1-vs-N: khuôn mặt này là AI? Trả về account khớp, hoặc null nếu
+     * không đủ tin cậy để kết luận.
+     *
+     * <p>Dùng cho màn POS check-in, THAY CHO việc đổ toàn bộ faceVector của mọi
+     * nhân viên về trình duyệt để client tự so khớp — cách cũ làm rò rỉ dữ liệu
+     * sinh trắc học của cả công ty cho bất kỳ ai gọi được endpoint đó.</p>
+     *
+     * <p>Áp dụng ĐÚNG bộ ngưỡng chặt của {@link #verify}: phải đủ gần
+     * ({@link #MATCH_THRESHOLD}) VÀ phải cách biệt rõ so với người gần nhì
+     * ({@link #AMBIGUITY_MARGIN}) — nếu 2 người quá sát nhau thì từ chối đoán,
+     * để phía sau {@code verify()} không bị đưa vào thế nhận nhầm người.</p>
+     */
+    public static Account identify(String descriptorJson, List<Account> allEnrolled) {
+        double[] incoming = parseDescriptor(descriptorJson);
+        if (incoming == null || incoming.length != 128) return null;
+
+        Account best = null;
+        double bestDist   = Double.MAX_VALUE;  // gần nhất
+        double secondDist = Double.MAX_VALUE;  // gần nhì
+
+        for (Account acc : allEnrolled) {
+            double[] stored = parseDescriptor(acc.getFaceVector());
+            if (stored == null || stored.length != incoming.length) continue;
+            double dist = euclideanDistance(stored, incoming);
+            if (dist < bestDist) {
+                secondDist = bestDist;
+                bestDist   = dist;
+                best       = acc;
+            } else if (dist < secondDist) {
+                secondDist = dist;
+            }
+        }
+
+        if (best == null || bestDist > MATCH_THRESHOLD) return null;
+        if (secondDist - bestDist < AMBIGUITY_MARGIN && secondDist <= MATCH_THRESHOLD) return null;
+        return best;
+    }
+
+    /**
      * Tìm account khác đã đăng ký khuôn mặt GIỐNG descriptor này (chặn 1 mặt
      * đăng ký cho 2 tài khoản). Trả về account trùng, hoặc null nếu không trùng.
      */

@@ -119,6 +119,8 @@
 .qa-sub{font-size:11.5px;opacity:.7;margin-top:1px}
 .qa-arrow{font-size:15px;opacity:.5;flex:none}
 </style>
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body class="wh">
 

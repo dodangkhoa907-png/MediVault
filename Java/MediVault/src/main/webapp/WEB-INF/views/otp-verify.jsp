@@ -151,6 +151,8 @@ body::before{
 .btn-back:hover{color:var(--navy)}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>
@@ -181,6 +183,7 @@ body::before{
     <% } %>
 
     <form method="post" action="${pageContext.request.contextPath}/otp-verify" id="otpForm">
+      <input type="hidden" name="_csrf" value="${csrfToken}">
       <input type="hidden" name="context" value="<%= context %>">
       <input type="hidden" name="otpCode" id="otpCode">
 
@@ -207,6 +210,7 @@ body::before{
 
       <div class="actions">
         <form method="post" action="${pageContext.request.contextPath}/otp-verify" style="flex:1">
+          <input type="hidden" name="_csrf" value="${csrfToken}">
           <input type="hidden" name="context" value="<%= context %>">
           <input type="hidden" name="resend" value="1">
           <button type="submit" class="btn-resend" id="btnResend" disabled>↻ Gửi lại mã</button>

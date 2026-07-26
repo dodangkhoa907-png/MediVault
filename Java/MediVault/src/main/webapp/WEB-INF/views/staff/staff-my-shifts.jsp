@@ -169,6 +169,8 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
 .empty-state p{font-size:13.5px}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 
@@ -293,6 +295,7 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
         <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:16px 18px;margin-top:10px">
           <div style="font-size:13px;font-weight:750;color:var(--ink);margin-bottom:12px">🔴 Kết thúc ca</div>
           <form action="${pageContext.request.contextPath}/staff-shift" method="post">
+            <input type="hidden" name="_csrf" value="${csrfToken}">
             <input type="hidden" name="action"  value="close">
             <input type="hidden" name="uid"     value="<%= uid %>">
             <input type="hidden" name="shiftId" value="<%= currentShift != null ? currentShift.getShiftId() : 0 %>">

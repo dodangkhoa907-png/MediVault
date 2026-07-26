@@ -293,6 +293,8 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>

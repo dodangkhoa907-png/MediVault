@@ -84,6 +84,8 @@ body{display:grid;grid-template-columns:56% 44%;min-height:100vh;background:var(
 
 @media(max-width:860px){body{grid-template-columns:1fr}.left{display:none}.right{padding:28px 20px}}
 </style>
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
   <div class="left">
@@ -117,6 +119,7 @@ body{display:grid;grid-template-columns:56% 44%;min-height:100vh;background:var(
       <div class="info"><span>ℹ️</span><span>Yêu cầu sẽ được gửi tới <b>Admin</b> để xác nhận. Tài khoản sẽ tạm khóa trong khi chờ xử lý.</span></div>
 
       <form method="post" action="<%= ctx %>/warehouse-forgot-password" autocomplete="off">
+        <input type="hidden" name="_csrf" value="${csrfToken}">
         <div class="field">
           <label for="email">Email đăng ký</label>
           <div class="input">

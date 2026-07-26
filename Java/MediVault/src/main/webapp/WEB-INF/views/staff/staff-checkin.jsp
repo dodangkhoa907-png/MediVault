@@ -121,6 +121,8 @@ tbody tr:last-child td{border-bottom:none}
 .face-modal-actions button{flex:1;padding:11px 0;border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:750;cursor:pointer;border:none}
 .face-btn-cancel{background:var(--surface);color:var(--muted);border:1.5px solid var(--border)!important}
 </style>    
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <aside class="sidebar">

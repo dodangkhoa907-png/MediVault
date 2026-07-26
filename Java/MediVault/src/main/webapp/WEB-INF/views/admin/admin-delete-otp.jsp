@@ -84,6 +84,8 @@ h2{font-family:'Lora',serif;font-size:24px;color:var(--ink);margin-bottom:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>

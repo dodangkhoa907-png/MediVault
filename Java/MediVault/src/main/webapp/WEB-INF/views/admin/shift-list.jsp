@@ -934,6 +934,8 @@ select,option{font-family:inherit;font-size:inherit}
 .cdd-opt.active{background:linear-gradient(135deg,var(--blue,#1558A8),#0D3F85);color:#fff;font-weight:750}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 
@@ -1615,6 +1617,7 @@ select,option{font-family:inherit;font-size:inherit}
                     <td>
                       <div style="display:flex;gap:6px;align-items:center">
                         <form method="post" action="${pageContext.request.contextPath}/leave-requests">
+                          <input type="hidden" name="_csrf" value="${csrfToken}">
                           <input type="hidden" name="action"       value="approve">
                           <input type="hidden" name="id"           value="${lr.leaveId}">
                           <input type="hidden" name="deductAmount" value="0">
@@ -1628,6 +1631,7 @@ select,option{font-family:inherit;font-size:inherit}
                           </button>
                         </form>
                         <form method="post" action="${pageContext.request.contextPath}/leave-requests">
+                          <input type="hidden" name="_csrf" value="${csrfToken}">
                           <input type="hidden" name="action" value="reject">
                           <input type="hidden" name="id"     value="${lr.leaveId}">
                           <button type="submit"
@@ -1744,6 +1748,7 @@ select,option{font-family:inherit;font-size:inherit}
     <div class="modal-body">
       <!-- Form thêm quầy mới -->
       <form id="posCounterAddForm" method="post" action="${pageContext.request.contextPath}/shifts" style="margin-bottom: 20px; background: var(--surface); padding: 14px; border-radius: 10px; border: 1.5px solid var(--border);">
+        <input type="hidden" name="_csrf" value="${csrfToken}">
         <input type="hidden" name="action" value="pos-counter-add">
         <div style="display: flex; gap: 10px; align-items: flex-end;">
           <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
@@ -1777,6 +1782,7 @@ select,option{font-family:inherit;font-size:inherit}
                 <td style="padding: 10px 8px;">
                   <span id="lblStation-${ps.posStationId}" style="font-weight:750; color: var(--navy);">${fn:escapeXml(ps.stationName)}</span>
                   <form id="editForm-${ps.posStationId}" method="post" action="${pageContext.request.contextPath}/shifts" style="display: none; margin: 0;">
+                    <input type="hidden" name="_csrf" value="${csrfToken}">
                     <input type="hidden" name="action" value="pos-counter-update">
                     <input type="hidden" name="posStationId" value="${ps.posStationId}">
                     <input type="text" name="stationName" value="${fn:escapeXml(ps.stationName)}" required style="border: 1.5px solid var(--blue); border-radius: 6px; padding: 4px 8px; font-size: 13px; font-family: inherit; width: 100%; box-sizing: border-box;">
@@ -1793,6 +1799,7 @@ select,option{font-family:inherit;font-size:inherit}
                     <c:choose>
                       <c:when test="${hasStaff}">
                         <form method="post" action="${pageContext.request.contextPath}/shifts" style="margin:0;" onsubmit="showSecureDeleteModal(event, ${ps.posStationId}); return false;">
+                          <input type="hidden" name="_csrf" value="${csrfToken}">
                           <input type="hidden" name="action" value="pos-counter-delete">
                           <input type="hidden" name="posStationId" value="${ps.posStationId}">
                           <button type="submit" style="border: none; background: transparent; cursor: pointer; font-size: 13px; padding: 4px 8px; border-radius: 6px; color: var(--red);" title="Xóa quầy (Có nhân viên hôm nay)">🗑️</button>
@@ -1800,6 +1807,7 @@ select,option{font-family:inherit;font-size:inherit}
                       </c:when>
                       <c:otherwise>
                         <form method="post" action="${pageContext.request.contextPath}/shifts" style="margin:0;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa ${fn:escapeXml(ps.stationName)}?\nLưu ý: Các ca làm việc đang gán vào quầy này sẽ trở thành Chưa gán quầy.')">
+                          <input type="hidden" name="_csrf" value="${csrfToken}">
                           <input type="hidden" name="action" value="pos-counter-delete">
                           <input type="hidden" name="posStationId" value="${ps.posStationId}">
                           <button type="submit" style="border: none; background: transparent; cursor: pointer; font-size: 13px; padding: 4px 8px; border-radius: 6px; color: var(--red);" title="Xóa quầy">🗑️</button>
@@ -1836,6 +1844,7 @@ select,option{font-family:inherit;font-size:inherit}
     </div>
     <div class="modal-body">
       <form id="schedForm" method="post" action="${pageContext.request.contextPath}/shifts">
+        <input type="hidden" name="_csrf" value="${csrfToken}">
         <input type="hidden" name="action" value="schedule-bulk">
 
         <%-- Nhân viên --%>
@@ -1919,6 +1928,7 @@ select,option{font-family:inherit;font-size:inherit}
     </div>
     <div class="modal-body">
       <form id="typeForm" method="post" action="${pageContext.request.contextPath}/shift-types">
+        <input type="hidden" name="_csrf" value="${csrfToken}">
         <input type="hidden" name="action" id="typeAction" value="create">
         <input type="hidden" name="shiftTypeId" id="editTypeId" value="">
         <div class="mfg">
@@ -1981,6 +1991,7 @@ select,option{font-family:inherit;font-size:inherit}
     <div class="modal-body">
       <!-- Form quản lý/thêm nhân viên -->
       <form id="posAddForm" method="post" action="${pageContext.request.contextPath}/shifts" style="margin-bottom: 20px; background: var(--surface); padding: 14px; border-radius: 10px; border: 1.5px solid var(--border);">
+        <input type="hidden" name="_csrf" value="${csrfToken}">
         <input type="hidden" name="action" id="posFormAction" value="pos-assign">
         <input type="hidden" name="posStation" id="posAddStationNum">
         <input type="hidden" name="scheduleId" id="posFormScheduleId" value="">
@@ -2074,6 +2085,7 @@ select,option{font-family:inherit;font-size:inherit}
     </div>
     <div class="modal-body">
       <form id="posEditForm" method="post" action="${pageContext.request.contextPath}/shifts">
+        <input type="hidden" name="_csrf" value="${csrfToken}">
         <input type="hidden" name="action" value="schedule-update">
         <input type="hidden" name="scheduleId" id="posEditScheduleId">
         <input type="hidden" name="tab" value="pos-map">
@@ -2141,6 +2153,7 @@ select,option{font-family:inherit;font-size:inherit}
       <div style="display:flex; flex-direction:column; gap:12px;">
         <!-- Option 1: Unassign -->
         <form method="post" action="${pageContext.request.contextPath}/shifts" style="margin:0;">
+          <input type="hidden" name="_csrf" value="${csrfToken}">
           <input type="hidden" name="action" value="pos-unassign">
           <input type="hidden" name="scheduleId" class="posDeleteScheduleId">
           <button type="submit" style="width:100%; display:flex; align-items:flex-start; gap:10px; padding:12px; border:1.5px solid var(--border); border-radius:10px; background:#fff; text-align:left; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.borderColor='var(--blue)'; this.style.background='rgba(21,88,168,0.02)'" onmouseout="this.style.borderColor='var(--border)'; this.style.background='#fff'">
@@ -2154,6 +2167,7 @@ select,option{font-family:inherit;font-size:inherit}
 
         <!-- Option 2: Cancel -->
         <form method="post" action="${pageContext.request.contextPath}/shifts" style="margin:0;">
+          <input type="hidden" name="_csrf" value="${csrfToken}">
           <input type="hidden" name="action" value="schedule-delete-staff">
           <input type="hidden" name="mode" value="cancel">
           <input type="hidden" name="tab" value="pos-map">
@@ -2169,6 +2183,7 @@ select,option{font-family:inherit;font-size:inherit}
 
         <!-- Option 3: Delete -->
         <form method="post" action="${pageContext.request.contextPath}/shifts" style="margin:0;">
+          <input type="hidden" name="_csrf" value="${csrfToken}">
           <input type="hidden" name="action" value="schedule-delete-staff">
           <input type="hidden" name="mode" value="delete">
           <input type="hidden" name="tab" value="pos-map">
@@ -2232,6 +2247,7 @@ select,option{font-family:inherit;font-size:inherit}
     </div>
     <div class="sched-modal-body">
       <form id="fullSchedForm" method="post" action="${pageContext.request.contextPath}/shifts">
+        <input type="hidden" name="_csrf" value="${csrfToken}">
         <input type="hidden" name="action" value="schedule-bulk">
 
         <%-- Nhân viên --%>
@@ -2371,6 +2387,7 @@ select,option{font-family:inherit;font-size:inherit}
     </div>
     <div class="em-body">
       <form id="editSchedForm" method="post" action="${pageContext.request.contextPath}/shifts">
+        <input type="hidden" name="_csrf" value="${csrfToken}">
         <input type="hidden" name="action" value="schedule-update">
         <input type="hidden" name="scheduleId" id="editSchedId">
 

@@ -111,6 +111,8 @@ select,option{font-family:inherit;font-size:inherit}
 .cdd-opt:hover{background:var(--surface,#F1F5FB);color:var(--blue,#1558A8)}
 .cdd-opt.active{background:linear-gradient(135deg,var(--blue,#1558A8),#0D3F85);color:#fff;font-weight:750}
 </style>    
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
@@ -177,6 +179,7 @@ select,option{font-family:inherit;font-size:inherit}
               </div>
               <div class="lc-actions">
                 <form method="post" action="${pageContext.request.contextPath}/attendance" style="flex:1">
+                  <input type="hidden" name="_csrf" value="${csrfToken}">
                   <input type="hidden" name="action" value="admin-checkout">
                   <input type="hidden" name="accountId" value="${att.accountId}">
                   <button type="submit" class="btn-force-out"

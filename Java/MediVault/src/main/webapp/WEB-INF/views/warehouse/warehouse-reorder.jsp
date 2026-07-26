@@ -65,6 +65,8 @@ tbody tr:hover{background:var(--surface)}
 
 @media(max-width:1100px){.grid3{grid-template-columns:1fr}}
 </style>
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body class="wh">
 <%@ include file="warehouse-sidebar.jsp" %>

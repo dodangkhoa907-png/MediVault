@@ -110,6 +110,8 @@ tbody tr:hover{background:var(--surface)}
 .milestone-row.done .ms-title{text-decoration:line-through}
 .ms-due{font-size:11.5px;color:var(--muted);flex:none}
 </style>
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body class="wh">
 <%@ include file="warehouse-sidebar.jsp" %>
@@ -166,6 +168,7 @@ tbody tr:hover{background:var(--surface)}
                   <div class="tactions">
                     <c:if test="${empty t.assignedTo}">
                       <form method="post" action="<%= ctx %>/warehouse-task" style="display:inline">
+                        <input type="hidden" name="_csrf" value="${csrfToken}">
                         <input type="hidden" name="uid" value="${staffUid}">
                         <input type="hidden" name="action" value="claim">
                         <input type="hidden" name="taskId" value="${t.taskId}">
@@ -173,6 +176,7 @@ tbody tr:hover{background:var(--surface)}
                       </form>
                     </c:if>
                     <form method="post" action="<%= ctx %>/warehouse-task" style="display:inline">
+                      <input type="hidden" name="_csrf" value="${csrfToken}">
                       <input type="hidden" name="uid" value="${staffUid}">
                       <input type="hidden" name="action" value="complete">
                       <input type="hidden" name="taskId" value="${t.taskId}">
@@ -215,6 +219,7 @@ tbody tr:hover{background:var(--surface)}
                       <c:if test="${not empty m.dueDate}"><span class="ms-due">Hạn: ${m.dueDateDisplay}</span></c:if>
                       <c:if test="${!m.done}">
                         <form method="post" action="<%= ctx %>/warehouse-task" style="display:inline">
+                          <input type="hidden" name="_csrf" value="${csrfToken}">
                           <input type="hidden" name="uid" value="${staffUid}">
                           <input type="hidden" name="action" value="complete">
                           <input type="hidden" name="taskId" value="${m.taskId}">
@@ -235,6 +240,7 @@ tbody tr:hover{background:var(--surface)}
       <div class="card-head"><div class="wh-ic jade">➕</div><h2>Tạo công việc mới <small>(giao cho Thủ kho khác hoặc để chung)</small></h2></div>
       <div class="card-body">
         <form method="post" action="<%= ctx %>/warehouse-task">
+          <input type="hidden" name="_csrf" value="${csrfToken}">
           <input type="hidden" name="uid" value="${staffUid}">
           <input type="hidden" name="action" value="create">
           <div class="formrow" style="margin-bottom:14px">
@@ -345,6 +351,7 @@ tbody tr:hover{background:var(--surface)}
                     <c:if test="${t.status == 'PENDING' || t.status == 'IN_PROGRESS'}">
                       <form method="post" action="<%= ctx %>/warehouse-task" style="display:inline"
                             onsubmit="return confirm('Huỷ công việc này?');">
+                        <input type="hidden" name="_csrf" value="${csrfToken}">
                         <input type="hidden" name="uid" value="${staffUid}">
                         <input type="hidden" name="action" value="cancel">
                         <input type="hidden" name="taskId" value="${t.taskId}">

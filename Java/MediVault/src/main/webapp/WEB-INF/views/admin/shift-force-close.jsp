@@ -223,6 +223,8 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
@@ -283,6 +285,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 
                 <%-- Form --%>
                 <form method="post" action="${pageContext.request.contextPath}/shifts">
+                  <input type="hidden" name="_csrf" value="${csrfToken}">
                     <input type="hidden" name="action"  value="force-close">
                     <input type="hidden" name="shiftId" value="${shift.shiftId}">
 

@@ -435,6 +435,8 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .face-btn-cancel{background:var(--surface);color:var(--muted);border:1.5px solid var(--border)!important}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>

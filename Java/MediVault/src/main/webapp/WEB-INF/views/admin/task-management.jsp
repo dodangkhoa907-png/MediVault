@@ -107,6 +107,8 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
 .kb-progress-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:20px}
 .kb-empty{font-size:12px;color:var(--muted);font-style:italic;padding:8px 0}
 </style>
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head><body><%@ include file="/WEB-INF/views/admin/sidebar.jsp" %><div class="main">
 
   <c:if test="${not empty param.msg}">
@@ -158,6 +160,7 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
 
         <!-- Task ngắn hạn -->
         <form method="post" action="${pageContext.request.contextPath}/task-management" id="formTask">
+          <input type="hidden" name="_csrf" value="${csrfToken}">
           <input type="hidden" name="action" value="create-task">
           <div class="form-row" style="margin-bottom:12px">
             <div class="fi grow"><label>Tiêu đề <span class="req">*</span></label>
@@ -182,6 +185,7 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
 
         <!-- Dự án dài hạn -->
         <form method="post" action="${pageContext.request.contextPath}/task-management" id="formProject" style="display:none">
+          <input type="hidden" name="_csrf" value="${csrfToken}">
           <input type="hidden" name="action" value="create-project">
           <div class="form-row" style="margin-bottom:12px">
             <div class="fi grow"><label>Tên Dự án <span class="req">*</span></label>

@@ -373,6 +373,8 @@ select,option{font-family:inherit;font-size:inherit}
 .cdd-opt.active{background:linear-gradient(135deg,var(--blue,#1558A8),#0D3F85);color:#fff;font-weight:750}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 
@@ -668,6 +670,7 @@ select,option{font-family:inherit;font-size:inherit}
                       <button class="btn-icon i-edit" title="Sửa thông tin"
                               onclick="openEditPanel(${m.medicineId})">✏️</button>
                       <form method="post" action="${pageContext.request.contextPath}/medicines" style="display:contents">
+                        <input type="hidden" name="_csrf" value="${csrfToken}">
                         <input type="hidden" name="action" value="toggle-medicine"/>
                         <input type="hidden" name="id" value="${m.medicineId}"/>
                         <button type="submit" class="btn-icon ${m.status ? 'i-hide' : 'i-show'}"
@@ -676,6 +679,7 @@ select,option{font-family:inherit;font-size:inherit}
                       <c:if test="${stock == 0}">
                         <form method="post" action="${pageContext.request.contextPath}/medicines" style="display:contents"
                               onsubmit="return confirm('Xóa thuốc ${fn:escapeXml(m.medicineName)}?\nKhông thể hoàn tác!')">
+                          <input type="hidden" name="_csrf" value="${csrfToken}">
                           <input type="hidden" name="action" value="delete-medicine"/>
                           <input type="hidden" name="id" value="${m.medicineId}"/>
                           <button type="submit" class="btn-icon i-del" title="Xóa (chỉ khi hết hàng)">🗑️</button>
@@ -791,7 +795,10 @@ select,option{font-family:inherit;font-size:inherit}
       </div>
     </div>
 
-    <form id="dwForm" method="post" action="${pageContext.request.contextPath}/medicines" enctype="multipart/form-data">
+    <%-- Form multipart: token CSRF phải đi ở QUERY STRING (body multipart không đọc được
+         từ Filter — xem CsrfUtil.isValid). --%>
+    <form id="dwForm" method="post" action="${pageContext.request.contextPath}/medicines?_csrf=${csrfToken}" enctype="multipart/form-data">
+      <input type="hidden" name="_csrf" value="${csrfToken}">
       <input type="hidden" name="action" value="save-medicine">
       <input type="hidden" name="medicineId" id="dwMedId">
       <input type="hidden" name="existingImageUrl" id="dwExistingImg">

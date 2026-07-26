@@ -54,6 +54,8 @@ td{padding:14px 16px;font-size:13.5px;vertical-align:middle}.td-id{color:var(--m
 .section-tab:hover{background:var(--surface);color:var(--ink)}.section-tab.active{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;box-shadow:0 3px 10px rgba(21,88,168,.25)}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>

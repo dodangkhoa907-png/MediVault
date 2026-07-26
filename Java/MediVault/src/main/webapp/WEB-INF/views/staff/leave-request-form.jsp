@@ -125,6 +125,8 @@ body{display:flex}
 .card:nth-child(3){animation:fadeUp .25s .15s ease both}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 
@@ -202,6 +204,7 @@ body{display:flex}
     <div class="page-sub">Đơn sẽ được gửi Admin duyệt. Nghỉ đột xuất cần báo sớm nhất có thể.</div>
 
     <form method="post" action="${pageContext.request.contextPath}/leave-requests">
+      <input type="hidden" name="_csrf" value="${csrfToken}">
       <input type="hidden" name="action" value="submit">
       <input type="hidden" name="uid"    value="<%= uid %>">
 

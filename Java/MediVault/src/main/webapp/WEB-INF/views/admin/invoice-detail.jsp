@@ -68,6 +68,8 @@ tbody tr:last-child td{border-bottom:none}
 .hint-box{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px 16px;margin-bottom:18px;font-size:12px;color:#1558A8}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <div class="topbar">

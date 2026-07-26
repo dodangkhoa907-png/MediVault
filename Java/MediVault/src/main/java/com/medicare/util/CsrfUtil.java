@@ -74,12 +74,56 @@ public final class CsrfUtil {
         String sessionToken = (String) session.getAttribute(SESSION_ATTR);
         if (sessionToken == null) return false;
 
-        // Ưu tiên form field, fallback sang header (AJAX)
-        String requestToken = req.getParameter(FORM_PARAM);
+        String requestToken;
+        if (isMultipart(req)) {
+            // ── Request multipart (form upload ảnh, hoặc fetch gửi FormData) ──
+            // KHÔNG gọi getParameter() ở đây: với multipart, các field nằm trong BODY và
+            // việc đụng vào getParameter() từ Filter có thể kích hoạt parse body sớm, khiến
+            // servlet phía sau đọc file upload thất bại. Vì vậy token của luồng multipart
+            // phải đi bằng 1 trong 2 đường KHÔNG nằm trong body:
+            //   • form HTML  → gắn vào action:  action="...?_csrf=${csrfToken}"
+            //   • fetch/AJAX → gắn vào header:  X-CSRF-Token
+            requestToken = fromQueryString(req.getQueryString());
+        } else {
+            requestToken = req.getParameter(FORM_PARAM);
+        }
+
         if (requestToken == null || requestToken.isEmpty())
             requestToken = req.getHeader(HEADER_NAME);
 
-        return sessionToken.equals(requestToken);
+        // So sánh theo kiểu không phụ thuộc thời gian (chống timing attack)
+        return requestToken != null && constantTimeEquals(sessionToken, requestToken);
+    }
+
+    /** Request có phải multipart/form-data không (body chứa file upload). */
+    private static boolean isMultipart(HttpServletRequest req) {
+        String ct = req.getContentType();
+        return ct != null && ct.toLowerCase().startsWith("multipart/");
+    }
+
+    /** Bóc giá trị _csrf từ query string thô, không đụng tới getParameter(). */
+    private static String fromQueryString(String qs) {
+        if (qs == null || qs.isEmpty()) return null;
+        for (String pair : qs.split("&")) {
+            int eq = pair.indexOf('=');
+            if (eq <= 0) continue;
+            if (FORM_PARAM.equals(pair.substring(0, eq))) {
+                String raw = pair.substring(eq + 1);
+                try {
+                    return java.net.URLDecoder.decode(raw, java.nio.charset.StandardCharsets.UTF_8);
+                } catch (Exception e) {
+                    return raw;
+                }
+            }
+        }
+        return null;
+    }
+
+    /** So sánh chuỗi với thời gian không đổi theo nội dung. */
+    private static boolean constantTimeEquals(String a, String b) {
+        byte[] x = a.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        byte[] y = b.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        return java.security.MessageDigest.isEqual(x, y);
     }
 
     // ── AppFilter helper ──────────────────────────────────────────────────
@@ -89,8 +133,11 @@ public final class CsrfUtil {
      * Gọi từ AppFilter trước khi forward.
      */
     public static void injectToRequest(HttpServletRequest req) {
-        HttpSession session = req.getSession(false);
-        if (session == null) return;
+        // getSession(TRUE) — cố ý tạo session nếu chưa có. Trước đây dùng getSession(false)
+        // nên trang nào render khi chưa có session sẽ nhận ${csrfToken} RỖNG, form in ra
+        // token rỗng và mọi POST từ trang đó sẽ bị chặn oan. Có token ngay từ lần vào đầu
+        // tiên thì mới bảo vệ được cả những trang chưa đăng nhập (vd màn POS kiosk).
+        HttpSession session = req.getSession(true);
         String token = getOrCreate(session);
         req.setAttribute(REQUEST_ATTR, token);
     }
@@ -104,12 +151,22 @@ public final class CsrfUtil {
         // Chỉ validate POST/PUT/DELETE/PATCH
         if ("GET".equals(method) || "HEAD".equals(method) || "OPTIONS".equals(method))
             return false;
-        // Public endpoints (login, otp...) không cần CSRF vì chưa có session
+
         String uri = req.getRequestURI();
         String ctx = req.getContextPath();
+
+        // ── Miễn CSRF cho 2 nhóm, VÀ CHỈ 2 nhóm này ──────────────────────────────
+        // (1) Các form ĐĂNG NHẬP / khôi phục mật khẩu: người dùng chưa có phiên làm việc
+        //     nào để bảo vệ, mà chặn nhầm ở đây thì hỏng luôn đường vào hệ thống.
+        //     Rủi ro còn lại chỉ là "login CSRF" — mức độ thấp hơn nhiều.
+        // (2) Endpoint gọi bởi THIẾT BỊ, không phải trình duyệt (máy quét thẻ NFC) —
+        //     không có chỗ nào để đính token vào.
+        // Ngoài 2 nhóm trên, MỌI POST khác đều phải có token hợp lệ.
         return !uri.equals(ctx + "/login")
                 && !uri.equals(ctx + "/staff-login")
+                && !uri.equals(ctx + "/warehouse-login")
                 && !uri.equals(ctx + "/forgot-password")
+                && !uri.equals(ctx + "/warehouse-forgot-password")
                 && !uri.equals(ctx + "/otp-verify")
                 && !uri.startsWith(ctx + "/nfc-checkin")
                 && !uri.startsWith(ctx + "/api/nfc");

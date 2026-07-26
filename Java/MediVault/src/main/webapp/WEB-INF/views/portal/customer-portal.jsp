@@ -162,6 +162,8 @@ select,option{font-family:inherit;font-size:inherit}
 .cdd-opt.active{background:linear-gradient(135deg,var(--blue,#1558A8),#0D3F85);color:#fff;font-weight:750}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 
@@ -354,6 +356,7 @@ select,option{font-family:inherit;font-size:inherit}
       <div class="sec-head"><h3>🏥 Hồ sơ sức khỏe cá nhân</h3></div>
       <div class="sec-body">
         <form method="post" action="${pageContext.request.contextPath}/portal">
+          <input type="hidden" name="_csrf" value="${csrfToken}">
           <input type="hidden" name="action" value="update-profile">
           <div class="fld"><label>Họ tên</label>
             <input type="text" value="<%= dn %>" disabled style="background:#f8fafc;color:#94a3b8"></div>
@@ -380,6 +383,7 @@ select,option{font-family:inherit;font-size:inherit}
           <button type="submit" class="btn-save">💾 Lưu hồ sơ</button>
         </form>
         <form method="post" action="${pageContext.request.contextPath}/portal">
+          <input type="hidden" name="_csrf" value="${csrfToken}">
           <input type="hidden" name="action" value="logout">
           <button type="submit" class="btn-logout">⏻ Đăng xuất</button>
         </form>

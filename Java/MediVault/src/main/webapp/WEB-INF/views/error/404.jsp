@@ -20,6 +20,8 @@ a{display:inline-block;padding:12px 28px;background:#1558A8;color:#fff;border-ra
 a:hover{background:#0F3D80}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <div class="card">

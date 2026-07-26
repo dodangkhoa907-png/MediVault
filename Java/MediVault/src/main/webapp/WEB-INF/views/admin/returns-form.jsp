@@ -89,6 +89,8 @@ select,option{font-family:inherit;font-size:inherit}
 .cdd-opt.active{background:linear-gradient(135deg,var(--blue,#1558A8),#0D3F85);color:#fff;font-weight:750}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <div class="topbar">
@@ -147,6 +149,7 @@ select,option{font-family:inherit;font-size:inherit}
     <div class="page-sub">Hóa đơn <strong>${invoice.invoiceCode}</strong> — chọn dòng hàng khách muốn trả.</div>
 
     <form method="post" action="${pageContext.request.contextPath}/returns" id="returnForm">
+      <input type="hidden" name="_csrf" value="${csrfToken}">
       <input type="hidden" name="action" value="save"/>
       <input type="hidden" name="returnType" value="CUSTOMER_RETURN"/>
       <input type="hidden" name="invoiceId" value="${invoice.invoiceId}"/>
@@ -203,6 +206,7 @@ select,option{font-family:inherit;font-size:inherit}
     </div>
 
     <form method="post" action="${pageContext.request.contextPath}/returns">
+      <input type="hidden" name="_csrf" value="${csrfToken}">
       <input type="hidden" name="action" value="save"/>
       <input type="hidden" name="batchId" value="${batch.batchId}"/>
 
