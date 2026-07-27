@@ -68,6 +68,8 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
 .toast-ok{background:#059669}.toast-err{background:#DC2626}.toast-info{background:#1558A8}
 @keyframes slideIn{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
 </style>    
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head><body><%@ include file="/WEB-INF/views/admin/sidebar.jsp" %><div class="main">  <c:if test="${not empty param.msg}">
     <c:choose>
       <c:when test="${param.msg=='approved'}"><div class="toast toast-ok" id="toast">✅ Đã duyệt đơn nghỉ!</div></c:when>
@@ -138,6 +140,7 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
         <div class="table-card-head"><h2>✏️ Điều chỉnh thưởng / ghi chú</h2></div>
         <div style="padding:16px 20px">
           <form method="post" action="${pageContext.request.contextPath}/payroll" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+            <input type="hidden" name="_csrf" value="${csrfToken}">
             <input type="hidden" name="action" value="updateBonus">
             <input type="hidden" name="id" value="${payroll.payrollId}">
             <div class="fi"><label>Thưởng (VNĐ)</label><input type="number" name="bonus" value="${payroll.bonus}" min="0" step="10000" style="width:160px"></div>
@@ -152,12 +155,14 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
     <div style="display:flex;gap:10px">
       <c:if test="${payroll.status=='DRAFT'}">
         <form method="post" action="${pageContext.request.contextPath}/payroll">
+          <input type="hidden" name="_csrf" value="${csrfToken}">
           <input type="hidden" name="action" value="confirm"><input type="hidden" name="id" value="${payroll.payrollId}">
           <button type="submit" class="btn-sm" style="background:var(--blue);color:#fff;padding:10px 24px;font-size:14px" onclick="return confirm('Xác nhận bảng lương?')">✅ Xác nhận bảng lương</button>
         </form>
       </c:if>
       <c:if test="${payroll.status=='CONFIRMED'}">
         <form method="post" action="${pageContext.request.contextPath}/payroll">
+          <input type="hidden" name="_csrf" value="${csrfToken}">
           <input type="hidden" name="action" value="paid"><input type="hidden" name="id" value="${payroll.payrollId}">
           <button type="submit" class="btn-sm" style="background:var(--green);color:#fff;padding:10px 24px;font-size:14px" onclick="return confirm('Đánh dấu đã trả lương?')">💰 Đã trả lương</button>
         </form>

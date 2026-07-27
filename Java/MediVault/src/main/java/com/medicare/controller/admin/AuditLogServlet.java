@@ -54,28 +54,35 @@ public class AuditLogServlet extends HttpServlet {
         req.setAttribute("searchKeyword", keyword);
 
         com.medicare.dao.interfaces.IAccountDAO accountDAO = new com.medicare.dao.AccountDAO();
-        com.medicare.dao.interfaces.IBatchesDAO batchesDAO = new com.medicare.dao.BatchesDAO();
         com.medicare.dao.interfaces.IPasswordResetDAO resetDAO = new com.medicare.dao.PasswordResetDAO();
 
-        // Tất cả tài khoản (gồm admin) — cho dropdown lọc theo người + map role
-        java.util.List<com.medicare.entity.Account> allAccounts = accountDAO.findAll();
+        // Tất cả tài khoản (gồm admin) — cho dropdown lọc theo người + map role.
+        // Cache 30s (giống pattern reference-data ở MedicineServlet): chuyển tab liên tục
+        // dùng lại cache thay vì SELECT * FROM Accounts mỗi lần.
+        java.util.List<com.medicare.entity.Account> allAccounts =
+                com.medicare.config.CacheManager.getShort("audit.allAccounts", accountDAO::findAll);
         java.util.Map<Integer,Integer> roleMap = new java.util.HashMap<>();
         for (com.medicare.entity.Account a : allAccounts) roleMap.put(a.getAccountId(), a.getRoleId());
         req.setAttribute("auditAccounts", allAccounts);
         req.setAttribute("auditRoleMap", roleMap);
         req.setAttribute("activeAccounts", (long) allAccounts.stream()
                 .filter(com.medicare.entity.Account::isActive).count());
-        req.setAttribute("expiryCount",    batchesDAO.findExpiringSoon().size());
         req.setAttribute("todayRevenue",   0L);
         req.setAttribute("todayInvoices",  0);
+        // expiryCount KHÔNG set thủ công ở đây — để SidebarHelper.load(req) bên dưới set qua
+        // cache 30s dùng chung với sidebar (trước đây gọi thẳng batchesDAO.findExpiringSoon()
+        // ở đây khiến cache của SidebarHelper bị vô hiệu hoá, full-scan bảng Batches mỗi lần).
 
         java.util.List<com.medicare.entity.PasswordResetRequest> pendingResets = resetDAO.findAllPending();
         req.setAttribute("pendingResets",     pendingResets);
         req.setAttribute("pendingResetCount", pendingResets.size());
         java.util.Map<Integer, com.medicare.entity.Account> resetAccountMap = new java.util.HashMap<>();
-        for (com.medicare.entity.PasswordResetRequest pr : pendingResets) {
-            com.medicare.entity.Account a = accountDAO.findById(pr.getAccountId());
-            if (a != null) resetAccountMap.put(pr.getAccountId(), a);
+        java.util.Set<Integer> resetAccountIds = new java.util.HashSet<>();
+        for (com.medicare.entity.PasswordResetRequest pr : pendingResets) resetAccountIds.add(pr.getAccountId());
+        if (!resetAccountIds.isEmpty()) {
+            for (com.medicare.entity.Account a : accountDAO.findAccountsByIds(new java.util.ArrayList<>(resetAccountIds))) {
+                resetAccountMap.put(a.getAccountId(), a);
+            }
         }
         req.setAttribute("resetAccountMap", resetAccountMap);
         SidebarHelper.load(req);

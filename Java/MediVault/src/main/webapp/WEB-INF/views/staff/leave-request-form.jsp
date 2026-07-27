@@ -10,6 +10,8 @@
     String sName     = staffAcc.getFullName() != null ? staffAcc.getFullName() : staffAcc.getUsername();
     String sInit     = sName.length()>=2 ? sName.substring(0,1).toUpperCase()+sName.substring(1,2).toUpperCase() : sName.toUpperCase();
     String sRoleName = staffAcc.getRoleId()==2 ? "Dược sĩ bán hàng" : "Thủ kho";
+    // roleId 3 (Thủ kho) có portal riêng — "Trang chủ" phải đưa đúng về /warehouse-dashboard.
+    String sHomeUrl  = staffAcc.getRoleId()==3 ? "/warehouse-dashboard" : "/staff-dashboard";
     // Today string
     java.time.LocalDate today = java.time.LocalDate.now();
     String todayStr = today.toString(); // yyyy-MM-dd cho input[type=date]
@@ -123,6 +125,8 @@ body{display:flex}
 .card:nth-child(3){animation:fadeUp .25s .15s ease both}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 
@@ -140,7 +144,7 @@ body{display:flex}
   </div>
   <nav class="nav-block">
     <div class="nav-label">Tổng quan</div>
-    <a href="${pageContext.request.contextPath}/staff-dashboard?uid=<%= uid %>" class="nav-item">
+    <a href="${pageContext.request.contextPath}<%= sHomeUrl %>?uid=<%= uid %>" class="nav-item">
       <span class="nav-icon">🏠</span> Trang chủ
     </a>
   </nav>
@@ -163,6 +167,9 @@ body{display:flex}
     <div class="nav-label">Bán hàng</div>
     <a href="${pageContext.request.contextPath}/pos?uid=<%= uid %>" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
+    </a>
+    <a href="${pageContext.request.contextPath}/staff-my-invoices?uid=<%= uid %>" class="nav-item">
+      <span class="nav-icon">🧾</span> Hóa đơn của tôi
     </a>
   </nav>
   <div class="sidebar-footer">
@@ -197,6 +204,7 @@ body{display:flex}
     <div class="page-sub">Đơn sẽ được gửi Admin duyệt. Nghỉ đột xuất cần báo sớm nhất có thể.</div>
 
     <form method="post" action="${pageContext.request.contextPath}/leave-requests">
+      <input type="hidden" name="_csrf" value="${csrfToken}">
       <input type="hidden" name="action" value="submit">
       <input type="hidden" name="uid"    value="<%= uid %>">
 

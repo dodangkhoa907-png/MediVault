@@ -151,12 +151,14 @@ public class ShiftServlet extends HttpServlet {
             }
         }
 
-        // Map accountId → Account để hiển thị tên nhân viên
+        // Map accountId → Account để hiển thị tên nhân viên — batch 1 query thay vì
+        // findById() từng account riêng lẻ trong loop.
         Map<Integer, Account> accountMap = new HashMap<>();
-        for (Shift s : allShifts) {
-            if (!accountMap.containsKey(s.getAccountId())) {
-                Account a = accountDAO.findById(s.getAccountId());
-                if (a != null) accountMap.put(s.getAccountId(), a);
+        Set<Integer> shiftAccountIds = new HashSet<>();
+        for (Shift s : allShifts) shiftAccountIds.add(s.getAccountId());
+        if (!shiftAccountIds.isEmpty()) {
+            for (Account a : accountDAO.findAccountsByIds(new ArrayList<>(shiftAccountIds))) {
+                accountMap.put(a.getAccountId(), a);
             }
         }
 
@@ -172,7 +174,8 @@ public class ShiftServlet extends HttpServlet {
         req.setAttribute("openShifts",   openShifts);
         req.setAttribute("openCount",    openShifts.size());
         req.setAttribute("totalCount",   allShifts.size());
-        req.setAttribute("allStaff",     accountDAO.findAllStaff());
+        req.setAttribute("allStaff",
+                com.medicare.config.CacheManager.getShort("ref.allStaff", accountDAO::findAllStaff));
         req.setAttribute("filterFrom",   fromStr);
         req.setAttribute("filterTo",     toStr);
         req.setAttribute("filterAcc",    accountStr);
@@ -236,19 +239,22 @@ public class ShiftServlet extends HttpServlet {
         req.setAttribute("calStart",       calStart.toString());
         req.setAttribute("calEnd",         calEnd.toString());
 
-        // ── Dữ liệu cho Tab Loại ca ──────────────────────────────────────────
-        req.setAttribute("shiftTypes",   shiftTypeDAO.findAll());
+        // ── Dữ liệu cho Tab Loại ca — cache 30s, gần như không đổi ───────────
+        req.setAttribute("shiftTypes",
+                com.medicare.config.CacheManager.getShort("ref.shiftTypes", shiftTypeDAO::findAll));
 
         // ── Dữ liệu cho Tab Nghỉ phép ────────────────────────────────────────
+        // KHÔNG set "pendingLeaveCount" thủ công — để SidebarHelper.load() bên dưới
+        // set qua cache 30s dùng chung với sidebar (set trước sẽ vô hiệu hoá cache đó).
         java.util.List<com.medicare.entity.LeaveRequest> pendingLeaves = leaveDAO.findPending();
-        req.setAttribute("pendingLeaves",     pendingLeaves);
-        req.setAttribute("pendingLeaveCount", pendingLeaves.size());
+        req.setAttribute("pendingLeaves", pendingLeaves);
 
         // ── Dữ liệu sơ đồ quầy POS hôm nay ──────────────────────────────────
         java.util.List<ShiftSchedule> todaySchedules =
                 ((ShiftScheduleDAO) scheduleDAO).findTodayAll();
         req.setAttribute("todaySchedules", todaySchedules);
-        req.setAttribute("posStations",   posStationDAO.findAllActive());
+        req.setAttribute("posStations",
+                com.medicare.config.CacheManager.getShort("ref.posStationsActive", posStationDAO::findAllActive));
 
         SidebarHelper.load(req);
 
@@ -527,24 +533,32 @@ public class ShiftServlet extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/shifts?msg=" + (ok ? "updated" : "error") + suffix);
     }
 
-    /** Sửa nhiều ca đã chọn (bulk update) */
+    /**
+     * Sửa nhiều ca đã chọn — MỖI CA CÓ GIÁ TRỊ RIÊNG (không còn áp 1 giá trị chung cho tất
+     * cả như trước). FE (shift-list.jsp, modal "Sửa ca") chỉ gửi lên những ca THỰC SỰ có
+     * thay đổi (đã lọc dirty ở client) qua 4 mảng song song cùng độ dài, khớp theo INDEX:
+     *   scheduleIds[i] ↔ shiftTypeIds[i] ↔ lateTols[i] ↔ notesArr[i]
+     */
     private void handleScheduleBulkUpdate(HttpServletRequest req, HttpServletResponse resp)
             throws IOException {
-        Account admin    = (Account) req.getSession(false).getAttribute("adminAccount");
-        String[] ids     = req.getParameterValues("scheduleIds");
-        int shiftTypeId  = parseIntOr(req.getParameter("shiftTypeId"), 0);
-        int lateTol      = parseIntOr(req.getParameter("lateToleranceMinutes"), -1); // -1 = giữ nguyên
-        String notes     = req.getParameter("notes");
+        Account admin      = (Account) req.getSession(false).getAttribute("adminAccount");
+        String[] ids       = req.getParameterValues("scheduleIds");
+        String[] typeIds   = req.getParameterValues("shiftTypeIds");
+        String[] lateTols  = req.getParameterValues("lateTols");
+        String[] notesArr  = req.getParameterValues("notesArr");
 
         if (ids == null || ids.length == 0) {
             resp.sendRedirect(req.getContextPath() + "/shifts?msg=invalid"); return;
         }
         int updated = 0;
-        for (String id : ids) {
-            int sid = parseIntOr(id, 0);
+        for (int i = 0; i < ids.length; i++) {
+            int sid = parseIntOr(ids[i], 0);
             if (sid == 0) continue;
-            // Nếu không chọn loại ca mới → chỉ update lateTol và notes
-            // scheduleDAO.update() với shiftTypeId=0 → giữ nguyên shiftType hiện tại
+            int shiftTypeId = (typeIds  != null && i < typeIds.length)  ? parseIntOr(typeIds[i], 0)   : 0;
+            int lateTol     = (lateTols != null && i < lateTols.length) ? parseIntOr(lateTols[i], -1) : -1;
+            String notes    = (notesArr != null && i < notesArr.length) ? notesArr[i] : null;
+
+            // Nếu không chọn loại ca mới → giữ nguyên shiftType hiện tại của CHÍNH ca đó
             int effectiveLateTol = lateTol >= 0 ? lateTol : 10; // fallback 10 phút
             boolean ok = scheduleDAO.update(
                     sid,
@@ -555,7 +569,7 @@ public class ShiftServlet extends HttpServlet {
             if (ok) updated++;
         }
         AuditHelper.log(req, "Sửa hàng loạt lịch ca", "ShiftSchedule",
-                "Đã sửa " + updated + " ca");
+                "Đã sửa " + updated + " ca (mỗi ca giá trị riêng)");
         resp.sendRedirect(req.getContextPath() + "/shifts?msg=updated&count=" + updated);
     }
 

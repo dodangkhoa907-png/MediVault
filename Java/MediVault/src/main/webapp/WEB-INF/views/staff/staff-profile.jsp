@@ -13,6 +13,9 @@
     com.medicare.entity.Account acc = (com.medicare.entity.Account) session.getAttribute("staffAccount_" + _staffUid);
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/staff-login"); return; }
     if (acc.getRoleId() == 1) { response.sendRedirect(request.getContextPath() + "/dashboard"); return; }
+    // roleId 3 (Thủ kho) có portal riêng — "Trang chủ"/"Quay lại Dashboard" phải đưa đúng về
+    // /warehouse-dashboard, không phải /staff-dashboard, để không lạc sang portal khác.
+    String sHomeUrl = acc.getRoleId() == 3 ? "/warehouse-dashboard" : "/staff-dashboard";
 
     // Trang này chỉ hiển thị thông tin của chính staff đang login
     // "a" = chính acc (không cần truyền qua request.getAttribute)
@@ -157,6 +160,8 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .photo-view-note{text-align:center;font-size:11px;color:var(--muted);margin-top:7px;font-style:italic}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>
@@ -175,7 +180,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
   </div>
   <nav class="nav-block">
     <div class="nav-label">Tổng quan</div>
-    <a href="<%= request.getContextPath() %>/staff-dashboard?uid=<%= _staffUid %>" class="nav-item">
+    <a href="<%= request.getContextPath() %><%= sHomeUrl %>?uid=<%= _staffUid %>" class="nav-item">
       <span class="nav-icon">🏠</span> Trang chủ
     </a>
   </nav>
@@ -199,6 +204,9 @@ body{display:flex;background:var(--soft);color:var(--ink)}
     <a href="<%= request.getContextPath() %>/pos?uid=<%= _staffUid %>" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
     </a>
+    <a href="<%= request.getContextPath() %>/staff-my-invoices?uid=<%= _staffUid %>" class="nav-item">
+      <span class="nav-icon">🧾</span> Hóa đơn của tôi
+    </a>
   </nav>
   <div style="flex:1"></div>
   <div class="sidebar-footer">
@@ -214,7 +222,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
   <header class="topbar">
     <div class="topbar-title">👤 Hồ sơ cá nhân</div>
     <div class="topbar-right">
-      <a href="<%= request.getContextPath() %>/staff-dashboard" class="back-btn">← Quay lại Dashboard</a>
+      <a href="<%= request.getContextPath() %><%= sHomeUrl %>" class="back-btn">← Quay lại Dashboard</a>
     </div>
   </header>
 

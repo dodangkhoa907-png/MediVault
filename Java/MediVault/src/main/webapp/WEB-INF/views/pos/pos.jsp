@@ -326,6 +326,9 @@ body{display:flex}
 .station-opt.selected{border-color:var(--blue);background:#eff6ff}
 .so-num{font-size:22px;font-weight:800;color:var(--blue)}
 .so-label{font-size:12px;font-weight:750;color:var(--muted)}
+.so-occupant{font-size:11px;font-weight:750;margin-top:2px;display:flex;align-items:center;gap:4px}
+.so-occupant.busy{color:#B45309}
+.so-occupant.free{color:#059669}
 .btn-confirm-station{width:100%;height:44px;border-radius:11px;border:none;background:linear-gradient(135deg,#059669,#047857);color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
 
 /* FACE CHECK-IN MODAL */
@@ -473,6 +476,8 @@ body{display:flex}
 .esr-confirm:disabled{background:#CBD5E1;cursor:not-allowed}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 
@@ -547,6 +552,7 @@ body{display:flex}
     <div class="search-wrap">
       <input type="text" id="searchInput" placeholder="Tìm thuốc theo tên hoặc mã vạch…" autocomplete="off">
     </div>
+    <button type="button" class="btn-clear" style="background:var(--blue);border-color:var(--blue);color:#fff;white-space:nowrap;flex-shrink:0" onclick="openBarcodeScan()" title="Quét mã vạch bằng camera">📷 Quét mã vạch</button>
     <!-- Station badge -->
     <div class="station-badge" onclick="openStationModal()" id="stationBadge" title="Chọn quầy POS">
       <span class="station-dot"></span>
@@ -725,6 +731,7 @@ body{display:flex}
            data-name="<c:out value='${m.medicineName}' />"
            data-price="${m.sellingPrice}"
            data-unit="<c:out value='${m.unit}' />"
+           data-barcode="<c:out value='${m.barcode}' />"
            data-cat="${m.categoryId}"
            data-rx="${m.prescriptionRequired}"
            data-dosage="<c:out value='${m.dosage}' />"
@@ -1091,8 +1098,28 @@ body{display:flex}
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
+<%-- Modal: Quét mã vạch bằng camera (bán hàng) --%>
+<div id="barcodeScanModal" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(11,22,40,.7);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeBarcodeScan()">
+  <div style="background:#fff;border-radius:18px;max-width:420px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden">
+    <div style="padding:16px 20px;background:linear-gradient(135deg,#1e3a5f,#1a56db);color:#fff;display:flex;align-items:center;justify-content:space-between">
+      <h3 style="margin:0;font-size:16px;font-weight:800">📷 Quét mã vạch bán hàng</h3>
+      <button type="button" onclick="closeBarcodeScan()" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:30px;height:30px;border-radius:9px;font-size:15px;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:16px 20px">
+      <div id="barcodeReaderBox" style="width:100%;min-height:260px;border-radius:12px;overflow:hidden;background:#0b1628"></div>
+      <div id="barcodeScanStatus" style="margin-top:10px;font-size:12.5px;color:#64748b;text-align:center">Đưa mã vạch vào giữa khung hình — mỗi lần khớp sẽ tự thêm 1 vào giỏ hàng.</div>
+    </div>
+  </div>
+</div>
+
+<%-- defer: cả 3 lib này chỉ dùng bên trong hàm gọi lúc người dùng thao tác (quét mã vạch,
+     thanh toán QR, check-in khuôn mặt) — không cái nào cần ngay lúc trang vừa load. Để mặc
+     định (blocking) thì HTML parser phải dừng lại chờ tải xong CẢ 3 lib từ CDN ngoài trước
+     khi chạy tới khối <script> chính bên dưới (search, giỏ hàng, addToCart...), làm chậm
+     tương tác ban đầu của toàn bộ trang POS dù cashier chưa chắc dùng tới. --%>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js" defer></script>
 <script>
 const ctx = '<%= ctx %>';
 const screenState = '${screenState}';
@@ -1138,6 +1165,7 @@ document.querySelectorAll('.med-card').forEach(card => {
     expiry:  card.dataset.expiry  || '',
     dosage:  card.dataset.dosage  || '',
     code:    card.dataset.code    || '',
+    barcode:  card.dataset.barcode  || '',
     generic:  card.dataset.generic  || '',
     contra:   card.dataset.contra   || '',
     warning:  card.dataset.warning  || '',
@@ -1147,19 +1175,93 @@ document.querySelectorAll('.med-card').forEach(card => {
 });
 document.getElementById('medCountBadge').textContent = allMedicines.length + ' thuốc';
 
-// ── Search ──
+// ── Search (khớp theo tên, mã thuốc, hoặc mã vạch — hỗ trợ cả gõ tay lẫn máy quét mã vạch
+// kiểu bàn phím gõ nhanh số + Enter) ──
 let searchTimer;
 document.getElementById('searchInput').addEventListener('input', function() {
   clearTimeout(searchTimer);
   const q = this.value.toLowerCase().trim();
   searchTimer = setTimeout(() => {
     allMedicines.forEach(m => {
-      const show = !q || m.name.toLowerCase().includes(q) || m.code.toLowerCase().includes(q);
+      const show = !q || m.name.toLowerCase().includes(q) || m.code.toLowerCase().includes(q)
+        || (m.barcode && m.barcode.toLowerCase().includes(q));
       m.el.style.display = (show && (activeCat === 0 || m.catId === activeCat)) ? '' : 'none';
     });
     checkEmpty();
   }, 200);
 });
+// Máy quét mã vạch (kiểu bàn phím) gõ mã rồi gửi Enter — nếu khớp đúng 1 thuốc, tự thêm vào giỏ.
+document.getElementById('searchInput').addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter') return;
+  const q = this.value.trim();
+  if (!q) return;
+  const med = allMedicines.find(m => m.barcode && m.barcode === q);
+  if (med) {
+    e.preventDefault();
+    addToCart(med.el);
+    this.value = '';
+    this.dispatchEvent(new Event('input'));
+  }
+});
+
+// ── Quét mã vạch bằng camera (html5-qrcode) — thêm thẳng thuốc vào giỏ hàng khi bán ──
+let barcodeScanner = null;
+function openBarcodeScan() {
+  document.getElementById('barcodeScanModal').style.display = 'flex';
+  const status = document.getElementById('barcodeScanStatus');
+  status.textContent = 'Đưa mã vạch vào giữa khung hình…';
+  if (typeof Html5Qrcode === 'undefined') {
+    status.textContent = '⚠️ Không tải được thư viện quét mã vạch — kiểm tra kết nối mạng.';
+    return;
+  }
+  barcodeScanner = new Html5Qrcode('barcodeReaderBox');
+  const config = {
+    fps: 10,
+    qrbox: { width: 260, height: 140 },
+    formatsToSupport: [
+      Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
+      Html5QrcodeSupportedFormats.QR_CODE
+    ]
+  };
+  let lastCode = '', lastTime = 0;
+  barcodeScanner.start(
+    { facingMode: 'environment' },
+    config,
+    (decodedText) => {
+      const now = Date.now();
+      if (decodedText === lastCode && now - lastTime < 1500) return; // tránh cộng trùng khi camera lặp khung hình cũ
+      lastCode = decodedText; lastTime = now;
+      handleBarcodeScanned(decodedText, status);
+    },
+    () => {} // lỗi giải mã từng khung hình — bỏ qua, camera vẫn tiếp tục quét
+  ).catch(err => {
+    status.textContent = '⚠️ Không mở được camera: ' + (err.message || err);
+  });
+}
+function closeBarcodeScan() {
+  document.getElementById('barcodeScanModal').style.display = 'none';
+  if (barcodeScanner) {
+    const s = barcodeScanner;
+    barcodeScanner = null;
+    s.stop().then(() => s.clear()).catch(() => {});
+  }
+}
+function handleBarcodeScanned(code, status) {
+  const med = allMedicines.find(m => m.barcode && m.barcode === code);
+  if (!med) {
+    status.textContent = '⚠️ Không tìm thấy thuốc với mã vạch: ' + code;
+    return;
+  }
+  if (med.stock <= 0) {
+    status.textContent = '❌ ' + med.name + ' đã hết hàng!';
+    return;
+  }
+  addToCart(med.el);
+  status.textContent = '✅ Đã thêm vào giỏ: ' + med.name;
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBarcodeScan(); });
 
 // ── Category filter ──
 let activeCat = 0;
@@ -1170,7 +1272,8 @@ function filterCat(btn, catId) {
   const q = document.getElementById('searchInput').value.toLowerCase().trim();
   allMedicines.forEach(m => {
     const matchCat  = catId === 0 || m.catId === catId;
-    const matchName = !q || m.name.toLowerCase().includes(q) || m.code.toLowerCase().includes(q);
+    const matchName = !q || m.name.toLowerCase().includes(q) || m.code.toLowerCase().includes(q)
+      || (m.barcode && m.barcode.toLowerCase().includes(q));
     m.el.style.display = (matchCat && matchName) ? '' : 'none';
   });
   checkEmpty();
@@ -1218,6 +1321,7 @@ function addToCart(card) {
       batchNo: card.dataset.batchno || '',
       expiry:  card.dataset.expiry  || '',
       dosage:  card.dataset.dosage  || '',
+      warning: card.dataset.warning || '',
       code:    card.dataset.code    || '',
       rx:      card.dataset.rx === 'true',
       qty: 1
@@ -1812,19 +1916,28 @@ function submitSale() {
     })
     .then(data => {
       if (data.ok) {
-        const total    = calcTotal();
+        // Tổng in trên hóa đơn LẤY THEO SERVER (data.total = FinalAmount đã kẹp [0, subtotal]),
+        // không dùng số client tự tính — nếu server đã chặn giảm giá quá tay thì hóa đơn/tiền
+        // thối phải phản ánh đúng con số thật đã ghi vào DB.
+        const total    = (data.total != null && !isNaN(parseFloat(data.total)))
+                            ? parseFloat(data.total) : calcTotal();
         const disc     = parseFloat(document.getElementById('discountInput').value) || 0;
         const received = selectedPayment === 'CASH' ? (parseFloat(document.getElementById('cashInput').value) || 0) : 0;
         const change   = received > 0 ? Math.max(0, received - total) : 0;
         const now      = new Date();
 
         // Snapshot cart và customer trước khi xóa
+        const subtotalSnap = cart.reduce((s,i) => s + i.price*i.qty, 0);
+        // Giảm giá IN trên hóa đơn suy ra từ (subtotal − total server) để 3 dòng
+        // subtotal/giảm giá/tổng LUÔN khớp nhau và khớp số thật đã thu — kể cả khi
+        // server đã kẹp khoản giảm quá tay.
+        const discShown = Math.max(0, subtotalSnap - total);
         currentInvoice = {
           id:           data.invoiceId || 0,
           code:         data.invoiceCode || '',
           total:        total,
-          subtotal:     cart.reduce((s,i) => s + i.price*i.qty, 0),
-          discount:     disc,
+          subtotal:     subtotalSnap,
+          discount:     discShown,
           cashReceived: received,
           change:       change,
           date:         now,
@@ -1983,16 +2096,33 @@ function printReceipt() {
                   (d.getMonth()+1).toString().padStart(2,'0') + '/' + d.getFullYear();
 
   let itemRows = '';
+  // Hướng dẫn sử dụng / liều dùng — tách khỏi bảng thành khối riêng phía dưới
+  // để dễ đọc, không bị bó hẹp trong cột nhỏ của bảng.
+  let usageLines = '';
   inv.items.forEach((item, idx) => {
     itemRows += '<tr>'
-      + '<td style="text-align:center;padding:4px 6px">' + (idx+1) + '</td>'
-      + '<td style="padding:4px 6px">' + escHtml(item.name) + '</td>'
-      + '<td style="text-align:center;padding:4px 6px">' + escHtml(item.unit) + '</td>'
-      + '<td style="text-align:center;padding:4px 6px">' + item.qty + '</td>'
-      + '<td style="text-align:right;padding:4px 6px">' + fmt(item.price) + '</td>'
-      + '<td style="text-align:right;padding:4px 6px;font-weight:750">' + fmt(item.price * item.qty) + '</td>'
+      + '<td style="text-align:center">' + (idx+1) + '</td>'
+      + '<td>' + escHtml(item.name) + '</td>'
+      + '<td style="text-align:center">' + escHtml(item.unit) + '</td>'
+      + '<td style="text-align:center">' + item.qty + '</td>'
+      + '<td style="text-align:right;font-weight:750">' + fmt(item.price * item.qty) + '</td>'
       + '</tr>';
+
+    if (item.dosage || item.warning) {
+      usageLines += '<div class="rx-note-line">'
+        + '<span class="bold">' + (idx+1) + '. ' + escHtml(item.name) + ':</span> '
+        + (item.dosage ? escHtml(item.dosage) : '')
+        + (item.warning ? '<div style="font-weight:750;margin-top:1px">⚠ ' + escHtml(item.warning) + '</div>' : '')
+        + '</div>';
+    }
   });
+  const usageBlock = usageLines === '' ? '' : (
+      '<div class="divider"></div>'
+    + '<div class="rx-notes">'
+    +   '<div class="rx-notes-title">HƯỚNG DẪN SỬ DỤNG THUỐC</div>'
+    +   usageLines
+    + '</div>'
+  );
 
   var html = '<!DOCTYPE html>'
     + '<html lang="vi"><head>'
@@ -2000,21 +2130,36 @@ function printReceipt() {
     + '<title>Hóa đơn ' + escHtml(inv.code) + '</title>'
     + '<style>'
     + '* { margin:0; padding:0; box-sizing:border-box; }'
-    + 'body { font-family: "Courier New", monospace; font-size: 12px; color: #000; padding: 8px; max-width: 320px; margin: 0 auto; }'
+    + 'body { font-family: "Courier New", monospace; font-size: 12px; color: #000; padding: 6px; max-width: 320px; margin: 0 auto; }'
     + '.center { text-align: center; }'
     + '.bold { font-weight: bold; }'
-    + '.title { font-size: 15px; font-weight:800; margin: 4px 0; }'
-    + '.divider { border-top: 1px dashed #000; margin: 7px 0; }'
-    + '.divider2 { border-top: 2px solid #000; margin: 7px 0; }'
-    + 'table { width: 100%; border-collapse: collapse; font-size: 11px; }'
-    + 'th { background: #eee; padding: 4px 6px; font-weight:750; border-bottom: 1px solid #000; }'
-    + 'td { vertical-align: top; }'
-    + '.totals { margin-top: 6px; }'
-    + '.totals-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 12px; }'
-    + '.totals-row.grand { font-size: 14px; font-weight:800; border-top: 2px solid #000; padding-top: 5px; margin-top: 3px; }'
-    + '.footer { text-align: center; margin-top: 10px; font-style: italic; font-size: 11.5px; }'
-    + '.kv { display: flex; justify-content: space-between; font-size: 11.5px; padding: 2px 0; }'
-    + '@media print { body { padding: 0; } button { display: none; } }'
+    + '.title { font-size: 15px; font-weight:800; margin: 3px 0; }'
+    + '.divider { border-top: 1px dashed #000; margin: 4px 0; }'
+    + '.divider2 { border-top: 2px solid #000; margin: 4px 0; }'
+    + 'table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 11px; }'
+    + 'th { background: #eee; padding: 3px 4px; font-weight:750; border-bottom: 1px solid #000; }'
+    + 'td { vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; padding: 3px 4px; }'
+    + '.totals { margin-top: 3px; }'
+    + '.totals-row { display: flex; justify-content: space-between; padding: 1px 0; font-size: 12px; }'
+    + '.totals-row.grand { font-size: 14px; font-weight:800; border-top: 2px solid #000; padding-top: 4px; margin-top: 2px; }'
+    + '.footer { text-align: center; margin-top: 6px; font-style: italic; font-size: 11.5px; }'
+    + '.kv { display: flex; justify-content: space-between; font-size: 11.5px; padding: 1px 0; }'
+    // Khối chính sách cố định + khối ghi chú dược sĩ (động)
+    + '.policy { font-size: 10.5px; line-height: 1.3; margin-top: 3px; }'
+    + '.policy-title { font-weight: 800; text-align: center; margin-bottom: 2px; letter-spacing: .5px; }'
+    + '.rx-notes { font-size: 11px; line-height: 1.35; padding: 3px 6px; border: 1px dashed #000; border-radius: 4px; }'
+    + '.rx-notes-title { font-weight: 800; margin-bottom: 2px; }'
+    + '.rx-note-line { padding: 1px 0; word-break: break-word; }'
+    // In cho máy nhiệt khổ 80mm: cố định khổ giấy, in cả nền/màu, không cắt ngang khối
+    + '@page { size: 80mm auto; margin: 0; }'
+    + '@media print {'
+    +   ' html, body { width: 80mm; margin: 0; }'
+    +   ' body { padding: 0 3mm; }'
+    +   ' button { display: none !important; }'
+    +   ' * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }'
+    +   ' .rx-notes, .policy, .totals, table, tr { break-inside: avoid; page-break-inside: avoid; }'
+    +   ' thead { display: table-header-group; }'
+    + ' }'
     + '</style>'
     + '</head><body>'
     + '<div class="center">'
@@ -2032,12 +2177,11 @@ function printReceipt() {
     + '<div class="kv"><span class="bold">Dược sĩ bán:</span><span>' + escHtml(sellerName) + '</span></div>'
     + '<div class="divider"></div>'
     + '<table><thead><tr>'
-    + '<th style="text-align:center;width:24px">STT</th>'
-    + '<th>Tên Thuốc / Vật Tư</th>'
-    + '<th style="text-align:center;width:30px">ĐVT</th>'
-    + '<th style="text-align:center;width:24px">SL</th>'
-    + '<th style="text-align:right;width:60px">Đơn Giá</th>'
-    + '<th style="text-align:right;width:66px">Thành Tiền</th>'
+    + '<th style="text-align:center;width:8%">STT</th>'
+    + '<th style="width:44%">Tên Thuốc / Vật Tư</th>'
+    + '<th style="text-align:center;width:12%">ĐVT</th>'
+    + '<th style="text-align:center;width:10%">SL</th>'
+    + '<th style="text-align:right;width:26%">Thành Tiền</th>'
     + '</tr></thead><tbody>' + itemRows + '</tbody></table>'
     + '<div class="divider"></div>'
     + '<div class="totals">'
@@ -2050,13 +2194,9 @@ function printReceipt() {
           + '<div class="totals-row"><span>Tiền khách đưa:</span><span>' + fmt(inv.cashReceived) + '</span></div>'
           + '<div class="totals-row"><span>Tiền thối:</span><span>' + fmt(inv.change) + '</span></div>'
         : '')
-    + '<div class="divider"></div>'
-    + '<div class="footer">'
-    + '<div>-- Chúc quý khách sức khỏe và một ngày tốt lành --</div>'
-    + '<div style="margin-top:4px;font-size:10px;color:#555">Hẹn gặp lại quý khách!</div>'
-    + '</div>'
-    + '<div style="height:16px"></div>'
-    + '<div class="center" style="margin-top:8px">'
+    + renderReceiptFooter(inv, usageBlock)
+    + '<div style="height:8px"></div>'
+    + '<div class="center" style="margin-top:6px">'
     + '<button onclick="window.print()" style="padding:8px 20px;background:#1a56db;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:750;font-family:&quot;Plus Jakarta Sans&quot;,sans-serif">🖶 In hóa đơn</button>'
     + '<button onclick="window.close()" style="padding:8px 16px;background:#e5e7eb;color:#111;border:none;border-radius:6px;cursor:pointer;font-size:13px;margin-left:6px;font-family:&quot;Plus Jakarta Sans&quot;,sans-serif">✕ Đóng</button>'
     + '</div>'
@@ -2073,6 +2213,48 @@ function printReceipt() {
 }
 
 function fmt(n) { return new Intl.NumberFormat('vi-VN').format(Math.round(n||0)) + 'đ'; }
+
+// ── Receipt footer ─────────────────────────────────────────────────────────
+// Lọc lời dặn dược sĩ về danh sách dòng CÓ NỘI DUNG THẬT. Coi là rỗng nếu:
+// null | undefined | '' | toàn khoảng trắng | [] | mảng toàn phần tử rỗng.
+function normalizeInstructions(v) {
+  if (v == null) return [];
+  const arr = Array.isArray(v) ? v : String(v).split('\n');
+  return arr.filter(x => typeof x === 'string' || typeof x === 'number')
+            .map(x => String(x).trim())
+            .filter(x => x.length > 0);
+}
+
+// Dựng FOOTER hóa đơn 80mm:
+//  • Khối chính sách → LUÔN in (cố định).
+//  • Khối lời dặn dược sĩ → CHỈ in khi có nội dung; rỗng ⇒ KHÔNG tạo DOM/viền/khoảng
+//    trắng nào (yêu cầu "collapse completely" — không phí giấy in nhiệt).
+function renderReceiptFooter(inv, usageBlock) {
+  const notes = normalizeInstructions(inv && inv.instructions);
+
+  const noteBlock = notes.length === 0 ? '' : (
+      '<div class="divider"></div>'
+    + '<div class="rx-notes">'
+    +   '<div class="rx-notes-title">LỜI DẶN CỦA DƯỢC SĨ</div>'
+    +   notes.map(n => '<div class="rx-note-line">• ' + escHtml(n) + '</div>').join('')
+    + '</div>'
+  );
+
+  return noteBlock
+    + (usageBlock || '')
+    + '<div class="divider"></div>'
+    + '<div class="policy">'
+    +   '<div class="policy-title">LƯU Ý</div>'
+    +   '<div>• Kiểm tra thuốc và hạn dùng trước khi rời quầy.</div>'
+    +   '<div>• Bảo quản nơi khô ráo, nhiệt độ dưới 30°C.</div>'
+    +   '<div>• Để thuốc xa tầm tay trẻ em.</div>'
+    +   '<div>• Đọc kỹ hướng dẫn trước khi dùng.</div>'
+    + '</div>'
+    + '<div class="footer">'
+    +   '<div>-- Chúc quý khách sức khỏe và một ngày tốt lành --</div>'
+    +   '<div style="margin-top:4px;font-size:10px;color:#555">Hẹn gặp lại quý khách!</div>'
+    + '</div>';
+}
 
 function showToast(msg, type) {
   const t = document.createElement('div');
@@ -2161,7 +2343,8 @@ function openStationModal() {
     // Nhãn lớn lấy SỐ QUẦY từ tên (VD "Quầy 3" → "Q3"), khớp với admin —
     // KHÔNG dùng st.id vì id trong DB có thể không liền mạch (2,3,4,5,12…).
     const soNum = (String(st.name).match(/\d+/) || [st.id])[0];
-    opt.innerHTML = '<div class="so-num">Q' + soNum + '</div><div class="so-label">' + st.name + '</div>';
+    opt.innerHTML = '<div class="so-num">Q' + soNum + '</div><div class="so-label">' + st.name + '</div>'
+      + '<div class="so-occupant" data-station-occupant="' + st.id + '">⏳ Đang tải…</div>';
     opt.onclick = function() {
       document.querySelectorAll('.station-opt').forEach(o => o.classList.remove('selected'));
       this.classList.add('selected');
@@ -2169,6 +2352,29 @@ function openStationModal() {
     grid.appendChild(opt);
   });
   document.getElementById('stationModal').classList.add('show');
+  loadStationOccupancy();
+}
+
+// Ai đang đứng quầy nào — gọi lại MỖI LẦN mở modal (không cache) để luôn thấy tình trạng
+// mới nhất, tránh chọn nhầm quầy người khác đang bán dở.
+async function loadStationOccupancy() {
+  try {
+    const res = await fetch(ctx + '/pos?action=station-staff');
+    const map = await res.json();
+    document.querySelectorAll('[data-station-occupant]').forEach(el => {
+      const stId = el.dataset.stationOccupant;
+      const name = map[stId];
+      if (name) {
+        el.className = 'so-occupant busy';
+        el.textContent = '👤 ' + name;
+      } else {
+        el.className = 'so-occupant free';
+        el.textContent = '✓ Đang trống';
+      }
+    });
+  } catch (e) {
+    document.querySelectorAll('[data-station-occupant]').forEach(el => { el.textContent = ''; });
+  }
 }
 
 function closeStationModal() {
@@ -2238,18 +2444,20 @@ function updateStationUI() {
 
 // ── FACE RECOGNITION CHECK-IN ─────────────────────────────────────────────────
 const FACE_MODEL_URL = ctx + '/models';  // local — same as staff-checkin.jsp
-const FACE_THRESHOLD  = 0.45;   // chặt hơn chuẩn 0.6 — chống nhận nhầm người
-const FACE_MARGIN     = 0.08;   // người gần nhì phải xa hơn ít nhất chừng này
-const FACE_STABLE_FRAMES = 3;   // cần 3 khung liên tiếp khớp cùng một người
+// Ngưỡng "vẫn là cùng một người giữa 2 khung hình liên tiếp" — chỉ dùng để biết mặt
+// đang đứng yên, KHÔNG dùng để nhận diện. Việc "đây là ai" nay do SERVER quyết định
+// (ngưỡng khớp/chống nhập nhằng nằm ở FaceVerifier), client không giữ dữ liệu mặt của ai.
+const FACE_SAME_PERSON   = 0.35;
+const FACE_STABLE_FRAMES = 3;   // cần 3 khung liên tiếp cùng một người rồi mới hỏi server
 
-let faceModelsLoaded  = false;
-let faceDescriptors   = [];
+let faceModelsLoaded   = false;
+let faceEnrolledCount  = 0;
+let facePrevDescriptor = null;  // descriptor khung TRƯỚC (chỉ để đo độ ổn định)
 let faceVideoStream   = null;
 let faceDetectLoopId  = null;
 let faceMatchedId     = null;
 let faceMatchedName   = null;
 let faceMatchedDescriptor = null;
-let faceStreakId      = null;
 let faceStreakCount   = 0;
 let faceStreakSamples = [];
 
@@ -2262,24 +2470,21 @@ async function loadFaceModels() {
   faceModelsLoaded = true;
 }
 
-async function loadFaceDescriptors() {
+// Chỉ lấy SỐ LƯỢNG người đã đăng ký (cho nhãn hiển thị). Trước đây hàm này tải TOÀN BỘ
+// vector khuôn mặt của mọi nhân viên về trình duyệt để tự so khớp — nghĩa là ai mở được
+// /pos cũng lấy được cả bộ dữ liệu sinh trắc học của công ty. Nay việc so khớp làm ở server.
+async function loadEnrolledCount() {
   try {
-    const res  = await fetch(ctx + '/pos?action=face-descriptors');
+    const res  = await fetch(ctx + '/pos?action=face-enrolled-count');
     const data = await res.json();
-    faceDescriptors = data
-      .filter(d => d.descriptor)
-      .map(d => ({
-        accountId:  d.accountId,
-        name:       d.name,
-        descriptor: new Float32Array(JSON.parse(d.descriptor))
-      }));
-    const el = document.getElementById('fmEnrolledCount');
-    if (el) el.textContent = faceDescriptors.length > 0
-      ? faceDescriptors.length + ' nhân viên đã đăng ký khuôn mặt'
-      : '⚠ Chưa có nhân viên nào đăng ký khuôn mặt';
+    faceEnrolledCount = data.count || 0;
   } catch(e) {
-    faceDescriptors = [];
+    faceEnrolledCount = 0;
   }
+  const el = document.getElementById('fmEnrolledCount');
+  if (el) el.textContent = faceEnrolledCount > 0
+    ? faceEnrolledCount + ' nhân viên đã đăng ký khuôn mặt'
+    : '⚠ Chưa có nhân viên nào đăng ký khuôn mặt';
 }
 
 async function openFaceModal() {
@@ -2291,7 +2496,7 @@ async function openFaceModal() {
 
   try {
     await loadFaceModels();
-    await loadFaceDescriptors();
+    await loadEnrolledCount();
   } catch(e) {
     setFmStatus('❌ Lỗi tải mô hình: ' + e.message, 'err');
     document.getElementById('fmLoading').style.display = 'none';
@@ -2361,7 +2566,8 @@ function startFaceDetection() {
       if (!detection) {
         noFaceEl.style.display = 'block';
         ring.className = 'face-ring';
-        faceStreakId = null; faceStreakCount = 0; faceStreakSamples = [];
+        // Mặt rời khung hình → xoá luôn mốc so sánh, bắt đầu đếm ổn định lại từ đầu
+        faceStreakCount = 0; faceStreakSamples = []; facePrevDescriptor = null;
         faceDetectLoopId = requestAnimationFrame(loop);
         return;
       }
@@ -2369,53 +2575,65 @@ function startFaceDetection() {
       ring.className = 'face-ring scanning';
       faceapi.draw.drawDetections(canvas, [detection.detection]);
 
-      if (faceDescriptors.length === 0) {
+      if (faceEnrolledCount === 0) {
         setFmStatus('⚠ Chưa có nhân viên nào đăng ký khuôn mặt', 'err');
         faceDetectLoopId = requestAnimationFrame(loop);
         return;
       }
 
-      let bestDist = Infinity, bestMatch = null, secondDist = Infinity;
-      for (const ref of faceDescriptors) {
-        const dist = faceapi.euclideanDistance(detection.descriptor, ref.descriptor);
-        if (dist < bestDist) { secondDist = bestDist; bestDist = dist; bestMatch = ref; }
-        else if (dist < secondDist) { secondDist = dist; }
-      }
+      // Bước 1 — ổn định: so khung NÀY với khung TRƯỚC. Chỉ cần biết "vẫn là cùng một
+      // người đang đứng yên", KHÔNG cần biết là ai → client không cần dữ liệu mặt của ai.
+      const sameAsPrev = facePrevDescriptor
+        && faceapi.euclideanDistance(detection.descriptor, facePrevDescriptor) <= FACE_SAME_PERSON;
+      facePrevDescriptor = detection.descriptor;
 
-      const clearMatch = bestMatch
-        && bestDist <= FACE_THRESHOLD
-        && (secondDist - bestDist >= FACE_MARGIN || secondDist > FACE_THRESHOLD);
+      if (sameAsPrev) { faceStreakCount++; }
+      else { faceStreakCount = 1; faceStreakSamples = []; }
+      faceStreakSamples.push(Array.from(detection.descriptor));
 
-      if (clearMatch) {
-        if (faceStreakId === bestMatch.accountId) { faceStreakCount++; }
-        else { faceStreakId = bestMatch.accountId; faceStreakCount = 1; faceStreakSamples = []; }
-        faceStreakSamples.push(Array.from(detection.descriptor));
-
-        if (faceStreakCount >= FACE_STABLE_FRAMES) {
-          ring.className = 'face-ring matched';
-          faceMatchedId   = bestMatch.accountId;
-          faceMatchedName = bestMatch.name;
-          const dim = faceStreakSamples[0].length;
-          const avg = new Array(dim).fill(0);
-          for (const s of faceStreakSamples) for (let i = 0; i < dim; i++) avg[i] += s[i];
-          for (let i = 0; i < dim; i++) avg[i] /= faceStreakSamples.length;
-          faceMatchedDescriptor = avg;
-          setFmStatus('✓ Nhận ra: ' + bestMatch.name, 'ok');
-          document.getElementById('fmCheckinBtn').style.display = 'flex';
-          return; // dừng loop sau khi nhận ra
-        }
+      if (faceStreakCount < FACE_STABLE_FRAMES) {
         ring.className = 'face-ring scanning';
-        setFmStatus('Đang xác nhận ' + bestMatch.name + '… (' + faceStreakCount + '/' + FACE_STABLE_FRAMES + ')');
-      } else {
-        faceStreakId = null; faceStreakCount = 0; faceStreakSamples = [];
-        faceMatchedId = null; faceMatchedName = null; faceMatchedDescriptor = null;
-        if (bestMatch && bestDist <= FACE_THRESHOLD) {
-          setFmStatus('⚠ Khuôn mặt chưa đủ rõ để phân biệt — nhìn thẳng camera', 'err');
-        } else {
-          setFmStatus('Đang quét… (' + (bestDist === Infinity ? '—' : bestDist.toFixed(2)) + ')');
-        }
+        setFmStatus('Đang quét… (' + faceStreakCount + '/' + FACE_STABLE_FRAMES + ')');
         document.getElementById('fmCheckinBtn').style.display = 'none';
+        faceDetectLoopId = requestAnimationFrame(loop);
+        return;
       }
+
+      // Bước 2 — đủ ổn định: lấy descriptor trung bình rồi hỏi SERVER "đây là ai".
+      // Chỉ hỏi 1 lần khi đã ổn định, không phải mỗi khung hình.
+      const dim = faceStreakSamples[0].length;
+      const avg = new Array(dim).fill(0);
+      for (const s of faceStreakSamples) for (let i = 0; i < dim; i++) avg[i] += s[i];
+      for (let i = 0; i < dim; i++) avg[i] /= faceStreakSamples.length;
+
+      setFmStatus('Đang đối chiếu…');
+      let who = null;
+      try {
+        // Gửi dạng x-www-form-urlencoded (KHÔNG dùng FormData): PosServlet không có
+        // @MultipartConfig nên getParameter() không đọc được body multipart.
+        const r = await fetch(ctx + '/pos', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body:    new URLSearchParams({ action: 'identify-face', descriptor: JSON.stringify(avg) })
+        });
+        who = await r.json();
+      } catch(e) { who = null; }
+
+      if (who && who.ok) {
+        ring.className = 'face-ring matched';
+        faceMatchedId         = who.accountId;
+        faceMatchedName       = who.name;
+        faceMatchedDescriptor = avg;
+        setFmStatus('✓ Nhận ra: ' + who.name, 'ok');
+        document.getElementById('fmCheckinBtn').style.display = 'flex';
+        return; // dừng loop sau khi nhận ra
+      }
+
+      // Server không dám kết luận (không đủ giống ai, hoặc 2 người quá giống nhau)
+      faceStreakCount = 0; faceStreakSamples = []; facePrevDescriptor = null;
+      faceMatchedId = null; faceMatchedName = null; faceMatchedDescriptor = null;
+      setFmStatus('⚠ Chưa nhận ra khuôn mặt — nhìn thẳng camera rồi thử lại', 'err');
+      document.getElementById('fmCheckinBtn').style.display = 'none';
     }
     faceDetectLoopId = requestAnimationFrame(loop);
   }
@@ -2494,7 +2712,7 @@ async function confirmFaceCheckin() {
         'invalid_descriptor':'❌ Dữ liệu khuôn mặt lỗi. Vui lòng quét lại.'
       };
       showToast(reasonMap[data.reason] || ('❌ ' + (data.reason || 'Điểm danh thất bại')), 'err');
-      faceStreakId = null; faceStreakCount = 0; faceStreakSamples = [];
+      faceStreakCount = 0; faceStreakSamples = []; facePrevDescriptor = null;
       faceMatchedId = null; faceMatchedDescriptor = null;
       document.getElementById('fmCheckinBtn').style.display = 'none';
       btn.disabled    = false;

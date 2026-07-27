@@ -77,7 +77,12 @@
          Define a non-SSL/TLS HTTP/1.1 Connector on port 8080
     -->
         
-    <Connector connectionTimeout="20000" maxParameterCount="1000" port="8080" protocol="HTTP/1.1"/>
+    <!-- Gzip: nén HTML/CSS/JS/JSON >1KB. Verify qua Response Header "Content-Encoding: gzip". -->
+    <Connector connectionTimeout="20000" maxParameterCount="1000" port="8080" protocol="HTTP/1.1"
+               compression="on"
+               compressionMinSize="1024"
+               noCompressionUserAgents="gozilla, traviata"
+               compressibleMimeType="text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json,image/svg+xml"/>
         
     <!-- A "Connector" using the shared thread pool-->
         

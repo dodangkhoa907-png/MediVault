@@ -98,7 +98,7 @@ public class PayrollServlet extends HttpServlet {
         req.setAttribute("paidCount",     paidCount);
         req.setAttribute("confirmedCount",confirmedCount);
         req.setAttribute("draftCount",    draftCount);
-        req.setAttribute("allStaff",      accountDAO.findAllStaff());
+        req.setAttribute("allStaff",      com.medicare.config.CacheManager.getShort("ref.allStaff", accountDAO::findAllStaff));
         SidebarHelper.load(req);
 
         req.getRequestDispatcher("/WEB-INF/views/admin/payroll-list.jsp")
@@ -133,7 +133,7 @@ public class PayrollServlet extends HttpServlet {
                 year  = Integer.parseInt(req.getParameter("year"));
         } catch (NumberFormatException ignored) {}
 
-        List<Account> allStaff = accountDAO.findAllStaff();
+        List<Account> allStaff = com.medicare.config.CacheManager.getShort("ref.allStaff", accountDAO::findAllStaff);
         int generated = 0;
         for (Account staff : allStaff) {
             int pid = payrollDAO.generate(staff.getAccountId(), month, year);

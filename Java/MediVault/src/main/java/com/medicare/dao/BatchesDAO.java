@@ -99,7 +99,7 @@ public class BatchesDAO implements IBatchesDAO {
 
     public List<Batches> findExpiringSoon() {
         List<Batches> list = new ArrayList<>();
-        String sql = "SELECT * FROM Batches WHERE ExpiryDate <= DATEADD(day, 30, GETDATE()) AND CurrentQuantity > 0 AND Status = 'ACTIVE' ORDER BY ExpiryDate ASC";
+        String sql = "SELECT * FROM Batches WHERE ExpiryDate >= CAST(GETDATE() AS DATE) AND ExpiryDate <= DATEADD(day, 30, GETDATE()) AND CurrentQuantity > 0 AND Status = 'ACTIVE' ORDER BY ExpiryDate ASC";
         try (Connection cn = DBContext.getConnection();
                 PreparedStatement ps = cn.prepareStatement(sql);
                 ResultSet rs = ps.executeQuery()) {
@@ -408,6 +408,40 @@ public class BatchesDAO implements IBatchesDAO {
         } catch (Exception e) { e.printStackTrace(); }
     }
 
+    /** Gói 4 map kết quả của loadBatchSummary() lại thành 1 object để cache chung được. */
+    public static class BatchSummaryBundle {
+        public final Map<Integer, Integer> activeCount;
+        public final Map<Integer, Integer> soonCount;
+        public final Map<Integer, Integer> expiredCount;
+        public final Map<Integer, String>  nearestExpiry;
+        public BatchSummaryBundle(Map<Integer, Integer> activeCount, Map<Integer, Integer> soonCount,
+                                   Map<Integer, Integer> expiredCount, Map<Integer, String> nearestExpiry) {
+            this.activeCount = activeCount;
+            this.soonCount = soonCount;
+            this.expiredCount = expiredCount;
+            this.nearestExpiry = nearestExpiry;
+        }
+    }
+
+    /**
+     * Bản cache 30s của loadBatchSummary() — dùng CHUNG key "med.batchSummary" với cả trang
+     * danh sách thuốc (MedicineServlet) lẫn kết nối SSE ban đầu (InventorySSEServlet), tránh
+     * chạy lại query GROUP BY tốn kém này 2 lần liên tiếp mỗi khi vào trang Kho hàng — trang
+     * gọi loadBatchSummary() 1 lần, rồi ngay sau đó SSE tự kết nối và gọi lại y hệt query đó
+     * lần nữa nếu không cache chung. broadcast() sau khi bán hàng PHẢI invalidate key này
+     * trước khi gọi lại, để không đẩy dữ liệu cũ.
+     */
+    public BatchSummaryBundle getCachedBatchSummary() {
+        return com.medicare.config.CacheManager.getShort("med.batchSummary", () -> {
+            Map<Integer, Integer> activeCount  = new HashMap<>();
+            Map<Integer, Integer> soonCount    = new HashMap<>();
+            Map<Integer, Integer> expiredCount = new HashMap<>();
+            Map<Integer, String>  nearestExpiry = new HashMap<>();
+            loadBatchSummary(activeCount, soonCount, expiredCount, nearestExpiry);
+            return new BatchSummaryBundle(activeCount, soonCount, expiredCount, nearestExpiry);
+        });
+    }
+
     /** Tổng số lô theo thuốc */
     public int countByMedicine(int medicineId) {
         String sql = "SELECT COUNT(*) FROM Batches WHERE MedicineID = ?";
@@ -422,6 +456,35 @@ public class BatchesDAO implements IBatchesDAO {
             e.printStackTrace();
         }
         return 0;
+    }
+
+    @Override
+    public boolean adjustQuantity(int batchId, int delta) {
+        String sql = "UPDATE Batches SET CurrentQuantity = CurrentQuantity + ? " +
+                "WHERE BatchID = ? AND CurrentQuantity + ? >= 0";
+        try (Connection cn = DBContext.getConnection();
+                PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, delta);
+            ps.setInt(2, batchId);
+            ps.setInt(3, delta);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
+    public boolean recallBatch(int batchId) {
+        String sql = "UPDATE Batches SET Status = 'RECALLED' WHERE BatchID = ? AND Status = 'ACTIVE'";
+        try (Connection cn = DBContext.getConnection();
+                PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, batchId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
 }

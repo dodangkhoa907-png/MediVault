@@ -8,7 +8,9 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class AttendanceDAO implements IAttendanceDAO {
 
@@ -50,7 +52,11 @@ public class AttendanceDAO implements IAttendanceDAO {
             Timestamp pe = rs.getTimestamp("PlannedEnd");
             if (pe != null) a.setPlannedEnd(pe.toLocalDateTime());
         } catch (SQLException e) {}
-        try { a.setPosStation((Integer) rs.getObject("PosStation")); } catch (SQLException ignored) {}
+        // PosStation là TINYINT → getObject() trả về Short, không phải Integer.
+        try {
+            Object posStation = rs.getObject("PosStation");
+            a.setPosStation(posStation == null ? null : ((Number) posStation).intValue());
+        } catch (SQLException ignored) {}
         return a;
     }
 
@@ -140,14 +146,41 @@ public class AttendanceDAO implements IAttendanceDAO {
 
 
     @Override
-    public List<Attendance> findByAccountAndMonth(int accountId, int month, int year) {
-        List<Attendance> list = new ArrayList<>();
+    public Map<Integer, String> findActiveStaffByStation() {
+        Map<Integer, String> map = new HashMap<>();
+        // att.PosStation = quầy THỰC TẾ lúc check-in (có thể khác quầy dự kiến trong lịch ca).
         String sql = SELECT_FULL +
-                "WHERE att.AccountID=? AND MONTH(att.CheckInTime)=? AND YEAR(att.CheckInTime)=? " +
-                "ORDER BY att.CheckInTime DESC";
+                "WHERE att.CheckOutTime IS NULL AND att.PosStation IS NOT NULL " +
+                "  AND CAST(att.CheckInTime AS DATE) = CAST(GETDATE() AS DATE)";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Object stationObj = rs.getObject("PosStation");
+                Integer station = stationObj == null ? null : ((Number) stationObj).intValue();
+                if (station != null) map.put(station, rs.getString("StaffName"));
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return map;
+    }
+
+    @Override
+    public List<Attendance> findByAccountAndMonth(int accountId, int month, int year) {
+        // accountId=0 → lấy tất cả nhân viên trong 1 query (dùng cho showMonthly, tránh
+        // loop gọi DAO cho từng nhân viên). Range trực tiếp trên CheckInTime thay vì
+        // MONTH(...)=?/YEAR(...)=? — bọc hàm quanh cột khiến SQL Server luôn full scan.
+        List<Attendance> list = new ArrayList<>();
+        LocalDate from = LocalDate.of(year, month, 1);
+        LocalDate to   = from.plusMonths(1); // exclusive
+        String sql = accountId > 0
+                ? SELECT_FULL + "WHERE att.AccountID=? AND att.CheckInTime >= ? AND att.CheckInTime < ? ORDER BY att.CheckInTime DESC"
+                : SELECT_FULL + "WHERE att.CheckInTime >= ? AND att.CheckInTime < ? ORDER BY att.CheckInTime DESC";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
-            ps.setInt(1, accountId); ps.setInt(2, month); ps.setInt(3, year);
+            int p = 1;
+            if (accountId > 0) ps.setInt(p++, accountId);
+            ps.setDate(p++, Date.valueOf(from));
+            ps.setDate(p,   Date.valueOf(to));
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) list.add(mapRow(rs));
             }
@@ -201,17 +234,18 @@ public class AttendanceDAO implements IAttendanceDAO {
 
     @Override
     public List<Attendance> findByAccountAndDateRange(int accountId, LocalDate from, LocalDate to) {
-        // accountId=0 → lấy tất cả nhân viên
+        // accountId=0 → lấy tất cả nhân viên. Range trực tiếp trên CheckInTime (không
+        // CAST(...AS DATE)) — cho phép index seek thay vì full scan mỗi lần lọc theo ngày.
         List<Attendance> list = new ArrayList<>();
         String sql = accountId > 0
-                ? SELECT_FULL + "WHERE att.AccountID=? AND CAST(att.CheckInTime AS DATE) BETWEEN ? AND ? ORDER BY att.CheckInTime DESC"
-                : SELECT_FULL + "WHERE CAST(att.CheckInTime AS DATE) BETWEEN ? AND ? ORDER BY att.CheckInTime DESC";
+                ? SELECT_FULL + "WHERE att.AccountID=? AND att.CheckInTime >= ? AND att.CheckInTime < ? ORDER BY att.CheckInTime DESC"
+                : SELECT_FULL + "WHERE att.CheckInTime >= ? AND att.CheckInTime < ? ORDER BY att.CheckInTime DESC";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             int p = 1;
             if (accountId > 0) ps.setInt(p++, accountId);
             ps.setDate(p++, Date.valueOf(from));
-            ps.setDate(p,   Date.valueOf(to));
+            ps.setDate(p,   Date.valueOf(to.plusDays(1)));
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) list.add(mapRow(rs));
             }

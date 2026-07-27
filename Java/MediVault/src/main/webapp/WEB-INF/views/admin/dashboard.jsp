@@ -420,6 +420,8 @@ select,option{font-family:inherit;font-size:inherit}
 .cdd-opt.active{background:linear-gradient(135deg,var(--blue,#1558A8),#0D3F85);color:#fff;font-weight:750}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>
@@ -783,6 +785,7 @@ select,option{font-family:inherit;font-size:inherit}
                                                 <form method="post" action="${pageContext.request.contextPath}/accounts"
                                                       style="display:inline"
                                                       onsubmit="return confirm('Xác nhận thay đổi trạng thái tài khoản này?')">
+                                                  <input type="hidden" name="_csrf" value="${csrfToken}">
                                                     <input type="hidden" name="action" value="toggle">
                                                     <input type="hidden" name="accountId" value="${a.accountId}">
                                                     <button type="submit"
@@ -857,6 +860,7 @@ document.addEventListener('click',function(e){if(!e.target.closest('.cdd')){docu
 
     // ── Real-time online status polling (mỗi 15s) ──
     async function refreshOnlineStatus() {
+        if (document.hidden) return; // tab ở nền — khỏi bắn request, đỡ tốn 1/6 connection-per-origin
         try {
             const res = await fetch('${pageContext.request.contextPath}/accounts?action=online-status', {
                 headers: {'X-Requested-With': 'XMLHttpRequest'}
@@ -901,9 +905,10 @@ document.addEventListener('click',function(e){if(!e.target.closest('.cdd')){docu
         } catch(e) { /* silent fail */ }
     }
 
-    // Chạy ngay + mỗi 15 giây
+    // Chạy ngay + mỗi 15 giây (bỏ qua khi tab ở nền); refresh ngay khi quay lại tab
     refreshOnlineStatus();
     setInterval(refreshOnlineStatus, 15000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshOnlineStatus(); });
 
     function updateClock() {
         const now = new Date();

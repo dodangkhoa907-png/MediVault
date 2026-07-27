@@ -10,6 +10,9 @@
     String sName = staffAcc.getFullName() != null ? staffAcc.getFullName() : staffAcc.getUsername();
     String sInit = sName.length()>=2 ? sName.substring(0,1).toUpperCase()+sName.substring(1,2).toUpperCase() : sName.toUpperCase();
     String sRoleName = staffAcc.getRoleId() == 2 ? "Dược sĩ bán hàng" : "Thủ kho";
+    // roleId 3 (Thủ kho) có portal riêng — "Trang chủ" từ trang này (dùng chung cho mọi role)
+    // phải đưa ĐÚNG về /warehouse-dashboard, không phải /staff-dashboard, để không lạc portal.
+    String sHomeUrl = staffAcc.getRoleId() == 3 ? "/warehouse-dashboard" : "/staff-dashboard";
 %>
 <!DOCTYPE html><html lang="vi"><head>
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
@@ -118,6 +121,8 @@ tbody tr:last-child td{border-bottom:none}
 .face-modal-actions button{flex:1;padding:11px 0;border-radius:11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:750;cursor:pointer;border:none}
 .face-btn-cancel{background:var(--surface);color:var(--muted);border:1.5px solid var(--border)!important}
 </style>    
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <aside class="sidebar">
@@ -133,7 +138,7 @@ tbody tr:last-child td{border-bottom:none}
   </div>
   <nav class="nav-block">
     <div class="nav-label">Tổng quan</div>
-    <a href="${pageContext.request.contextPath}/staff-dashboard?uid=${staffUid}" class="nav-item">
+    <a href="${pageContext.request.contextPath}<%= sHomeUrl %>?uid=${staffUid}" class="nav-item">
       <span class="nav-icon">🏠</span> Trang chủ
     </a>
   </nav>
@@ -156,6 +161,9 @@ tbody tr:last-child td{border-bottom:none}
     <div class="nav-label">Bán hàng</div>
     <a href="${pageContext.request.contextPath}/pos?uid=${staffUid}" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
+    </a>
+    <a href="${pageContext.request.contextPath}/staff-my-invoices?uid=${staffUid}" class="nav-item">
+      <span class="nav-icon">🧾</span> Hóa đơn của tôi
     </a>
   </nav>
   <div class="sidebar-footer">
@@ -292,7 +300,7 @@ tbody tr:last-child td{border-bottom:none}
                   <div style="font-size:13.5px;font-weight:750;color:#991B1B;margin-bottom:6px">
                     Chưa đăng ký khuôn mặt
                   </div>
-                  <a href="${pageContext.request.contextPath}/staff-dashboard?uid=${staffUid}"
+                  <a href="${pageContext.request.contextPath}<%= sHomeUrl %>?uid=${staffUid}"
                      style="font-size:12.5px;color:var(--main);font-weight:750;text-decoration:none">
                     Vào Dashboard để đăng ký ngay →
                   </a>
@@ -331,7 +339,7 @@ tbody tr:last-child td{border-bottom:none}
                       <div style="font-size:13.5px;font-weight:750;color:#991B1B;margin-bottom:6px">
                         Chưa đăng ký khuôn mặt
                       </div>
-                      <a href="${pageContext.request.contextPath}/staff-dashboard?uid=${staffUid}"
+                      <a href="${pageContext.request.contextPath}<%= sHomeUrl %>?uid=${staffUid}"
                          style="font-size:12.5px;color:var(--main);font-weight:750;text-decoration:none">
                         Vào Dashboard để đăng ký ngay →
                       </a>

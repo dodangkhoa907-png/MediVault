@@ -31,4 +31,12 @@ public interface IBatchesDAO {
             Map<Integer, Integer> soonCountOut,
             Map<Integer, Integer> expiredCountOut,
             Map<Integer, String>  nearestExpiryOut);
+
+    /** Điều chỉnh CurrentQuantity của 1 lô (delta âm = xuất/giảm, delta dương = tăng sau kiểm kê thừa).
+     *  KHÔNG cho phép CurrentQuantity âm — trả về false nếu delta khiến âm. */
+    boolean adjustQuantity(int batchId, int delta);
+
+    /** Đánh dấu 1 lô bị thu hồi khẩn cấp — chặn bán ngay (SP_AddSaleByFEFO chỉ chọn Status='ACTIVE').
+     *  KHÔNG trừ CurrentQuantity — hàng vẫn còn vật lý trong kho chờ thu gom. */
+    boolean recallBatch(int batchId);
 }

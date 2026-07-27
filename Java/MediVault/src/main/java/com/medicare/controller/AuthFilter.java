@@ -7,6 +7,7 @@ import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.*;
 import java.io.IOException;
+import java.util.Set;
 
 @WebFilter(urlPatterns = "/*", asyncSupported = true)
 public class AuthFilter implements Filter {
@@ -16,6 +17,21 @@ public class AuthFilter implements Filter {
     private static final String COOKIE_ADMIN_REMEMBER = "mv_admin_remember";  // 7 ngày, CÓ auto-restore
     private static final String COOKIE_STAFF = "mv_staff_uid";
     private static final int    COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 ngày (Remember Me)
+
+    // ── Chặn ADMIN theo IP — CHỈ áp dụng cho admin, KHÔNG áp dụng cho staff/POS/portal.
+    // 172.29.48.1 = IP WiFi của máy admin. Cho phép thêm localhost để admin vẫn test được
+    // trực tiếp trên máy chủ (127.0.0.1 / ::1 — Tomcat có thể trả 1 trong 2 dạng tuỳ kết nối).
+    // Áp dụng ở CẢ 2 nơi: lúc đăng nhập (LoginServlet gọi isAdminIpAllowed) VÀ mọi request admin
+    // sau đó (isAdminOnly bên dưới) — để cookie/session admin bị lộ từ máy khác cũng không dùng được.
+    private static final Set<String> ADMIN_IP_WHITELIST = Set.of(
+            "172.29.48.1",
+            "127.0.0.1", "0:0:0:0:0:0:0:1", "::1"
+    );
+
+    public static boolean isAdminIpAllowed(HttpServletRequest req) {
+        String ip = req.getRemoteAddr();
+        return ip != null && ADMIN_IP_WHITELIST.contains(ip);
+    }
 
     private final IAccountDAO accountDAO = new AccountDAO();
 
@@ -101,6 +117,8 @@ public class AuthFilter implements Filter {
         // ── 1. Public URLs — không cần đăng nhập ──
         boolean isPublic = uri.equals(ctx + "/login")
                 || uri.equals(ctx + "/staff-login")
+                || uri.equals(ctx + "/warehouse-login")
+                || uri.equals(ctx + "/warehouse-forgot-password")
                 || uri.startsWith(ctx + "/assets")
                 || uri.startsWith(ctx + "/css")
                 || uri.startsWith(ctx + "/js")
@@ -111,7 +129,10 @@ public class AuthFilter implements Filter {
                 || uri.equals(ctx + "/forgot-password")
                 || uri.startsWith(ctx + "/admin/confirm-reset")
                 || uri.equals(ctx + "/staff-ping")
-                || uri.endsWith("/fix.jsp")
+                // ĐÃ GỠ: "|| uri.endsWith(\"/fix.jsp\")" — fix.jsp là script dev sửa lỗi
+                // font tiếng Việt, chạy UPDATE hàng loạt lên Categories/Medicines mà KHÔNG
+                // cần đăng nhập. File đã bị xoá khỏi webapp; gỡ luôn khỏi whitelist để
+                // sau này có ai vô tình thêm lại file cũng không mở public nữa.
                 // ── NFC: không cần session — xác thực bằng cardId ──
                 || uri.startsWith(ctx + "/nfc-checkin")
                 || uri.startsWith(ctx + "/api/nfc")
@@ -121,15 +142,30 @@ public class AuthFilter implements Filter {
         // ── 2. Lấy session hiện tại (không tạo mới) ──
         HttpSession session = req.getSession(false);
         Account adminAcc = session != null ? (Account) session.getAttribute("adminAccount") : null;
+        // Chặn ADMIN theo IP — CHỈ admin, không đụng tới staffAcc bên dưới. Nếu IP hiện tại
+        // không nằm trong whitelist thì coi như CHƯA đăng nhập cho MỌI quyết định routing bên
+        // dưới (redirect "/", "/login", "/dashboard", isAdminOnly...) — nhưng KHÔNG xoá
+        // session.removeAttribute, để mạng chập chờn/đổi IP tạm thời không tự đăng xuất admin
+        // thật; request tiếp theo từ đúng IP whitelist vẫn dùng lại được session cũ bình thường.
+        if (adminAcc != null && !isAdminIpAllowed(req)) {
+            adminAcc = null;
+        }
 
         // Lấy staffAccount từ URL param uid — mỗi tab tự mang uid của mình
         Account staffAcc = null;
         String reqUid = req.getParameter("uid");
-        if (reqUid != null && !reqUid.isEmpty() && session != null) {
-            staffAcc = (Account) session.getAttribute("staffAccount_" + reqUid);
-        }
+        boolean hasReqUid = reqUid != null && !reqUid.isEmpty();
 
-        if (staffAcc == null && session != null) {
+        if (hasReqUid && session != null) {
+            // CHỈ chấp nhận tài khoản đã ĐĂNG NHẬP THẬT trong chính session này.
+            // Không khớp → staffAcc = null → routing bên dưới đá về trang đăng nhập.
+            staffAcc = (Account) session.getAttribute("staffAccount_" + reqUid);
+        } else if (session != null) {
+            // ── BẢO MẬT (IDOR) — vòng quét này CỐ Ý chỉ chạy khi URL KHÔNG mang uid ──
+            // Trước đây nó chạy cả khi ?uid=A không khớp gì trong session: luồng rơi xuống
+            // đây "mượn tạm" tài khoản B đang đăng nhập cùng browser, cho request qua
+            // AuthFilter với tư cách B, trong khi servlet phía sau vẫn đọc dữ liệu theo
+            // uid=A → đăng nhập 1 tài khoản nhân viên vẫn xem được thông tin nhân viên khác.
             java.util.Enumeration<String> names = session.getAttributeNames();
             while (names.hasMoreElements()) {
                 String name = names.nextElement();
@@ -150,7 +186,9 @@ public class AuthFilter implements Filter {
 
             // Restore adminAccount — CHỈ khi có cookie Remember Me (mv_admin_remember)
             // Cookie session thường (mv_admin_uid) KHÔNG restore → admin phải login lại sau khi đóng browser
-            if (adminAcc == null) {
+            // KHÔNG restore nếu IP hiện tại không nằm trong whitelist — cookie Remember Me lộ ra
+            // máy/mạng khác cũng không tự đăng nhập lại được.
+            if (adminAcc == null && isAdminIpAllowed(req)) {
                 String rememberVal = getCookieValue(req, COOKIE_ADMIN_REMEMBER);
                 if (rememberVal != null && !rememberVal.isEmpty()) {
                     try {
@@ -171,20 +209,19 @@ public class AuthFilter implements Filter {
                 }
             }
 
-            // Restore staffAccount từ DB khi session mất hoàn toàn (Ctrl+R, timeout)
-            // Chỉ restore nếu URL có uid — không đoán uid
-            if (staffAcc == null && reqUid != null && !reqUid.isEmpty()) {
-                try {
-                    int uid = Integer.parseInt(reqUid);
-                    Account a = accountDAO.findById(uid);
-                    if (a != null && a.isActive() && a.getRoleId() != 1 && !a.isDeleted()) {
-                        if (session == null) session = req.getSession(true);
-                        session.setAttribute("staffAccount_" + uid, a);
-                        staffAcc = a;
-                        com.medicare.util.SessionTracker.loginOrKeep(uid); // giữ token cũ nếu còn
-                    }
-                } catch (NumberFormatException ignored) {}
-            }
+            // ══ ĐÃ GỠ BỎ: "restore staffAccount từ DB theo ?uid=" ══════════════════════
+            // Khối cũ nhận uid TRỰC TIẾP từ URL rồi accountDAO.findById(uid) và tự set
+            // session.setAttribute("staffAccount_" + uid, a) — tức là CHỈ CẦN gõ
+            // ?uid=<id bất kỳ> lên thanh địa chỉ là tự động "đăng nhập" thành người đó,
+            // KHÔNG cần mật khẩu, KHÔNG cần cookie. Đây là nguyên nhân gốc của cả 2 lỗi:
+            //   • vào thẳng portal Thủ kho / Nhân viên mà không cần đăng nhập;
+            //   • đang đăng nhập TK này vẫn xem được dữ liệu của TK khác (đổi số uid).
+            //
+            // KHÔNG thể vá bằng cách "kiểm tra cookie" vì luồng đăng nhập nhân viên/thủ kho
+            // chưa bao giờ ghi cookie nào (writeStaffCookie() là code chết, không nơi nào gọi)
+            // — nghĩa là không tồn tại bằng chứng đăng nhập bền vững nào để restore một cách
+            // an toàn. Phiên đăng nhập giờ sống đúng theo session: mất session (hết hạn,
+            // restart Tomcat) thì đăng nhập lại — đây mới là hành vi đúng.
         }
 
         // ── 4. Root URL "/" — redirect theo trạng thái login ──
@@ -192,7 +229,12 @@ public class AuthFilter implements Filter {
             if (adminAcc != null) {
                 resp.sendRedirect(ctx + "/dashboard");      // đã login admin → vào dashboard
             } else if (staffAcc != null) {
-                resp.sendRedirect(ctx + "/staff-dashboard?uid=" + staffAcc.getAccountId());
+                // roleId 3 (Thủ kho) → portal Quản lý kho; roleId 2 (Dược sĩ bán hàng) → portal nhân viên
+                if (staffAcc.getRoleId() == 3) {
+                    resp.sendRedirect(ctx + "/warehouse-dashboard?uid=" + staffAcc.getAccountId());
+                } else {
+                    resp.sendRedirect(ctx + "/staff-dashboard?uid=" + staffAcc.getAccountId());
+                }
             } else {
                 resp.sendRedirect(ctx + "/login");           // chưa login → về login
             }
@@ -272,11 +314,29 @@ public class AuthFilter implements Filter {
             return;
         }
 
+        // ── 7b. Trang chỉ dành cho Quản lý kho (roleId 3 = Thủ kho) ──
+        if (uri.startsWith(ctx + "/warehouse-dashboard")
+                || uri.startsWith(ctx + "/warehouse-profile")
+                || uri.startsWith(ctx + "/warehouse-inventory")
+                || uri.startsWith(ctx + "/warehouse-reorder")
+                || uri.startsWith(ctx + "/warehouse-stock-movement")
+                || uri.startsWith(ctx + "/warehouse-recall")
+                || uri.startsWith(ctx + "/warehouse-task")
+                || uri.startsWith(ctx + "/warehouse-import")) {
+            if (staffAcc == null || staffAcc.getRoleId() != 3) {
+                resp.sendRedirect(ctx + "/warehouse-login");
+                return;
+            }
+            chain.doFilter(request, response);
+            return;
+        }
+
         // ── 8. Trang chỉ dành cho Staff ──
         if (uri.startsWith(ctx + "/staff-dashboard")
                 || uri.equals(ctx + "/staff-profile")
                 || uri.startsWith(ctx + "/staff-notifications")
                 || uri.startsWith(ctx + "/staff-my-shifts")
+                || uri.startsWith(ctx + "/staff-my-invoices")
                 || uri.startsWith(ctx + "/staff-checkin")
                 || (uri.startsWith(ctx + "/leave-requests")
                 && req.getParameter("uid") != null)) {

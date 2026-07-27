@@ -10,6 +10,8 @@
     String sName     = staffAcc.getFullName() != null ? staffAcc.getFullName() : staffAcc.getUsername();
     String sInit     = sName.length()>=2 ? sName.substring(0,1).toUpperCase()+sName.substring(1,2).toUpperCase() : sName.toUpperCase();
     String sRoleName = staffAcc.getRoleId()==2 ? "Dược sĩ bán hàng" : "Thủ kho";
+    // roleId 3 (Thủ kho) có portal riêng — "Trang chủ" phải đưa đúng về /warehouse-dashboard.
+    String sHomeUrl  = staffAcc.getRoleId()==3 ? "/warehouse-dashboard" : "/staff-dashboard";
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -112,6 +114,8 @@ select,option{font-family:inherit;font-size:inherit}
 .cdd-opt.active{background:linear-gradient(135deg,var(--blue,#1558A8),#0D3F85);color:#fff;font-weight:750}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 
@@ -132,7 +136,7 @@ select,option{font-family:inherit;font-size:inherit}
   </div>
   <nav class="nav-block">
     <div class="nav-label">Tổng quan</div>
-    <a href="${pageContext.request.contextPath}/staff-dashboard?uid=${staffUid}" class="nav-item">
+    <a href="${pageContext.request.contextPath}<%= sHomeUrl %>?uid=${staffUid}" class="nav-item">
       <span class="nav-icon">🏠</span> Trang chủ
     </a>
   </nav>
@@ -155,6 +159,9 @@ select,option{font-family:inherit;font-size:inherit}
     <div class="nav-label">Bán hàng</div>
     <a href="${pageContext.request.contextPath}/pos?uid=${staffUid}" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
+    </a>
+    <a href="${pageContext.request.contextPath}/staff-my-invoices?uid=${staffUid}" class="nav-item">
+      <span class="nav-icon">🧾</span> Hóa đơn của tôi
     </a>
   </nav>
   <div class="sidebar-footer">

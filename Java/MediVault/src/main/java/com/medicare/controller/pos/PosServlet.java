@@ -51,6 +51,25 @@ public class PosServlet extends HttpServlet {
 
         String action = req.getParameter("action");
 
+        // ══ BẢO MẬT — dữ liệu KHÁCH HÀNG / DOANH THU chỉ cho người đã điểm danh ══
+        // Các endpoint dưới đây trả thông tin cá nhân khách hàng (SĐT, tên, lịch sử mua,
+        // điểm tích luỹ) và số liệu doanh thu ca. /pos là public nên trước đây ai cũng
+        // đọc được — ví dụ dò SĐT bất kỳ qua find-customer. Danh mục thuốc & nhận diện
+        // khuôn mặt vẫn để mở vì cần render được màn kiosk TRƯỚC khi có ai điểm danh.
+        boolean needsStaff = "find-customer".equals(action)
+                || "nfc-lookup".equals(action)
+                || "search-customers".equals(action)
+                || "pos-customer-detail".equals(action)
+                || "shift-summary".equals(action)
+                || "my-invoices".equals(action);
+        if (needsStaff && currentPosStaff(req) == null) {
+            resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            resp.setContentType("application/json;charset=UTF-8");
+            resp.getWriter().print("{\"ok\":false,\"reason\":\"not_checked_in\","
+                    + "\"msg\":\"Vui lòng điểm danh khuôn mặt tại quầy trước khi tra cứu.\"}");
+            return;
+        }
+
         if ("search".equals(action)) {
             String q = req.getParameter("q");
             // searchWithStock / findAllWithStock: 1 JOIN query thay N+1
@@ -76,22 +95,27 @@ public class PosServlet extends HttpServlet {
             return;
         }
 
-        if ("face-descriptors".equals(action)) {
-            // Trả JSON: [{accountId, name, descriptor}] cho client-side face matching
+        // ══ ĐÃ GỠ BỎ: action=face-descriptors ═══════════════════════════════════════
+        // Endpoint cũ trả về TOÀN BỘ faceVector (dữ liệu sinh trắc học) của mọi nhân viên
+        // dưới dạng JSON, và vì /pos là public nên BẤT KỲ AI cũng tải được cả bộ khuôn mặt
+        // của công ty chỉ bằng 1 URL. Dữ liệu sinh trắc học không thể "đổi mật khẩu" khi lộ.
+        //
+        // Thay bằng action=identify-face — xử lý ở doPost() vì descriptor là mảng 128 số,
+        // quá dài để nhét vào query string của GET. Client GỬI descriptor lên, SERVER đối
+        // chiếu 1-vs-N rồi chỉ trả về đúng 1 accountId + tên. Không có vector nào rời khỏi
+        // server nữa. (Bước xác thực thật vẫn nằm ở pos-face-checkin — server luôn verify
+        // lại, không tin kết quả nhận diện từ client.)
+
+        // Chỉ trả SỐ LƯỢNG người đã đăng ký khuôn mặt (cho nhãn trên modal điểm danh).
+        // Không kèm tên, không kèm vector — lộ mỗi con số này thì vô hại.
+        if ("face-enrolled-count".equals(action)) {
             resp.setContentType("application/json;charset=UTF-8");
-            PrintWriter out = resp.getWriter();
-            List<Account> enrolled = accountDAO.findAllWithFaceVector();
-            out.print("[");
-            boolean first = true;
-            for (Account a : enrolled) {
-                if (a.getFaceVector() == null || a.getFaceVector().isEmpty()) continue;
-                if (!first) out.print(",");
-                String name = a.getFullName() != null ? a.getFullName() : a.getUsername();
-                out.printf("{\"accountId\":%d,\"name\":\"%s\",\"descriptor\":%s}",
-                        a.getAccountId(), esc(name), a.getFaceVector());
-                first = false;
+            resp.setHeader("Cache-Control", "no-store");
+            int n = 0;
+            for (Account a : accountDAO.findAllWithFaceVector()) {
+                if (a.getFaceVector() != null && !a.getFaceVector().isEmpty()) n++;
             }
-            out.print("]");
+            resp.getWriter().print("{\"count\":" + n + "}");
             return;
         }
 
@@ -137,6 +161,24 @@ public class PosServlet extends HttpServlet {
             resp.setContentType("application/json;charset=UTF-8");
             PrintWriter out = resp.getWriter();
             handleMyInvoices(req, out);
+            return;
+        }
+
+        // Ai đang đứng quầy nào (chưa check-out hôm nay) — hiện trong modal chọn quầy, để
+        // biết trước quầy nào đang có người trước khi chọn (tránh chọn nhầm quầy người khác).
+        if ("station-staff".equals(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            PrintWriter out = resp.getWriter();
+            Map<Integer, String> staffByStation = attendanceDAO.findActiveStaffByStation();
+            StringBuilder sb = new StringBuilder("{");
+            boolean first = true;
+            for (Map.Entry<Integer, String> e : staffByStation.entrySet()) {
+                if (!first) sb.append(",");
+                sb.append("\"").append(e.getKey()).append("\":\"").append(esc(e.getValue())).append("\"");
+                first = false;
+            }
+            sb.append("}");
+            out.print(sb);
             return;
         }
 
@@ -240,6 +282,30 @@ public class PosServlet extends HttpServlet {
 
         String action = req.getParameter("action");
 
+        // ══ BẢO MẬT — chặn thao tác POS khi CHƯA có ai điểm danh trong session này ══
+        // /pos buộc phải public ở AuthFilter vì đây là màn kiosk dùng chung: dược sĩ nhận
+        // dạng bằng KHUÔN MẶT ngay tại quầy chứ không đăng nhập user/mật khẩu. Nhưng
+        // "public" trước đây áp cho MỌI action, nên người ngoài gọi thẳng complete-sale là
+        // trừ được tồn kho và tạo hoá đơn thật (hoá đơn ghi về POS_ACCOUNT_ID mặc định).
+        //
+        // Nay tách đôi: các action BOOTSTRAP (chọn quầy, nhận diện & điểm danh khuôn mặt)
+        // vẫn mở — vì phải chạy được TRƯỚC khi có danh tính; còn mọi action ĐỘNG TỚI TIỀN,
+        // KHO, KHÁCH HÀNG thì bắt buộc phải có nhân viên đã điểm danh trong chính session
+        // đang gọi. Không dùng "ai đang check-in ở quầy N" để cấp quyền, vì kẻ tấn công chỉ
+        // cần gửi kèm posStation=N là mượn được ca của dược sĩ thật.
+        boolean bootstrapAction = "set-station".equals(action)
+                || "identify-face".equals(action)     // nhận diện "đây là ai" — chạy TRƯỚC khi điểm danh
+                || "pos-face-checkin".equals(action)
+                || "pos-pause".equals(action)
+                || "pos-resume".equals(action)
+                || "check-qr-status".equals(action);
+        if (!bootstrapAction && currentPosStaff(req) == null) {
+            resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            out.print("{\"ok\":false,\"reason\":\"not_checked_in\","
+                    + "\"msg\":\"Vui lòng điểm danh khuôn mặt tại quầy trước khi thao tác.\"}");
+            return;
+        }
+
         if ("set-station".equals(action)) {
             String stStr = req.getParameter("station");
             if (stStr != null) {
@@ -267,6 +333,22 @@ public class PosServlet extends HttpServlet {
         if ("pos-pause".equals(action))   { req.getSession(true).setAttribute("posState","PAUSED");  out.print("{\"ok\":true}"); return; }
         if ("pos-resume".equals(action))  { req.getSession(true).setAttribute("posState","ACTIVE");  out.print("{\"ok\":true}"); return; }
         if ("pos-end-shift".equals(action)) { handleEndShift(req, out); return; }
+
+        // Nhận diện 1-vs-N phía SERVER (thay cho việc đổ toàn bộ faceVector về client).
+        // Nằm ở doPost vì descriptor là mảng 128 số — quá dài cho query string.
+        if ("identify-face".equals(action)) {
+            resp.setHeader("Cache-Control", "no-store");
+            Account match = com.medicare.util.FaceVerifier.identify(
+                    req.getParameter("descriptor"), accountDAO.findAllWithFaceVector());
+            if (match == null) {
+                out.print("{\"ok\":false}");
+            } else {
+                String name = match.getFullName() != null ? match.getFullName() : match.getUsername();
+                out.printf("{\"ok\":true,\"accountId\":%d,\"name\":\"%s\"}",
+                        match.getAccountId(), esc(name));
+            }
+            return;
+        }
 
         if ("pos-face-checkin".equals(action)) {
             handlePosFaceCheckin(req, resp, out);
@@ -567,6 +649,29 @@ public class PosServlet extends HttpServlet {
     }
 
     // ── Face check-in từ POS (không cần đăng nhập trước) ──────────────────────
+    /**
+     * Nhân viên đang đứng quầy TRONG CHÍNH session gọi request này — do điểm danh khuôn
+     * mặt tại POS ({@code pos-face-checkin}) hoặc do đăng nhập nhân viên đặt vào session.
+     *
+     * <p>CỐ Ý không tra "ai đang check-in ở quầy N" ở đây: đó là dữ liệu dùng chung, ai
+     * gửi kèm {@code posStation=N} cũng khớp, nên không thể dùng để CẤP QUYỀN — chỉ dùng
+     * để ghi nhận (attribution) ở bước sau.</p>
+     *
+     * @return account đang đứng quầy, hoặc null nếu session chưa điểm danh
+     */
+    private Account currentPosStaff(HttpServletRequest req) {
+        HttpSession session = req.getSession(false);
+        if (session == null) return null;
+
+        String uid = req.getParameter("uid");
+        if (uid != null && !uid.isEmpty()) {
+            Object byUid = session.getAttribute("staffAccount_" + uid);
+            if (byUid instanceof Account) return (Account) byUid;
+        }
+        Object cur = session.getAttribute("staffAccount");
+        return (cur instanceof Account) ? (Account) cur : null;
+    }
+
     private void handlePosFaceCheckin(HttpServletRequest req, HttpServletResponse resp,
                                       PrintWriter out) throws IOException {
         String accIdStr   = req.getParameter("accountId");

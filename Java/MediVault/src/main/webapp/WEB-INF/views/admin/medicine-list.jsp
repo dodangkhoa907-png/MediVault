@@ -33,24 +33,13 @@
 }
 html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif}
 body{display:flex;background:var(--surface);color:var(--ink)}
-/* ── SIDEBAR ── */
-.sidebar{width:var(--sidebar);min-height:100vh;background:linear-gradient(175deg,#071022 0%,#0F2645 45%,#1558A8 100%);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;box-shadow:4px 0 32px rgba(0,0,0,.18)}
-.sidebar-logo{height:66px;padding:0 20px;display:flex;align-items:center;gap:11px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
-.logo-icon{width:36px;height:36px;background:linear-gradient(135deg,#3ABDE0,#1558A8);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
-.logo-text{font-size:16px;font-weight:800;color:#fff;letter-spacing:-.2px;line-height:1.1}
-.logo-sub{font-size:10px;color:rgba(255,255,255,.45);font-weight:750;letter-spacing:.5px;text-transform:uppercase}
-.nav-section{padding:10px 12px 4px;flex-shrink:0}
-.nav-label{font-size:9.5px;font-weight:750;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase;padding:0 8px;margin-bottom:4px}
-.nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:10px;color:rgba(255,255,255,.6);text-decoration:none;font-size:13.5px;font-weight:750;transition:all .16s;margin-bottom:2px}
-.nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
-.nav-item.active{background:rgba(58,189,224,.15);color:#fff;border:1px solid rgba(58,189,224,.2)}
-.sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
-.sidebar-user{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
-.user-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#3ABDE0,#1558A8);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0}
-.user-name{font-size:13px;font-weight:750;color:#fff}
-.user-role{font-size:11px;color:rgba(255,255,255,.4)}
-.logout-btn{margin-left:auto;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.4);text-decoration:none;font-size:16px;transition:all .15s}
-.logout-btn:hover{background:rgba(220,38,38,.2);color:#DC2626}
+/* ── SIDEBAR ── (đã xoá CSS trùng/cũ ở đây — sidebar.jsp include ở dưới mới là bản
+   CSS gốc/chuẩn. Bản cũ ở trang này lệch giá trị so với sidebar.jsp (padding, active-state
+   dùng border thay vì thanh accent ::before...) nên khi trang nặng, phần <style> của
+   trang load/parse trước, vẽ sidebar theo bản CŨ, rồi <style> của sidebar.jsp include
+   ở thân trang parse xong mới "nhảy" sang bản chuẩn — đó là hiện tượng sidebar bị
+   đổi format ngay khi vào trang Kho hàng. Các trang khác (dashboard.jsp...) có CSS
+   trùng lặp tương tự nhưng giá trị GIỐNG hệt sidebar.jsp nên không thấy hiện tượng nhảy. */
 /* ── MAIN ── */
 .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;overflow-x:hidden}
 .topbar{height:62px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding: 28px;gap:14px;position:sticky;top:0;z-index:50}
@@ -384,6 +373,8 @@ select,option{font-family:inherit;font-size:inherit}
 .cdd-opt.active{background:linear-gradient(135deg,var(--blue,#1558A8),#0D3F85);color:#fff;font-weight:750}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 
@@ -439,7 +430,7 @@ select,option{font-family:inherit;font-size:inherit}
         </c:otherwise>
       </c:choose>
       <%-- Live sync badge --%>
-      <div class="live-badge" id="liveBadge" title="Tự động đồng bộ tồn kho với POS, cập nhật mỗi 2 phút">
+      <div class="live-badge" id="liveBadge" title="Tự động đồng bộ tồn kho realtime với POS — cập nhật ngay khi có giao dịch bán">
         <span class="live-dot"></span>
         <span id="liveLbl">Đang kết nối…</span>
       </div>
@@ -679,6 +670,7 @@ select,option{font-family:inherit;font-size:inherit}
                       <button class="btn-icon i-edit" title="Sửa thông tin"
                               onclick="openEditPanel(${m.medicineId})">✏️</button>
                       <form method="post" action="${pageContext.request.contextPath}/medicines" style="display:contents">
+                        <input type="hidden" name="_csrf" value="${csrfToken}">
                         <input type="hidden" name="action" value="toggle-medicine"/>
                         <input type="hidden" name="id" value="${m.medicineId}"/>
                         <button type="submit" class="btn-icon ${m.status ? 'i-hide' : 'i-show'}"
@@ -687,6 +679,7 @@ select,option{font-family:inherit;font-size:inherit}
                       <c:if test="${stock == 0}">
                         <form method="post" action="${pageContext.request.contextPath}/medicines" style="display:contents"
                               onsubmit="return confirm('Xóa thuốc ${fn:escapeXml(m.medicineName)}?\nKhông thể hoàn tác!')">
+                          <input type="hidden" name="_csrf" value="${csrfToken}">
                           <input type="hidden" name="action" value="delete-medicine"/>
                           <input type="hidden" name="id" value="${m.medicineId}"/>
                           <button type="submit" class="btn-icon i-del" title="Xóa (chỉ khi hết hàng)">🗑️</button>
@@ -802,7 +795,10 @@ select,option{font-family:inherit;font-size:inherit}
       </div>
     </div>
 
-    <form id="dwForm" method="post" action="${pageContext.request.contextPath}/medicines" enctype="multipart/form-data">
+    <%-- Form multipart: token CSRF phải đi ở QUERY STRING (body multipart không đọc được
+         từ Filter — xem CsrfUtil.isValid). --%>
+    <form id="dwForm" method="post" action="${pageContext.request.contextPath}/medicines?_csrf=${csrfToken}" enctype="multipart/form-data">
+      <input type="hidden" name="_csrf" value="${csrfToken}">
       <input type="hidden" name="action" value="save-medicine">
       <input type="hidden" name="medicineId" id="dwMedId">
       <input type="hidden" name="existingImageUrl" id="dwExistingImg">
@@ -1861,6 +1857,11 @@ async function openDetailModal(medicineId) {
   const _ctx = '${pageContext.request.contextPath}';
   let es = null;
   let reconnectDelay = 3000;
+  let reconnectTimer = null; // id của setTimeout(connect) đang chờ — PHẢI hủy khi rời trang,
+                              // nếu không nó có thể bắn connect() lần 2 trong lúc kết nối cũ
+                              // (từ onerror) vẫn chưa bị server dọn, tạo 2 EventSource cùng lúc
+                              // → chiếm 2/6 connection-per-origin của browser, khiến trang kế
+                              // tiếp (điều hướng sang trang khác) bị xếp hàng chờ 10-30s.
 
   function setBadge(text, offline) {
     const badge = document.getElementById('liveBadge');
@@ -1896,6 +1897,7 @@ async function openDetailModal(medicineId) {
   }
 
   function connect() {
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
     if (es) { try { es.close(); } catch(e) {} }
 
     setBadge('Đang kết nối…', false);
@@ -1921,17 +1923,21 @@ async function openDetailModal(medicineId) {
       setBadge('Đang kết nối lại…', true);
       try { es.close(); } catch(ex) {}
       es = null;
-      setTimeout(connect, reconnectDelay);
+      reconnectTimer = setTimeout(connect, reconnectDelay);
       reconnectDelay = Math.min(reconnectDelay * 2, 30000); // tối đa 30s
     };
   }
 
   connect();
 
-  // Đóng SSE khi rời trang — giải phóng AsyncContext trên server
-  window.addEventListener('beforeunload', function() {
-    if (es) try { es.close(); } catch(e) {}
-  });
+  // Đóng SSE khi rời trang — giải phóng AsyncContext trên server + hủy reconnect đang chờ.
+  // Dùng CẢ 'pagehide' (đáng tin cậy hơn với bfcache) VÀ 'beforeunload' (fallback trình duyệt cũ).
+  function closeAll() {
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    if (es) { try { es.close(); } catch(e) {} es = null; }
+  }
+  window.addEventListener('pagehide', closeAll);
+  window.addEventListener('beforeunload', closeAll);
 })();
 
 // ── SMART SEARCH ─────────────────────────────────────────────────────────────

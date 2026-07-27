@@ -435,6 +435,8 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .face-btn-cancel{background:var(--surface);color:var(--muted);border:1.5px solid var(--border)!important}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>
@@ -481,7 +483,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
     <a href="${pageContext.request.contextPath}/pos?uid=<%= _uid %>" class="nav-item">
       <span class="nav-icon">🛒</span> Bán thuốc (POS)
     </a>
-    <a href="${pageContext.request.contextPath}/staff-dashboard?uid=<%= _uid %>" class="nav-item" style="opacity:.5;cursor:default">
+    <a href="${pageContext.request.contextPath}/staff-my-invoices?uid=<%= _uid %>" class="nav-item">
       <span class="nav-icon">🧾</span> Hóa đơn của tôi
     </a>
   </nav>

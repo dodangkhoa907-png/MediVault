@@ -70,6 +70,22 @@
             default: return "⚙️ Khác";
         }
     }
+    // Diễn giải IP dễ hiểu hơn — thay vì hiện thẳng "0:0:0:0:0:0:0:1" (IPv6 loopback) khó đọc,
+    // gắn nhãn rõ đây là máy chủ hay thiết bị mạng nội bộ hay bên ngoài.
+    private String ipLabel(String ip) {
+        if (ip == null || ip.isEmpty()) return "—";
+        String norm = ip.trim();
+        if (norm.startsWith("::ffff:")) norm = norm.substring(7); // IPv4-mapped IPv6
+        if (norm.equals("127.0.0.1") || norm.equals("::1") || norm.equals("0:0:0:0:0:0:0:1")
+                || norm.equals("0:0:0:0:0:0:1")) {
+            return "🖥️ Máy chủ (localhost) · " + ip;
+        }
+        boolean isLan = norm.matches("^192\\.168\\..*")
+                || norm.matches("^10\\..*")
+                || norm.matches("^172\\.(1[6-9]|2[0-9]|3[0-1])\\..*");
+        if (isLan) return "🏠 Mạng nội bộ · " + ip;
+        return "🌐 Bên ngoài · " + ip;
+    }
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -256,6 +272,8 @@ select,option{font-family:inherit;font-size:inherit}
             box-shadow: 0 6px 20px rgba(21, 88, 168, 0.3) !important;
         }
     </style>
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>
@@ -444,7 +462,7 @@ select,option{font-family:inherit;font-size:inherit}
                                     <%= log.getDescription() != null ? log.getDescription() : "—" %>
                                 </div>
                             </td>
-                            <td class="log-ip"><%= log.getIpAddress() != null ? log.getIpAddress() : "—" %></td>
+                            <td class="log-ip"><%= ipLabel(log.getIpAddress()) %></td>
                             <td class="log-time">
                                 <%= log.getCreatedAt() != null ? log.getCreatedAt().format(dtf) : "—" %>
                             </td>

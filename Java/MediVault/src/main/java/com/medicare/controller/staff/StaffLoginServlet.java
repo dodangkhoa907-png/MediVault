@@ -48,24 +48,21 @@ public class StaffLoginServlet extends HttpServlet {
         // findByUsernameAny: tìm kể cả TK bị khóa (IsActive=0)
         Account account = accountDAO.findByUsernameAny(username.trim());
 
-        // ── 2. Username không tồn tại ──
-        if (account == null) {
-            req.setAttribute("error", "Tài khoản \"" + username.trim()
-                    + "\" không tồn tại trong hệ thống. Vui lòng kiểm tra lại hoặc liên hệ Admin!");
+        // ── 2+4. Username không tồn tại HOẶC sai mật khẩu → GỘP CHUNG 1 thông báo.
+        // Không được tách riêng "không tồn tại" / role trước khi xác minh mật khẩu — nếu
+        // không, ai đó chỉ cần gõ đúng USERNAME (không cần đúng mật khẩu) là dò được tài
+        // khoản đó có tồn tại hay không và role gì (kể cả tài khoản Admin) — lỗ hổng dò
+        // tài khoản (user/role enumeration), tuyệt đối không được để lộ trước khi có mật khẩu đúng.
+        if (account == null || !PasswordUtil.checkPassword(password, account.getPasswordHash())) {
+            req.setAttribute("error", "Tài khoản hoặc mật khẩu không đúng!");
             req.getRequestDispatcher("/WEB-INF/views/staff/staff-login.jsp").forward(req, resp);
             return;
         }
 
-        // ── 3. Tài khoản Admin không đăng nhập ở portal nhân viên ──
+        // ── 3. Mật khẩu ĐÃ đúng — tới đây chắc chắn là chủ tài khoản thật, tiết lộ
+        // role-mismatch lúc này mới an toàn (không giúp kẻ tấn công dò tài khoản). ──
         if (account.getRoleId() == 1) {
             req.setAttribute("error", "Tài khoản Admin vui lòng đăng nhập tại trang quản trị.");
-            req.getRequestDispatcher("/WEB-INF/views/staff/staff-login.jsp").forward(req, resp);
-            return;
-        }
-
-        // ── 4. Sai mật khẩu (phải check TRƯỚC inactive để không leak thông tin TK bị khóa) ──
-        if (!PasswordUtil.checkPassword(password, account.getPasswordHash())) {
-            req.setAttribute("error", "Mật khẩu không đúng! Vui lòng thử lại.");
             req.getRequestDispatcher("/WEB-INF/views/staff/staff-login.jsp").forward(req, resp);
             return;
         }
@@ -102,7 +99,10 @@ public class StaffLoginServlet extends HttpServlet {
         AuditHelper.log(req, "Đăng nhập", "Auth",
                 "Staff @" + account.getUsername() + " đăng nhập thành công",
                 staffId);
+        // roleId 3 (Thủ kho = Quản lý kho) có portal riêng — dù đăng nhập qua trang staff
+        // vẫn đưa về /warehouse-dashboard cho nhất quán.
+        String dest = account.getRoleId() == 3 ? "/warehouse-dashboard" : "/staff-dashboard";
         resp.sendRedirect(req.getContextPath()
-                + "/staff-dashboard?uid=" + staffId + "&token=" + token);
+                + dest + "?uid=" + staffId + "&token=" + token);
     }
 }

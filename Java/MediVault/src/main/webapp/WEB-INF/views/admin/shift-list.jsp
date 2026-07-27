@@ -814,6 +814,16 @@ tbody tr{cursor:pointer}
 .sm-efg select:focus,.sm-efg input:focus{border-color:var(--blue)}
 .sm-efg.span2{grid-column:span 2}
 .sm-efg.span3{grid-column:span 3}
+/* Tab bar — mỗi ca đã chọn = 1 tab, sửa độc lập */
+.sm-edit-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.sm-edit-tab{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;
+  border:1.5px solid var(--border);background:#fff;font-size:11.5px;font-weight:700;
+  color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap}
+.sm-edit-tab:hover{border-color:var(--blue)}
+.sm-edit-tab.active{border-color:var(--blue);background:#EFF6FF;color:var(--blue)}
+.sm-edit-tab.dirty{border-color:#059669}
+.sm-edit-tab.dirty::before{content:'●';color:#059669;font-size:9px}
+.sm-edit-tab.active.dirty{background:#ECFDF5}
 
 /* ── Multi-select xóa loại ca ── */
 .btn-select-mode{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;
@@ -924,6 +934,8 @@ select,option{font-family:inherit;font-size:inherit}
 .cdd-opt.active{background:linear-gradient(135deg,var(--blue,#1558A8),#0D3F85);color:#fff;font-weight:750}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 
@@ -975,7 +987,7 @@ select,option{font-family:inherit;font-size:inherit}
         <div class="toast <c:choose><c:when test='${param.deleted > 0 and empty param.skippedActive and empty param.skippedSchedule}'>toast-ok</c:when><c:when test='${param.deleted == 0}'>toast-err</c:when><c:otherwise>toast-warn</c:otherwise></c:choose>" id="toast">
           <c:if test="${param.deleted > 0}">🗑️ Đã xóa ${param.deleted} loại ca. </c:if>
           <c:if test="${not empty param.skippedActive}">⚠️ Bỏ qua (đang dùng): ${param.skippedActive}. </c:if>
-          <c:if test="${not empty param.skippedSchedule}">⚠️ Bỏ qua (còn lịch ca): ${param.skippedSchedule}.</c:if>
+          <c:if test="${not empty param.skippedSchedule}">⚠️ Bỏ qua (từng có lịch, kể cả cũ/đã hủy): ${param.skippedSchedule}.</c:if>
         </div>
       </c:when>
       <c:when test="${param.msg == 'quick-sched'}"><div class="toast toast-ok" id="toast">✅ Xếp ca nhanh thành công!</div></c:when>
@@ -987,8 +999,7 @@ select,option{font-family:inherit;font-size:inherit}
       <c:when test="${param.msg == 'type-err-time'}"> <div class="toast toast-err"  id="toast">⚠️ Vui lòng chọn đầy đủ giờ bắt đầu và kết thúc!</div></c:when>
       <c:when test="${param.msg == 'type-err-rate'}"> <div class="toast toast-err"  id="toast">⚠️ Lương theo giờ phải từ 50,000đ trở lên!</div></c:when>
       <c:when test="${param.msg == 'past-date'}"><div class="toast toast-err" id="toast">⛔ Không thể xếp ca cho ngày đã qua! Chỉ được xếp từ hôm nay trở đi.</div></c:when>
-      <c:when test="${param.msg == 'type-has-schedules'}"><div class="toast toast-err" id="toast">⚠️ Không thể xóa — loại ca này còn lịch ca đang dùng!</div></c:when>
-      <c:when test="${param.msg == 'type-has-schedules'}"><div class="toast toast-err" id="toast">⚠️ Không thể xóa — loại ca này còn lịch ca đang dùng!</div></c:when>
+      <c:when test="${param.msg == 'type-has-schedules'}"><div class="toast toast-err" id="toast">⚠️ Không thể xóa vĩnh viễn — loại ca này từng được xếp vào lịch làm việc (kể cả lịch cũ/đã hủy). Chỉ có thể Tạm dừng để ẩn khỏi danh sách chọn.</div></c:when>
       <c:when test="${param.msg == 'sched-bulk-ok'}"><div class="toast toast-ok" id="toast">✅ Đã xếp ${param.count} lịch ca! <c:if test="${param.skip > 0}">(bỏ qua ${param.skip} trùng)</c:if></div></c:when>
       <c:when test="${param.msg == 'sched-bulk-err'}"><div class="toast toast-err" id="toast">❌ Lỗi khi xếp ca!</div></c:when>
       <c:when test="${param.msg == 'err-counter-has-staff'}"><div class="toast toast-err" id="toast">❌ Không thể xóa quầy vì đang có nhân viên làm việc!</div></c:when>
@@ -1606,6 +1617,7 @@ select,option{font-family:inherit;font-size:inherit}
                     <td>
                       <div style="display:flex;gap:6px;align-items:center">
                         <form method="post" action="${pageContext.request.contextPath}/leave-requests">
+                          <input type="hidden" name="_csrf" value="${csrfToken}">
                           <input type="hidden" name="action"       value="approve">
                           <input type="hidden" name="id"           value="${lr.leaveId}">
                           <input type="hidden" name="deductAmount" value="0">
@@ -1619,6 +1631,7 @@ select,option{font-family:inherit;font-size:inherit}
                           </button>
                         </form>
                         <form method="post" action="${pageContext.request.contextPath}/leave-requests">
+                          <input type="hidden" name="_csrf" value="${csrfToken}">
                           <input type="hidden" name="action" value="reject">
                           <input type="hidden" name="id"     value="${lr.leaveId}">
                           <button type="submit"
@@ -1735,6 +1748,7 @@ select,option{font-family:inherit;font-size:inherit}
     <div class="modal-body">
       <!-- Form thêm quầy mới -->
       <form id="posCounterAddForm" method="post" action="${pageContext.request.contextPath}/shifts" style="margin-bottom: 20px; background: var(--surface); padding: 14px; border-radius: 10px; border: 1.5px solid var(--border);">
+        <input type="hidden" name="_csrf" value="${csrfToken}">
         <input type="hidden" name="action" value="pos-counter-add">
         <div style="display: flex; gap: 10px; align-items: flex-end;">
           <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
@@ -1768,6 +1782,7 @@ select,option{font-family:inherit;font-size:inherit}
                 <td style="padding: 10px 8px;">
                   <span id="lblStation-${ps.posStationId}" style="font-weight:750; color: var(--navy);">${fn:escapeXml(ps.stationName)}</span>
                   <form id="editForm-${ps.posStationId}" method="post" action="${pageContext.request.contextPath}/shifts" style="display: none; margin: 0;">
+                    <input type="hidden" name="_csrf" value="${csrfToken}">
                     <input type="hidden" name="action" value="pos-counter-update">
                     <input type="hidden" name="posStationId" value="${ps.posStationId}">
                     <input type="text" name="stationName" value="${fn:escapeXml(ps.stationName)}" required style="border: 1.5px solid var(--blue); border-radius: 6px; padding: 4px 8px; font-size: 13px; font-family: inherit; width: 100%; box-sizing: border-box;">
@@ -1784,6 +1799,7 @@ select,option{font-family:inherit;font-size:inherit}
                     <c:choose>
                       <c:when test="${hasStaff}">
                         <form method="post" action="${pageContext.request.contextPath}/shifts" style="margin:0;" onsubmit="showSecureDeleteModal(event, ${ps.posStationId}); return false;">
+                          <input type="hidden" name="_csrf" value="${csrfToken}">
                           <input type="hidden" name="action" value="pos-counter-delete">
                           <input type="hidden" name="posStationId" value="${ps.posStationId}">
                           <button type="submit" style="border: none; background: transparent; cursor: pointer; font-size: 13px; padding: 4px 8px; border-radius: 6px; color: var(--red);" title="Xóa quầy (Có nhân viên hôm nay)">🗑️</button>
@@ -1791,6 +1807,7 @@ select,option{font-family:inherit;font-size:inherit}
                       </c:when>
                       <c:otherwise>
                         <form method="post" action="${pageContext.request.contextPath}/shifts" style="margin:0;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa ${fn:escapeXml(ps.stationName)}?\nLưu ý: Các ca làm việc đang gán vào quầy này sẽ trở thành Chưa gán quầy.')">
+                          <input type="hidden" name="_csrf" value="${csrfToken}">
                           <input type="hidden" name="action" value="pos-counter-delete">
                           <input type="hidden" name="posStationId" value="${ps.posStationId}">
                           <button type="submit" style="border: none; background: transparent; cursor: pointer; font-size: 13px; padding: 4px 8px; border-radius: 6px; color: var(--red);" title="Xóa quầy">🗑️</button>
@@ -1827,6 +1844,7 @@ select,option{font-family:inherit;font-size:inherit}
     </div>
     <div class="modal-body">
       <form id="schedForm" method="post" action="${pageContext.request.contextPath}/shifts">
+        <input type="hidden" name="_csrf" value="${csrfToken}">
         <input type="hidden" name="action" value="schedule-bulk">
 
         <%-- Nhân viên --%>
@@ -1910,6 +1928,7 @@ select,option{font-family:inherit;font-size:inherit}
     </div>
     <div class="modal-body">
       <form id="typeForm" method="post" action="${pageContext.request.contextPath}/shift-types">
+        <input type="hidden" name="_csrf" value="${csrfToken}">
         <input type="hidden" name="action" id="typeAction" value="create">
         <input type="hidden" name="shiftTypeId" id="editTypeId" value="">
         <div class="mfg">
@@ -1972,6 +1991,7 @@ select,option{font-family:inherit;font-size:inherit}
     <div class="modal-body">
       <!-- Form quản lý/thêm nhân viên -->
       <form id="posAddForm" method="post" action="${pageContext.request.contextPath}/shifts" style="margin-bottom: 20px; background: var(--surface); padding: 14px; border-radius: 10px; border: 1.5px solid var(--border);">
+        <input type="hidden" name="_csrf" value="${csrfToken}">
         <input type="hidden" name="action" id="posFormAction" value="pos-assign">
         <input type="hidden" name="posStation" id="posAddStationNum">
         <input type="hidden" name="scheduleId" id="posFormScheduleId" value="">
@@ -2065,6 +2085,7 @@ select,option{font-family:inherit;font-size:inherit}
     </div>
     <div class="modal-body">
       <form id="posEditForm" method="post" action="${pageContext.request.contextPath}/shifts">
+        <input type="hidden" name="_csrf" value="${csrfToken}">
         <input type="hidden" name="action" value="schedule-update">
         <input type="hidden" name="scheduleId" id="posEditScheduleId">
         <input type="hidden" name="tab" value="pos-map">
@@ -2132,6 +2153,7 @@ select,option{font-family:inherit;font-size:inherit}
       <div style="display:flex; flex-direction:column; gap:12px;">
         <!-- Option 1: Unassign -->
         <form method="post" action="${pageContext.request.contextPath}/shifts" style="margin:0;">
+          <input type="hidden" name="_csrf" value="${csrfToken}">
           <input type="hidden" name="action" value="pos-unassign">
           <input type="hidden" name="scheduleId" class="posDeleteScheduleId">
           <button type="submit" style="width:100%; display:flex; align-items:flex-start; gap:10px; padding:12px; border:1.5px solid var(--border); border-radius:10px; background:#fff; text-align:left; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.borderColor='var(--blue)'; this.style.background='rgba(21,88,168,0.02)'" onmouseout="this.style.borderColor='var(--border)'; this.style.background='#fff'">
@@ -2145,6 +2167,7 @@ select,option{font-family:inherit;font-size:inherit}
 
         <!-- Option 2: Cancel -->
         <form method="post" action="${pageContext.request.contextPath}/shifts" style="margin:0;">
+          <input type="hidden" name="_csrf" value="${csrfToken}">
           <input type="hidden" name="action" value="schedule-delete-staff">
           <input type="hidden" name="mode" value="cancel">
           <input type="hidden" name="tab" value="pos-map">
@@ -2160,6 +2183,7 @@ select,option{font-family:inherit;font-size:inherit}
 
         <!-- Option 3: Delete -->
         <form method="post" action="${pageContext.request.contextPath}/shifts" style="margin:0;">
+          <input type="hidden" name="_csrf" value="${csrfToken}">
           <input type="hidden" name="action" value="schedule-delete-staff">
           <input type="hidden" name="mode" value="delete">
           <input type="hidden" name="tab" value="pos-map">
@@ -2223,6 +2247,7 @@ select,option{font-family:inherit;font-size:inherit}
     </div>
     <div class="sched-modal-body">
       <form id="fullSchedForm" method="post" action="${pageContext.request.contextPath}/shifts">
+        <input type="hidden" name="_csrf" value="${csrfToken}">
         <input type="hidden" name="action" value="schedule-bulk">
 
         <%-- Nhân viên --%>
@@ -2362,6 +2387,7 @@ select,option{font-family:inherit;font-size:inherit}
     </div>
     <div class="em-body">
       <form id="editSchedForm" method="post" action="${pageContext.request.contextPath}/shifts">
+        <input type="hidden" name="_csrf" value="${csrfToken}">
         <input type="hidden" name="action" value="schedule-update">
         <input type="hidden" name="scheduleId" id="editSchedId">
 
@@ -2576,14 +2602,18 @@ select,option{font-family:inherit;font-size:inherit}
         </c:forEach>
       </div>
 
-      <%-- Panel chỉnh sửa — hiện khi đã chọn ít nhất 1 ca --%>
+      <%-- Panel chỉnh sửa — mỗi ca đã chọn có 1 TAB riêng, sửa độc lập với giá trị gốc của
+           chính ca đó (không còn dùng chung 1 form áp cho tất cả ca như trước). --%>
       <div class="sm-edit-panel" id="editPanel">
-        <h4>⚙️ Thông tin chỉnh sửa (áp dụng cho tất cả ca đã chọn)</h4>
+        <div class="sm-edit-tabs" id="editTabs"></div>
+        <div id="editTabWarn" style="display:none;font-size:11.5px;font-weight:700;color:#92400E;background:#FFFBEB;padding:7px 12px;border-radius:8px;margin-bottom:10px">
+          ⚠️ Ca này CHƯA được sửa — vẫn giữ nguyên giá trị gốc nếu bạn lưu.
+        </div>
+        <h4>⚙️ Đang sửa: <span id="editTabLabel" style="color:var(--blue)">—</span></h4>
         <div class="sm-edit-grid">
           <div class="sm-efg">
-            <label>Loại ca <span style="color:var(--red)">*</span></label>
-            <select id="smEditShiftType">
-              <option value="">-- Giữ nguyên --</option>
+            <label>Loại ca</label>
+            <select id="smEditShiftType" onchange="onEditFieldChange()">
               <c:forEach var="st" items="${shiftTypes}">
                 <c:if test="${st.active}">
                   <option value="${st.shiftTypeId}">
@@ -2596,19 +2626,17 @@ select,option{font-family:inherit;font-size:inherit}
           </div>
           <div class="sm-efg">
             <label>Cho phép trễ (phút)</label>
-            <input type="number" id="smEditLateTol" min="0" max="120" step="5"
-                   placeholder="Giữ nguyên" value="">
-            <span style="font-size:10px;color:var(--muted);margin-top:2px">Để trống = giữ nguyên</span>
+            <input type="number" id="smEditLateTol" min="0" max="120" step="5" oninput="onEditFieldChange()">
           </div>
           <div class="sm-efg">
-            <label>Xem trước</label>
-            <div id="smEditPreview" style="font-size:12px;color:var(--muted);padding:8px;background:#F8FAFC;border-radius:7px;min-height:36px">
+            <label>Trạng thái</label>
+            <div id="smEditPreview" style="font-size:12px;font-weight:750;padding:8px;border-radius:7px;min-height:36px;display:flex;align-items:center">
               Chọn ca để xem trước
             </div>
           </div>
           <div class="sm-efg span3">
             <label>Ghi chú</label>
-            <input type="text" id="smEditNotes" placeholder="Ghi chú (để trống = giữ nguyên)">
+            <input type="text" id="smEditNotes" placeholder="Ghi chú" oninput="onEditFieldChange()">
           </div>
         </div>
       </div>
@@ -3639,17 +3667,24 @@ document.getElementById('deleteStaffModal').addEventListener('click', function(e
 
 
 // ════════════════════════════════════════════════════════
-//  EDIT SELECT MODAL
+//  EDIT SELECT MODAL — mỗi ca đã chọn = 1 tab, sửa độc lập với giá trị gốc của
+//  chính ca đó. Ca nào không chạm tới (giá trị vẫn = gốc) thì lúc Lưu sẽ bị cảnh
+//  báo và bị GIỮ NGUYÊN (không gửi lên server) — chỉ ca có thay đổi mới được lưu.
 // ════════════════════════════════════════════════════════
-let _editSelIds = new Set(); // scheduleId đã chọn
+let _editSelIds  = new Set();   // scheduleId đã chọn (string)
+let _editSelData = {};          // schedId -> {label, orig:{typeId,lateTol,notes}, cur:{...}}
+let _activeEditTab = null;      // schedId đang hiển thị trên form bên dưới tab bar
 
 function openEditSelectModal() {
   _editSelIds.clear();
+  _editSelData = {};
+  _activeEditTab = null;
   // Reset tất cả chip
   document.querySelectorAll('#editWeekGrid .sm-chip').forEach(ch => {
     ch.classList.remove('sm-selected-edit');
   });
   document.getElementById('editPanel').classList.remove('show');
+  renderEditTabs();
   updateEditSelUI();
   document.getElementById('editSelectModal').classList.add('open');
 }
@@ -3661,31 +3696,106 @@ function toggleEditChip(el) {
   if (el.dataset.editable !== 'true') return;
   const id = el.dataset.schedId;
   if (_editSelIds.has(id)) {
+    // Bỏ chọn — nếu đang là tab active thì chuyển sang 1 tab còn lại (nếu có)
     _editSelIds.delete(id);
+    delete _editSelData[id];
     el.classList.remove('sm-selected-edit');
+    if (_activeEditTab === id) {
+      const remaining = Array.from(_editSelIds);
+      _activeEditTab = remaining.length ? remaining[0] : null;
+    }
   } else {
     _editSelIds.add(id);
     el.classList.add('sm-selected-edit');
+    const typeId  = el.dataset.shiftTypeId  || '';
+    const lateTol = el.dataset.lateTol      || '';
+    const notesRaw = el.dataset.notes;
+    const notes   = (notesRaw && notesRaw !== 'null') ? notesRaw : '';
+    const orig = { typeId, lateTol, notes };
+    _editSelData[id] = {
+      label: (el.dataset.staff || '') + ' · ' + (el.dataset.date || ''),
+      orig,
+      cur: { ...orig }
+    };
+    _activeEditTab = id; // ca vừa chọn → hiện lên form ngay
   }
-  // Pre-fill panel khi chỉ có đúng 1 ca được chọn
-  if (_editSelIds.size === 1) {
-    const selEl = document.querySelector('#editWeekGrid .sm-chip.sm-selected-edit');
-    if (selEl) {
-      const typeId  = selEl.dataset.shiftTypeId;
-      const lateTol = selEl.dataset.lateTol;
-      const notes   = selEl.dataset.notes;
-      const stSel   = document.getElementById('smEditShiftType');
-      if (typeId) stSel.value = typeId;
-      if (lateTol) document.getElementById('smEditLateTol').value = lateTol;
-      document.getElementById('smEditNotes').value = (notes && notes !== 'null') ? notes : '';
-    }
-  } else if (_editSelIds.size > 1) {
-    // Nhiều ca → reset về "giữ nguyên"
-    document.getElementById('smEditShiftType').value = '';
-    document.getElementById('smEditLateTol').value   = '';
-    document.getElementById('smEditNotes').value     = '';
-  }
+  renderEditTabs();
+  loadActiveTabIntoForm();
   updateEditSelUI();
+}
+
+/** Đồng bộ giá trị đang gõ trên form vào _editSelData[tab đang mở] — gọi khi đổi field. */
+function onEditFieldChange() {
+  if (!_activeEditTab || !_editSelData[_activeEditTab]) return;
+  _editSelData[_activeEditTab].cur = {
+    typeId:  document.getElementById('smEditShiftType').value,
+    lateTol: document.getElementById('smEditLateTol').value,
+    notes:   document.getElementById('smEditNotes').value
+  };
+  renderEditTabs();     // cập nhật chấm xanh "đã sửa" trên tab
+  updateEditTabWarn();
+}
+
+function isTabDirty(id) {
+  const d = _editSelData[id];
+  if (!d) return false;
+  return d.cur.typeId !== d.orig.typeId
+      || String(d.cur.lateTol) !== String(d.orig.lateTol)
+      || String(d.cur.notes)   !== String(d.orig.notes);
+}
+
+function renderEditTabs() {
+  const wrap = document.getElementById('editTabs');
+  wrap.innerHTML = '';
+  _editSelIds.forEach(id => {
+    const d = _editSelData[id];
+    if (!d) return;
+    const btn = document.createElement('div');
+    btn.className = 'sm-edit-tab' + (id === _activeEditTab ? ' active' : '') + (isTabDirty(id) ? ' dirty' : '');
+    btn.textContent = d.label;
+    btn.onclick = () => switchEditTab(id);
+    wrap.appendChild(btn);
+  });
+}
+
+function switchEditTab(id) {
+  onEditFieldChange(); // lưu nốt giá trị của tab đang rời đi trước khi chuyển
+  _activeEditTab = id;
+  renderEditTabs();
+  loadActiveTabIntoForm();
+}
+
+function loadActiveTabIntoForm() {
+  const stSel  = document.getElementById('smEditShiftType');
+  const latInp = document.getElementById('smEditLateTol');
+  const noteInp = document.getElementById('smEditNotes');
+  const lbl = document.getElementById('editTabLabel');
+  const d = _activeEditTab ? _editSelData[_activeEditTab] : null;
+
+  if (!d) {
+    stSel.value = ''; latInp.value = ''; noteInp.value = '';
+    lbl.textContent = '—';
+    document.getElementById('editTabWarn').style.display = 'none';
+    document.getElementById('smEditPreview').textContent = 'Chọn ca để xem trước';
+    return;
+  }
+  stSel.value  = d.cur.typeId;
+  latInp.value = d.cur.lateTol;
+  noteInp.value = d.cur.notes;
+  lbl.textContent = d.label;
+  updateEditTabWarn();
+}
+
+function updateEditTabWarn() {
+  const warn = document.getElementById('editTabWarn');
+  const prev = document.getElementById('smEditPreview');
+  const dirty = _activeEditTab && isTabDirty(_activeEditTab);
+  warn.style.display = (_activeEditTab && !dirty) ? 'block' : 'none';
+  if (prev) {
+    prev.style.background = dirty ? '#ECFDF5' : '#F8FAFC';
+    prev.style.color = dirty ? '#059669' : 'var(--muted)';
+    prev.textContent = dirty ? '✓ Đã sửa — sẽ được lưu' : 'Chưa sửa — giữ nguyên nếu lưu';
+  }
 }
 
 function updateEditSelUI() {
@@ -3695,7 +3805,6 @@ function updateEditSelUI() {
   const btn1  = document.getElementById('editSelActionBtn');
   const btn2  = document.getElementById('editSelFootBtn');
   const panel = document.getElementById('editPanel');
-  const prev  = document.getElementById('smEditPreview');
 
   badge.textContent = count + ' ca đã chọn';
   badge.classList.toggle('show', count > 0);
@@ -3706,46 +3815,49 @@ function updateEditSelUI() {
     btn2.classList.remove('enabled');
     panel.classList.remove('show');
   } else {
-    hint.textContent = count + ' ca đã chọn — điều chỉnh bên dưới rồi bấm Lưu';
+    const dirtyCount = Array.from(_editSelIds).filter(isTabDirty).length;
+    hint.textContent = count + ' ca đã chọn, ' + dirtyCount + ' ca đã sửa — click tab để chỉnh từng ca';
     btn1.classList.add('enabled');
     btn2.classList.add('enabled');
-    panel.classList.add('open');
-    // Preview
-    const stSel = document.getElementById('smEditShiftType');
-    const stName = stSel.options[stSel.selectedIndex]?.text || 'Giữ nguyên';
-    const lat = document.getElementById('smEditLateTol').value;
-    prev.textContent = count + ' ca sẽ được cập nhật' +
-      (stSel.value ? ' → ' + stName : '') +
-      (lat ? ', trễ ' + lat + 'p' : '');
+    panel.classList.add('show');
   }
 }
 
-// Update preview khi đổi loại ca
-document.getElementById('smEditShiftType')?.addEventListener('change', updateEditSelUI);
-document.getElementById('smEditLateTol')?.addEventListener('input', updateEditSelUI);
-
 function applyEditSel() {
+  onEditFieldChange(); // chốt giá trị tab đang mở trước khi tổng hợp
   if (_editSelIds.size === 0) return;
-  const stId  = document.getElementById('smEditShiftType').value;
-  const lat   = document.getElementById('smEditLateTol').value;
-  const notes = document.getElementById('smEditNotes').value;
 
-  if (!stId && !lat && !notes.trim()) {
-    alert('Vui lòng chọn ít nhất 1 thông tin cần thay đổi (loại ca, dung sai, hoặc ghi chú)!');
+  const allIds   = Array.from(_editSelIds);
+  const dirtyIds = allIds.filter(isTabDirty);
+  const cleanIds = allIds.filter(id => !isTabDirty(id));
+
+  if (dirtyIds.length === 0) {
+    // Chưa sửa ca nào hết — hỏi lại, xác nhận thì đóng mà KHÔNG lưu gì cả
+    if (confirm('Bạn chưa sửa ca nào cả! Xác nhận đóng mà không lưu thay đổi nào?')) {
+      closeEditSelectModal();
+    }
     return;
   }
-  // Không bắt buộc chọn loại ca — để trống = giữ nguyên loại ca hiện tại
-  if (!confirm('Lưu thay đổi cho ' + _editSelIds.size + ' ca đã chọn?')) return;
+
+  if (cleanIds.length > 0) {
+    // Có ca chưa sửa lẫn trong danh sách đã chọn — cảnh báo rõ, xác nhận thì CHỈ lưu
+    // các ca đã sửa, các ca chưa sửa giữ nguyên (không gửi lên server).
+    const names = cleanIds.map(id => _editSelData[id].label).join(', ');
+    if (!confirm('⚠️ Có ' + cleanIds.length + ' ca CHƯA được sửa (' + names + ') — sẽ GIỮ NGUYÊN.\n\n'
+        + 'Chỉ lưu ' + dirtyIds.length + ' ca đã thay đổi. Xác nhận?')) return;
+  }
+  // (Nếu tất cả ca đã chọn đều đã sửa → không cảnh báo gì, lưu thẳng)
 
   const f = document.createElement('form');
   f.method = 'post';
   f.action = ctx_path + '/shifts';
-  let html = '<input name="action" value="schedule-bulk-update">'
-    + '<input name="shiftTypeId" value="' + stId + '">'
-    + '<input name="lateToleranceMinutes" value="' + (lat || '10') + '">'
-    + '<input name="notes" value="' + notes.replace(/"/g,'&quot;') + '">';
-  _editSelIds.forEach(id => {
-    html += '<input name="scheduleIds" value="' + id + '">';
+  let html = '<input name="action" value="schedule-bulk-update">';
+  dirtyIds.forEach(id => {
+    const d = _editSelData[id].cur;
+    html += '<input name="scheduleIds" value="' + id + '">'
+          + '<input name="shiftTypeIds" value="' + (d.typeId || '') + '">'
+          + '<input name="lateTols" value="' + (d.lateTol || '') + '">'
+          + '<input name="notesArr" value="' + String(d.notes || '').replace(/"/g,'&quot;') + '">';
   });
   f.innerHTML = html;
   document.body.appendChild(f);
@@ -3908,6 +4020,7 @@ function initPosMap() {
 }
 
 async function refreshPosOnlineStatus() {
+  if (document.hidden) return; // tab ở nền — khỏi bắn request, đỡ tốn 1/6 connection-per-origin
   try {
     const res  = await fetch(_posCtx + '/shifts?action=pos-online', { headers: {'X-Requested-With':'XMLHttpRequest'} });
     if (!res.ok) return;

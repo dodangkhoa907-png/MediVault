@@ -175,6 +175,8 @@ body{
 .btn-cancel:hover{border-color:var(--blue);color:var(--blue)}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>
@@ -241,6 +243,7 @@ body{
       <% } %>
 
       <form method="post" action="${pageContext.request.contextPath}/accounts?action=admin-set-password">
+        <input type="hidden" name="_csrf" value="${csrfToken}">
         <input type="hidden" name="staffId" value="<%= staffInfo.getAccountId() %>">
 
         <div class="field">

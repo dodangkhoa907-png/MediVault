@@ -1,0 +1,103 @@
+/* ============================================================
+   warehouse-portal.css — Chrome dùng chung cho portal Quản lý kho.
+   Load SAU staff-portal.css (kế thừa .sidebar / .nav-* / .main / .sidebar-footer).
+   Tông "Medical Teal" — lạnh, điềm tĩnh, không mang ngữ nghĩa "cảnh báo" như đỏ/cam,
+   khác Admin (xanh dương) và Staff (tím) đủ rõ. Teal CHỈ làm điểm nhấn (sidebar/nút/
+   focus/icon-box/tiêu đề); nền/card/input giữ TRUNG TÍNH để có tương phản — tránh lặp
+   lại lỗi "tông xuyệt tông" của các bản indigo/ruby/terracotta cũ.
+   ============================================================ */
+:root{
+  --sidebar:228px;
+  --ink:#1C2B29; --deep:#115E59; --main:#0F766E; --light:#14B8A6; --accent:#14B8A6;
+  --soft:#CCFBF1;                        /* nền icon-box teal nhạt (điểm nhấn nhỏ) */
+  --surface:#F1F4F3;                     /* nền phụ trung tính: thead, hover, chip */
+  --bg:#F6F8F8; --white:#fff; --muted:#69756F;
+  --border:#E2E7E5; --line:#EAEFED; --jade:#64748B; /* "jade" cũ trùng brand -> đổi thành xám trung tính cho tier nhẹ nhất */
+  --gold:#B45309; --goldbg:#FEF3C7;
+  /* Danger/Ok là màu NGHIỆP VỤ — GIỮ NGUYÊN như Admin/Staff để nhất quán ý nghĩa. */
+  --danger:#DC2626; --dangerbg:#FEE2E2;
+  --ok:#059669; --okbg:#D1FAE5;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+body.wh{
+  margin:0; font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+  color:var(--ink); display:flex; min-height:100vh;
+  background:var(--bg);   /* nền trung tính phẳng — sidebar là điểm teal duy nhất */
+}
+
+/* Sidebar: khung/nav từ staff-portal.css, tông Teal (rêu đậm → teal sáng) */
+.wh .sidebar{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.06) 0%, transparent 30%),
+    linear-gradient(175deg,#042F2E 0%,#115E59 45%,#0F766E 100%);
+  box-shadow: inset -1px 0 0 rgba(255,255,255,.06);
+}
+.wh .logo-gem{background:linear-gradient(135deg,#2DD4BF,var(--main));box-shadow:0 4px 16px rgba(15,118,110,.4)}
+.wh .nav-item.active{background:rgba(20,184,166,.20)}
+.wh .nav-item.active::before{background:#5EEAD4}
+.wh .nav-item.active .nav-icon{opacity:1}
+
+/* Nút Đăng xuất — GIỮ đỏ mặc định của staff-portal.css: teal (lạnh) + đỏ (nóng) tương
+   phản rõ, không cần override như 2 bản trước (ruby đỏ-trên-đỏ, terracotta ấm-trên-ấm). */
+
+/* Topbar — nền trắng nổi nhẹ trên nội dung cuộn (glass mờ, viền trung tính) */
+.wh-topbar{
+  height:66px; padding:0 28px; display:flex; align-items:center; gap:14px;
+  background:rgba(255,255,255,.82);
+  backdrop-filter:blur(12px) saturate(140%); -webkit-backdrop-filter:blur(12px) saturate(140%);
+  border-bottom:1px solid var(--border);
+  position:sticky; top:0; z-index:10;
+}
+.wh-topbar .crumb{font-size:15px;font-weight:800;color:var(--ink);letter-spacing:-.3px}
+.wh-topbar .crumb small{color:var(--muted);font-weight:600;font-size:13px;margin-left:4px}
+.wh-topbar .right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.wh-clock{display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:6px 13px;font-size:12.5px;font-weight:750;color:var(--deep);font-variant-numeric:tabular-nums}
+.wh-clock .sep{animation:whblink 1s step-end infinite}
+@keyframes whblink{50%{opacity:.25}}
+.wh-clock .date{font-size:11px;font-weight:750;color:var(--muted);border-left:1px solid var(--border);padding-left:8px;margin-left:2px}
+.wh-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#2DD4BF,var(--main));
+  color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;
+  text-decoration:none;transition:.15s}
+.wh-av:hover{transform:scale(1.05)}
+
+/* Vùng nội dung */
+.wh-content{padding:28px 32px}
+@media(max-width:640px){.wh-content{padding:18px}}
+
+/* ── Card chuẩn: nền TRẮNG đặc + viền trung tính + shadow mềm ── */
+.wh-glass{
+  background:#fff;
+  border:1px solid #E4E9E7;
+  box-shadow:0 1px 2px rgba(4,47,46,.04), 0 12px 30px -18px rgba(4,47,46,.14);
+}
+
+/* ── Icon-box chuẩn cho card-head ── */
+.wh-ic{
+  width:32px;height:32px;border-radius:9px;flex:none;
+  display:flex;align-items:center;justify-content:center;font-size:15px;
+  background:var(--soft);color:var(--main);
+}
+.wh-ic.warn{background:var(--goldbg);color:var(--gold)}
+.wh-ic.danger{background:var(--dangerbg);color:var(--danger)}
+.wh-ic.ok{background:var(--okbg);color:var(--ok)}
+.wh-ic.jade{background:#F1F5F9;color:var(--jade)}
+
+/* ── Icon bên trong ô input/select ── */
+.wh-field{position:relative}
+.wh-field .wh-field-ic{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;opacity:.55;pointer-events:none}
+.wh-field input,.wh-field select{padding-left:38px !important}
+
+/* ── Trạng thái focus rõ ràng cho bàn phím (Tab) ── */
+.wh a:focus-visible,.wh button:focus-visible,
+.wh input:focus-visible,.wh select:focus-visible,.wh textarea:focus-visible{
+  outline:2.5px solid var(--main);outline-offset:2px;
+}
+.wh .nav-item:focus-visible{outline:2px solid #5EEAD4;outline-offset:-2px}
+
+/* ── Tôn trọng prefers-reduced-motion ── */
+@media (prefers-reduced-motion: reduce){
+  .wh-clock .sep{animation:none}
+  .wh-av,.wh *{transition:none !important}
+}

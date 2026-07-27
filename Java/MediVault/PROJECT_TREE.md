@@ -188,6 +188,7 @@ MediVault/
     │       ├── NotificationUtil.java    # Push thông báo nội bộ
     │       ├── OtpUtil.java             # Generate + validate OTP 6 số
     │       ├── PasswordUtil.java        # BCrypt hash/check
+    │       ├── PricingUtil.java         # Tính tiền VND: kẹp giảm giá [0,subtotal], sàn total=0 (settle/calculateFinalTotal)
     │       ├── SessionTracker.java      # Theo dõi nhân viên đang online (in-memory Set)
     │       ├── SidebarHelper.java       # Load badge counts cho sidebar (cache 30s)
     │       ├── StaffNotifHelper.java    # Helper gửi thông báo chuẩn (created/reset/face)
@@ -281,6 +282,7 @@ MediVault/
         │   └── staff-portal.css     # CSS riêng cho portal nhân viên
         │
         ├── js/
+        │   ├── csrf.js              # Tự gắn token CSRF vào mọi fetch/XHR/form (POST/PUT/DELETE)
         │   └── face-api/
         │       └── face-api.min.js  # face-api.js (offline, bundle local)
         │
@@ -296,11 +298,12 @@ MediVault/
         ├── images/
         │   └── NEW_LOGO.png
         │
-        ├── uploads/
-        │   └── avatars/             # Ảnh đại diện tài khoản
-        │
-        ├── fix.jsp                  # (Dev) Script sửa dữ liệu nhanh
-        └── test-db.jsp              # (Dev) Test kết nối DB trực tiếp
+        └── uploads/
+            └── avatars/             # Ảnh đại diện tài khoản
+
+  (ĐÃ XOÁ vì lý do bảo mật — không khôi phục lại:
+     fix.jsp      — script dev chạy UPDATE hàng loạt lên DB, không cần đăng nhập
+     test-db.jsp  — in mật khẩu DB dạng plaintext ra source)
 ```
 
 ---

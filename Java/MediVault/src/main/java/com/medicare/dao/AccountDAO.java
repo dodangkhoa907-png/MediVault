@@ -32,6 +32,7 @@ public class AccountDAO implements IAccountDAO {
         if (rs.getDate("TrainingDate") != null)
             a.setTrainingDate(rs.getDate("TrainingDate").toLocalDate());
         a.setFaceEnrollmentPath(rs.getString("FaceEnrollmentPath"));
+        try { a.setLicenseFilePath(rs.getString("LicenseFilePath")); } catch (SQLException ignored) {}
         try { a.setFaceVector(rs.getString("FaceVector")); } catch (SQLException ignored) {}
         try {
             Timestamp fe = rs.getTimestamp("FaceEnrolledAt");
@@ -168,6 +169,20 @@ public class AccountDAO implements IAccountDAO {
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapRow(rs);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return null;
+    }
+
+    /** Tìm theo email kể cả TK bị khóa (IsActive=0) — dùng cho quên mật khẩu chỉ nhập email. */
+    @Override
+    public Account findByEmailAny(String email) {
+        String sql = "SELECT * FROM Accounts WHERE Email = ? AND IsDeleted = 0";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, email);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return mapRow(rs);
             }
@@ -475,6 +490,18 @@ public class AccountDAO implements IAccountDAO {
 
     public boolean updateAvatar(int accountId, String path) {
         String sql = "UPDATE Accounts SET FaceEnrollmentPath = ? WHERE AccountID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, path);
+            ps.setInt(2, accountId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    /** Lưu đường dẫn file PDF giấy phép hành nghề (bằng chứng thật, thay vì chỉ gõ tay số chứng chỉ). */
+    @Override
+    public boolean updateLicenseFilePath(int accountId, String path) {
+        String sql = "UPDATE Accounts SET LicenseFilePath = ? WHERE AccountID = ?";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, path);

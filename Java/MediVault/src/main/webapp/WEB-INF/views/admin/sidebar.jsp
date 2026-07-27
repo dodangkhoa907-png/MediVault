@@ -8,7 +8,7 @@
        String activeNav — "dashboard"|"reports"|"audit"|"medicines"|
                           "purchase-orders"|"invoices"|"returns"|
                           "accounts"|"customers"|"shifts"|"hr"|
-                          "attendance"|"payroll"
+                          "attendance"|"payroll"|"task-management"
 
      Thứ tự ưu tiên (theo yêu cầu 2026-06-17):
        Tổng quan (Trang chủ) → Phân tích (Báo cáo, Nhật ký) →
@@ -42,6 +42,8 @@
     int pendingLeave = (_plc != null) ? _plc : 0;
     Integer _exc = (Integer) request.getAttribute("expiryCount");
     int expiry = (_exc != null) ? _exc : 0;
+    Integer _twc = (Integer) request.getAttribute("taskWatchdogCount");
+    int taskWatchdog = (_twc != null) ? _twc : 0;
 %>
 <aside class="sidebar">
   <div class="sidebar-logo">
@@ -108,6 +110,13 @@
        class="nav-item <%= "payroll".equals(activeNav) ? "active" : "" %>">
       <span class="nav-icon">💰</span> Bảng lương
     </a>
+    <a href="${pageContext.request.contextPath}/task-management"
+       class="nav-item <%= "task-management".equals(activeNav) ? "active" : "" %>">
+      <span class="nav-icon">🎯</span> Giao task &amp; Tiến độ kho
+      <% if (taskWatchdog > 0) { %>
+      <span class="nav-badge" style="background:#DC2626"><%= taskWatchdog %></span>
+      <% } %>
+    </a>
   </nav>
 
   <div class="sidebar-footer">
@@ -144,17 +153,11 @@
   .sidebar.open{transform:translateX(0)}
   .main{margin-left:0}
 }
-/* ── Chuyển trang MƯỢT (View Transitions API) — crossfade native khi điều hướng ── */
-@view-transition { navigation: auto; }
-/* Sidebar GIỮ NGUYÊN (không nhấp nháy) khi đổi trang; chỉ vùng nội dung crossfade */
-.sidebar{ view-transition-name: app-sidebar; }
-.main{ view-transition-name: app-main; }
-/* Nội dung mờ vào nhẹ nhàng thay vì giật */
-::view-transition-old(app-main){ animation: mv-fade-out .18s ease both; }
-::view-transition-new(app-main){ animation: mv-fade-in .26s ease both; }
-@keyframes mv-fade-out{ to{ opacity:0; transform:translateY(-4px) } }
-@keyframes mv-fade-in { from{ opacity:0; transform:translateY(6px) } }
-@media (prefers-reduced-motion: reduce){ @view-transition { navigation: none; } }
+/* ── Chuyển trang: đã TẮT View Transitions API (crossfade) ──
+   Native navigation cần snapshot toàn bộ DOM before/after để composite crossfade —
+   tốn paint time thật trên trang nặng (shift-list.jsp 47KB, medicine-list.jsp).
+   App quản lý/POS cần thao tác nhanh, bấm phát ăn ngay nên bỏ hẳn hiệu ứng này,
+   giữ lại các micro-interaction rẻ (hover, active state — chỉ opacity/transform, GPU nhẹ). */
 </style>
 <%-- Click mục đang active KHÔNG reload lại trang (giữ nguyên tab hiện tại) --%>
 <script>

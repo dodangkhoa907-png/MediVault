@@ -1,6 +1,9 @@
 <%@ page contentType="text/html;charset=UTF-8"  pageEncoding="UTF-8" %>
 <%
     String error   = (String) request.getAttribute("error");
+    // Bước 2 của luồng quên mật khẩu: đang chờ nhập mã OTP gửi về email
+    boolean otpStage = Boolean.TRUE.equals(request.getAttribute("otpStage"));
+    String  otpEmail = (String) request.getAttribute("otpEmail");
     String success = request.getParameter("success");
     String name    = request.getParameter("name");
     if (name != null) name = java.net.URLDecoder.decode(name, "UTF-8");
@@ -199,6 +202,8 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
 .form-box>*:nth-child(6){animation-delay:.3s}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>
@@ -284,7 +289,39 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
     <div class="err-box">⚠️ <%= error %></div>
     <% } %>
 
+    <%-- ══ BƯỚC 2: nhập mã xác minh gửi về email ══
+         Tài khoản CHƯA bị khoá ở bước này. Chỉ khi nhập đúng mã (chứng minh chính chủ
+         đọc được hộp thư) thì hệ thống mới khoá tài khoản và báo Admin — tránh việc bất
+         kỳ ai biết username+email cũng khoá được tài khoản người khác. --%>
+    <% if (otpStage) { %>
+      <form method="post" action="${pageContext.request.contextPath}/forgot-password" autocomplete="off">
+        <input type="hidden" name="_csrf" value="${csrfToken}">
+        <input type="hidden" name="action" value="verify-otp">
+        <div class="field">
+          <label class="field-label">Mã xác minh (6 số)</label>
+          <div class="field-wrap">
+            <span class="field-icon">🔑</span>
+            <input type="text" name="otp" class="field-input" inputmode="numeric"
+                   pattern="[0-9]{6}" maxlength="6" required autofocus
+                   placeholder="Nhập 6 chữ số"
+                   style="letter-spacing:6px;font-weight:800;font-size:18px">
+          </div>
+          <div class="field-hint">
+            Đã gửi mã tới <strong><%= otpEmail != null ? otpEmail : "email đã đăng ký" %></strong> — mã có hiệu lực 10 phút.
+          </div>
+        </div>
+        <button type="submit" class="btn-submit">Xác nhận mã →</button>
+      </form>
+      <div class="divider">hoặc</div>
+      <a href="${pageContext.request.contextPath}/forgot-password" style="display:block;text-align:center;font-size:13px">
+        ← Nhập lại thông tin tài khoản
+      </a>
+    <% } %>
+
+    <%-- ══ BƯỚC 1: nhập username + email ══ --%>
+    <% if (!otpStage) { %>
     <form method="post" action="${pageContext.request.contextPath}/forgot-password" autocomplete="off" id="resetForm">
+      <input type="hidden" name="_csrf" value="${csrfToken}">
       <div class="field">
         <label class="field-label">Tên đăng nhập</label>
         <div class="field-wrap">
@@ -310,6 +347,7 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
         Gửi yêu cầu đặt lại mật khẩu →
       </button>
     </form>
+    <% } %>
 
     <div class="divider">hoặc</div>
 
