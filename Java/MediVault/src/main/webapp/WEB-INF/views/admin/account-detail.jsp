@@ -321,7 +321,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
       </div>
       <div class="head-actions">
         <a href="${pageContext.request.contextPath}/accounts?action=edit&id=${account.accountId}" class="btn-primary">✏️ Chỉnh sửa</a>
-        <form method="get" action="${pageContext.request.contextPath}/accounts" style="display:inline"
+        <form method="post" action="${pageContext.request.contextPath}/accounts" style="display:inline"
               onsubmit="return confirm('Xác nhận thay đổi trạng thái tài khoản này?')">
           <input type="hidden" name="action" value="toggle">
           <input type="hidden" name="id" value="${account.accountId}">

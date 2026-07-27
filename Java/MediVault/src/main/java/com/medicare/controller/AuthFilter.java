@@ -197,20 +197,6 @@ public class AuthFilter implements Filter {
                 }
             }
 
-            // Restore staffAccount từ DB khi session mất hoàn toàn (Ctrl+R, timeout)
-            // Chỉ restore nếu URL có uid — không đoán uid
-            if (staffAcc == null && reqUid != null && !reqUid.isEmpty()) {
-                try {
-                    int uid = Integer.parseInt(reqUid);
-                    Account a = accountDAO.findById(uid);
-                    if (a != null && a.isActive() && a.getRoleId() != 1 && !a.isDeleted()) {
-                        if (session == null) session = req.getSession(true);
-                        session.setAttribute("staffAccount_" + uid, a);
-                        staffAcc = a;
-                        com.medicare.util.SessionTracker.loginOrKeep(uid); // giữ token cũ nếu còn
-                    }
-                } catch (NumberFormatException ignored) {}
-            }
         }
 
         // ── 4. Root URL "/" — redirect theo trạng thái login ──

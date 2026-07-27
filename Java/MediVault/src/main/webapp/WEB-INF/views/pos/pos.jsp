@@ -2447,7 +2447,6 @@ const FACE_MARGIN     = 0.08;   // người gần nhì phải xa hơn ít nhất
 const FACE_STABLE_FRAMES = 3;   // cần 3 khung liên tiếp khớp cùng một người
 
 let faceModelsLoaded  = false;
-let faceDescriptors   = [];
 let faceVideoStream   = null;
 let faceDetectLoopId  = null;
 let faceMatchedId     = null;
@@ -2466,26 +2465,6 @@ async function loadFaceModels() {
   faceModelsLoaded = true;
 }
 
-async function loadFaceDescriptors() {
-  try {
-    const res  = await fetch(ctx + '/pos?action=face-descriptors');
-    const data = await res.json();
-    faceDescriptors = data
-      .filter(d => d.descriptor)
-      .map(d => ({
-        accountId:  d.accountId,
-        name:       d.name,
-        descriptor: new Float32Array(JSON.parse(d.descriptor))
-      }));
-    const el = document.getElementById('fmEnrolledCount');
-    if (el) el.textContent = faceDescriptors.length > 0
-      ? faceDescriptors.length + ' nhân viên đã đăng ký khuôn mặt'
-      : '⚠ Chưa có nhân viên nào đăng ký khuôn mặt';
-  } catch(e) {
-    faceDescriptors = [];
-  }
-}
-
 async function openFaceModal() {
   document.getElementById('faceModal').classList.add('show');
   document.getElementById('fmLoading').style.display = 'flex';
@@ -2495,7 +2474,8 @@ async function openFaceModal() {
 
   try {
     await loadFaceModels();
-    await loadFaceDescriptors();
+    const el = document.getElementById('fmEnrolledCount');
+    if (el) el.textContent = 'Hệ thống nhận diện khuôn mặt tự động hoạt động trên máy chủ';
   } catch(e) {
     setFmStatus('❌ Lỗi tải mô hình: ' + e.message, 'err');
     document.getElementById('fmLoading').style.display = 'none';
@@ -2573,52 +2553,57 @@ function startFaceDetection() {
       ring.className = 'face-ring scanning';
       faceapi.draw.drawDetections(canvas, [detection.detection]);
 
-      if (faceDescriptors.length === 0) {
-        setFmStatus('⚠ Chưa có nhân viên nào đăng ký khuôn mặt', 'err');
-        faceDetectLoopId = requestAnimationFrame(loop);
-        return;
-      }
-
-      let bestDist = Infinity, bestMatch = null, secondDist = Infinity;
-      for (const ref of faceDescriptors) {
-        const dist = faceapi.euclideanDistance(detection.descriptor, ref.descriptor);
-        if (dist < bestDist) { secondDist = bestDist; bestDist = dist; bestMatch = ref; }
-        else if (dist < secondDist) { secondDist = dist; }
-      }
-
-      const clearMatch = bestMatch
-        && bestDist <= FACE_THRESHOLD
-        && (secondDist - bestDist >= FACE_MARGIN || secondDist > FACE_THRESHOLD);
-
-      if (clearMatch) {
-        if (faceStreakId === bestMatch.accountId) { faceStreakCount++; }
-        else { faceStreakId = bestMatch.accountId; faceStreakCount = 1; faceStreakSamples = []; }
+      // Thay thế so khớp client bằng cách gọi server-side identify endpoint (POST) để bảo mật
+      // Để tránh spam request liên tục, chỉ gửi server-side identify sau mỗi 400ms (hoặc khi streak ổn định)
+      // Nhưng để đơn giản, ta thu thập đủ FACE_STABLE_FRAMES khung rồi gửi descriptor trung bình lên server verify 1 lần.
+      if (faceStreakSamples.length < FACE_STABLE_FRAMES) {
         faceStreakSamples.push(Array.from(detection.descriptor));
-
-        if (faceStreakCount >= FACE_STABLE_FRAMES) {
-          ring.className = 'face-ring matched';
-          faceMatchedId   = bestMatch.accountId;
-          faceMatchedName = bestMatch.name;
-          const dim = faceStreakSamples[0].length;
-          const avg = new Array(dim).fill(0);
-          for (const s of faceStreakSamples) for (let i = 0; i < dim; i++) avg[i] += s[i];
-          for (let i = 0; i < dim; i++) avg[i] /= faceStreakSamples.length;
-          faceMatchedDescriptor = avg;
-          setFmStatus('✓ Nhận ra: ' + bestMatch.name, 'ok');
-          document.getElementById('fmCheckinBtn').style.display = 'flex';
-          return; // dừng loop sau khi nhận ra
-        }
         ring.className = 'face-ring scanning';
-        setFmStatus('Đang xác nhận ' + bestMatch.name + '… (' + faceStreakCount + '/' + FACE_STABLE_FRAMES + ')');
+        setFmStatus('Đang thu thập mẫu quét… (' + faceStreakSamples.length + '/' + FACE_STABLE_FRAMES + ')');
       } else {
-        faceStreakId = null; faceStreakCount = 0; faceStreakSamples = [];
-        faceMatchedId = null; faceMatchedName = null; faceMatchedDescriptor = null;
-        if (bestMatch && bestDist <= FACE_THRESHOLD) {
-          setFmStatus('⚠ Khuôn mặt chưa đủ rõ để phân biệt — nhìn thẳng camera', 'err');
-        } else {
-          setFmStatus('Đang quét… (' + (bestDist === Infinity ? '—' : bestDist.toFixed(2)) + ')');
+        // Đã đủ khung mẫu để tính trung bình
+        const dim = faceStreakSamples[0].length;
+        const avg = new Array(dim).fill(0);
+        for (const s of faceStreakSamples) for (let i = 0; i < dim; i++) avg[i] += s[i];
+        for (let i = 0; i < dim; i++) avg[i] /= faceStreakSamples.length;
+
+        busy = true; // Chặn loop trong lúc gọi API
+        setFmStatus('Đang xác thực với máy chủ…');
+        try {
+          const res = await fetch(ctx + '/pos', {
+            method: 'POST',
+            body: new URLSearchParams({
+              action: 'pos-face-identify',
+              descriptor: JSON.stringify(avg)
+            }),
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+          });
+          const data = await res.json();
+          if (data.ok) {
+            ring.className = 'face-ring matched';
+            faceMatchedId = data.accountId;
+            faceMatchedName = data.name;
+            faceMatchedDescriptor = avg;
+            setFmStatus('✓ Nhận ra: ' + data.name, 'ok');
+            document.getElementById('fmCheckinBtn').style.display = 'flex';
+            busy = false;
+            return; // Dừng loop nhận dạng thành công
+          } else {
+            // Reset streak để quét lại
+            faceStreakSamples = [];
+            if (data.reason === 'no_match') {
+              setFmStatus('⚠ Không tìm thấy tài khoản phù hợp hoặc không khớp khuôn mặt', 'err');
+            } else if (data.reason === 'reenroll_pending') {
+              setFmStatus('⏳ Tài khoản đang chờ duyệt đổi khuôn mặt', 'err');
+            } else {
+              setFmStatus('⚠ Xác thực thất bại, thử lại…', 'err');
+            }
+          }
+        } catch (e) {
+          faceStreakSamples = [];
+          setFmStatus('❌ Lỗi kết nối máy chủ: ' + e.message, 'err');
         }
-        document.getElementById('fmCheckinBtn').style.display = 'none';
+        busy = false;
       }
     }
     faceDetectLoopId = requestAnimationFrame(loop);

@@ -76,24 +76,6 @@ public class PosServlet extends HttpServlet {
             return;
         }
 
-        if ("face-descriptors".equals(action)) {
-            // Trả JSON: [{accountId, name, descriptor}] cho client-side face matching
-            resp.setContentType("application/json;charset=UTF-8");
-            PrintWriter out = resp.getWriter();
-            List<Account> enrolled = accountDAO.findAllWithFaceVector();
-            out.print("[");
-            boolean first = true;
-            for (Account a : enrolled) {
-                if (a.getFaceVector() == null || a.getFaceVector().isEmpty()) continue;
-                if (!first) out.print(",");
-                String name = a.getFullName() != null ? a.getFullName() : a.getUsername();
-                out.printf("{\"accountId\":%d,\"name\":\"%s\",\"descriptor\":%s}",
-                        a.getAccountId(), esc(name), a.getFaceVector());
-                first = false;
-            }
-            out.print("]");
-            return;
-        }
 
         if ("find-customer".equals(action)) {
             String phone = req.getParameter("phone");
@@ -349,6 +331,27 @@ public class PosServlet extends HttpServlet {
 
         if ("pos-face-checkin".equals(action)) {
             handlePosFaceCheckin(req, resp, out);
+            return;
+        }
+
+        if ("pos-face-identify".equals(action)) {
+            String descriptorJson = req.getParameter("descriptor");
+            if (descriptorJson == null || descriptorJson.trim().isEmpty()) {
+                out.print("{\"ok\":false,\"reason\":\"missing_descriptor\"}");
+                return;
+            }
+            Account matched = com.medicare.util.FaceVerifier.identify(
+                    descriptorJson, accountDAO.findAllWithFaceVector());
+            if (matched == null) {
+                out.print("{\"ok\":false,\"reason\":\"no_match\"}");
+            } else if (!matched.isActive()) {
+                out.print("{\"ok\":false,\"reason\":\"staff_not_found\"}");
+            } else if (matched.isFaceReenrollPending()) {
+                out.print("{\"ok\":false,\"reason\":\"reenroll_pending\"}");
+            } else {
+                String name = matched.getFullName() != null ? matched.getFullName() : matched.getUsername();
+                out.printf("{\"ok\":true,\"accountId\":%d,\"name\":\"%s\"}", matched.getAccountId(), esc(name));
+            }
             return;
         }
 

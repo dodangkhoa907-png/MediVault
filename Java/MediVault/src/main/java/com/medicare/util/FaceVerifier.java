@@ -72,6 +72,42 @@ public final class FaceVerifier {
     }
 
     /**
+     * Identify a descriptor against all enrolled accounts (1-vs-N).
+     * Returns the matching Account if threshold and ambiguity checks pass, otherwise null.
+     */
+    public static Account identify(String descriptorJson, List<Account> allEnrolled) {
+        double[] incoming = parseDescriptor(descriptorJson);
+        if (descriptorJson == null || descriptorJson.trim().isEmpty() || incoming == null || incoming.length != 128) {
+            return null;
+        }
+
+        Account bestMatch = null;
+        double bestDist = Double.MAX_VALUE;
+        double secondDist = Double.MAX_VALUE;
+
+        for (Account acc : allEnrolled) {
+            double[] stored = parseDescriptor(acc.getFaceVector());
+            if (stored == null || stored.length != incoming.length) continue;
+            double dist = euclideanDistance(stored, incoming);
+            if (dist < bestDist) {
+                secondDist = bestDist;
+                bestDist = dist;
+                bestMatch = acc;
+            } else if (dist < secondDist) {
+                secondDist = dist;
+            }
+        }
+
+        if (bestMatch == null) return null;
+        if (bestDist > MATCH_THRESHOLD) return null;
+        // Check margin against second closest match
+        if (secondDist - bestDist < AMBIGUITY_MARGIN && secondDist <= MATCH_THRESHOLD) {
+            return null; // Ambiguous
+        }
+        return bestMatch;
+    }
+
+    /**
      * Tìm account khác đã đăng ký khuôn mặt GIỐNG descriptor này (chặn 1 mặt
      * đăng ký cho 2 tài khoản). Trả về account trùng, hoặc null nếu không trùng.
      */

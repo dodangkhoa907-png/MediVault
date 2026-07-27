@@ -51,32 +51,6 @@ public class AccountServlet extends HttpServlet {
                 int id = Integer.parseInt(req.getParameter("id"));
                 showForm(req, resp, dao.findById(id));
             }
-            case "toggle" -> {
-                int toggleId = Integer.parseInt(req.getParameter("id"));
-                Account toggleAcc = dao.findById(toggleId);
-                // Bảo vệ: không cho khóa/xóa tài khoản admin gốc (ID=1)
-                if (toggleId == 1) {
-                    resp.sendRedirect(req.getContextPath() + "/accounts?msg=protected-admin");
-                    return;
-                }
-                // Bảo vệ: không cho khóa admin cuối cùng đang active
-                if (toggleAcc != null && toggleAcc.getRoleId() == 1
-                        && toggleAcc.isActive() && dao.countActiveAdmins() <= 1) {
-                    resp.sendRedirect(req.getContextPath() + "/accounts?msg=last-admin");
-                    return;
-                }
-                // Bảo vệ: không cho mở khóa khi TK đang trong reset flow (chờ admin set MK mới)
-                if (toggleAcc != null && !toggleAcc.isActive()) {
-                    PasswordResetRequest pr = resetDAO.findPendingByAccountId(toggleId);
-                    if (pr == null) pr = resetDAO.findConfirmedByAccountId(toggleId);
-                    if (pr != null) {
-                        resp.sendRedirect(req.getContextPath() + "/accounts?msg=in-reset");
-                        return;
-                    }
-                }
-                dao.toggleActive(toggleId);
-                resp.sendRedirect(req.getContextPath() + "/accounts?msg=updated");
-            }
             case "view" -> {
                 int id = Integer.parseInt(req.getParameter("id"));
                 Account a = dao.findById(id);
@@ -84,28 +58,6 @@ public class AccountServlet extends HttpServlet {
                 SidebarHelper.load(req);
 
                 req.getRequestDispatcher("/WEB-INF/views/admin/account-detail.jsp").forward(req, resp);
-            }
-            case "delete" -> {
-                // Bước 1: Chuyển vào thùng rác — KHÔNG cần OTP
-                int id = Integer.parseInt(req.getParameter("id"));
-                Account del = dao.findById(id);
-                if (del != null && del.getRoleId() == 1 && dao.countActiveAdmins() <= 1) {
-                    resp.sendRedirect(req.getContextPath() + "/accounts?msg=last-admin");
-                    return;
-                }
-                if (del == null) { resp.sendRedirect(req.getContextPath() + "/accounts"); return; }
-                dao.softDelete(id);
-                AuditHelper.log(req, "Xóa tài khoản", "Account",
-                        "Chuyển vào thùng rác: @" + (del.getUsername()) + " (" + del.getFullName() + ")");
-                resp.sendRedirect(req.getContextPath() + "/accounts?msg=deleted");
-            }
-            case "restore" -> {
-                int rid = Integer.parseInt(req.getParameter("id"));
-                Account rAcc = dao.findById(rid);
-                dao.restore(rid);
-                AuditHelper.log(req, "Khôi phục tài khoản", "Account",
-                        "Khôi phục từ thùng rác: @" + (rAcc != null ? rAcc.getUsername() : rid));
-                resp.sendRedirect(req.getContextPath() + "/accounts?action=trash&msg=restored");
             }
             case "trash" -> {
                 req.setAttribute("deletedAccounts", dao.findDeleted());
@@ -246,6 +198,60 @@ public class AccountServlet extends HttpServlet {
         // ── AJAX: Admin lưu face descriptor cho nhân viên ──
         if ("save-face".equals(action)) {
             handleSaveFace(req, resp);
+            return;
+        }
+
+        // ── Admin toggle trạng thái tài khoản ──
+        if ("toggle".equals(action)) {
+            int toggleId = Integer.parseInt(req.getParameter("id"));
+            Account toggleAcc = dao.findById(toggleId);
+            // Bảo vệ: không cho khóa/xóa tài khoản admin gốc (ID=1)
+            if (toggleId == 1) {
+                resp.sendRedirect(req.getContextPath() + "/accounts?msg=protected-admin");
+                return;
+            }
+            // Bảo vệ: không cho khóa admin cuối cùng đang active
+            if (toggleAcc != null && toggleAcc.getRoleId() == 1
+                    && toggleAcc.isActive() && dao.countActiveAdmins() <= 1) {
+                resp.sendRedirect(req.getContextPath() + "/accounts?msg=last-admin");
+                return;
+            }
+            // Bảo vệ: không cho mở khóa khi TK đang trong reset flow (chờ admin set MK mới)
+            if (toggleAcc != null && !toggleAcc.isActive()) {
+                PasswordResetRequest pr = resetDAO.findPendingByAccountId(toggleId);
+                if (pr == null) pr = resetDAO.findConfirmedByAccountId(toggleId);
+                if (pr != null) {
+                    resp.sendRedirect(req.getContextPath() + "/accounts?msg=in-reset");
+                    return;
+                }
+            }
+            dao.toggleActive(toggleId);
+            resp.sendRedirect(req.getContextPath() + "/accounts?msg=updated");
+            return;
+        }
+        // ── Admin xóa tài khoản (soft delete) ──
+        if ("delete".equals(action)) {
+            int id = Integer.parseInt(req.getParameter("id"));
+            Account del = dao.findById(id);
+            if (del != null && del.getRoleId() == 1 && dao.countActiveAdmins() <= 1) {
+                resp.sendRedirect(req.getContextPath() + "/accounts?msg=last-admin");
+                return;
+            }
+            if (del == null) { resp.sendRedirect(req.getContextPath() + "/accounts"); return; }
+            dao.softDelete(id);
+            AuditHelper.log(req, "Xóa tài khoản", "Account",
+                    "Chuyển vào thùng rác: @" + (del.getUsername()) + " (" + del.getFullName() + ")");
+            resp.sendRedirect(req.getContextPath() + "/accounts?msg=deleted");
+            return;
+        }
+        // ── Admin khôi phục tài khoản từ thùng rác ──
+        if ("restore".equals(action)) {
+            int rid = Integer.parseInt(req.getParameter("id"));
+            Account rAcc = dao.findById(rid);
+            dao.restore(rid);
+            AuditHelper.log(req, "Khôi phục tài khoản", "Account",
+                    "Khôi phục từ thùng rác: @" + (rAcc != null ? rAcc.getUsername() : rid));
+            resp.sendRedirect(req.getContextPath() + "/accounts?action=trash&msg=restored");
             return;
         }
 
