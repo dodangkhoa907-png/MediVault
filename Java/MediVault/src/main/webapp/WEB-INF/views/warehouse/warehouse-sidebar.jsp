@@ -75,6 +75,10 @@
 
   <nav class="nav-block">
     <div class="nav-label">Cá nhân</div>
+    <a href="<%= _whCtx %>/warehouse-profile?uid=<%= _whUid %>"
+       class="nav-item <%= "profile".equals(_whActive) ? "active" : "" %>">
+      <span class="nav-icon">👤</span> Hồ sơ cá nhân
+    </a>
     <a href="<%= _whCtx %>/staff-checkin?uid=<%= _whUid %>"
        class="nav-item <%= "checkin".equals(_whActive) ? "active" : "" %>">
       <span class="nav-icon">🕒</span> Điểm danh &amp; Ca làm việc
