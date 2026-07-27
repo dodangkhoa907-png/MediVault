@@ -352,6 +352,19 @@ public class PosServlet extends HttpServlet {
                 BigDecimal discount = (discStr != null && !discStr.isEmpty())
                         ? new BigDecimal(discStr) : BigDecimal.ZERO;
 
+                // Đổi điểm thân thiết (1 điểm = 1đ) — chỉ áp dụng khi có khách hàng.
+                // Số điểm thực trừ luôn được chốt lại theo số dư thật trong DB (không tin
+                // số điểm client gửi lên) để tránh trừ vượt mức hoặc gian lận request.
+                Integer redeemPointsReq = parseIntOrNull(req.getParameter("redeemPoints"));
+                int redeemPoints = 0;
+                if (customerId != null && redeemPointsReq != null && redeemPointsReq > 0) {
+                    com.medicare.entity.LoyaltyCard card = new com.medicare.dao.LoyaltyDAO().findByCustomer(customerId);
+                    if (card != null) {
+                        redeemPoints = Math.min(redeemPointsReq, card.getAvailablePoints());
+                        if (redeemPoints > 0) discount = discount.add(BigDecimal.valueOf(redeemPoints));
+                    }
+                }
+
                 String[] medIdStrs = req.getParameterValues("medId[]");
                 String[] qtyStrs   = req.getParameterValues("qty[]");
 
@@ -369,18 +382,26 @@ public class PosServlet extends HttpServlet {
                 String jsonResp;
                 if (result.isOk()) {
                     Invoice inv = result.getData();
-                    // Tích điểm loyalty (1 điểm / 10.000đ) nếu hóa đơn gắn khách hàng
+                    // Điểm loyalty (1 điểm / 1.000đ) đã được trigger TRG_EarnLoyaltyPoints
+                    // trong DB tự cộng ngay khi UPDATE Status='COMPLETED' (InvoiceDAO.completeSaleTransaction).
+                    // Ở đây CHỈ tính lại để hiển thị trên POS — KHÔNG ghi lại, tránh cộng trùng 2 lần.
                     int earned = 0;
                     if (customerId != null && inv != null) {
-                        earned = new com.medicare.dao.LoyaltyDAO().earnFromInvoice(
-                                customerId, inv.getInvoiceId(), inv.getFinalAmount(), accountId);
+                        earned = (int) (inv.getFinalAmount().longValue() / com.medicare.dao.LoyaltyDAO.VND_PER_POINT);
+                    }
+                    // Trừ điểm đã dùng SAU khi hóa đơn tạo thành công, gắn InvoiceID vào lịch sử điểm
+                    if (redeemPoints > 0 && customerId != null && inv != null) {
+                        boolean redeemed = new com.medicare.dao.LoyaltyDAO().redeem(
+                                customerId, redeemPoints, "Đổi điểm trừ tiền hóa đơn " + inv.getInvoiceCode(),
+                                inv.getInvoiceId());
+                        if (!redeemed) redeemPoints = 0;
                     }
                     jsonResp = String.format(
-                            "{\"ok\":true,\"invoiceId\":%d,\"invoiceCode\":\"%s\",\"total\":%s,\"earnedPoints\":%d}",
+                            "{\"ok\":true,\"invoiceId\":%d,\"invoiceCode\":\"%s\",\"total\":%s,\"earnedPoints\":%d,\"redeemedPoints\":%d}",
                             inv != null ? inv.getInvoiceId()  : 0,
                             inv != null ? esc(inv.getInvoiceCode()) : "",
                             inv != null ? inv.getFinalAmount() : "0",
-                            earned);
+                            earned, redeemPoints);
                     // Push tồn kho mới tới tất cả medicine-list tabs qua SSE
                     com.medicare.controller.admin.InventorySSEServlet.broadcast();
                 } else {

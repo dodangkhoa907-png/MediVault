@@ -47,6 +47,7 @@ body{display:flex}
   display:flex;flex-direction:column;align-items:stretch;
   padding:10px 0;position:fixed;left:0;top:0;bottom:0;
   z-index:100;overflow:hidden;
+  box-shadow:2px 0 20px rgba(15,23,42,.18);
   transition:width .22s cubic-bezier(.4,0,.2,1);
 }
 .sidebar:hover{width:214px}
@@ -65,6 +66,7 @@ body{display:flex}
   text-decoration:none;margin:1px 6px;overflow:hidden;background:transparent;
   border:none;font-family:inherit;width:calc(100% - 12px)}
 .sb-btn:hover,.sb-btn.active{color:#fff;background:rgba(255,255,255,.15)}
+.sb-btn.active{box-shadow:inset 3px 0 0 var(--sky)}
 .sb-icon{font-size:18px;min-width:28px;text-align:center;flex-shrink:0;line-height:1}
 .sb-label{font-size:12.5px;font-weight:750;color:rgba(255,255,255,.75);
   white-space:nowrap;opacity:0;transition:opacity .14s .06s}
@@ -85,7 +87,7 @@ body{display:flex}
 .center{margin-left:var(--sw);width:calc(100vw - var(--sw) - var(--rw));height:100vh;display:flex;flex-direction:column;background:var(--surface)}
 
 /* TOPBAR */
-.topbar{height:54px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0}
+.topbar{height:54px;background:#fff;border-bottom:1px solid var(--border);box-shadow:0 1px 4px rgba(15,23,42,.04);display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0;position:relative;z-index:20}
 .search-wrap{flex:1;position:relative}
 .search-wrap input{width:100%;height:38px;padding:0 38px 0 14px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit;outline:none;background:var(--surface);transition:.2s}
 .search-wrap input:focus{border-color:var(--sky);background:#fff}
@@ -107,6 +109,10 @@ body{display:flex}
 
 /* Med Card — centered product card layout */
 .med-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:10px 12px 12px;cursor:pointer;transition:.2s;display:flex;flex-direction:column;align-items:center;position:relative;min-height:148px;text-align:center}
+.mc-allergy-warn{margin-top:6px;width:100%;text-align:left;background:#fef2f2;border:1px solid #fca5a5;border-radius:7px;padding:5px 7px;font-size:10px;line-height:1.3;color:#991b1b;cursor:pointer;position:relative}
+.mc-allergy-warn .maw-clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mc-allergy-warn .maw-full{display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);background:#fff;border:1.5px solid #fca5a5;border-radius:8px;padding:8px 10px;font-size:11px;line-height:1.5;color:#991b1b;box-shadow:0 10px 26px rgba(153,27,27,.2);z-index:80;text-align:left}
+.mc-allergy-warn:hover .maw-full,.mc-allergy-warn.pinned .maw-full{display:block}
 .med-card:hover{border-color:#93c5fd;box-shadow:0 6px 20px rgba(59,130,246,.15);transform:translateY(-2px)}
 .med-card.out-of-stock{opacity:.42;cursor:not-allowed}
 .med-card.out-of-stock:hover{transform:none;border-color:var(--border);box-shadow:none}
@@ -132,7 +138,10 @@ body{display:flex}
 .empty-state .ei{font-size:44px;margin-bottom:12px}
 
 /* RIGHT PANEL */
-.invoice-panel{width:var(--rw);height:100vh;background:#fff;border-left:2px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.invoice-panel{width:var(--rw);height:100vh;background:#fff;border-left:1px solid var(--border);box-shadow:-6px 0 24px rgba(15,23,42,.05);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;position:relative;z-index:10}
+/* Vùng giữa (khách hàng/giỏ hàng/thanh toán/tổng tiền) cuộn riêng — header và nút
+   THANH TOÁN luôn cố định, không bị đẩy khuất màn hình khi nội dung khách hàng dài ra. */
+.inv-scroll{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column}
 
 /* Header */
 .inv-head{padding:13px 16px;background:linear-gradient(135deg,#1e3a5f,#1a56db);flex-shrink:0}
@@ -145,9 +154,17 @@ body{display:flex}
 /* Customer */
 .inv-customer{padding:9px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
 .f-label{font-size:11px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.cust-search-wrap{position:relative}
 .cust-wrap{display:flex;gap:6px}
 .cust-wrap input{flex:1;height:34px;padding:0 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none}
 .cust-wrap input:focus{border-color:var(--sky)}
+.cust-suggest{position:absolute;left:0;right:38px;top:calc(100% + 4px);background:#fff;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 10px 30px rgba(15,23,42,.14);max-height:220px;overflow-y:auto;z-index:60}
+.cs-item{display:flex;align-items:center;gap:8px;padding:8px 11px;cursor:pointer;border-bottom:1px solid #f1f5f9;font-size:12.5px}
+.cs-item:last-child{border-bottom:none}
+.cs-item:hover{background:#f8fafc}
+.cs-item .cs-name{font-weight:750;color:#0f172a;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cs-item .cs-phone{color:#64748b;font-size:11.5px;flex-shrink:0}
+.cs-empty{padding:10px 11px;font-size:12px;color:#94a3b8;text-align:center}
 .cust-btn{width:34px;height:34px;background:var(--blue);border:none;border-radius:8px;color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .cust-btn-add{background:linear-gradient(135deg,#0d9488,#0f766e);font-size:20px;font-weight:750;line-height:1}
 .cust-btn-add:hover{filter:brightness(1.08)}
@@ -156,7 +173,7 @@ body{display:flex}
 .cust-rm{color:var(--red);cursor:pointer;background:none;border:none;font-size:14px;line-height:1}
 
 /* Items */
-.inv-items{flex:1;overflow-y:auto;padding:4px 0;min-height:0}
+.inv-items{flex-shrink:0;max-height:260px;overflow-y:auto;padding:4px 0;min-height:0}
 .inv-items::-webkit-scrollbar{width:3px}
 .inv-items::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 .inv-empty{text-align:center;padding:28px 14px;color:var(--muted);font-size:13px}
@@ -185,6 +202,16 @@ body{display:flex}
 .f-input{height:32px;padding:0 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:750;font-family:inherit;outline:none;color:var(--navy);background:#fff;transition:.15s}
 .f-input:focus{border-color:var(--sky)}
 .f-input.discount{width:90px;text-align:right}
+.discount-wrap{position:relative;display:inline-block}
+.discount-wrap .f-input.discount{padding-right:18px!important}
+.disc-steppers{position:absolute;right:1px;top:1px;bottom:1px;width:15px;display:flex;flex-direction:column;justify-content:center;gap:1px}
+.disc-step{border:none;background:#f1f5f9;border-radius:3px;padding:0;margin:0;height:11px;line-height:1;font-size:7px;color:#94a3b8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:.12s}
+.disc-step:hover{color:#fff;background:var(--blue)}
+.cash-wrap{position:relative;flex:1}
+.cash-wrap .f-input.cash{width:100%;padding-right:22px}
+.cash-steppers{position:absolute;right:2px;top:1px;bottom:1px;width:17px;display:flex;flex-direction:column;justify-content:center;gap:1px}
+.cash-step{border:none;background:#f1f5f9;border-radius:3px;padding:0;margin:0;height:14px;line-height:1;font-size:8px;color:#94a3b8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:.12s}
+.cash-step:hover{color:#fff;background:var(--blue)}
 .f-input.note{width:100%;height:30px;font-weight:400}
 
 /* Payment method — 3 big cards */
@@ -792,13 +819,17 @@ body{display:flex}
     </div>
   </div>
 
+  <div class="inv-scroll">
   <!-- Customer -->
   <div class="inv-customer">
     <div class="f-label">Khách hàng</div>
-    <div class="cust-wrap">
-      <input type="text" id="custPhone" placeholder="Gõ SĐT (tự tìm khi đủ 10 số)…" oninput="onCustInput()" autocomplete="off" inputmode="numeric">
-      <button class="cust-btn" onclick="searchCustomer()" title="Tìm khách theo SĐT">🔍</button>
-      <button class="cust-btn cust-btn-add" onclick="openQuickCreate()" title="Thêm khách hàng mới">＋</button>
+    <div class="cust-search-wrap">
+      <div class="cust-wrap">
+        <input type="text" id="custPhone" placeholder="Gõ SĐT hoặc tên khách…" oninput="onCustInput()" onblur="scheduleHideCustSuggest()" onfocus="fetchCustSuggest()" autocomplete="off" inputmode="numeric">
+        <button class="cust-btn" onclick="searchCustomer()" title="Tìm khách theo SĐT">🔍</button>
+        <button class="cust-btn cust-btn-add" onclick="openQuickCreate()" title="Thêm khách hàng mới">＋</button>
+      </div>
+      <div id="custSuggest" class="cust-suggest" style="display:none"></div>
     </div>
     <%-- Không tìm thấy → nút tạo nhanh 1 chạm --%>
     <button id="custCreateRow" style="display:none;width:100%;margin-top:7px;padding:9px 12px;background:linear-gradient(135deg,#0d9488,#0f766e);border:none;border-radius:9px;color:#fff;font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit;text-align:left"
@@ -815,6 +846,11 @@ body{display:flex}
     <%-- CẢNH BÁO ĐỎ dị ứng thuốc — hiện khi khách có tiền sử dị ứng --%>
     <div id="custAllergyRow" style="display:none;margin-top:7px;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:9px;padding:8px 11px;font-size:12px;color:#991b1b;line-height:1.45">
       🚨 <b>DỊ ỨNG:</b> <span id="custAllergyText"></span>
+    </div>
+    <%-- Đổi điểm thân thiết 1-click — hiện khi khách đang chọn có điểm khả dụng --%>
+    <div id="custPointsRow" style="display:none;margin-top:7px;background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:9px;padding:7px 11px;font-size:12px;color:#5b21b6;align-items:center;justify-content:space-between;gap:8px">
+      <span>⭐ Khả dụng: <b id="custPointsAvail">0</b> điểm</span>
+      <button type="button" id="custPointsBtn" onclick="toggleRedeemPoints()" style="flex-shrink:0;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none;border-radius:7px;padding:5px 10px;font-size:11.5px;font-weight:800;cursor:pointer;font-family:inherit">Dùng điểm</button>
     </div>
   </div>
 
@@ -868,7 +904,13 @@ body{display:flex}
       <div class="cash-quick" id="cashQuickBtns"></div>
       <div class="cash-input-row">
         <span class="cash-input-lbl">Tiền khách đưa</span>
-        <input type="number" class="f-input cash" id="cashInput" placeholder="Nhập số tiền…" min="0" oninput="calcChange()">
+        <div class="cash-wrap">
+          <input type="text" inputmode="numeric" class="f-input cash" id="cashInput" placeholder="Nhập số tiền…" oninput="formatCashInput(this)">
+          <span class="cash-steppers">
+            <button type="button" class="cash-step" onclick="stepCash(1)" tabindex="-1">▲</button>
+            <button type="button" class="cash-step" onclick="stepCash(-1)" tabindex="-1">▼</button>
+          </span>
+        </div>
       </div>
       <div class="cash-change-row cash-change-ok" id="cashChangeRow" style="display:none">
         <span class="cash-change-lbl" id="cashChangeLbl">Tiền thừa trả khách</span>
@@ -882,13 +924,24 @@ body{display:flex}
     <div class="total-row"><span>Tạm tính</span><span id="sumSub">0đ</span></div>
     <div class="total-row">
       <span>Giảm giá (₫)</span>
-      <input type="number" class="f-input discount" id="discountInput" value="0" min="0" oninput="updateTotal()" style="width:80px;height:26px;font-size:12px;padding:0 7px">
+      <div class="discount-wrap">
+        <input type="text" inputmode="numeric" class="f-input discount" id="discountInput" value="0" oninput="formatDiscountInput(this)" style="width:80px;height:26px;font-size:12px;padding:0 7px">
+        <span class="disc-steppers">
+          <button type="button" class="disc-step" onclick="stepDiscount(1)" tabindex="-1">▲</button>
+          <button type="button" class="disc-step" onclick="stepDiscount(-1)" tabindex="-1">▼</button>
+        </span>
+      </div>
+    </div>
+    <div class="total-row" id="pointsAppliedRow" style="display:none">
+      <span style="font-size:12px;color:#7c3aed">Điểm áp dụng (<span id="pointsAppliedNum">0</span> điểm)</span>
+      <span id="pointsAppliedVal" style="font-size:13px;font-weight:800;color:#7c3aed">-0đ</span>
     </div>
     <div class="total-row" id="cashNeedRow" style="display:none">
       <span style="font-size:12px;color:var(--muted)">Cần thanh toán</span>
       <span id="cashNeedVal" style="font-size:13px;font-weight:800;color:var(--blue)">0đ</span>
     </div>
     <div class="total-row grand"><span>TỔNG CỘNG</span><span class="tv" id="sumTotal">0đ</span></div>
+  </div>
   </div>
 
   <!-- Checkout button -->
@@ -1124,6 +1177,8 @@ const screenState = '${screenState}';
 const sellerName = '<%= fullName %>';
 let cart = [];
 let selectedCustomer = null;
+let availablePoints = 0;   // điểm khả dụng của khách đang chọn
+let redeemPoints = 0;      // số điểm đã áp dụng trừ vào hóa đơn hiện tại (1 điểm = 1đ)
 let selectedPayment = 'CASH';
 let allMedicines = [];
 // Chặn submitSale() chạy chồng lẫn nhau — vd. khi 2 lượt poll QR cùng thấy PAID gần như đồng
@@ -1368,10 +1423,53 @@ function clearCart() {
   document.getElementById('discountInput').value = '0';
   document.getElementById('cashInput').value = '';
   document.getElementById('cashChangeRow').style.display = 'none';
+  resetRedeemPoints();
+  refreshAllergyWarnings();
   renderCart();
 }
 
 function fmtMoney(n) { return new Intl.NumberFormat('vi-VN').format(Math.round(n)) + 'đ'; }
+
+function getDiscountValue() {
+  return parseInt((document.getElementById('discountInput').value || '').replace(/\D/g, ''), 10) || 0;
+}
+
+function stepDiscount(dir) {
+  const step = 1000;
+  const num = Math.max(0, getDiscountValue() + dir * step);
+  document.getElementById('discountInput').value = new Intl.NumberFormat('vi-VN').format(num);
+  updateTotal();
+}
+
+function getCashValue() {
+  return parseInt((document.getElementById('cashInput').value || '').replace(/\D/g, ''), 10) || 0;
+}
+
+function formatCashInput(el) {
+  const digits = el.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  const cursorFromEnd = el.value.length - el.selectionStart;
+  el.value = digits ? new Intl.NumberFormat('vi-VN').format(parseInt(digits, 10)) : '';
+  const newPos = Math.max(0, el.value.length - cursorFromEnd);
+  el.setSelectionRange(newPos, newPos);
+  calcChange();
+}
+
+function stepCash(dir) {
+  const step = 1000;
+  const num = Math.max(0, getCashValue() + dir * step);
+  document.getElementById('cashInput').value = new Intl.NumberFormat('vi-VN').format(num);
+  calcChange();
+}
+
+function formatDiscountInput(el) {
+  const digits = el.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  const num = digits ? parseInt(digits, 10) : 0;
+  const cursorFromEnd = el.value.length - el.selectionStart;
+  el.value = new Intl.NumberFormat('vi-VN').format(num);
+  const newPos = Math.max(0, el.value.length - cursorFromEnd);
+  el.setSelectionRange(newPos, newPos);
+  updateTotal();
+}
 function fmtDate(d) {
   if (!d) return '';
   const p = d.split('-');
@@ -1422,23 +1520,62 @@ function escHtml(s) {
 
 function calcTotal() {
   const sub = cart.reduce((s,i) => s + i.price*i.qty, 0);
-  const disc = parseFloat(document.getElementById('discountInput').value) || 0;
-  return Math.max(0, sub - disc);
+  const disc = getDiscountValue();
+  return Math.max(0, sub - disc - redeemPoints);
 }
 
 function updateTotal() {
   const sub  = cart.reduce((s,i) => s + i.price*i.qty, 0);
-  const disc = parseFloat(document.getElementById('discountInput').value) || 0;
-  const tot  = Math.max(0, sub - disc);
+  const disc = getDiscountValue();
+  // Điểm áp dụng không được vượt quá phần còn lại sau giảm giá thủ công
+  if (redeemPoints > Math.max(0, sub - disc)) {
+    redeemPoints = Math.max(0, Math.min(redeemPoints, sub - disc));
+  }
+  const tot  = Math.max(0, sub - disc - redeemPoints);
   const qty  = cart.reduce((s,i) => s+i.qty, 0);
   document.getElementById('sumSub').textContent   = fmtMoney(sub);
   document.getElementById('sumTotal').textContent = fmtMoney(tot);
   document.getElementById('invSubtitle').textContent = qty + ' sản phẩm · ' + fmtMoney(tot);
   const needEl = document.getElementById('cashNeedVal');
   if (needEl) needEl.textContent = fmtMoney(tot);
+  updatePointsAppliedRow();
   updateQuickButtons(tot);
   calcChange();
   syncPayPanelAmounts();
+}
+
+function updatePointsAppliedRow() {
+  const row = document.getElementById('pointsAppliedRow');
+  if (!row) return;
+  if (redeemPoints > 0) {
+    document.getElementById('pointsAppliedNum').textContent = new Intl.NumberFormat('vi-VN').format(redeemPoints);
+    document.getElementById('pointsAppliedVal').textContent = '-' + fmtMoney(redeemPoints);
+    row.style.display = 'flex';
+  } else {
+    row.style.display = 'none';
+  }
+  const btn = document.getElementById('custPointsBtn');
+  if (btn) btn.textContent = redeemPoints > 0 ? 'Bỏ dùng điểm' : 'Dùng điểm';
+}
+
+/** 1-click: áp toàn bộ điểm khả dụng (tối đa bằng phần tiền còn lại) làm giảm giá; bấm lại để bỏ. */
+function toggleRedeemPoints() {
+  if (redeemPoints > 0) {
+    redeemPoints = 0;
+  } else {
+    const sub  = cart.reduce((s,i) => s + i.price*i.qty, 0);
+    const disc = getDiscountValue();
+    redeemPoints = Math.max(0, Math.min(availablePoints, sub - disc));
+    if (redeemPoints <= 0) { showToast('⚠️ Không có điểm khả dụng để dùng', 'err'); return; }
+  }
+  updateTotal();
+}
+
+function resetRedeemPoints() {
+  redeemPoints = 0;
+  availablePoints = 0;
+  const r = document.getElementById('custPointsRow');
+  if (r) r.style.display = 'none';
 }
 
 function updateQuickButtons(total) {
@@ -1465,7 +1602,7 @@ function buildQuickAmounts(total) {
 }
 
 function setCash(amount) {
-  document.getElementById('cashInput').value = amount;
+  document.getElementById('cashInput').value = new Intl.NumberFormat('vi-VN').format(amount);
   calcChange();
 }
 
@@ -1514,7 +1651,7 @@ function calcChange() {
   updateCheckoutBtnState();
   if (selectedPayment !== 'CASH') return;
   const total    = calcTotal();
-  const received = parseFloat(document.getElementById('cashInput').value) || 0;
+  const received = getCashValue();
   const changeRow = document.getElementById('cashChangeRow');
   const valEl     = document.getElementById('cashChangeVal');
   const lblEl     = document.getElementById('cashChangeLbl');
@@ -1547,7 +1684,7 @@ function updateCheckoutBtnState() {
   }
   if (selectedPayment === 'CASH') {
     const total = calcTotal();
-    const cash  = parseFloat(document.getElementById('cashInput').value) || 0;
+    const cash  = getCashValue();
     if (cash <= 0) {
       btn.disabled = true;
       btn.textContent = '\u23F3 Nh\u1EADp ti\u1EC1n kh\u00E1ch \u0111\u01B0a\u2026';
@@ -1573,18 +1710,60 @@ function onCustInput() {
   clearTimeout(custTimer);
   const digits = document.getElementById('custPhone').value.replace(/\D/g, '');
   document.getElementById('custCreateRow').style.display = 'none';
-  if (digits.length === 10) { searchCustomer(); return; }  // đủ 10 số → tìm NGAY, không cần Enter
+  fetchCustSuggest();
+  if (digits.length === 10) { searchCustomer(); hideCustSuggest(); return; }  // đủ 10 số → tìm NGAY, không cần Enter
   custTimer = setTimeout(searchCustomer, 600);
+}
+
+// ── Dropdown gợi ý khách hàng — sổ ra ngay theo từng ký tự gõ (tên hoặc SĐT) ──
+let custSuggestTimer;
+function fetchCustSuggest() {
+  clearTimeout(custSuggestTimer);
+  const q = document.getElementById('custPhone').value.trim();
+  if (!q) { hideCustSuggest(); return; }
+  custSuggestTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(ctx + '/pos?action=search-customers&q=' + encodeURIComponent(q));
+      const list = await res.json();
+      renderCustSuggest(list.slice(0, 8), q);
+    } catch (e) { hideCustSuggest(); }
+  }, 200);
+}
+
+function renderCustSuggest(list, q) {
+  const box = document.getElementById('custSuggest');
+  if (!list.length) {
+    box.innerHTML = '<div class="cs-empty">Không tìm thấy khách khớp "' + escHtml(q) + '"</div>';
+  } else {
+    box.innerHTML = list.map(c =>
+      '<div class="cs-item" onmousedown="event.preventDefault();pickCustomer(\'' + (c.phone || '') + '\')">'
+      + '<span>' + (c.hasNfc ? '📶' : '👤') + '</span>'
+      + '<span class="cs-name">' + escHtml(c.name) + '</span>'
+      + '<span class="cs-phone">' + escHtml(c.phone || '—') + '</span>'
+      + '</div>'
+    ).join('');
+  }
+  box.style.display = 'block';
+}
+
+function hideCustSuggest() {
+  const box = document.getElementById('custSuggest');
+  if (box) box.style.display = 'none';
+}
+
+/** Delay nhỏ trước khi ẩn dropdown khi blur, để kịp nhận click chọn (mousedown đã preventDefault). */
+function scheduleHideCustSuggest() {
+  setTimeout(hideCustSuggest, 150);
 }
 
 /** Hiển thị khách đã chọn: tên + SĐT + hạng/điểm + CẢNH BÁO ĐỎ dị ứng. */
 function applyCustomer(data) {
-  selectedCustomer = { id: data.id, name: data.name, phone: data.phone };
+  selectedCustomer = { id: data.id, name: data.name, phone: data.phone, allergy: data.allergy || '' };
   document.getElementById('custFoundName').textContent  = data.name;
   document.getElementById('custFoundPhone').textContent = data.phone;
   const badge = document.getElementById('custTierBadge');
   if (data.tier) {
-    badge.textContent = data.tier + ' · ' + (data.points || 0) + 'đ';
+    badge.textContent = data.tier + ' · ' + (data.points || 0) + ' điểm';
     badge.style.display = 'inline-block';
   } else badge.style.display = 'none';
   document.getElementById('custFound').style.display = 'flex';
@@ -1595,6 +1774,55 @@ function applyCustomer(data) {
     document.getElementById('custAllergyText').textContent = data.allergy;
     aRow.style.display = 'block';
   } else aRow.style.display = 'none';
+  // Đổi điểm 1-click — reset mỗi lần chọn khách mới, chỉ hiện khi có điểm khả dụng
+  redeemPoints = 0;
+  availablePoints = data.points || 0;
+  const pRow = document.getElementById('custPointsRow');
+  if (availablePoints > 0) {
+    document.getElementById('custPointsAvail').textContent = new Intl.NumberFormat('vi-VN').format(availablePoints);
+    pRow.style.display = 'flex';
+  } else pRow.style.display = 'none';
+  updatePointsAppliedRow();
+  refreshAllergyWarnings();
+  if (typeof updateTotal === 'function') updateTotal();
+}
+
+// ── Cảnh báo dị ứng theo TỪNG SẢN PHẨM — so khớp dị ứng khách hàng với
+// thành phần hoạt chất (generic) / chống chỉ định (contra) của từng thuốc ──
+function allergyTokens(text) {
+  return text.toLowerCase().split(/[,;\/\n]+| và | with |\+/).map(s => s.trim()).filter(s => s.length >= 3);
+}
+
+function medicineConflictsAllergy(m, allergyText) {
+  const allergyLower = allergyText.toLowerCase();
+  const genericLower = (m.generic || '').toLowerCase();
+  const contraLower  = (m.contra  || '').toLowerCase();
+  if (!genericLower && !contraLower) return false;
+  for (const t of allergyTokens(allergyText)) {
+    if (genericLower.includes(t) || contraLower.includes(t)) return true;
+  }
+  return genericLower.length >= 3 && allergyLower.includes(genericLower);
+}
+
+function refreshAllergyWarnings() {
+  const allergyText = (selectedCustomer && selectedCustomer.allergy) ? selectedCustomer.allergy.trim() : '';
+  allMedicines.forEach(m => {
+    let warnEl = m.el.querySelector('.mc-allergy-warn');
+    const conflict = !!allergyText && medicineConflictsAllergy(m, allergyText);
+    if (conflict) {
+      if (!warnEl) {
+        warnEl = document.createElement('div');
+        warnEl.className = 'mc-allergy-warn';
+        warnEl.onclick = (e) => { e.stopPropagation(); showMedInfo(m.id); };
+        m.el.appendChild(warnEl);
+      }
+      const label = '🚨 Dị ứng: ' + (m.generic || m.name) + (m.contra ? ' — ' + m.contra : '');
+      warnEl.innerHTML = '<div class="maw-clamp">' + escHtml(label) + '</div>'
+        + '<div class="maw-full">' + escHtml(label) + '</div>';
+    } else if (warnEl) {
+      warnEl.remove();
+    }
+  });
 }
 
 function searchCustomer() {
@@ -1603,6 +1831,7 @@ function searchCustomer() {
   fetch(ctx + '/pos?action=find-customer&phone=' + encodeURIComponent(phone))
     .then(r => r.json()).then(data => {
       if (data.found) {
+        hideCustSuggest();
         applyCustomer(data);
         showToast('✓ ' + data.name + (data.points ? ' · ' + data.points + ' điểm' : ''), 'ok');
       } else {
@@ -1626,6 +1855,10 @@ function removeCustomer() {
   document.getElementById('custFound').style.display = 'none';
   document.getElementById('custAllergyRow').style.display = 'none';
   document.getElementById('custCreateRow').style.display = 'none';
+  hideCustSuggest();
+  resetRedeemPoints();
+  refreshAllergyWarnings();
+  if (typeof updateTotal === 'function') updateTotal();
 }
 
 // ── Panel QUẢN LÝ KHÁCH HÀNG trong POS (tìm / chọn / tạo mới) ──
@@ -1674,6 +1907,7 @@ function custMgmtSearch() {
 function pickCustomer(phone) {
   if (!phone) return;
   document.getElementById('custPhone').value = phone;
+  hideCustSuggest();
   closeCustMgmt();
   searchCustomer();
 }
@@ -1865,7 +2099,7 @@ function doCheckout() {
   const total = calcTotal();
   if (selectedPayment === 'CASH') {
     const cashEl = document.getElementById('cashInput');
-    const received = parseFloat(cashEl.value) || 0;
+    const received = getCashValue();
     if (received <= 0) {
       showToast('⚠️ Vui lòng nhập số tiền khách đưa!', 'err');
       cashEl.focus();
@@ -1897,7 +2131,8 @@ function submitSale() {
   fd.append('action', 'complete-sale');
   fd.append('clientRequestId', clientRequestId);
   fd.append('paymentMethod', selectedPayment);
-  fd.append('discount', document.getElementById('discountInput').value || '0');
+  fd.append('discount', getDiscountValue());
+  if (redeemPoints > 0) fd.append('redeemPoints', redeemPoints);
   if (selectedCustomer) fd.append('customerId', selectedCustomer.id);
   if (currentStaffId)   fd.append('uid', currentStaffId);
   if (currentStation > 0) fd.append('posStation', currentStation);
@@ -1919,8 +2154,8 @@ function submitSale() {
         // thối phải phản ánh đúng con số thật đã ghi vào DB.
         const total    = (data.total != null && !isNaN(parseFloat(data.total)))
                             ? parseFloat(data.total) : calcTotal();
-        const disc     = parseFloat(document.getElementById('discountInput').value) || 0;
-        const received = selectedPayment === 'CASH' ? (parseFloat(document.getElementById('cashInput').value) || 0) : 0;
+        const disc     = getDiscountValue();
+        const received = selectedPayment === 'CASH' ? getCashValue() : 0;
         const change   = received > 0 ? Math.max(0, received - total) : 0;
         const now      = new Date();
 
@@ -1974,7 +2209,9 @@ function submitSale() {
           ? 'Tiền thừa: ' + fmtMoney(change) : '';
         document.getElementById('successModal').classList.add('show');
         showToast('✅ Thanh toán thành công!'
-          + (data.earnedPoints > 0 ? ' Khách +' + data.earnedPoints + ' điểm ⭐' : ''), 'ok');
+          + (data.earnedPoints > 0 ? ' Khách +' + data.earnedPoints + ' điểm ⭐' : '')
+          + (data.redeemedPoints > 0 ? ' · -' + data.redeemedPoints + ' điểm đã dùng' : ''), 'ok');
+        resetRedeemPoints();
         _saleInFlight = false;
       } else {
         showToast('❌ ' + (data.msg || 'Lỗi xử lý!'), 'err');

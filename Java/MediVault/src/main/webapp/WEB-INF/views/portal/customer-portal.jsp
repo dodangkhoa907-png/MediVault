@@ -40,7 +40,7 @@ html,body{min-height:100%;font-family:'Plus Jakarta Sans',sans-serif}
 body{background:#f8fafc;color:var(--ink);padding-bottom:76px}
 
 /* ── TOPBAR ── */
-.topbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:12px 18px;display:flex;align-items:center;justify-content:space-between}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);box-shadow:0 1px 6px rgba(15,23,42,.04);padding:12px 18px;display:flex;align-items:center;justify-content:space-between}
 .tb-logo{display:flex;align-items:center;gap:9px}
 .tb-badge{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--teal),#14b8a6);display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 5px 12px -4px rgba(13,148,136,.5)}
 .tb-name{font-size:16px;font-weight:800;letter-spacing:-.3px;line-height:1}
@@ -125,7 +125,7 @@ body{background:#f8fafc;color:var(--ink);padding-bottom:76px}
 .ph-earn{color:#047857;font-weight:800}.ph-redeem{color:#b91c1c;font-weight:800}
 
 /* ── BOTTOM NAV ── */
-.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);border-top:1.5px solid var(--border);display:flex;justify-content:space-around;padding:8px 6px calc(8px + env(safe-area-inset-bottom))}
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);border-top:1.5px solid var(--border);box-shadow:0 -2px 12px rgba(15,23,42,.06);display:flex;justify-content:space-around;padding:8px 6px calc(8px + env(safe-area-inset-bottom))}
 .bn-item{flex:1;max-width:120px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border-radius:13px;border:none;background:none;cursor:pointer;font-family:inherit;color:#94a3b8;transition:all .18s}
 .bn-item .bi{font-size:19px;transition:transform .18s}
 .bn-item .bl{font-size:10.5px;font-weight:750}

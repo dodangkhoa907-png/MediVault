@@ -47,6 +47,7 @@ body{display:flex}
   display:flex;flex-direction:column;align-items:stretch;
   padding:10px 0;position:fixed;left:0;top:0;bottom:0;
   z-index:100;overflow:hidden;
+  box-shadow:2px 0 20px rgba(15,23,42,.18);
   transition:width .22s cubic-bezier(.4,0,.2,1);
 }
 .sidebar:hover{width:214px}
@@ -65,6 +66,7 @@ body{display:flex}
   text-decoration:none;margin:1px 6px;overflow:hidden;background:transparent;
   border:none;font-family:inherit;width:calc(100% - 12px)}
 .sb-btn:hover,.sb-btn.active{color:#fff;background:rgba(255,255,255,.15)}
+.sb-btn.active{box-shadow:inset 3px 0 0 var(--sky)}
 .sb-icon{font-size:18px;min-width:28px;text-align:center;flex-shrink:0;line-height:1}
 .sb-label{font-size:12.5px;font-weight:750;color:rgba(255,255,255,.75);
   white-space:nowrap;opacity:0;transition:opacity .14s .06s}
@@ -85,7 +87,7 @@ body{display:flex}
 .center{margin-left:var(--sw);width:calc(100vw - var(--sw) - var(--rw));height:100vh;display:flex;flex-direction:column;background:var(--surface)}
 
 /* TOPBAR */
-.topbar{height:54px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0}
+.topbar{height:54px;background:#fff;border-bottom:1px solid var(--border);box-shadow:0 1px 4px rgba(15,23,42,.04);display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0;position:relative;z-index:20}
 .search-wrap{flex:1;position:relative}
 .search-wrap input{width:100%;height:38px;padding:0 38px 0 14px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit;outline:none;background:var(--surface);transition:.2s}
 .search-wrap input:focus{border-color:var(--sky);background:#fff}
@@ -132,7 +134,7 @@ body{display:flex}
 .empty-state .ei{font-size:44px;margin-bottom:12px}
 
 /* RIGHT PANEL */
-.invoice-panel{width:var(--rw);height:100vh;background:#fff;border-left:2px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.invoice-panel{width:var(--rw);height:100vh;background:#fff;border-left:1px solid var(--border);box-shadow:-6px 0 24px rgba(15,23,42,.05);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;position:relative;z-index:10}
 
 /* Header */
 .inv-head{padding:13px 16px;background:linear-gradient(135deg,#1e3a5f,#1a56db);flex-shrink:0}
@@ -183,6 +185,16 @@ body{display:flex}
 .f-input{height:32px;padding:0 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:750;font-family:inherit;outline:none;color:var(--navy);background:#fff;transition:.15s}
 .f-input:focus{border-color:var(--sky)}
 .f-input.discount{width:90px;text-align:right}
+.discount-wrap{position:relative;display:inline-block}
+.discount-wrap .f-input.discount{padding-right:18px!important}
+.disc-steppers{position:absolute;right:1px;top:1px;bottom:1px;width:15px;display:flex;flex-direction:column;justify-content:center;gap:1px}
+.disc-step{border:none;background:#f1f5f9;border-radius:3px;padding:0;margin:0;height:11px;line-height:1;font-size:7px;color:#94a3b8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:.12s}
+.disc-step:hover{color:#fff;background:var(--blue)}
+.cash-wrap{position:relative;flex:1}
+.cash-wrap .f-input.cash{width:100%;padding-right:22px}
+.cash-steppers{position:absolute;right:2px;top:1px;bottom:1px;width:17px;display:flex;flex-direction:column;justify-content:center;gap:1px}
+.cash-step{border:none;background:#f1f5f9;border-radius:3px;padding:0;margin:0;height:14px;line-height:1;font-size:8px;color:#94a3b8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:.12s}
+.cash-step:hover{color:#fff;background:var(--blue)}
 .f-input.note{width:100%;height:30px;font-weight:400}
 
 /* Payment method — 3 big cards */
@@ -779,7 +791,13 @@ body{display:flex}
       <div class="cash-quick" id="cashQuickBtns"></div>
       <div class="cash-input-row">
         <span class="cash-input-lbl">Tiền khách đưa</span>
-        <input type="number" class="f-input cash" id="cashInput" placeholder="Nhập số tiền…" min="0" oninput="calcChange()">
+        <div class="cash-wrap">
+          <input type="text" inputmode="numeric" class="f-input cash" id="cashInput" placeholder="Nhập số tiền…" oninput="formatCashInput(this)">
+          <span class="cash-steppers">
+            <button type="button" class="cash-step" onclick="stepCash(1)" tabindex="-1">▲</button>
+            <button type="button" class="cash-step" onclick="stepCash(-1)" tabindex="-1">▼</button>
+          </span>
+        </div>
       </div>
       <div class="cash-change-row cash-change-ok" id="cashChangeRow" style="display:none">
         <span class="cash-change-lbl" id="cashChangeLbl">Tiền thừa trả khách</span>
@@ -793,7 +811,13 @@ body{display:flex}
     <div class="total-row"><span>Tạm tính</span><span id="sumSub">0đ</span></div>
     <div class="total-row">
       <span>Giảm giá (₫)</span>
-      <input type="number" class="f-input discount" id="discountInput" value="0" min="0" oninput="updateTotal()" style="width:80px;height:26px;font-size:12px;padding:0 7px">
+      <div class="discount-wrap">
+        <input type="text" inputmode="numeric" class="f-input discount" id="discountInput" value="0" oninput="formatDiscountInput(this)" style="width:80px;height:26px;font-size:12px;padding:0 7px">
+        <span class="disc-steppers">
+          <button type="button" class="disc-step" onclick="stepDiscount(1)" tabindex="-1">▲</button>
+          <button type="button" class="disc-step" onclick="stepDiscount(-1)" tabindex="-1">▼</button>
+        </span>
+      </div>
     </div>
     <div class="total-row" id="cashNeedRow" style="display:none">
       <span style="font-size:12px;color:var(--muted)">Cần thanh toán</span>
@@ -1179,6 +1203,47 @@ function clearCart() {
 }
 
 function fmtMoney(n) { return new Intl.NumberFormat('vi-VN').format(Math.round(n)) + 'đ'; }
+
+function getDiscountValue() {
+  return parseInt((document.getElementById('discountInput').value || '').replace(/\D/g, ''), 10) || 0;
+}
+
+function stepDiscount(dir) {
+  const step = 1000;
+  const num = Math.max(0, getDiscountValue() + dir * step);
+  document.getElementById('discountInput').value = new Intl.NumberFormat('vi-VN').format(num);
+  updateTotal();
+}
+
+function getCashValue() {
+  return parseInt((document.getElementById('cashInput').value || '').replace(/\D/g, ''), 10) || 0;
+}
+
+function formatCashInput(el) {
+  const digits = el.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  const cursorFromEnd = el.value.length - el.selectionStart;
+  el.value = digits ? new Intl.NumberFormat('vi-VN').format(parseInt(digits, 10)) : '';
+  const newPos = Math.max(0, el.value.length - cursorFromEnd);
+  el.setSelectionRange(newPos, newPos);
+  calcChange();
+}
+
+function stepCash(dir) {
+  const step = 1000;
+  const num = Math.max(0, getCashValue() + dir * step);
+  document.getElementById('cashInput').value = new Intl.NumberFormat('vi-VN').format(num);
+  calcChange();
+}
+
+function formatDiscountInput(el) {
+  const digits = el.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  const num = digits ? parseInt(digits, 10) : 0;
+  const cursorFromEnd = el.value.length - el.selectionStart;
+  el.value = new Intl.NumberFormat('vi-VN').format(num);
+  const newPos = Math.max(0, el.value.length - cursorFromEnd);
+  el.setSelectionRange(newPos, newPos);
+  updateTotal();
+}
 function fmtDate(d) {
   if (!d) return '';
   const p = d.split('-');
@@ -1224,13 +1289,13 @@ function escHtml(s) {
 
 function calcTotal() {
   const sub = cart.reduce((s,i) => s + i.price*i.qty, 0);
-  const disc = parseFloat(document.getElementById('discountInput').value) || 0;
+  const disc = getDiscountValue();
   return Math.max(0, sub - disc);
 }
 
 function updateTotal() {
   const sub  = cart.reduce((s,i) => s + i.price*i.qty, 0);
-  const disc = parseFloat(document.getElementById('discountInput').value) || 0;
+  const disc = getDiscountValue();
   const tot  = Math.max(0, sub - disc);
   const qty  = cart.reduce((s,i) => s+i.qty, 0);
   document.getElementById('sumSub').textContent   = fmtMoney(sub);
@@ -1267,7 +1332,7 @@ function buildQuickAmounts(total) {
 }
 
 function setCash(amount) {
-  document.getElementById('cashInput').value = amount;
+  document.getElementById('cashInput').value = new Intl.NumberFormat('vi-VN').format(amount);
   calcChange();
 }
 
@@ -1316,7 +1381,7 @@ function calcChange() {
   updateCheckoutBtnState();
   if (selectedPayment !== 'CASH') return;
   const total    = calcTotal();
-  const received = parseFloat(document.getElementById('cashInput').value) || 0;
+  const received = getCashValue();
   const changeRow = document.getElementById('cashChangeRow');
   const valEl     = document.getElementById('cashChangeVal');
   const lblEl     = document.getElementById('cashChangeLbl');
@@ -1349,7 +1414,7 @@ function updateCheckoutBtnState() {
   }
   if (selectedPayment === 'CASH') {
     const total = calcTotal();
-    const cash  = parseFloat(document.getElementById('cashInput').value) || 0;
+    const cash  = getCashValue();
     if (cash <= 0) {
       btn.disabled = true;
       btn.textContent = '\u23F3 Nh\u1EADp ti\u1EC1n kh\u00E1ch \u0111\u01B0a\u2026';
@@ -1402,7 +1467,7 @@ function doCheckout() {
   const total = calcTotal();
   if (selectedPayment === 'CASH') {
     const cashEl = document.getElementById('cashInput');
-    const received = parseFloat(cashEl.value) || 0;
+    const received = getCashValue();
     if (received <= 0) {
       showToast('⚠️ Vui lòng nhập số tiền khách đưa!', 'err');
       cashEl.focus();
@@ -1428,7 +1493,7 @@ function submitSale() {
   const fd = new URLSearchParams();
   fd.append('action', 'complete-sale');
   fd.append('paymentMethod', selectedPayment);
-  fd.append('discount', document.getElementById('discountInput').value || '0');
+  fd.append('discount', getDiscountValue());
   if (selectedCustomer) fd.append('customerId', selectedCustomer.id);
   if (currentStaffId)   fd.append('uid', currentStaffId);
   if (currentStation > 0) fd.append('posStation', currentStation);
@@ -1446,8 +1511,8 @@ function submitSale() {
     .then(data => {
       if (data.ok) {
         const total    = calcTotal();
-        const disc     = parseFloat(document.getElementById('discountInput').value) || 0;
-        const received = selectedPayment === 'CASH' ? (parseFloat(document.getElementById('cashInput').value) || 0) : 0;
+        const disc     = getDiscountValue();
+        const received = selectedPayment === 'CASH' ? getCashValue() : 0;
         const change   = received > 0 ? Math.max(0, received - total) : 0;
         const now      = new Date();
 

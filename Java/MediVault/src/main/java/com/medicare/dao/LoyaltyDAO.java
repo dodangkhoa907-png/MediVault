@@ -10,13 +10,13 @@ import java.util.List;
 /**
  * LoyaltyDAO — thẻ tích điểm khách hàng (LoyaltyCards + LoyaltyTiers + PointTransactions).
  *
- * Quy tắc điểm: 1 điểm / 10.000đ hóa đơn COMPLETED.
+ * Quy tắc điểm: 1 điểm / 1.000đ hóa đơn COMPLETED.
  * Thăng hạng tự động: TierID = hạng cao nhất có MinPoints <= TotalPoints.
  */
 public class LoyaltyDAO {
 
     /** 1 điểm cho mỗi X đồng hóa đơn */
-    public static final long VND_PER_POINT = 10_000L;
+    public static final long VND_PER_POINT = 1_000L;
 
     private LoyaltyCard mapCard(ResultSet rs) throws SQLException {
         LoyaltyCard c = new LoyaltyCard();
@@ -75,7 +75,7 @@ public class LoyaltyDAO {
     }
 
     /**
-     * Tích điểm từ hóa đơn (1 điểm / 10.000đ). Tự tạo thẻ nếu khách chưa có,
+     * Tích điểm từ hóa đơn (1 điểm / 1.000đ). Tự tạo thẻ nếu khách chưa có,
      * ghi PointTransactions EARN và thăng hạng tự động.
      * @return số điểm được cộng (0 nếu không đủ mức hoặc lỗi)
      */
@@ -107,6 +107,10 @@ public class LoyaltyDAO {
      * chống race). @return true nếu đổi thành công.
      */
     public boolean redeem(int customerId, int points, String note) {
+        return redeem(customerId, points, note, null);
+    }
+
+    public boolean redeem(int customerId, int points, String note, Integer invoiceId) {
         if (points <= 0) return false;
         LoyaltyCard card = findByCustomer(customerId);
         if (card == null || card.getAvailablePoints() < points) return false;
@@ -121,7 +125,7 @@ public class LoyaltyDAO {
             if (ps.executeUpdate() == 0) return false;
         } catch (Exception e) { e.printStackTrace(); return false; }
 
-        logTransaction(card.getCardId(), null, "REDEEM", points,
+        logTransaction(card.getCardId(), invoiceId, "REDEEM", points,
                 card.getAvailablePoints(), card.getAvailablePoints() - points, note, null);
         return true;
     }
