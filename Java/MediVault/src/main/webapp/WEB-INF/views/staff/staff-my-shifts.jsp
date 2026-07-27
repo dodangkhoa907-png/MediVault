@@ -456,7 +456,7 @@ updateClock();
 
 // Duration live counter
 <% if (currentShift != null && currentShift.getStartTime() != null) { %>
-const shiftStartMs = <%= currentShift.getStartTime().atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().toEpochMilli() %>n;
+const shiftStartMs = <%= currentShift.getStartTime().atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().toEpochMilli() %>;
 function updateDuration() {
   const diffMs = Date.now() - Number(shiftStartMs);
   const h = Math.floor(diffMs / 3600000);

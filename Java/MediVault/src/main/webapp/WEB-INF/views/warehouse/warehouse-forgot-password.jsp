@@ -1,6 +1,9 @@
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%
     String error = (String) request.getAttribute("error");
+    // Bước 2 của luồng quên mật khẩu: đang chờ nhập mã OTP gửi về email
+    boolean otpStage = Boolean.TRUE.equals(request.getAttribute("otpStage"));
+    String  otpEmail = (String) request.getAttribute("otpEmail");
     String ctx   = request.getContextPath();
     String ePrev = request.getParameter("email");
 %>
@@ -116,7 +119,33 @@ body{display:grid;grid-template-columns:56% 44%;min-height:100vh;background:var(
         <div class="alert err"><span>⛔</span><span><%= error %></span></div>
       <% } %>
 
-      <div class="info"><span>ℹ️</span><span>Yêu cầu sẽ được gửi tới <b>Admin</b> để xác nhận. Tài khoản sẽ tạm khóa trong khi chờ xử lý.</span></div>
+      <%-- ══ BƯỚC 2: nhập mã xác minh ══ Tài khoản CHƯA bị khoá ở bước này; chỉ khi nhập
+           đúng mã (chứng minh chính chủ đọc được hộp thư) hệ thống mới khoá và báo Admin. --%>
+      <% if (otpStage) { %>
+        <div class="info"><span>🔑</span><span>Nhập mã 6 số vừa gửi tới
+          <b><%= otpEmail != null ? otpEmail : "email đã đăng ký" %></b> — hiệu lực 10 phút.</span></div>
+
+        <form method="post" action="<%= ctx %>/warehouse-forgot-password" autocomplete="off">
+          <input type="hidden" name="_csrf" value="${csrfToken}">
+          <input type="hidden" name="action" value="verify-otp">
+          <div class="field">
+            <label for="otp">Mã xác minh</label>
+            <div class="input">
+              <span class="ic">🔑</span>
+              <input type="text" id="otp" name="otp" required autofocus inputmode="numeric"
+                     pattern="[0-9]{6}" maxlength="6" placeholder="Nhập 6 chữ số"
+                     style="letter-spacing:6px;font-weight:800">
+            </div>
+          </div>
+          <button type="submit" class="btn">Xác nhận mã →</button>
+        </form>
+
+        <div class="divider">hoặc</div>
+        <a class="back" href="<%= ctx %>/warehouse-forgot-password">← Nhập lại email</a>
+
+      <% } else { %>
+
+      <div class="info"><span>ℹ️</span><span>Hệ thống sẽ gửi <b>mã xác minh</b> về email của bạn. Tài khoản chỉ tạm khoá sau khi bạn xác nhận mã.</span></div>
 
       <form method="post" action="<%= ctx %>/warehouse-forgot-password" autocomplete="off">
         <input type="hidden" name="_csrf" value="${csrfToken}">
@@ -129,11 +158,12 @@ body{display:grid;grid-template-columns:56% 44%;min-height:100vh;background:var(
           </div>
           <div class="hint">Hệ thống sẽ tự tìm tài khoản Quản lý kho theo email này.</div>
         </div>
-        <button type="submit" class="btn">Gửi yêu cầu đặt lại mật khẩu →</button>
+        <button type="submit" class="btn">Gửi mã xác minh →</button>
       </form>
 
       <div class="divider">hoặc</div>
       <a class="back" href="<%= ctx %>/warehouse-login">← Quay lại đăng nhập</a>
+      <% } %>
     </div>
   </div>
 </body>

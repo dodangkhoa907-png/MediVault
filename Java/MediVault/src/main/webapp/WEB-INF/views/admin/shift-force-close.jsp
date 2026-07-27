@@ -326,7 +326,7 @@ const el = document.getElementById('fcDuration');
 if (el && el.dataset.start) {
     el.textContent = calcDuration(el.dataset.start);
     setInterval(() => { el.textContent = calcDuration(el.dataset.start); }, 30000);
-}++++++
+}
 </script>
 </body>
 </html>

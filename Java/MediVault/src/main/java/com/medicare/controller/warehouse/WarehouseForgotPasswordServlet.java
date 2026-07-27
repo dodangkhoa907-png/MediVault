@@ -40,6 +40,42 @@ public class WarehouseForgotPasswordServlet extends HttpServlet {
             throws ServletException, IOException {
         req.setCharacterEncoding("UTF-8");
 
+        // ══ PHA 2 — nhập mã OTP nhận được trong email. Chỉ tới bước này TK mới bị khoá ══
+        if ("verify-otp".equals(req.getParameter("action"))) {
+            // Lấy tên TRƯỚC khi confirmOtp() dọn session, để trang login chào đúng tên
+            Integer pendingId = PasswordResetHelper.pendingAccountId(req);
+            PasswordResetHelper.Result vr = PasswordResetHelper.confirmOtp(
+                    req, req.getParameter("otp"), accountDAO, resetDAO);
+            switch (vr) {
+                case SENT -> {
+                    Account done = (pendingId != null) ? accountDAO.findById(pendingId) : null;
+                    String nm = (done == null) ? ""
+                            : (done.getFullName() != null && !done.getFullName().isEmpty()
+                               ? done.getFullName() : done.getUsername());
+                    resp.sendRedirect(req.getContextPath() + "/warehouse-login?success=reset-sent&name="
+                            + java.net.URLEncoder.encode(nm, "UTF-8"));
+                }
+                case OTP_WRONG -> {
+                    req.setAttribute("otpStage", true);
+                    req.setAttribute("error", "Mã xác minh không đúng. Vui lòng kiểm tra lại email.");
+                    req.getRequestDispatcher(VIEW).forward(req, resp);
+                }
+                case OTP_EXPIRED -> {
+                    req.setAttribute("error", "Mã xác minh đã hết hạn (quá 10 phút). Vui lòng gửi lại yêu cầu.");
+                    req.getRequestDispatcher(VIEW).forward(req, resp);
+                }
+                case OTP_LOCKED_OUT -> {
+                    req.setAttribute("error", "Bạn đã nhập sai mã quá nhiều lần. Vui lòng gửi lại yêu cầu mới.");
+                    req.getRequestDispatcher(VIEW).forward(req, resp);
+                }
+                default -> {
+                    req.setAttribute("error", "Phiên xác minh đã hết hạn hoặc lỗi hệ thống. Vui lòng thử lại từ đầu.");
+                    req.getRequestDispatcher(VIEW).forward(req, resp);
+                }
+            }
+            return;
+        }
+
         String email = req.getParameter("email");
         if (email == null || email.trim().isEmpty()) {
             req.setAttribute("error", "Vui lòng nhập email!");
@@ -55,8 +91,14 @@ public class WarehouseForgotPasswordServlet extends HttpServlet {
             return;
         }
 
-        PasswordResetHelper.Result r = PasswordResetHelper.submit(req, acc, accountDAO, resetDAO);
+        // ══ PHA 1 — chỉ gửi mã xác minh về email, KHÔNG khoá tài khoản ══
+        PasswordResetHelper.Result r = PasswordResetHelper.requestOtp(req, acc, resetDAO);
         switch (r) {
+            case OTP_SENT -> {
+                req.setAttribute("otpStage", true);
+                req.setAttribute("otpEmail", PasswordResetHelper.maskEmail(acc.getEmail()));
+                req.getRequestDispatcher(VIEW).forward(req, resp);
+            }
             case RATE_LIMITED -> {
                 req.setAttribute("error", "Tài khoản @" + acc.getUsername()
                         + " đã gửi quá 3 yêu cầu hôm nay. Vui lòng thử lại vào ngày mai hoặc liên hệ Admin!");
