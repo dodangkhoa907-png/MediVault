@@ -142,19 +142,60 @@ body{display:flex;background:var(--soft);color:var(--ink)}
 .info-card:nth-child(2){animation:fadeUp .4s .12s ease both}
 .info-card:nth-child(3){animation:fadeUp .4s .18s ease both}
 
-/* ── PHOTO VIEW SECTION (staff - xem only) ── */
+/* ── PHOTO VIEW SECTION & CROP MODAL ── */
 .photo-view-section{margin-top:14px;border-top:1px solid var(--border);padding-top:14px}
 .photo-view-label{font-size:10px;font-weight:750;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:10px;text-align:center}
-.photo-view-frame{
-  width:88px;height:88px;border-radius:50%;overflow:hidden;
-  border:3px solid var(--border);margin:0 auto;
-  background:linear-gradient(135deg,#F0EBF8,#EDE9FE);
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 3px 14px rgba(109,40,217,.1);
+.photo-frame-wrap:hover .photo-edit-overlay{opacity:1}
+
+.crop-modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);
+  z-index:1000;display:none;align-items:center;justify-content:center;
 }
-.photo-view-frame img{width:100%;height:100%;object-fit:cover}
-.photo-view-placeholder{font-size:26px;opacity:.3}
-.photo-view-note{text-align:center;font-size:11px;color:var(--muted);margin-top:7px;font-style:italic}
+.crop-modal-overlay.open{display:flex}
+.crop-modal{
+  background:var(--white);border-radius:22px;width:420px;max-width:94vw;
+  box-shadow:0 24px 80px rgba(0,0,0,.35);overflow:hidden;
+  animation:modalIn .25s cubic-bezier(.22,1,.36,1);
+}
+@keyframes modalIn{from{opacity:0;transform:scale(.93) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.crop-modal-head{
+  padding:18px 22px 14px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.crop-modal-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;color:var(--ink)}
+.crop-modal-close{width:28px;height:28px;border-radius:7px;border:none;background:var(--surface);cursor:pointer;font-size:14px;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:all .15s}
+.crop-modal-close:hover{background:#FEE2E2;color:var(--red)}
+.crop-body{padding:20px 22px}
+
+.crop-canvas-wrap{
+  position:relative;width:100%;height:280px;overflow:hidden;
+  background:#1a1a2e;border-radius:12px;cursor:crosshair;user-select:none;
+}
+#cropCanvas{display:block;width:100%;height:100%}
+
+.crop-controls{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+.crop-ctrl-row{display:flex;align-items:center;gap:10px}
+.crop-ctrl-label{font-size:11.5px;font-weight:750;color:var(--muted);width:48px;text-align:right;flex-shrink:0}
+.crop-slider{flex:1;height:4px;border-radius:4px;accent-color:var(--main);cursor:pointer}
+.crop-shape-btns{display:flex;gap:6px}
+.crop-shape-btn{
+  flex:1;padding:7px;border-radius:8px;border:1.5px solid var(--border);
+  background:var(--surface);font-size:11px;font-weight:750;color:var(--muted);
+  cursor:pointer;transition:all .15s;text-align:center;
+}
+.crop-shape-btn.active{border-color:var(--main);background:var(--soft);color:var(--main)}
+
+.crop-preview-strip{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface);border-radius:10px}
+.crop-preview-label{font-size:11px;font-weight:750;color:var(--muted);flex-shrink:0}
+.crop-preview-circle{width:52px;height:52px;border-radius:50%;overflow:hidden;border:2px solid var(--border);flex-shrink:0}
+.crop-preview-square{width:52px;height:52px;border-radius:10px;overflow:hidden;border:2px solid var(--border);flex-shrink:0}
+.crop-preview-circle img,.crop-preview-square img{width:100%;height:100%;object-fit:cover}
+
+.crop-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+.crop-btn-cancel{padding:10px 18px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;color:var(--muted);cursor:pointer;transition:all .18s}
+.crop-btn-cancel:hover{border-color:var(--border);color:var(--ink)}
+.crop-btn-apply{padding:10px 20px;background:linear-gradient(135deg,var(--main),#4C1D95);color:#fff;border:none;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;cursor:pointer;transition:all .22s;box-shadow:0 4px 14px rgba(109,40,217,.25)}
+.crop-btn-apply:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(109,40,217,.35)}
 </style>
     
 </head>
@@ -266,23 +307,28 @@ body{display:flex;background:var(--soft);color:var(--ink)}
             <% } %>
           </div>
 
-          <!-- ── ẢNH CHÂN DUNG / CCCD (view only) ── -->
-          <div class="photo-view-section">
+          <!-- ── ẢNH CHÂN DUNG / CCCD (tự cập nhật) ── -->
+          <div class="photo-view-section" style="text-align:center;">
             <div class="photo-view-label">📷 Ảnh chân dung / CCCD</div>
-            <div class="photo-view-frame">
-              <% if (a.getFaceEnrollmentPath() != null && !a.getFaceEnrollmentPath().isEmpty()) { %>
-                <img src="<%= request.getContextPath() %>/<%= a.getFaceEnrollmentPath() %>" alt="<%= dn %>">
-              <% } else { %>
-                <div class="photo-view-placeholder">👤</div>
-              <% } %>
+            <div class="photo-frame-wrap" id="photoFrameWrap" onclick="openCropModal()" style="position:relative;width:100px;height:100px;margin:0 auto 10px;cursor:pointer">
+              <div class="photo-frame" id="photoFrame" style="width:100px;height:100px;border-radius:50%;overflow:hidden;border:3px solid var(--border);background:linear-gradient(135deg,#F0EBF8,var(--soft));display:flex;align-items:center;justify-content:center;box-shadow:0 3px 16px rgba(109,40,217,.1);">
+                <% if (a.getFaceEnrollmentPath() != null && !a.getFaceEnrollmentPath().isEmpty()) { %>
+                  <img src="<%= request.getContextPath() %>/<%= a.getFaceEnrollmentPath() %>" alt="<%= dn %>" id="profilePhoto" style="width:100%;height:100%;object-fit:cover;">
+                <% } else { %>
+                  <div class="photo-frame-placeholder" id="photoPlaceholder" style="font-size:28px;opacity:.35;">👤</div>
+                <% } %>
+              </div>
+              <div class="photo-edit-overlay" style="position:absolute;inset:0;border-radius:50%;background:rgba(28,15,63,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;opacity:0;transition:opacity .2s;cursor:pointer;">
+                <span>✏️</span>
+                <small style="font-size:10px;font-weight:750;color:#fff;letter-spacing:.3px;">Chỉnh ảnh</small>
+              </div>
             </div>
-            <div class="photo-view-note">
-              <% if (a.getFaceEnrollmentPath() != null && !a.getFaceEnrollmentPath().isEmpty()) { %>
-                Ảnh đã đăng ký · Liên hệ admin để cập nhật
-              <% } else { %>
-                Chưa có ảnh · Liên hệ admin để cập nhật
-              <% } %>
+            <div class="photo-actions" style="display:flex;gap:7px;justify-content:center;margin-top:8px;">
+              <input type="file" id="photoFileInput" accept="image/*" onchange="onFileSelected(event)" style="display:none;">
+              <label for="photoFileInput" class="photo-btn photo-btn-upload" style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:750;cursor:pointer;border:none;background:linear-gradient(135deg,var(--main),#4C1D95);color:#fff;box-shadow:0 3px 10px rgba(109,40,217,.25);">📷 Chọn ảnh</label>
+              <button type="button" class="photo-btn photo-btn-remove" id="photoRemoveBtn" onclick="removePhoto()" style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:750;cursor:pointer;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);<%= (a.getFaceEnrollmentPath() != null && !a.getFaceEnrollmentPath().isEmpty()) ? "" : "display:none;" %>">🗑️ Xóa</button>
             </div>
+            <div id="photoSaveStatus" style="font-size:11.5px;text-align:center;margin-top:6px;min-height:18px;color:var(--muted)"></div>
           </div>
 
         </div>
@@ -598,6 +644,340 @@ async function submitReenroll() {
     } catch(e) { /* mạng lỗi — bỏ qua, thử lại sau */ }
   }, 10000);
 })();
+</script>
+
+<!-- ── CROP MODAL ── -->
+<div class="crop-modal-overlay" id="cropModalOverlay" onclick="closeCropOnOverlay(event)">
+  <div class="crop-modal">
+    <div class="crop-modal-head">
+      <div class="crop-modal-title">✂️ Chỉnh sửa ảnh đại diện</div>
+      <button class="crop-modal-close" onclick="closeCropModal()">✕</button>
+    </div>
+    <div class="crop-body">
+      <div class="crop-canvas-wrap">
+        <canvas id="cropCanvas" width="376" height="280"></canvas>
+      </div>
+      <div class="crop-controls">
+        <div class="crop-ctrl-row">
+          <span class="crop-ctrl-label">Zoom</span>
+          <input type="range" class="crop-slider" id="zoomSlider" min="50" max="300" value="100" oninput="renderCrop()">
+          <span style="font-size:11.5px;color:var(--muted);width:34px;text-align:right" id="zoomLabel">100%</span>
+        </div>
+        <div class="crop-ctrl-row">
+          <span class="crop-ctrl-label">Xoay</span>
+          <input type="range" class="crop-slider" id="rotateSlider" min="-180" max="180" value="0" oninput="renderCrop()">
+          <span style="font-size:11.5px;color:var(--muted);width:34px;text-align:right" id="rotateLabel">0°</span>
+        </div>
+        <div class="crop-ctrl-row">
+          <span class="crop-ctrl-label">Khung</span>
+          <div class="crop-shape-btns">
+            <button class="crop-shape-btn active" id="shapeCircle" onclick="setShape('circle')">⬤ Tròn</button>
+            <button class="crop-shape-btn" id="shapeSquare" onclick="setShape('square')">⬛ Vuông</button>
+          </div>
+        </div>
+      </div>
+      <div class="crop-preview-strip" style="margin-top:12px">
+        <span class="crop-preview-label">Preview</span>
+        <div class="crop-preview-circle"><canvas id="previewCircle" width="52" height="52"></canvas></div>
+        <div class="crop-preview-square"><canvas id="previewSquare" width="52" height="52"></canvas></div>
+        <span style="font-size:11.5px;color:var(--muted)">Kéo ảnh để điều chỉnh vị trí</span>
+      </div>
+    </div>
+    <div class="crop-footer">
+      <button class="crop-btn-cancel" onclick="closeCropModal()">Hủy</button>
+      <button class="crop-btn-apply" onclick="applyCrop()">✓ Áp dụng ảnh này</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════
+   PHOTO PROFILE + CROP ENGINE
+   ════════════════════════════════════════ */
+let cropImg = null;
+let cropShape = 'circle';
+let dragStart = null, imgOffset = {x:0, y:0}, imgOffsetStart = {x:0, y:0};
+let currentPhotoData = null; // base64 kết quả sau crop
+
+// ── Khi chọn file ──
+function onFileSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { setSaveStatus('❌ Chỉ chấp nhận file ảnh!','var(--red)'); return; }
+  if (file.size > 8 * 1024 * 1024) { setSaveStatus('❌ Ảnh phải nhỏ hơn 8MB!','var(--red)'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      cropImg = img;
+      imgOffset = {x:0, y:0};
+      // Auto-fit: tính zoom sao cho ảnh vừa lấp đầy crop circle
+      const canvas = document.getElementById('cropCanvas');
+      const W = canvas.width, H = canvas.height;
+      const cropSize = Math.min(W, H) - 24;
+      // scale để ảnh cover vừa khít crop circle (không nhỏ hơn)
+      const fitScale = Math.max(cropSize / img.width, cropSize / img.height);
+      // Đổi về % cho slider (base scale = max(W,H)/img)
+      const baseScale = Math.max(W / img.width, H / img.height);
+      const initZoomPct = Math.round((fitScale / baseScale) * 100);
+      document.getElementById('zoomSlider').value = Math.min(300, Math.max(50, initZoomPct));
+      document.getElementById('rotateSlider').value = 0;
+      openCropModal();
+      setTimeout(renderCrop, 50);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  // Reset input để có thể chọn lại cùng file
+  event.target.value = '';
+}
+
+// ── Mở modal ──
+function openCropModal() {
+  if (!cropImg) return; // chỉ mở khi có ảnh
+  document.getElementById('cropModalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  renderCrop();
+}
+function closeCropModal() {
+  document.getElementById('cropModalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function closeCropOnOverlay(e) {
+  if (e.target === document.getElementById('cropModalOverlay')) closeCropModal();
+}
+
+// ── Shape toggle ──
+function setShape(s) {
+  cropShape = s;
+  document.getElementById('shapeCircle').classList.toggle('active', s==='circle');
+  document.getElementById('shapeSquare').classList.toggle('active', s==='square');
+  renderCrop();
+}
+
+// ── Render canvas crop ──
+function renderCrop() {
+  if (!cropImg) return;
+  const canvas = document.getElementById('cropCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const zoom = parseInt(document.getElementById('zoomSlider').value) / 100;
+  const rotate = parseInt(document.getElementById('rotateSlider').value);
+  document.getElementById('zoomLabel').textContent = Math.round(zoom*100) + '%';
+  document.getElementById('rotateLabel').textContent = rotate + '°';
+
+  ctx.clearRect(0, 0, W, H);
+  // Background
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, W, H);
+
+  // Draw image with transform
+  ctx.save();
+  ctx.translate(W/2 + imgOffset.x, H/2 + imgOffset.y);
+  ctx.rotate(rotate * Math.PI / 180);
+  const scale = Math.max(W/cropImg.width, H/cropImg.height) * zoom;
+  const sw = cropImg.width * scale, sh = cropImg.height * scale;
+  ctx.drawImage(cropImg, -sw/2, -sh/2, sw, sh);
+  ctx.restore();
+
+  // Dimming outside crop circle
+  const cropSize = Math.min(W, H) - 24;
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,.5)';
+  ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'destination-out';
+  if (cropShape === 'circle') {
+    ctx.beginPath();
+    ctx.arc(W/2, H/2, cropSize/2, 0, Math.PI*2);
+    ctx.fill();
+  } else {
+    const r = 12;
+    const x = W/2-cropSize/2, y = H/2-cropSize/2;
+    ctx.beginPath();
+    ctx.roundRect(x, y, cropSize, cropSize, r);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Border ring
+  ctx.save();
+  ctx.strokeStyle = 'rgba(109,40,217,.7)';
+  ctx.lineWidth = 2;
+  if (cropShape === 'circle') {
+    ctx.beginPath();
+    ctx.arc(W/2, H/2, cropSize/2, 0, Math.PI*2);
+    ctx.stroke();
+  } else {
+    const x = W/2-cropSize/2, y = H/2-cropSize/2;
+    ctx.beginPath();
+    ctx.roundRect(x, y, cropSize, cropSize, 12);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Update previews
+  updatePreviews(W, H, cropSize, zoom, rotate);
+}
+
+function updatePreviews(W, H, cropSize, zoom, rotate) {
+  if (!cropImg) return;
+  const update = (canvasId) => {
+    const pc = document.getElementById(canvasId);
+    const pctx = pc.getContext('2d');
+    const PW = pc.width, PH = pc.height;
+    pctx.clearRect(0,0,PW,PH);
+    pctx.save();
+    if (canvasId === 'previewCircle') {
+      pctx.beginPath(); pctx.arc(PW/2,PH/2,PW/2,0,Math.PI*2); pctx.clip();
+    } else {
+      pctx.beginPath(); pctx.roundRect(0,0,PW,PH,6); pctx.clip();
+    }
+    pctx.translate(PW/2 + imgOffset.x*(PW/W), PH/2 + imgOffset.y*(PH/H));
+    pctx.rotate(rotate * Math.PI / 180);
+    const scale = Math.max(W/cropImg.width, H/cropImg.height) * zoom * (PW/cropSize);
+    const sw = cropImg.width*scale, sh = cropImg.height*scale;
+    pctx.drawImage(cropImg, -sw/2, -sh/2, sw, sh);
+    pctx.restore();
+  };
+  update('previewCircle');
+  update('previewSquare');
+}
+
+function getCanvasScale() {
+  const el = document.getElementById('cropCanvas');
+  const rect = el.getBoundingClientRect();
+  return {
+    sx: el.width  / rect.width,
+    sy: el.height / rect.height
+  };
+}
+
+const cropCanvasEl = document.getElementById('cropCanvas');
+cropCanvasEl.style.cursor = 'grab';
+
+cropCanvasEl.addEventListener('mousedown', e => {
+  e.preventDefault();
+  dragStart = {x: e.clientX, y: e.clientY};
+  imgOffsetStart = {...imgOffset};
+  cropCanvasEl.style.cursor = 'grabbing';
+});
+document.addEventListener('mousemove', e => {
+  if (!dragStart) return;
+  const s = getCanvasScale();
+  const dx = (e.clientX - dragStart.x) * s.sx;
+  const dy = (e.clientY - dragStart.y) * s.sy;
+  imgOffset.x = imgOffsetStart.x + dx;
+  imgOffset.y = imgOffsetStart.y + dy;
+  renderCrop();
+});
+document.addEventListener('mouseup', () => {
+  dragStart = null;
+  cropCanvasEl.style.cursor = 'grab';
+});
+
+// Touch support
+cropCanvasEl.addEventListener('touchstart', e => {
+  const t = e.touches[0];
+  dragStart = {x: t.clientX, y: t.clientY};
+  imgOffsetStart = {...imgOffset};
+}, {passive:true});
+document.addEventListener('touchmove', e => {
+  if (!dragStart) return;
+  const t = e.touches[0];
+  const s = getCanvasScale();
+  const dx = (t.clientX - dragStart.x) * s.sx;
+  const dy = (t.clientY - dragStart.y) * s.sy;
+  imgOffset.x = imgOffsetStart.x + dx;
+  imgOffset.y = imgOffsetStart.y + dy;
+  renderCrop();
+}, {passive:true});
+document.addEventListener('touchend', () => { dragStart = null; });
+
+// ── Lưu ảnh lên server ──
+async function savePhotoToServer(base64, accountId) {
+    try {
+        const ctxPath = document.querySelector('meta[name="ctx"]')?.content || '';
+        const res = await fetch(ctxPath + '/accounts', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'action=upload-photo&id=' + accountId + '&photoData=' + encodeURIComponent(base64)
+        });
+        const data = await res.json();
+        if (data.ok) setSaveStatus('✓ Đã lưu ảnh thành công!', 'var(--green)');
+        else setSaveStatus('❌ Lưu thất bại: ' + (data.msg || ''), 'var(--red)');
+    } catch(e) {
+        setSaveStatus('❌ Lỗi kết nối server', 'var(--red)');
+    }
+}
+
+// ── Apply crop ──
+async function applyCrop() {
+  const canvas = document.getElementById('cropCanvas');
+  const W = canvas.width, H = canvas.height;
+  const cropSize = Math.min(W,H) - 24;
+  const zoom = parseInt(document.getElementById('zoomSlider').value) / 100;
+  const rotate = parseInt(document.getElementById('rotateSlider').value);
+
+  const outSize = 256;
+  const out = document.createElement('canvas');
+  out.width = outSize; out.height = outSize;
+  const octx = out.getContext('2d');
+
+  if (cropShape === 'circle') {
+    octx.beginPath(); octx.arc(outSize/2,outSize/2,outSize/2,0,Math.PI*2); octx.clip();
+  } else {
+    octx.beginPath(); octx.roundRect(0,0,outSize,outSize,18); octx.clip();
+  }
+  octx.translate(outSize/2 + imgOffset.x*(outSize/W), outSize/2 + imgOffset.y*(outSize/H));
+  octx.rotate(rotate * Math.PI / 180);
+  const scale = Math.max(W/cropImg.width, H/cropImg.height) * zoom * (outSize/cropSize);
+  const sw = cropImg.width*scale, sh = cropImg.height*scale;
+  octx.drawImage(cropImg, -sw/2, -sh/2, sw, sh);
+
+  currentPhotoData = out.toDataURL('image/png', 0.92);
+
+  const frame = document.getElementById('photoFrame');
+  frame.innerHTML = '<img src="' + currentPhotoData + '" alt="profile" style="width:100%;height:100%;object-fit:cover" id="profilePhoto">';
+  document.getElementById('photoRemoveBtn').style.display = 'inline-flex';
+  setSaveStatus('Đang lưu...', 'var(--muted)');
+
+  closeCropModal();
+  await savePhotoToServer(currentPhotoData, <%= a.getAccountId() %>);
+}
+
+// ── Xóa ảnh ──
+async function removePhoto() {
+  if (!confirm('Xóa ảnh đại diện hiện tại?')) return;
+  try {
+    const ctxPath = document.querySelector('meta[name="ctx"]')?.content || '';
+    const res = await fetch(ctxPath + '/accounts', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=delete-photo&id=<%= a.getAccountId() %>'
+    });
+    const data = await res.json();
+    if (data.ok) {
+      currentPhotoData = null;
+      const frame = document.getElementById('photoFrame');
+      frame.innerHTML = '<div class="photo-frame-placeholder" id="photoPlaceholder" style="font-size:28px;opacity:.35;">👤</div>';
+      document.getElementById('photoRemoveBtn').style.display = 'none';
+      setSaveStatus('✓ Đã xóa ảnh thành công!', 'var(--green)');
+    } else {
+      setSaveStatus('❌ Xóa thất bại: ' + (data.msg || ''), 'var(--red)');
+    }
+  } catch(e) {
+    setSaveStatus('❌ Lỗi kết nối server', 'var(--red)');
+  }
+}
+
+function setSaveStatus(msg, color) {
+  const el = document.getElementById('photoSaveStatus');
+  if (el) { el.textContent = msg; el.style.color = color || 'var(--muted)'; }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeCropModal();
+});
 </script>
 </body>
 </html>

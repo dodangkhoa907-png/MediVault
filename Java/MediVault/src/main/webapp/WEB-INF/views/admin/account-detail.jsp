@@ -399,7 +399,7 @@ body{display:flex;background:var(--surface);color:var(--ink)}
             <div class="photo-actions" id="photoAdminActions">
               <input type="file" id="photoFileInput" accept="image/*" onchange="onFileSelected(event)">
               <label for="photoFileInput" class="photo-btn photo-btn-upload">📷 Chọn ảnh</label>
-              <button type="button" class="photo-btn photo-btn-remove" id="photoRemoveBtn" onclick="removePhoto()" style="display:none">🗑️ Xóa</button>
+              <button type="button" class="photo-btn photo-btn-remove" id="photoRemoveBtn" onclick="removePhoto()" style="${not empty account.faceEnrollmentPath ? 'display:inline-flex;' : 'display:none;'}">🗑️ Xóa</button>
             </div>
             <div id="photoSaveStatus" style="font-size:11.5px;text-align:center;margin-top:6px;min-height:18px;color:var(--muted)"></div>
           </div>
@@ -875,14 +875,27 @@ async function applyCrop() {
 }
 
 // ── Xóa ảnh ──
-function removePhoto() {
+async function removePhoto() {
   if (!confirm('Xóa ảnh đại diện hiện tại?')) return;
-  currentPhotoData = null;
-  const frame = document.getElementById('photoFrame');
-  frame.innerHTML = '<div class="photo-frame-placeholder" id="photoPlaceholder">👤</div>';
-  document.getElementById('photoRemoveBtn').style.display = 'none';
-  setSaveStatus('Đã xóa ảnh', 'var(--muted)');
-  setTimeout(() => setSaveStatus('',''), 2500);
+  try {
+    const res = await fetch('${pageContext.request.contextPath}/accounts', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=delete-photo&id=${account.accountId}'
+    });
+    const data = await res.json();
+    if (data.ok) {
+      currentPhotoData = null;
+      const frame = document.getElementById('photoFrame');
+      frame.innerHTML = '<div class="photo-frame-placeholder" id="photoPlaceholder">👤</div>';
+      document.getElementById('photoRemoveBtn').style.display = 'none';
+      setSaveStatus('✓ Đã xóa ảnh thành công!', 'var(--green)');
+    } else {
+      setSaveStatus('❌ Xóa thất bại: ' + (data.msg || ''), 'var(--red)');
+    }
+  } catch(e) {
+    setSaveStatus('❌ Lỗi kết nối server', 'var(--red)');
+  }
 }
 
 // ── Status text ──

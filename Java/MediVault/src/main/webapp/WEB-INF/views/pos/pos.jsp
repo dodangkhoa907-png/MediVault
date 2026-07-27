@@ -2302,6 +2302,50 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// ── Global Hardware Barcode Scanner Listener ──
+let globalBarcodeBuffer = '';
+let globalLastKeyTime = 0;
+
+function handleGlobalBarcodeScanned(code) {
+  const med = allMedicines.find(m => m.barcode && m.barcode === code);
+  if (!med) {
+    showToast('⚠️ Không tìm thấy thuốc với mã vạch: ' + code, 'err');
+    return;
+  }
+  if (med.stock <= 0) {
+    showToast('❌ ' + med.name + ' đã hết hàng!', 'err');
+    return;
+  }
+  addToCart(med.el);
+  showToast('✅ Đã thêm vào giỏ: ' + med.name, 'ok');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+    if (e.target.id !== 'searchInput') return;
+  }
+
+  const currentTime = Date.now();
+  if (currentTime - globalLastKeyTime > 50) {
+    globalBarcodeBuffer = '';
+  }
+
+  if (e.key === 'Enter') {
+    if (globalBarcodeBuffer.length >= 4) {
+      e.preventDefault();
+      handleGlobalBarcodeScanned(globalBarcodeBuffer);
+      globalBarcodeBuffer = '';
+      if (e.target.id === 'searchInput') {
+        e.target.value = '';
+        filterCat(document.querySelector('.cat-tab.active'), activeCat);
+      }
+    }
+  } else if (e.key.length === 1) {
+    globalBarcodeBuffer += e.key;
+    globalLastKeyTime = currentTime;
+  }
+});
+
 // Show station modal on load if station not set yet
 document.addEventListener('DOMContentLoaded', () => {
   if (currentStation === 0) {

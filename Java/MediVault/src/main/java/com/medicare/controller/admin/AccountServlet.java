@@ -200,6 +200,16 @@ public class AccountServlet extends HttpServlet {
             handleSaveFace(req, resp);
             return;
         }
+        // ── AJAX: Tải ảnh đại diện lên server ──
+        if ("upload-photo".equals(action)) {
+            handleUploadPhoto(req, resp);
+            return;
+        }
+        // ── AJAX: Xóa ảnh đại diện trên server ──
+        if ("delete-photo".equals(action)) {
+            handleDeletePhoto(req, resp);
+            return;
+        }
 
         // ── Admin toggle trạng thái tài khoản ──
         if ("toggle".equals(action)) {
@@ -794,6 +804,115 @@ public class AccountServlet extends HttpServlet {
 
         dao.updateFaceVector(accountId, descriptorJson);
         out.print("{\"ok\":true}");
+    }
+
+    private void handleUploadPhoto(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        java.io.PrintWriter out = resp.getWriter();
+        try {
+            String idStr     = req.getParameter("id");
+            String photoData = req.getParameter("photoData");
+            if (idStr == null || idStr.isEmpty() || photoData == null || photoData.isEmpty()) {
+                out.print("{\"ok\":false,\"msg\":\"Thiếu tham số!\"}");
+                return;
+            }
+
+            int id = Integer.parseInt(idStr);
+            Account a = dao.findById(id);
+            if (a == null) {
+                out.print("{\"ok\":false,\"msg\":\"Tài khoản không tồn tại!\"}");
+                return;
+            }
+
+            String base64Data = photoData;
+            if (photoData.contains(",")) {
+                base64Data = photoData.substring(photoData.indexOf(",") + 1);
+            }
+
+            byte[] decodedBytes = java.util.Base64.getDecoder().decode(base64Data);
+
+            String uploadDir = getServletContext().getRealPath("/uploads/avatars");
+            File dir = new File(uploadDir);
+            if (!dir.exists()) dir.mkdirs();
+
+            String filename = id + "_" + System.currentTimeMillis() + ".png";
+            File file = new File(dir, filename);
+            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(file)) {
+                fos.write(decodedBytes);
+            }
+
+            String relativePath = "uploads/avatars/" + filename;
+            boolean ok = dao.updateAvatar(id, relativePath);
+            if (ok) {
+                HttpSession session = req.getSession(false);
+                if (session != null) {
+                    Account admin = (Account) session.getAttribute("adminAccount");
+                    if (admin != null && admin.getAccountId() == id) {
+                        admin.setFaceEnrollmentPath(relativePath);
+                    }
+                    Account staff = (Account) session.getAttribute("staffAccount_" + id);
+                    if (staff != null) {
+                        staff.setFaceEnrollmentPath(relativePath);
+                    }
+                }
+                out.print("{\"ok\":true}");
+            } else {
+                out.print("{\"ok\":false,\"msg\":\"Không thể lưu vào CSDL!\"}");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            out.print("{\"ok\":false,\"msg\":\"Lỗi: " + e.getMessage() + "\"}");
+        }
+    }
+
+    private void handleDeletePhoto(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        java.io.PrintWriter out = resp.getWriter();
+        try {
+            String idStr = req.getParameter("id");
+            if (idStr == null || idStr.isEmpty()) {
+                out.print("{\"ok\":false,\"msg\":\"Thiếu tham số!\"}");
+                return;
+            }
+
+            int id = Integer.parseInt(idStr);
+            Account a = dao.findById(id);
+            if (a == null) {
+                out.print("{\"ok\":false,\"msg\":\"Tài khoản không tồn tại!\"}");
+                return;
+            }
+
+            if (a.getFaceEnrollmentPath() != null && !a.getFaceEnrollmentPath().isEmpty()) {
+                String fullPath = getServletContext().getRealPath("/" + a.getFaceEnrollmentPath());
+                File f = new File(fullPath);
+                if (f.exists()) {
+                    f.delete();
+                }
+            }
+
+            boolean ok = dao.updateAvatar(id, null);
+            if (ok) {
+                HttpSession session = req.getSession(false);
+                if (session != null) {
+                    Account admin = (Account) session.getAttribute("adminAccount");
+                    if (admin != null && admin.getAccountId() == id) {
+                        admin.setFaceEnrollmentPath(null);
+                    }
+                    Account staff = (Account) session.getAttribute("staffAccount_" + id);
+                    if (staff != null) {
+                        staff.setFaceEnrollmentPath(null);
+                    }
+                }
+                out.print("{\"ok\":true}");
+            } else {
+                out.print("{\"ok\":false,\"msg\":\"Không thể xóa trong CSDL!\"}");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            out.print("{\"ok\":false,\"msg\":\"Lỗi: " + e.getMessage() + "\"}");
+        }
     }
 
 
