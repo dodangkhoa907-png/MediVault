@@ -72,6 +72,8 @@ td{padding:14px 16px;font-size:13.5px;color:var(--ink);vertical-align:middle}
 .section-tab.active{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;box-shadow:0 3px 10px rgba(21,88,168,.25)}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 

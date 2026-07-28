@@ -240,6 +240,8 @@ tbody tr:hover td{background:#F7FBFF}
 select,option{font-family:inherit;font-size:inherit}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 

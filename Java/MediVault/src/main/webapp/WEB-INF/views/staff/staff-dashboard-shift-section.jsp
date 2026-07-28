@@ -287,6 +287,8 @@
             box-shadow: 0 6px 20px rgba(21, 88, 168, 0.3) !important;
         }
     </style>
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 

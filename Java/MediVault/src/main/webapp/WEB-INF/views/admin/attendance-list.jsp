@@ -139,6 +139,8 @@ select,option{font-family:inherit;font-size:inherit}
 .cdd-opt.active{background:linear-gradient(135deg,var(--blue,#1558A8),#0D3F85);color:#fff;font-weight:750}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head><body>
 <%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
 <div class="main">
@@ -365,6 +367,7 @@ select,option{font-family:inherit;font-size:inherit}
     </div>
     <div class="modal-body">
       <form id="resolveForm" method="post" action="${pageContext.request.contextPath}/attendance">
+        <input type="hidden" name="_csrf" value="${csrfToken}">
         <input type="hidden" name="attendanceId" id="resolveAttId">
         <input type="hidden" name="action"       id="resolveAction">
         <div class="mfg">

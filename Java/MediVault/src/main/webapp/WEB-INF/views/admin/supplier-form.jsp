@@ -48,6 +48,8 @@ textarea.fi{height:auto;min-height:70px;padding:10px 12px;resize:vertical}
 .btn-cancel:hover{border-color:var(--red);color:var(--red)}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
@@ -60,6 +62,7 @@ textarea.fi{height:auto;min-height:70px;padding:10px 12px;resize:vertical}
     <div class="page-title"><%= isNew ? "🏭 Thêm nhà cung cấp" : "✏️ Sửa nhà cung cấp" %></div>
     <c:if test="${not empty error}"><div class="error-box">⚠️ ${error}</div></c:if>
     <form method="post" action="${pageContext.request.contextPath}/suppliers">
+      <input type="hidden" name="_csrf" value="${csrfToken}">
       <c:if test="${supplier != null && supplier.supplierId != 0}">
         <input type="hidden" name="supplierId" value="${supplier.supplierId}"/>
       </c:if>

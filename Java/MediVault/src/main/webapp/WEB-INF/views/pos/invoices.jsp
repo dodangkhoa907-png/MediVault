@@ -68,6 +68,8 @@ html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(
 .loading{text-align:center;padding:40px 0;color:var(--muted);font-size:13px}
 .err-state{text-align:center;padding:40px 0;color:var(--red);font-size:13px}
 </style>
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 

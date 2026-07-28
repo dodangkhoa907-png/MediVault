@@ -64,6 +64,8 @@ select,option{font-family:inherit;font-size:inherit}
 .cdd-opt.active{background:linear-gradient(135deg,var(--blue,#1558A8),#0D3F85);color:#fff;font-weight:750}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/admin/sidebar.jsp" %>
@@ -76,6 +78,7 @@ select,option{font-family:inherit;font-size:inherit}
     <div class="page-title"><%= isNew ? "📍 Thêm vị trí kệ" : "✏️ Sửa vị trí kệ" %></div>
     <c:if test="${not empty error}"><div class="error-box">⚠️ ${error}</div></c:if>
     <form method="post" action="${pageContext.request.contextPath}/shelves">
+      <input type="hidden" name="_csrf" value="${csrfToken}">
       <c:if test="${shelf != null && shelf.shelfId != 0}">
         <input type="hidden" name="shelfId" value="${shelf.shelfId}"/>
       </c:if>

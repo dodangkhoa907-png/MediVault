@@ -47,8 +47,9 @@ public class StaffInvoiceServlet extends HttpServlet {
             resp.sendRedirect(req.getContextPath() + "/staff-login");
             return;
         }
-        // Dược sĩ (roleId=2) mới có quyền bán hàng POS — Thủ kho không có hóa đơn nào để xem.
-        if (staffAcc.getRoleId() != 2) {
+        // Cả Dược sĩ bán hàng (roleId=2) và Thủ kho (roleId=3) đều dùng /pos để bán hàng
+        // (Thủ kho: nhập kho + bán hàng quét barcode) — chỉ Admin không có "hóa đơn của tôi".
+        if (staffAcc.getRoleId() == 1) {
             resp.sendRedirect(req.getContextPath() + "/staff-dashboard?uid=" + uid);
             return;
         }

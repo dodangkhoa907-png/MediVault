@@ -153,6 +153,8 @@ select,option{font-family:inherit;font-size:inherit}
 .cdd-opt.active{background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;font-weight:700}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <% if (!embed) { %>
@@ -182,6 +184,7 @@ select,option{font-family:inherit;font-size:inherit}
   </c:if>
 
   <form method="post" action="${pageContext.request.contextPath}/purchase-orders" onsubmit="return beforeSubmit()">
+    <input type="hidden" name="_csrf" value="${csrfToken}">
     <input type="hidden" name="action" value="save"/>
     <input type="hidden" name="embed" value="${param.embed}"/>
 

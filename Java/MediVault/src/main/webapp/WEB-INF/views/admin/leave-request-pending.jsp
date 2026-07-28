@@ -68,6 +68,8 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
 .toast-ok{background:#059669}.toast-err{background:#DC2626}.toast-info{background:#1558A8}
 @keyframes slideIn{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
 </style>    
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head><body><%@ include file="/WEB-INF/views/admin/sidebar.jsp" %><div class="main">  <c:if test="${not empty param.msg}">
     <c:choose>
       <c:when test="${param.msg=='approved'}"><div class="toast toast-ok" id="toast">✅ Đã duyệt đơn nghỉ!</div></c:when>
@@ -131,6 +133,7 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
                       </c:when>
                       <c:otherwise>
                         <form method="post" action="${pageContext.request.contextPath}/leave-requests" style="display:inline">
+                          <input type="hidden" name="_csrf" value="${csrfToken}">
                           <input type="hidden" name="action" value="approve">
                           <input type="hidden" name="id" value="${lr.leaveId}">
                           <input type="hidden" name="deductAmount" value="0">
@@ -139,6 +142,7 @@ tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#F7FBFF}
                       </c:otherwise>
                     </c:choose>
                     <form method="post" action="${pageContext.request.contextPath}/leave-requests" style="display:inline;margin-left:4px">
+                      <input type="hidden" name="_csrf" value="${csrfToken}">
                       <input type="hidden" name="action" value="reject">
                       <input type="hidden" name="id" value="${lr.leaveId}">
                       <button type="submit" class="btn-sm btn-reject" onclick="return confirm('Từ chối đơn này? Nếu nhân viên vẫn không đi làm sẽ bị tính vắng không phép.')">✕ Từ chối</button>

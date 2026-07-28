@@ -99,7 +99,7 @@ public class BatchesDAO implements IBatchesDAO {
 
     public List<Batches> findExpiringSoon() {
         List<Batches> list = new ArrayList<>();
-        String sql = "SELECT * FROM Batches WHERE ExpiryDate <= DATEADD(day, 30, GETDATE()) AND CurrentQuantity > 0 AND Status = 'ACTIVE' ORDER BY ExpiryDate ASC";
+        String sql = "SELECT * FROM Batches WHERE ExpiryDate >= CAST(GETDATE() AS DATE) AND ExpiryDate <= DATEADD(day, 30, GETDATE()) AND CurrentQuantity > 0 AND Status = 'ACTIVE' ORDER BY ExpiryDate ASC";
         try (Connection cn = DBContext.getConnection();
                 PreparedStatement ps = cn.prepareStatement(sql);
                 ResultSet rs = ps.executeQuery()) {
@@ -456,6 +456,35 @@ public class BatchesDAO implements IBatchesDAO {
             e.printStackTrace();
         }
         return 0;
+    }
+
+    @Override
+    public boolean adjustQuantity(int batchId, int delta) {
+        String sql = "UPDATE Batches SET CurrentQuantity = CurrentQuantity + ? " +
+                "WHERE BatchID = ? AND CurrentQuantity + ? >= 0";
+        try (Connection cn = DBContext.getConnection();
+                PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, delta);
+            ps.setInt(2, batchId);
+            ps.setInt(3, delta);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
+    public boolean recallBatch(int batchId) {
+        String sql = "UPDATE Batches SET Status = 'RECALLED' WHERE BatchID = ? AND Status = 'ACTIVE'";
+        try (Connection cn = DBContext.getConnection();
+                PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, batchId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
 }

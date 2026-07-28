@@ -64,6 +64,8 @@ textarea.field-input{height:90px;padding:10px 14px;resize:vertical}
 .btn-cancel:hover{border-color:var(--blue);color:var(--navy)}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 
@@ -83,6 +85,7 @@ textarea.field-input{height:90px;padding:10px 14px;resize:vertical}
 
     <div class="form-card">
       <form method="post" action="${pageContext.request.contextPath}/categories">
+        <input type="hidden" name="_csrf" value="${csrfToken}">
         <% if (!isNew) { %>
         <input type="hidden" name="categoryId" value="<%= cat.getCategoryId() %>">
         <% } %>

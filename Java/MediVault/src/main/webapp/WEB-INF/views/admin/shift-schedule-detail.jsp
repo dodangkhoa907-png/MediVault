@@ -77,6 +77,8 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:40px 16p
 .toast-ok{background:#064e3b}.toast-warn{background:#92400E}.toast-err{background:#991B1B}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <div class="container">

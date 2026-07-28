@@ -42,6 +42,10 @@ public class StaffDashboardServlet extends HttpServlet {
         if (staffAcc.getRoleId() == 1) {
             resp.sendRedirect(req.getContextPath() + "/dashboard"); return;
         }
+        // roleId 3 (Thủ kho = Quản lý kho) có portal riêng
+        if (staffAcc.getRoleId() == 3) {
+            resp.sendRedirect(req.getContextPath() + "/warehouse-dashboard?uid=" + uid); return;
+        }
 
         req.setAttribute("staffUid", uid);
         req.setAttribute("staffAcc", staffAcc);

@@ -56,6 +56,8 @@ tbody tr:last-child td{border-bottom:none}
 .btn-primary{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;border:none;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:750;cursor:pointer;text-decoration:none}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <div class="topbar">
@@ -102,6 +104,7 @@ tbody tr:last-child td{border-bottom:none}
         </div>
         <form method="post" action="${pageContext.request.contextPath}/purchase-orders"
               onsubmit="return confirm('Xác nhận hàng đã về đủ? Hệ thống sẽ tạo lô và CỘNG TỒN KHO ngay.')">
+          <input type="hidden" name="_csrf" value="${csrfToken}">
           <input type="hidden" name="action" value="confirm"/>
           <input type="hidden" name="id" value="${po.poId}"/>
           <button type="submit" style="background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;border-radius:12px;padding:13px 22px;font-size:14.5px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 6px 18px rgba(5,150,105,.35)">

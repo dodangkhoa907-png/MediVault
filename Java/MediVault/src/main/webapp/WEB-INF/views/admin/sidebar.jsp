@@ -8,7 +8,7 @@
        String activeNav — "dashboard"|"reports"|"audit"|"medicines"|
                           "purchase-orders"|"invoices"|"returns"|
                           "accounts"|"customers"|"shifts"|"hr"|
-                          "attendance"|"payroll"
+                          "attendance"|"payroll"|"task-management"
 
      Thứ tự ưu tiên (theo yêu cầu 2026-06-17):
        Tổng quan (Trang chủ) → Phân tích (Báo cáo, Nhật ký) →
@@ -42,6 +42,8 @@
     int pendingLeave = (_plc != null) ? _plc : 0;
     Integer _exc = (Integer) request.getAttribute("expiryCount");
     int expiry = (_exc != null) ? _exc : 0;
+    Integer _twc = (Integer) request.getAttribute("taskWatchdogCount");
+    int taskWatchdog = (_twc != null) ? _twc : 0;
 %>
 <aside class="sidebar">
   <div class="sidebar-logo">
@@ -107,6 +109,13 @@
     <a href="${pageContext.request.contextPath}/payroll"
        class="nav-item <%= "payroll".equals(activeNav) ? "active" : "" %>">
       <span class="nav-icon">💰</span> Bảng lương
+    </a>
+    <a href="${pageContext.request.contextPath}/task-management"
+       class="nav-item <%= "task-management".equals(activeNav) ? "active" : "" %>">
+      <span class="nav-icon">🎯</span> Giao task &amp; Tiến độ kho
+      <% if (taskWatchdog > 0) { %>
+      <span class="nav-badge" style="background:#DC2626"><%= taskWatchdog %></span>
+      <% } %>
     </a>
   </nav>
 

@@ -17,22 +17,22 @@ import java.util.List;
  * ShiftScheduleServlet — CRUD đầy đủ lịch ca.
  * URL: /shift-schedules
  *
- * GET  ?action=week              → lịch tuần (default)
- * GET  ?action=list              → danh sách + filter
- * GET  ?action=new               → form tạo mới
- * GET  ?action=detail&id=X       → chi tiết 1 lịch ca
- * GET  ?action=edit&id=X         → form sửa
- * GET  ?action=cancel&id=X       → hủy (soft delete)
- * GET  ?action=delete&id=X       → xóa hẳn (nếu chưa có điểm danh)
- * POST action=create             → lưu mới (bulk)
- * POST action=update             → lưu chỉnh sửa
+ * GET ?action=week → lịch tuần (default)
+ * GET ?action=list → danh sách + filter
+ * GET ?action=new → form tạo mới
+ * GET ?action=detail&id=X → chi tiết 1 lịch ca
+ * GET ?action=edit&id=X → form sửa
+ * GET ?action=cancel&id=X → hủy (soft delete)
+ * GET ?action=delete&id=X → xóa hẳn (nếu chưa có điểm danh)
+ * POST action=create → lưu mới (bulk)
+ * POST action=update → lưu chỉnh sửa
  */
 @WebServlet("/shift-schedules")
 public class ShiftScheduleServlet extends HttpServlet {
 
     private final IShiftScheduleDAO scheduleDAO = new ShiftScheduleDAO();
-    private final IShiftTypeDAO     typeDAO     = new ShiftTypeDAO();
-    private final IAccountDAO       accountDAO  = new AccountDAO();
+    private final IShiftTypeDAO typeDAO = new ShiftTypeDAO();
+    private final IAccountDAO accountDAO = new AccountDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -40,20 +40,22 @@ public class ShiftScheduleServlet extends HttpServlet {
         HttpSession session = req.getSession(false);
         Account admin = session != null ? (Account) session.getAttribute("adminAccount") : null;
         if (admin == null || admin.getRoleId() != 1) {
-            resp.sendRedirect(req.getContextPath() + "/login"); return;
+            resp.sendRedirect(req.getContextPath() + "/login");
+            return;
         }
         String action = req.getParameter("action");
-        if (action == null) action = "week";
+        if (action == null)
+            action = "week";
 
         switch (action) {
-            case "week"   -> showWeek(req, resp);
-            case "list"   -> showList(req, resp);
-            case "new"    -> showCreateForm(req, resp);
+            case "week" -> showWeek(req, resp);
+            case "list" -> showList(req, resp);
+            case "new" -> showCreateForm(req, resp);
             case "detail" -> showDetail(req, resp);
-            case "edit"   -> showEditForm(req, resp);
+            case "edit" -> showEditForm(req, resp);
             case "cancel" -> handleCancel(req, resp, admin);
             case "delete" -> handleDelete(req, resp, admin);
-            default       -> showWeek(req, resp);
+            default -> showWeek(req, resp);
         }
     }
 
@@ -64,20 +66,21 @@ public class ShiftScheduleServlet extends HttpServlet {
         HttpSession session = req.getSession(false);
         Account admin = session != null ? (Account) session.getAttribute("adminAccount") : null;
         if (admin == null || admin.getRoleId() != 1) {
-            resp.sendRedirect(req.getContextPath() + "/login"); return;
+            resp.sendRedirect(req.getContextPath() + "/login");
+            return;
         }
         String action = req.getParameter("action");
         switch (action != null ? action : "") {
             case "create" -> handleCreate(req, resp, admin);
             case "update" -> handleUpdate(req, resp, admin);
-            default       -> resp.sendRedirect(req.getContextPath() + "/shift-schedules");
+            default -> resp.sendRedirect(req.getContextPath() + "/shift-schedules");
         }
     }
 
     // ── WEEK VIEW ─────────────────────────────────────────────────────────────
     private void showWeek(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        LocalDate today  = LocalDate.now();
+        LocalDate today = LocalDate.now();
         LocalDate monday = today.minusDays(today.getDayOfWeek().getValue() - 1);
         LocalDate sunday = monday.plusDays(6);
 
@@ -88,14 +91,16 @@ public class ShiftScheduleServlet extends HttpServlet {
                 int offset = Integer.parseInt(weekOffset);
                 monday = monday.plusWeeks(offset);
                 sunday = monday.plusDays(6);
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+            }
         }
 
-        req.setAttribute("schedules",  scheduleDAO.findByDateRange(monday, sunday));
-        req.setAttribute("weekStart",  monday);
-        req.setAttribute("weekEnd",    sunday);
-        req.setAttribute("today",      today);
-        req.setAttribute("allStaff",   com.medicare.config.CacheManager.getShort("ref.allStaff", accountDAO::findAllStaff));
+        req.setAttribute("schedules", scheduleDAO.findByDateRange(monday, sunday));
+        req.setAttribute("weekStart", monday);
+        req.setAttribute("weekEnd", sunday);
+        req.setAttribute("today", today);
+        req.setAttribute("allStaff",
+                com.medicare.config.CacheManager.getShort("ref.allStaff", accountDAO::findAllStaff));
         req.setAttribute("shiftTypes", typeDAO.findAllActive());
         loadNavBadges(req);
         req.getRequestDispatcher("/WEB-INF/views/admin/shift-schedule-week.jsp").forward(req, resp);
@@ -104,17 +109,20 @@ public class ShiftScheduleServlet extends HttpServlet {
     // ── LIST WITH FILTER ──────────────────────────────────────────────────────
     private void showList(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        String fromStr    = req.getParameter("from");
-        String toStr      = req.getParameter("to");
-        String accIdStr   = req.getParameter("accountId");
-        String statusStr  = req.getParameter("status");
+        String fromStr = req.getParameter("from");
+        String toStr = req.getParameter("to");
+        String accIdStr = req.getParameter("accountId");
+        String statusStr = req.getParameter("status");
 
         LocalDate from = LocalDate.now();
-        LocalDate to   = LocalDate.now().plusDays(13);
+        LocalDate to = LocalDate.now().plusDays(13);
         try {
-            if (fromStr != null && !fromStr.isEmpty()) from = LocalDate.parse(fromStr);
-            if (toStr   != null && !toStr.isEmpty())   to   = LocalDate.parse(toStr);
-        } catch (DateTimeParseException ignored) {}
+            if (fromStr != null && !fromStr.isEmpty())
+                from = LocalDate.parse(fromStr);
+            if (toStr != null && !toStr.isEmpty())
+                to = LocalDate.parse(toStr);
+        } catch (DateTimeParseException ignored) {
+        }
 
         List<ShiftSchedule> schedules;
         if (accIdStr != null && !accIdStr.isEmpty()) {
@@ -136,12 +144,13 @@ public class ShiftScheduleServlet extends HttpServlet {
                     .collect(java.util.stream.Collectors.toList());
         }
 
-        req.setAttribute("schedules",   schedules);
-        req.setAttribute("filterFrom",  from.toString());
-        req.setAttribute("filterTo",    to.toString());
-        req.setAttribute("filterAcc",   accIdStr);
-        req.setAttribute("filterStatus",statusStr);
-        req.setAttribute("allStaff",    com.medicare.config.CacheManager.getShort("ref.allStaff", accountDAO::findAllStaff));
+        req.setAttribute("schedules", schedules);
+        req.setAttribute("filterFrom", from.toString());
+        req.setAttribute("filterTo", to.toString());
+        req.setAttribute("filterAcc", accIdStr);
+        req.setAttribute("filterStatus", statusStr);
+        req.setAttribute("allStaff",
+                com.medicare.config.CacheManager.getShort("ref.allStaff", accountDAO::findAllStaff));
         loadNavBadges(req);
         req.getRequestDispatcher("/WEB-INF/views/admin/shift-schedule-list.jsp").forward(req, resp);
     }
@@ -152,9 +161,10 @@ public class ShiftScheduleServlet extends HttpServlet {
         int id = parseInt(req.getParameter("id"), 0);
         ShiftSchedule sc = scheduleDAO.findById(id);
         if (sc == null) {
-            resp.sendRedirect(req.getContextPath() + "/shift-schedules?msg=not-found"); return;
+            resp.sendRedirect(req.getContextPath() + "/shift-schedules?msg=not-found");
+            return;
         }
-        req.setAttribute("schedule",   sc);
+        req.setAttribute("schedule", sc);
         req.setAttribute("shiftTypes", typeDAO.findAllActive());
         loadNavBadges(req);
         req.getRequestDispatcher("/WEB-INF/views/admin/shift-schedule-detail.jsp").forward(req, resp);
@@ -163,12 +173,14 @@ public class ShiftScheduleServlet extends HttpServlet {
     // ── FORM TẠO MỚI ─────────────────────────────────────────────────────────
     private void showCreateForm(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        req.setAttribute("allStaff",   com.medicare.config.CacheManager.getShort("ref.allStaff", accountDAO::findAllStaff));
+        req.setAttribute("allStaff",
+                com.medicare.config.CacheManager.getShort("ref.allStaff", accountDAO::findAllStaff));
         req.setAttribute("shiftTypes", typeDAO.findAllActive());
-        req.setAttribute("today",      LocalDate.now().toString());
+        req.setAttribute("today", LocalDate.now().toString());
         // Pre-fill ngày từ tham số (nếu click từ tuần grid)
         String preDate = req.getParameter("date");
-        if (preDate != null) req.setAttribute("preDate", preDate);
+        if (preDate != null)
+            req.setAttribute("preDate", preDate);
         loadNavBadges(req);
         req.getRequestDispatcher("/WEB-INF/views/admin/shift-schedule-form.jsp").forward(req, resp);
     }
@@ -180,11 +192,13 @@ public class ShiftScheduleServlet extends HttpServlet {
         ShiftSchedule sc = scheduleDAO.findById(id);
         if (sc == null || (!sc.isScheduled() && !sc.isLeavePending())) {
             resp.sendRedirect(req.getContextPath()
-                    + "/shift-schedules?msg=cannot-edit&id=" + id); return;
+                    + "/shift-schedules?msg=cannot-edit&id=" + id);
+            return;
         }
-        req.setAttribute("schedule",   sc);
+        req.setAttribute("schedule", sc);
         req.setAttribute("shiftTypes", typeDAO.findAllActive());
-        req.setAttribute("allStaff",   com.medicare.config.CacheManager.getShort("ref.allStaff", accountDAO::findAllStaff));
+        req.setAttribute("allStaff",
+                com.medicare.config.CacheManager.getShort("ref.allStaff", accountDAO::findAllStaff));
         loadNavBadges(req);
         req.getRequestDispatcher("/WEB-INF/views/admin/shift-schedule-edit.jsp").forward(req, resp);
     }
@@ -192,10 +206,10 @@ public class ShiftScheduleServlet extends HttpServlet {
     // ── POST CREATE (bulk) ────────────────────────────────────────────────────
     private void handleCreate(HttpServletRequest req, HttpServletResponse resp, Account admin)
             throws IOException {
-        String[] accountIds  = req.getParameterValues("accountId");
+        String[] accountIds = req.getParameterValues("accountId");
         String[] shiftTypeIds = req.getParameterValues("shiftTypeId");
-        String dateFromStr   = req.getParameter("dateFrom");
-        String dateToStr     = req.getParameter("dateTo");
+        String dateFromStr = req.getParameter("dateFrom");
+        String dateToStr = req.getParameter("dateTo");
 
         if (accountIds == null || shiftTypeIds == null
                 || dateFromStr == null || dateFromStr.isEmpty()) {
@@ -206,14 +220,16 @@ public class ShiftScheduleServlet extends HttpServlet {
         int created = 0, skipped = 0;
         try {
             LocalDate from = LocalDate.parse(dateFromStr);
-            LocalDate to   = (dateToStr != null && !dateToStr.isEmpty())
-                    ? LocalDate.parse(dateToStr) : from;
+            LocalDate to = (dateToStr != null && !dateToStr.isEmpty())
+                    ? LocalDate.parse(dateToStr)
+                    : from;
 
             // ── Xử lý ngày quá khứ thông minh ──
             LocalDate today = LocalDate.now();
             if (to.isBefore(today)) {
                 resp.sendRedirect(req.getContextPath()
-                        + "/shift-schedules?action=new&msg=past-date"); return;
+                        + "/shift-schedules?action=new&msg=past-date");
+                return;
             }
             if (from.isBefore(today)) {
                 from = today; // Bỏ qua ngày quá khứ, tạo từ hôm nay
@@ -225,7 +241,10 @@ public class ShiftScheduleServlet extends HttpServlet {
                     int stId = Integer.parseInt(stIdStr);
                     for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
                         int r = scheduleDAO.schedule(accId, stId, d, admin.getAccountId());
-                        if (r > 0) created++; else skipped++;
+                        if (r > 0)
+                            created++;
+                        else
+                            skipped++;
                     }
                 }
             }
@@ -233,7 +252,8 @@ public class ShiftScheduleServlet extends HttpServlet {
                     "Tạo " + created + " ca, bỏ qua " + skipped + " đã tồn tại");
         } catch (Exception e) {
             e.printStackTrace();
-            resp.sendRedirect(req.getContextPath() + "/shift-schedules?msg=error"); return;
+            resp.sendRedirect(req.getContextPath() + "/shift-schedules?msg=error");
+            return;
         }
         resp.sendRedirect(req.getContextPath()
                 + "/shift-schedules?msg=created&count=" + created + "&skip=" + skipped);
@@ -242,14 +262,15 @@ public class ShiftScheduleServlet extends HttpServlet {
     // ── POST UPDATE (sửa 1 ca) ────────────────────────────────────────────────
     private void handleUpdate(HttpServletRequest req, HttpServletResponse resp, Account admin)
             throws IOException {
-        int scheduleId         = parseInt(req.getParameter("scheduleId"), 0);
-        int shiftTypeId        = parseInt(req.getParameter("shiftTypeId"), 0);
-        int lateTolerance      = parseInt(req.getParameter("lateToleranceMinutes"), 10);
-        int posStation         = parseInt(req.getParameter("posStation"), 0);
-        String notes           = req.getParameter("notes");
+        int scheduleId = parseInt(req.getParameter("scheduleId"), 0);
+        int shiftTypeId = parseInt(req.getParameter("shiftTypeId"), 0);
+        int lateTolerance = parseInt(req.getParameter("lateToleranceMinutes"), 10);
+        int posStation = parseInt(req.getParameter("posStation"), 0);
+        String notes = req.getParameter("notes");
 
         if (scheduleId == 0 || shiftTypeId == 0) {
-            resp.sendRedirect(req.getContextPath() + "/shift-schedules?msg=invalid"); return;
+            resp.sendRedirect(req.getContextPath() + "/shift-schedules?msg=invalid");
+            return;
         }
 
         boolean ok = ((com.medicare.dao.ShiftScheduleDAO) scheduleDAO)
@@ -296,15 +317,20 @@ public class ShiftScheduleServlet extends HttpServlet {
     }
 
     // ── Helper ────────────────────────────────────────────────────────────────
-    // Trước đây tự set "pendingLeaveCount" không qua cache, và KHÔNG set 3 badge còn
-    // lại (pendingLateCount/expiryCount/pendingResetCount) → sidebar trống ở trang này.
+    // Trước đây tự set "pendingLeaveCount" không qua cache, và KHÔNG set 3 badge
+    // còn
+    // lại (pendingLateCount/expiryCount/pendingResetCount) → sidebar trống ở trang
+    // này.
     // Dùng chung SidebarHelper (cache 30s) như mọi servlet admin khác.
     private void loadNavBadges(HttpServletRequest req) {
         SidebarHelper.load(req);
     }
 
     private int parseInt(String s, int def) {
-        try { return s != null ? Integer.parseInt(s) : def; }
-        catch (NumberFormatException e) { return def; }
+        try {
+            return s != null ? Integer.parseInt(s) : def;
+        } catch (NumberFormatException e) {
+            return def;
+        }
     }
 }

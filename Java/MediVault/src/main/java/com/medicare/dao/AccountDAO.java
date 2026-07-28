@@ -176,6 +176,20 @@ public class AccountDAO implements IAccountDAO {
         return null;
     }
 
+    /** Tìm theo email kể cả TK bị khóa (IsActive=0) — dùng cho quên mật khẩu chỉ nhập email. */
+    @Override
+    public Account findByEmailAny(String email) {
+        String sql = "SELECT * FROM Accounts WHERE Email = ? AND IsDeleted = 0";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, email);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapRow(rs);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return null;
+    }
+
     public Account findById(int id) {
         String sql = "SELECT * FROM Accounts WHERE AccountID = ?";
         try (Connection cn = DBContext.getConnection();

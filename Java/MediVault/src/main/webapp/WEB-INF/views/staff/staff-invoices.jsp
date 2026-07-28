@@ -79,6 +79,8 @@ tr:last-child td{border-bottom:none}
 .pagination a:hover{background:var(--surface)}
 .pagination .active{background:var(--main);color:#fff;border-color:var(--main)}
 </style>
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 

@@ -202,6 +202,8 @@ select,option{font-family:inherit;font-size:inherit}
 .cdd-opt.active{background:linear-gradient(135deg,var(--blue,#1558A8),#0D3F85);color:#fff;font-weight:750}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 
@@ -296,6 +298,7 @@ select,option{font-family:inherit;font-size:inherit}
       <%-- LEFT: Form column --%>
       <div class="form-col">
         <form method="post" action="${pageContext.request.contextPath}/medicines">
+          <input type="hidden" name="_csrf" value="${csrfToken}">
           <input type="hidden" name="action" value="save-medicine">
           <input type="hidden" name="medicineId" value="<%= m.getMedicineId() %>">
 
@@ -513,6 +516,7 @@ select,option{font-family:inherit;font-size:inherit}
     </div>
 
     <form method="post" action="${pageContext.request.contextPath}/medicines" style="max-width:860px;margin:0 auto">
+      <input type="hidden" name="_csrf" value="${csrfToken}">
       <input type="hidden" name="action" value="save-medicine">
 
       <%-- Thông tin cơ bản --%>
@@ -697,6 +701,7 @@ select,option{font-family:inherit;font-size:inherit}
       <button class="bm-close" onclick="document.getElementById('batchModal').classList.remove('open')">✕</button>
     </div>
     <form id="batchModalForm" method="post" action="${pageContext.request.contextPath}/medicines">
+      <input type="hidden" name="_csrf" value="${csrfToken}">
       <input type="hidden" name="action" value="save-batch">
       <input type="hidden" name="medicineId" value="<%= m.getMedicineId() %>">
       <input type="hidden" name="poMode" value="none">

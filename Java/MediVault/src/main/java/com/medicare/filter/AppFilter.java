@@ -68,8 +68,20 @@ public class AppFilter implements Filter {
                 + "connect-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
                 + "frame-ancestors 'self';");
 
-        // ── Inject CSRF token vào request attribute (dùng trong JSP: ${csrfToken}) ──
-        com.medicare.util.CsrfUtil.injectToRequest(req);
+        // ── CSRF: phát token cho trang, và CHẶN mọi POST không kèm token hợp lệ ──────
+        // Trước đây chỉ có dòng injectToRequest(): token được sinh ra, JSP in ra, nhưng
+        // KHÔNG nơi nào gọi isValid() — nghĩa là toàn bộ POST của hệ thống không hề được
+        // bảo vệ, kể cả 2 form đã chịu khó gửi kèm _csrf. Phần validate bên dưới mới là
+        // thứ thực sự chặn tấn công CSRF.
+        if (!isStaticAsset(uri)) {
+            com.medicare.util.CsrfUtil.injectToRequest(req);
+
+            if (com.medicare.util.CsrfUtil.requiresValidation(req)
+                    && !com.medicare.util.CsrfUtil.isValid(req)) {
+                rejectCsrf(req, resp);
+                return;   // dừng hẳn — KHÔNG cho request đi tiếp vào servlet
+            }
+        }
 
         // ── GZIP Compression ──────────────────────────────────────────────
         String acceptEncoding = req.getHeader("Accept-Encoding");
@@ -93,6 +105,45 @@ public class AppFilter implements Filter {
     public void destroy() {}
 
     // ── Helpers ───────────────────────────────────────────────────────────
+
+    /**
+     * Trả lời khi token CSRF thiếu/sai. Phân biệt AJAX (trả JSON để JS đọc được) và
+     * điều hướng thường (trả trang HTML giải thích, tránh người dùng gặp trang trắng 403).
+     */
+    private void rejectCsrf(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        // Log rõ ràng: nếu sau này có form nào bị chặn oan vì quên gắn token,
+        // dòng này chỉ thẳng ra endpoint nào đang thiếu.
+        System.err.println("[CSRF] Đã chặn " + req.getMethod() + " " + req.getRequestURI()
+                + " — thiếu hoặc sai token (_csrf / X-CSRF-Token)");
+
+        resp.reset();
+        resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        resp.setHeader("Cache-Control", "no-store");
+
+        String accept = req.getHeader("Accept");
+        boolean wantsJson = "XMLHttpRequest".equals(req.getHeader("X-Requested-With"))
+                || (accept != null && accept.contains("application/json"));
+
+        if (wantsJson) {
+            resp.setContentType("application/json;charset=UTF-8");
+            resp.getWriter().print("{\"ok\":false,\"error\":\"csrf\",\"msg\":"
+                    + "\"Phiên làm việc đã hết hạn hoặc yêu cầu không hợp lệ. Vui lòng tải lại trang.\"}");
+        } else {
+            resp.setContentType("text/html;charset=UTF-8");
+            resp.getWriter().print(
+                "<!DOCTYPE html><html lang=\"vi\"><head><meta charset=\"UTF-8\">"
+              + "<title>Yêu cầu bị từ chối</title></head><body>"
+              + "<div style=\"font-family:system-ui,-apple-system,sans-serif;max-width:520px;"
+              + "margin:60px auto;padding:24px;border:1px solid #FCA5A5;background:#FEF2F2;"
+              + "border-radius:12px;color:#7F1D1D\">"
+              + "<h2 style=\"margin:0 0 10px;font-size:19px\">⛔ Yêu cầu bị từ chối</h2>"
+              + "<p style=\"margin:0 0 14px;line-height:1.65;font-size:14px\">Phiên làm việc đã hết hạn, "
+              + "hoặc thao tác này không xuất phát từ trang của hệ thống (cơ chế chống CSRF).</p>"
+              + "<p style=\"margin:0;font-size:14px\"><a href=\"" + req.getContextPath() + "/\" "
+              + "style=\"color:#B91C1C;font-weight:700\">← Quay lại trang chủ và thử lại</a></p>"
+              + "</div></body></html>");
+        }
+    }
 
     private boolean isStaticAsset(String uri) {
         return uri.endsWith(".css") || uri.endsWith(".js")

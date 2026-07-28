@@ -195,6 +195,8 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
 }
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <%@ include file="/WEB-INF/views/loading.jsp" %>
@@ -266,6 +268,7 @@ body{display:grid;grid-template-columns:55% 45%;min-height:100vh;background:var(
     <% } %>
 
     <form method="post" action="${pageContext.request.contextPath}/staff-login" autocomplete="off">
+      <input type="hidden" name="_csrf" value="${csrfToken}">
       <div class="field">
         <label class="field-label">Tên đăng nhập</label>
         <div class="field-wrap">

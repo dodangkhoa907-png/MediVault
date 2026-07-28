@@ -623,6 +623,8 @@
               .batch-sub { font-size: 11.5px; color: var(--muted); margin-top: 2px }
             </style>
               
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 
           <body>
@@ -821,6 +823,7 @@
                                                       <form method="post" action="${pageContext.request.contextPath}/medicines"
                                                             style="display:inline"
                                                             onsubmit="return confirm('Tiêu hủy lô ${b.batchNumber}?\nSL còn lại (${b.currentQuantity}) sẽ được ghi nhận đã hủy.')">
+                                                        <input type="hidden" name="_csrf" value="${csrfToken}">
                                                         <input type="hidden" name="action" value="destroy-batch"/>
                                                         <input type="hidden" name="id" value="${b.batchId}"/>
                                                         <input type="hidden" name="medicineId" value="${medicine.medicineId}"/>
@@ -832,6 +835,7 @@
                                                       <form method="post" action="${pageContext.request.contextPath}/medicines"
                                                             style="display:inline"
                                                             onsubmit="return confirm('Void lô ${b.batchNumber}?\nLô sẽ bị đánh dấu CANCELLED vì chưa có bán hàng.')">
+                                                        <input type="hidden" name="_csrf" value="${csrfToken}">
                                                         <input type="hidden" name="action" value="delete-batch"/>
                                                         <input type="hidden" name="id" value="${b.batchId}"/>
                                                         <input type="hidden" name="medicineId" value="${medicine.medicineId}"/>
@@ -850,6 +854,7 @@
                                                   <div id="addstock-${b.batchId}" class="add-stock-row">
                                                     <form method="post" action="${pageContext.request.contextPath}/medicines"
                                                           class="add-stock-form">
+                                                      <input type="hidden" name="_csrf" value="${csrfToken}">
                                                       <input type="hidden" name="action" value="add-stock"/>
                                                       <input type="hidden" name="batchId" value="${b.batchId}"/>
                                                       <input type="hidden" name="medicineId" value="${medicine.medicineId}"/>

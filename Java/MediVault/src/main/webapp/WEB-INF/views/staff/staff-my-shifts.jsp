@@ -13,6 +13,9 @@
         staffAcc = (com.medicare.entity.Account) session.getAttribute("staffAccount_" + uid);
     if (staffAcc == null) { response.sendRedirect(request.getContextPath() + "/staff-login"); return; }
     if (staffAcc.getRoleId() == 1) { response.sendRedirect(request.getContextPath() + "/dashboard"); return; }
+    // roleId 3 (Thủ kho) có portal riêng — "Trang chủ"/"Dashboard" phải đưa đúng về
+    // /warehouse-dashboard, không phải /staff-dashboard, để không lạc sang portal khác.
+    String sHomeUrl = staffAcc.getRoleId() == 3 ? "/warehouse-dashboard" : "/staff-dashboard";
 
     java.lang.String dn      = staffAcc.getFullName() != null ? staffAcc.getFullName() : staffAcc.getUsername();
     java.lang.String initials = dn.length() >= 2
@@ -166,6 +169,8 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
 .empty-state p{font-size:13.5px}
 </style>
     
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 
@@ -183,7 +188,7 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
   </div>
   <nav class="nav-block">
     <div class="nav-label">Tổng quan</div>
-    <a href="<%= request.getContextPath() %>/staff-dashboard?uid=<%= uid %>" class="nav-item">
+    <a href="<%= request.getContextPath() %><%= sHomeUrl %>?uid=<%= uid %>" class="nav-item">
       <span class="nav-icon">🏠</span> Trang chủ
     </a>
   </nav>
@@ -226,7 +231,7 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
   <header class="topbar">
     <span class="topbar-title">📅 Ca làm việc của tôi</span>
     <div class="topbar-right">
-      <a href="<%= request.getContextPath() %>/staff-dashboard?uid=<%= uid %>" class="back-btn">← Dashboard</a>
+      <a href="<%= request.getContextPath() %><%= sHomeUrl %>?uid=<%= uid %>" class="back-btn">← Dashboard</a>
     </div>
   </header>
 
@@ -290,6 +295,7 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
         <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:16px 18px;margin-top:10px">
           <div style="font-size:13px;font-weight:750;color:var(--ink);margin-bottom:12px">🔴 Kết thúc ca</div>
           <form action="${pageContext.request.contextPath}/staff-shift" method="post">
+            <input type="hidden" name="_csrf" value="${csrfToken}">
             <input type="hidden" name="action"  value="close">
             <input type="hidden" name="uid"     value="<%= uid %>">
             <input type="hidden" name="shiftId" value="<%= currentShift != null ? currentShift.getShiftId() : 0 %>">
@@ -450,7 +456,7 @@ updateClock();
 
 // Duration live counter
 <% if (currentShift != null && currentShift.getStartTime() != null) { %>
-const shiftStartMs = <%= currentShift.getStartTime().atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().toEpochMilli() %>n;
+const shiftStartMs = <%= currentShift.getStartTime().atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().toEpochMilli() %>;
 function updateDuration() {
   const diffMs = Date.now() - Number(shiftStartMs);
   const h = Math.floor(diffMs / 3600000);
