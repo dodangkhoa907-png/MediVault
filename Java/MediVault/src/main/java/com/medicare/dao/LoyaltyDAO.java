@@ -130,6 +130,93 @@ public class LoyaltyDAO {
         return true;
     }
 
+    /**
+     * Xử lý điểm khi khách trả hàng (CUSTOMER_RETURN):
+     *  1) Trừ lại điểm đã tích lũy tương ứng giá trị hàng trả (khách không còn giữ hàng
+     *     thì không được giữ điểm đã cộng cho phần đó nữa).
+     *  2) Hoàn lại điểm khách đã dùng để mua đúng hóa đơn này (nếu có) — khách trả hàng
+     *     mua bằng điểm thì phải được trả lại điểm đã đổi, tránh mất điểm oan.
+     * An toàn khi gọi nhiều lần cho cùng hóa đơn (trả hàng nhiều đợt): phần đã hoàn
+     * trước đó được trừ ra nhờ sumRefundedForInvoice().
+     */
+    public void adjustForReturn(int customerId, int invoiceId, java.math.BigDecimal returnValue,
+                                Integer staffAccountId) {
+        LoyaltyCard card = findByCustomer(customerId);
+        if (card == null || returnValue == null) return;
+
+        // 1) Trừ điểm đã tích từ phần hàng trả — không trừ vượt quá số điểm khả dụng hiện có
+        int earnedToReverse = (int) (returnValue.longValue() / VND_PER_POINT);
+        if (earnedToReverse > 0) {
+            int actualDeduct = Math.min(earnedToReverse, card.getAvailablePoints());
+            if (actualDeduct > 0) {
+                String sql = "UPDATE LoyaltyCards SET TotalPoints = TotalPoints - ? WHERE CardID = ?";
+                try (Connection cn = DBContext.getConnection();
+                     PreparedStatement ps = cn.prepareStatement(sql)) {
+                    ps.setInt(1, actualDeduct);
+                    ps.setInt(2, card.getCardId());
+                    if (ps.executeUpdate() > 0) {
+                        logTransaction(card.getCardId(), invoiceId, "ADJUST", -actualDeduct,
+                                card.getAvailablePoints(), card.getAvailablePoints() - actualDeduct,
+                                "Tru diem tich luy do tra hang", staffAccountId);
+                    }
+                } catch (Exception e) { e.printStackTrace(); }
+            }
+        }
+
+        // 2) Hoàn điểm đã dùng để mua đúng hóa đơn này (nếu còn phần chưa hoàn)
+        int redeemed        = sumRedeemedForInvoice(invoiceId);
+        int refundedAlready = sumRefundedForInvoice(invoiceId);
+        int refundable       = redeemed - refundedAlready;
+        if (refundable > 0) {
+            LoyaltyCard fresh = findByCustomer(customerId);
+            if (fresh != null) {
+                String sql = "UPDATE LoyaltyCards SET UsedPoints = UsedPoints - ? " +
+                        "WHERE CardID = ? AND UsedPoints >= ?";
+                try (Connection cn = DBContext.getConnection();
+                     PreparedStatement ps = cn.prepareStatement(sql)) {
+                    ps.setInt(1, refundable);
+                    ps.setInt(2, fresh.getCardId());
+                    ps.setInt(3, refundable);
+                    if (ps.executeUpdate() > 0) {
+                        logTransaction(fresh.getCardId(), invoiceId, "ADJUST", refundable,
+                                fresh.getAvailablePoints(), fresh.getAvailablePoints() + refundable,
+                                "Hoan diem da dung do tra hang", staffAccountId);
+                    }
+                } catch (Exception e) { e.printStackTrace(); }
+            }
+        }
+
+        recalcTier(card.getCardId());
+    }
+
+    /** Tổng điểm đã REDEEM cho 1 hóa đơn cụ thể. */
+    public int sumRedeemedForInvoice(int invoiceId) {
+        String sql = "SELECT ISNULL(SUM(Points),0) FROM PointTransactions " +
+                "WHERE InvoiceID = ? AND TransType = 'REDEEM'";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, invoiceId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return 0;
+    }
+
+    /** Tổng điểm đã hoàn (ADJUST dương) cho 1 hóa đơn — tránh hoàn lặp khi trả hàng nhiều đợt. */
+    public int sumRefundedForInvoice(int invoiceId) {
+        String sql = "SELECT ISNULL(SUM(Points),0) FROM PointTransactions " +
+                "WHERE InvoiceID = ? AND TransType = 'ADJUST' AND Points > 0";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, invoiceId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return 0;
+    }
+
     /** Lịch sử giao dịch điểm (mới nhất trước) — hiển thị trong portal. */
     public List<String[]> history(int customerId, int limit) {
         List<String[]> list = new ArrayList<>();

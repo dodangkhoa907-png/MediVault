@@ -352,6 +352,33 @@ public class PosServlet extends HttpServlet {
                 BigDecimal discount = (discStr != null && !discStr.isEmpty())
                         ? new BigDecimal(discStr) : BigDecimal.ZERO;
 
+                // Thanh toán QR (PayOS) — KHÔNG tin trạng thái "đã trả" từ client (FE có thể bỏ
+                // qua bước quét mã và gọi thẳng complete-sale). Bắt buộc kèm orderCode và xác
+                // minh lại với PayOS rằng đơn đó thực sự đã PAID trước khi lập hóa đơn.
+                if ("QR_CODE".equals(payMethod)) {
+                    String qrOrderCodeStr = req.getParameter("qrOrderCode");
+                    if (qrOrderCodeStr == null || qrOrderCodeStr.isBlank()) {
+                        if (clientReqId != null && !clientReqId.isBlank()) saleResponseCache.remove(clientReqId);
+                        out.print("{\"ok\":false,\"msg\":\"Thiếu mã đơn PayOS — vui lòng quét QR lại!\"}");
+                        return;
+                    }
+                    try {
+                        long qrOrderCode = Long.parseLong(qrOrderCodeStr.trim());
+                        String payOsStatus = com.medicare.service.PayOSService.checkStatus(qrOrderCode);
+                        if (!"PAID".equals(payOsStatus)) {
+                            if (clientReqId != null && !clientReqId.isBlank()) saleResponseCache.remove(clientReqId);
+                            out.print("{\"ok\":false,\"msg\":\"Đơn PayOS chưa thanh toán (trạng thái: "
+                                    + esc(payOsStatus) + ")\"}");
+                            return;
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        if (clientReqId != null && !clientReqId.isBlank()) saleResponseCache.remove(clientReqId);
+                        out.print("{\"ok\":false,\"msg\":\"Không xác minh được thanh toán PayOS\"}");
+                        return;
+                    }
+                }
+
                 // Đổi điểm thân thiết (1 điểm = 1đ) — chỉ áp dụng khi có khách hàng.
                 // Số điểm thực trừ luôn được chốt lại theo số dư thật trong DB (không tin
                 // số điểm client gửi lên) để tránh trừ vượt mức hoặc gian lận request.

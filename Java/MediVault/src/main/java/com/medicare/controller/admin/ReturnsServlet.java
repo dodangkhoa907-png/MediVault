@@ -34,6 +34,7 @@ public class ReturnsServlet extends HttpServlet {
     private final IBatchesDAO       batchesDAO  = new BatchesDAO();
     private final IMedicineDAO      medicineDAO = new MedicineDAO();
     private final IAccountDAO       accountDAO  = new AccountDAO();
+    private final LoyaltyDAO        loyaltyDAO  = new LoyaltyDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -265,6 +266,24 @@ public class ReturnsServlet extends HttpServlet {
         if (newId > 0) {
             AuditHelper.log(req, "Tạo phiếu trả/hủy hàng", "Returns", newId,
                     returnType + " — SL: " + quantity + " — " + reason);
+
+            // Trả hàng của khách có tài khoản khách hàng → xử lý lại điểm tích lũy:
+            // trừ điểm đã cộng cho phần trả + hoàn điểm nếu khách từng dùng điểm mua đơn này.
+            if ("CUSTOMER_RETURN".equals(returnType) && invoiceId != null) {
+                Invoice inv = invoiceDAO.findById(invoiceId);
+                if (inv != null && inv.getCustomerId() != null) {
+                    List<InvoiceDetail> details = detailDAO.findByInvoice(invoiceId);
+                    InvoiceDetail matched = details.stream()
+                            .filter(d -> d.getBatchId() == batchId).findFirst().orElse(null);
+                    if (matched != null && matched.getUnitPrice() != null) {
+                        java.math.BigDecimal returnValue =
+                                matched.getUnitPrice().multiply(java.math.BigDecimal.valueOf(quantity));
+                        loyaltyDAO.adjustForReturn(inv.getCustomerId(), invoiceId, returnValue,
+                                adminAcc.getAccountId());
+                    }
+                }
+            }
+
             resp.sendRedirect(req.getContextPath() + "/returns?msg=created");
         } else {
             resp.sendRedirect(req.getContextPath() + "/returns?msg=error");

@@ -2118,7 +2118,7 @@ function doCheckout() {
   submitSale();
 }
 
-function submitSale() {
+function submitSale(qrOrderCode) {
   if (_saleInFlight) return; // đang có 1 lượt thanh toán chạy dở — không cho gọi chồng
   _saleInFlight = true;
   const btn = document.getElementById('checkoutBtn');
@@ -2132,6 +2132,8 @@ function submitSale() {
   fd.append('clientRequestId', clientRequestId);
   fd.append('paymentMethod', selectedPayment);
   fd.append('discount', getDiscountValue());
+  // Server xác minh lại trạng thái PAID với PayOS bằng orderCode này trước khi lập hóa đơn
+  if (selectedPayment === 'QR_CODE' && qrOrderCode) fd.append('qrOrderCode', qrOrderCode);
   if (redeemPoints > 0) fd.append('redeemPoints', redeemPoints);
   if (selectedCustomer) fd.append('customerId', selectedCustomer.id);
   if (currentStaffId)   fd.append('uid', currentStaffId);
@@ -3173,11 +3175,11 @@ async function pollQrStatus(orderCode, total) {
       document.getElementById('qrmStatusTxt').textContent = 'Đã nhận thanh toán!';
       document.getElementById('qrmSuccessBox').classList.add('show');
 
-      // Sau 1.5s đóng modal và complete sale
+      // Sau 1.5s đóng modal và complete sale — giữ lại orderCode để server xác minh PAID
       setTimeout(() => {
         document.getElementById('qrPayModal').classList.remove('show');
         _qrOrderCode = null;
-        submitSale();
+        submitSale(orderCode);
       }, 1500);
 
     } else if (data.status === 'CANCELLED' || data.status === 'EXPIRED') {
