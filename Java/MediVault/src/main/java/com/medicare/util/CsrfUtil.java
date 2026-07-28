@@ -169,7 +169,13 @@ public final class CsrfUtil {
                 && !uri.equals(ctx + "/warehouse-forgot-password")
                 && !uri.equals(ctx + "/otp-verify")
                 && !uri.startsWith(ctx + "/nfc-checkin")
-                && !uri.startsWith(ctx + "/api/nfc");
+                && !uri.startsWith(ctx + "/api/nfc")
+                // /logout: staff-dashboard.jsp/staff-profile.jsp tự logout bằng
+                // navigator.sendBeacon() khi ĐÓNG TAB THẬT SỰ (không phải chuyển trang) —
+                // sendBeacon() không có cách nào gắn header tuỳ ý nên không thể mang token.
+                // Ép CSRF ở đây vô nghĩa: bị dụ logout ép buộc chỉ gây phiền (phải đăng nhập
+                // lại), không rò rỉ dữ liệu hay đổi trạng thái nghiệp vụ nào.
+                && !uri.equals(ctx + "/logout");
     }
 
     // ── Private ───────────────────────────────────────────────────────────
