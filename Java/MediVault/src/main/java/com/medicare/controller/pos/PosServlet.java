@@ -63,7 +63,7 @@ public class PosServlet extends HttpServlet {
                 || "pos-customer-detail".equals(action)
                 || "shift-summary".equals(action)
                 || "my-invoices".equals(action);
-        if (needsStaff && currentPosStaff(req) == null) {
+        if (needsStaff && !hasAnyPosIdentity(req)) {
             resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
             resp.setContentType("application/json;charset=UTF-8");
             resp.getWriter().print("{\"ok\":false,\"reason\":\"not_checked_in\","
@@ -300,7 +300,7 @@ public class PosServlet extends HttpServlet {
                 || "pos-pause".equals(action)
                 || "pos-resume".equals(action)
                 || "check-qr-status".equals(action);
-        if (!bootstrapAction && currentPosStaff(req) == null) {
+        if (!bootstrapAction && !hasAnyPosIdentity(req)) {
             resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
             out.print("{\"ok\":false,\"reason\":\"not_checked_in\","
                     + "\"msg\":\"Vui lòng điểm danh khuôn mặt tại quầy trước khi thao tác.\"}");
@@ -749,6 +749,38 @@ public class PosServlet extends HttpServlet {
         }
         Object cur = session.getAttribute("staffAccount");
         return (cur instanceof Account) ? (Account) cur : null;
+    }
+
+    /**
+     * BẢO MẬT — dùng cho guard chặn khách vãng lai gọi thẳng action, KHÁC với
+     * {@link #currentPosStaff} (dùng để ATTRIBUTION — ghi nhận hoá đơn cho đúng ai).
+     *
+     * <p>Bug đã xảy ra thực tế: {@code currentPosStaff(req)} chỉ tìm đúng
+     * {@code staffAccount_<uid>} khi request NÀY có kèm tham số {@code uid} khớp — nhưng
+     * nhân viên đăng nhập bình thường qua staff-login (không phải face-checkin ngay tại
+     * POS) có {@code staffAccount_<uid>} trong session mà JS phía client lại không luôn
+     * gửi kèm đúng {@code uid} theo mọi request (chỉ set sau khi face-checkin TẠI POS lần
+     * này). Guard dùng hàm đó bị chặn oan người đã đăng nhập thật.</p>
+     *
+     * <p>Hàm này chỉ trả lời "có AI ĐÓ đã đăng nhập trong session này không" — quét mọi
+     * {@code staffAccount_*}, không đòi khớp đúng uid của request hiện tại. Việc CẤP QUYỀN
+     * chỉ cần biết "không phải khách vãng lai hoàn toàn ẩn danh"; việc "chính xác là ai" để
+     * dành cho currentPosStaff() ở bước ghi nhận hoá đơn (vốn đã có fallback về
+     * POS_ACCOUNT_ID nếu không xác định được — hành vi nghiệp vụ có chủ đích, giữ nguyên).</p>
+     */
+    private boolean hasAnyPosIdentity(HttpServletRequest req) {
+        HttpSession session = req.getSession(false);
+        if (session == null) return false;
+        if (session.getAttribute("adminAccount") instanceof Account) return true;
+        if (session.getAttribute("staffAccount") instanceof Account) return true;
+        java.util.Enumeration<String> names = session.getAttributeNames();
+        while (names.hasMoreElements()) {
+            String name = names.nextElement();
+            if (name.startsWith("staffAccount_") && session.getAttribute(name) instanceof Account) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void handlePosFaceCheckin(HttpServletRequest req, HttpServletResponse resp,

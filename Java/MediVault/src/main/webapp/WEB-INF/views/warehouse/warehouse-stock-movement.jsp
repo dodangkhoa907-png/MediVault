@@ -188,10 +188,13 @@ a{text-decoration:none;color:inherit}
 
           <div class="row2">
             <div class="fg">
-              <label>Số lô (quét hoặc nhập tay)</label>
+              <label style="display:flex; justify-content:space-between; align-items:center;">
+                  <span>Số lô (quét hoặc nhập tay)</span>
+                  <button type="button" onclick="openBarcodeScan()" style="background:none;border:none;color:var(--main);font-size:12px;cursor:pointer;font-weight:700;">📷 Quét mã vạch</button>
+              </label>
               <div class="wh-field">
                 <span class="wh-field-ic">🏷️</span>
-                <input type="text" name="enteredBatchNumber" placeholder="VD: LOT-2026-001"
+                <input type="text" name="enteredBatchNumber" id="enteredBatchNumber" placeholder="VD: LOT-2026-001"
                        value="${fn:escapeXml(f_enteredBatchNumber)}" autocomplete="off" required/>
               </div>
             </div>
@@ -305,6 +308,23 @@ a{text-decoration:none;color:inherit}
  </div>
 </div>
 
+<!-- Modal Quét Barcode -->
+<div id="barcodeScanModal" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(11,22,40,.7);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeBarcodeScan()">
+  <div style="background:#fff;border-radius:18px;max-width:420px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden">
+    <div style="padding:16px 20px;background:linear-gradient(135deg,#0f766e,#042f2e);color:#fff;display:flex;align-items:center;justify-content:space-between">
+      <h3 style="margin:0;font-size:16px;font-weight:800">📷 Quét mã vạch lô</h3>
+      <button type="button" onclick="closeBarcodeScan()" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:30px;height:30px;border-radius:9px;font-size:15px;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:16px 20px">
+      <div id="barcodeReaderBox" style="width:100%;min-height:260px;border-radius:12px;overflow:hidden;background:#0b1628"></div>
+      <div id="barcodeScanStatus" style="margin-top:10px;font-size:12.5px;color:#64748b;text-align:center">Đưa mã vạch vào giữa khung hình.</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
+
+
 <script>
 function toggleDirection(){
   var mt = document.getElementById('movementType').value;
@@ -352,6 +372,47 @@ function loadSuggestedBatch(){
 
 toggleDirection();
 <c:if test="${not empty f_medicineId}">loadSuggestedBatch();</c:if>
+
+let barcodeScanner = null;
+function openBarcodeScan() {
+  document.getElementById('barcodeScanModal').style.display = 'flex';
+  const status = document.getElementById('barcodeScanStatus');
+  status.textContent = 'Đưa mã vạch vào giữa khung hình…';
+  if (typeof Html5Qrcode === 'undefined') {
+    status.textContent = '⚠️ Không tải được thư viện quét mã vạch — kiểm tra kết nối mạng.';
+    return;
+  }
+  barcodeScanner = new Html5Qrcode('barcodeReaderBox');
+  const config = {
+    fps: 10,
+    qrbox: { width: 260, height: 140 },
+    formatsToSupport: [
+      Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
+      Html5QrcodeSupportedFormats.QR_CODE
+    ]
+  };
+  barcodeScanner.start(
+    { facingMode: 'environment' },
+    config,
+    (decodedText) => {
+      document.getElementById('enteredBatchNumber').value = decodedText;
+      closeBarcodeScan();
+    },
+    () => {} // lỗi giải mã từng khung hình — bỏ qua
+  ).catch(err => {
+    status.textContent = '⚠️ Không mở được camera: ' + (err.message || err);
+  });
+}
+function closeBarcodeScan() {
+  document.getElementById('barcodeScanModal').style.display = 'none';
+  if (barcodeScanner) {
+    const s = barcodeScanner;
+    barcodeScanner = null;
+    s.stop().then(() => s.clear()).catch(() => {});
+  }
+}
 </script>
 
 </div>
