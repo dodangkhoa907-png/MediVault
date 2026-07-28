@@ -34,9 +34,8 @@ public class PurchaseOrderServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        HttpSession session = req.getSession(false);
-        Account adminAcc = session != null ? (Account) session.getAttribute("adminAccount") : null;
-        if (adminAcc == null || adminAcc.getRoleId() != 1) {
+        Account user = getAuthorizedUser(req);
+        if (user == null) {
             resp.sendRedirect(req.getContextPath() + "/login");
             return;
         }
@@ -73,16 +72,15 @@ public class PurchaseOrderServlet extends HttpServlet {
             throws ServletException, IOException {
         req.setCharacterEncoding("UTF-8");
 
-        HttpSession session = req.getSession(false);
-        Account adminAcc = session != null ? (Account) session.getAttribute("adminAccount") : null;
-        if (adminAcc == null || adminAcc.getRoleId() != 1) {
+        Account user = getAuthorizedUser(req);
+        if (user == null) {
             resp.sendRedirect(req.getContextPath() + "/login");
             return;
         }
 
         String action = req.getParameter("action");
         if ("save".equals(action)) {
-            handleSave(req, resp, adminAcc);
+            handleSave(req, resp, user);
         } else if ("confirm".equals(action)) {
             handleConfirmReceived(req, resp);
         } else {
@@ -323,5 +321,24 @@ public class PurchaseOrderServlet extends HttpServlet {
     private int parseIntOr(String s, int def) {
         if (s == null || s.isEmpty()) return def;
         try { return Integer.parseInt(s); } catch (NumberFormatException e) { return def; }
+    }
+
+    private Account getAuthorizedUser(HttpServletRequest req) {
+        HttpSession session = req.getSession(false);
+        if (session == null) return null;
+        Account admin = (Account) session.getAttribute("adminAccount");
+        if (admin != null && (admin.getRoleId() == 1 || admin.getRoleId() == 3)) {
+            return admin;
+        }
+        String uidStr = (String) session.getAttribute("staffUid");
+        if (uidStr != null) {
+            try {
+                Account staff = (Account) session.getAttribute("staffAccount_" + uidStr);
+                if (staff != null && (staff.getRoleId() == 1 || staff.getRoleId() == 3)) {
+                    return staff;
+                }
+            } catch (Exception ignored) {}
+        }
+        return null;
     }
 }

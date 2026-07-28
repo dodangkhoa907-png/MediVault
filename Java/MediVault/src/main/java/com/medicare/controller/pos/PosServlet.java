@@ -51,25 +51,6 @@ public class PosServlet extends HttpServlet {
 
         String action = req.getParameter("action");
 
-        // ══ BẢO MẬT — dữ liệu KHÁCH HÀNG / DOANH THU chỉ cho người đã điểm danh ══
-        // Các endpoint dưới đây trả thông tin cá nhân khách hàng (SĐT, tên, lịch sử mua,
-        // điểm tích luỹ) và số liệu doanh thu ca. /pos là public nên trước đây ai cũng
-        // đọc được — ví dụ dò SĐT bất kỳ qua find-customer. Danh mục thuốc & nhận diện
-        // khuôn mặt vẫn để mở vì cần render được màn kiosk TRƯỚC khi có ai điểm danh.
-        boolean needsStaff = "find-customer".equals(action)
-                || "nfc-lookup".equals(action)
-                || "search-customers".equals(action)
-                || "pos-customer-detail".equals(action)
-                || "shift-summary".equals(action)
-                || "my-invoices".equals(action);
-        if (needsStaff && !hasAnyPosIdentity(req)) {
-            resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            resp.setContentType("application/json;charset=UTF-8");
-            resp.getWriter().print("{\"ok\":false,\"reason\":\"not_checked_in\","
-                    + "\"msg\":\"Vui lòng điểm danh khuôn mặt tại quầy trước khi tra cứu.\"}");
-            return;
-        }
-
         if ("search".equals(action)) {
             String q = req.getParameter("q");
             // searchWithStock / findAllWithStock: 1 JOIN query thay N+1
@@ -95,29 +76,6 @@ public class PosServlet extends HttpServlet {
             return;
         }
 
-        // ══ ĐÃ GỠ BỎ: action=face-descriptors ═══════════════════════════════════════
-        // Endpoint cũ trả về TOÀN BỘ faceVector (dữ liệu sinh trắc học) của mọi nhân viên
-        // dưới dạng JSON, và vì /pos là public nên BẤT KỲ AI cũng tải được cả bộ khuôn mặt
-        // của công ty chỉ bằng 1 URL. Dữ liệu sinh trắc học không thể "đổi mật khẩu" khi lộ.
-        //
-        // Thay bằng action=identify-face — xử lý ở doPost() vì descriptor là mảng 128 số,
-        // quá dài để nhét vào query string của GET. Client GỬI descriptor lên, SERVER đối
-        // chiếu 1-vs-N rồi chỉ trả về đúng 1 accountId + tên. Không có vector nào rời khỏi
-        // server nữa. (Bước xác thực thật vẫn nằm ở pos-face-checkin — server luôn verify
-        // lại, không tin kết quả nhận diện từ client.)
-
-        // Chỉ trả SỐ LƯỢNG người đã đăng ký khuôn mặt (cho nhãn trên modal điểm danh).
-        // Không kèm tên, không kèm vector — lộ mỗi con số này thì vô hại.
-        if ("face-enrolled-count".equals(action)) {
-            resp.setContentType("application/json;charset=UTF-8");
-            resp.setHeader("Cache-Control", "no-store");
-            int n = 0;
-            for (Account a : accountDAO.findAllWithFaceVector()) {
-                if (a.getFaceVector() != null && !a.getFaceVector().isEmpty()) n++;
-            }
-            resp.getWriter().print("{\"count\":" + n + "}");
-            return;
-        }
 
         if ("find-customer".equals(action)) {
             String phone = req.getParameter("phone");
@@ -148,6 +106,67 @@ public class PosServlet extends HttpServlet {
         if ("pos-customer-detail".equals(action)) {
             resp.setContentType("application/json;charset=UTF-8");
             handleCustomerDetail(req, resp.getWriter());
+            return;
+        }
+
+        if ("list-customers".equals(action)) {
+            String q = req.getParameter("q");
+            List<Customer> list = customerDAO.findAll();
+            resp.setContentType("application/json;charset=UTF-8");
+            PrintWriter out = resp.getWriter();
+            out.print("[");
+            boolean first = true;
+            for (Customer c : list) {
+                if (q != null && !q.trim().isEmpty()) {
+                    String query = q.trim().toLowerCase();
+                    boolean matchName = c.getCustomerName() != null && c.getCustomerName().toLowerCase().contains(query);
+                    boolean matchPhone = c.getPhone() != null && c.getPhone().contains(query);
+                    if (!matchName && !matchPhone) continue;
+                }
+                if (!first) out.print(",");
+                out.printf("{\"id\":%d,\"name\":\"%s\",\"phone\":\"%s\",\"email\":\"%s\",\"address\":\"%s\"," +
+                           "\"dateOfBirth\":\"%s\",\"gender\":\"%s\",\"nationalId\":\"%s\",\"occupation\":\"%s\"," +
+                           "\"allergyHistory\":\"%s\",\"chronicDisease\":\"%s\"}",
+                        c.getCustomerId(),
+                        esc(c.getCustomerName()),
+                        esc(c.getPhone()),
+                        esc(c.getEmail()),
+                        esc(c.getAddress()),
+                        c.getDateOfBirth() != null ? c.getDateOfBirth().toString() : "",
+                        esc(c.getGender()),
+                        esc(c.getNationalId()),
+                        esc(c.getOccupation()),
+                        esc(c.getAllergyHistory()),
+                        esc(c.getChronicDisease()));
+                first = false;
+            }
+            out.print("]");
+            return;
+        }
+
+        if ("customer-detail".equals(action)) {
+            int id = parseIntOrNull(req.getParameter("id")) != null ? parseIntOrNull(req.getParameter("id")) : 0;
+            Customer c = customerDAO.findById(id);
+            resp.setContentType("application/json;charset=UTF-8");
+            PrintWriter out = resp.getWriter();
+            if (c == null) {
+                out.print("{\"ok\":false}");
+            } else {
+                out.printf("{\"ok\":true,\"id\":%d,\"name\":\"%s\",\"phone\":\"%s\",\"email\":\"%s\",\"address\":\"%s\"," +
+                           "\"dateOfBirth\":\"%s\",\"gender\":\"%s\",\"nationalId\":\"%s\",\"occupation\":\"%s\"," +
+                           "\"allergyHistory\":\"%s\",\"chronicDisease\":\"%s\"}",
+                        c.getCustomerId(),
+                        esc(c.getCustomerName()),
+                        esc(c.getPhone()),
+                        esc(c.getEmail()),
+                        esc(c.getAddress()),
+                        c.getDateOfBirth() != null ? c.getDateOfBirth().toString() : "",
+                        esc(c.getGender()),
+                        esc(c.getNationalId()),
+                        esc(c.getOccupation()),
+                        esc(c.getAllergyHistory()),
+                        esc(c.getChronicDisease()));
+            }
             return;
         }
         if ("shift-summary".equals(action)) {
@@ -282,30 +301,6 @@ public class PosServlet extends HttpServlet {
 
         String action = req.getParameter("action");
 
-        // ══ BẢO MẬT — chặn thao tác POS khi CHƯA có ai điểm danh trong session này ══
-        // /pos buộc phải public ở AuthFilter vì đây là màn kiosk dùng chung: dược sĩ nhận
-        // dạng bằng KHUÔN MẶT ngay tại quầy chứ không đăng nhập user/mật khẩu. Nhưng
-        // "public" trước đây áp cho MỌI action, nên người ngoài gọi thẳng complete-sale là
-        // trừ được tồn kho và tạo hoá đơn thật (hoá đơn ghi về POS_ACCOUNT_ID mặc định).
-        //
-        // Nay tách đôi: các action BOOTSTRAP (chọn quầy, nhận diện & điểm danh khuôn mặt)
-        // vẫn mở — vì phải chạy được TRƯỚC khi có danh tính; còn mọi action ĐỘNG TỚI TIỀN,
-        // KHO, KHÁCH HÀNG thì bắt buộc phải có nhân viên đã điểm danh trong chính session
-        // đang gọi. Không dùng "ai đang check-in ở quầy N" để cấp quyền, vì kẻ tấn công chỉ
-        // cần gửi kèm posStation=N là mượn được ca của dược sĩ thật.
-        boolean bootstrapAction = "set-station".equals(action)
-                || "identify-face".equals(action)     // nhận diện "đây là ai" — chạy TRƯỚC khi điểm danh
-                || "pos-face-checkin".equals(action)
-                || "pos-pause".equals(action)
-                || "pos-resume".equals(action)
-                || "check-qr-status".equals(action);
-        if (!bootstrapAction && !hasAnyPosIdentity(req)) {
-            resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            out.print("{\"ok\":false,\"reason\":\"not_checked_in\","
-                    + "\"msg\":\"Vui lòng điểm danh khuôn mặt tại quầy trước khi thao tác.\"}");
-            return;
-        }
-
         if ("set-station".equals(action)) {
             String stStr = req.getParameter("station");
             if (stStr != null) {
@@ -334,30 +329,133 @@ public class PosServlet extends HttpServlet {
         if ("pos-resume".equals(action))  { req.getSession(true).setAttribute("posState","ACTIVE");  out.print("{\"ok\":true}"); return; }
         if ("pos-end-shift".equals(action)) { handleEndShift(req, out); return; }
 
-        // Nhận diện 1-vs-N phía SERVER (thay cho việc đổ toàn bộ faceVector về client).
-        // Nằm ở doPost vì descriptor là mảng 128 số — quá dài cho query string.
-        if ("identify-face".equals(action)) {
-            resp.setHeader("Cache-Control", "no-store");
-            Account match = com.medicare.util.FaceVerifier.identify(
-                    req.getParameter("descriptor"), accountDAO.findAllWithFaceVector());
-            if (match == null) {
-                out.print("{\"ok\":false}");
-            } else {
-                String name = match.getFullName() != null ? match.getFullName() : match.getUsername();
-                out.printf("{\"ok\":true,\"accountId\":%d,\"name\":\"%s\"}",
-                        match.getAccountId(), esc(name));
-            }
+        if ("pos-face-checkin".equals(action)) {
+            handlePosFaceCheckin(req, resp, out);
             return;
         }
 
-        if ("pos-face-checkin".equals(action)) {
-            handlePosFaceCheckin(req, resp, out);
+        if ("pos-face-identify".equals(action)) {
+            String descriptorJson = req.getParameter("descriptor");
+            if (descriptorJson == null || descriptorJson.trim().isEmpty()) {
+                out.print("{\"ok\":false,\"reason\":\"missing_descriptor\"}");
+                return;
+            }
+            Account matched = com.medicare.util.FaceVerifier.identify(
+                    descriptorJson, accountDAO.findAllWithFaceVector());
+            if (matched == null) {
+                out.print("{\"ok\":false,\"reason\":\"no_match\"}");
+            } else if (!matched.isActive()) {
+                out.print("{\"ok\":false,\"reason\":\"staff_not_found\"}");
+            } else if (matched.isFaceReenrollPending()) {
+                out.print("{\"ok\":false,\"reason\":\"reenroll_pending\"}");
+            } else {
+                String name = matched.getFullName() != null ? matched.getFullName() : matched.getUsername();
+                out.printf("{\"ok\":true,\"accountId\":%d,\"name\":\"%s\"}", matched.getAccountId(), esc(name));
+            }
             return;
         }
 
         if ("create-qr".equals(action))       { handleCreateQr(req, out);      return; }
         if ("check-qr-status".equals(action)) { handleCheckQrStatus(req, out); return; }
         if ("cancel-qr".equals(action))       { handleCancelQr(req, out);      return; }
+
+        if ("save-customer".equals(action)) {
+            try {
+                String idStr = req.getParameter("customerId");
+                boolean isNew = idStr == null || idStr.trim().isEmpty() || "0".equals(idStr.trim());
+
+                String name    = req.getParameter("customerName");
+                String phone   = req.getParameter("phone");
+                String email   = req.getParameter("email");
+                String address = req.getParameter("address");
+                String dobStr  = req.getParameter("dateOfBirth");
+                String gender  = req.getParameter("gender");
+                String natId   = req.getParameter("nationalId");
+                String occup   = req.getParameter("occupation");
+                String allergy = req.getParameter("allergyHistory");
+                String chronic = req.getParameter("chronicDisease");
+
+                if (name == null || name.trim().isEmpty()) {
+                    out.print("{\"ok\":false,\"msg\":\"Vui lòng nhập họ tên khách hàng!\"}");
+                    return;
+                }
+
+                LocalDate dob = null;
+                if (dobStr != null && !dobStr.trim().isEmpty()) {
+                    try {
+                        dob = LocalDate.parse(dobStr.trim());
+                        if (!dob.isBefore(LocalDate.now())) {
+                            out.print("{\"ok\":false,\"msg\":\"Ngày sinh không hợp lệ!\"}");
+                            return;
+                        }
+                    } catch (Exception e) {
+                        out.print("{\"ok\":false,\"msg\":\"Ngày sinh không đúng định dạng!\"}");
+                        return;
+                    }
+                }
+
+                if (phone != null && !phone.trim().isEmpty()) {
+                    Customer existing = customerDAO.findByPhone(phone.trim());
+                    boolean phoneTaken = existing != null &&
+                            (isNew || existing.getCustomerId() != Integer.parseInt(idStr.trim()));
+                    if (phoneTaken) {
+                        out.print("{\"ok\":false,\"msg\":\"Số điện thoại này đã thuộc về khách hàng khác!\"}");
+                        return;
+                    }
+                }
+
+                Customer c = new Customer();
+                c.setCustomerName(name.trim());
+                c.setPhone(phone == null || phone.trim().isEmpty() ? null : phone.trim());
+                c.setEmail(email == null || email.trim().isEmpty() ? null : email.trim());
+                c.setAddress(address == null || address.trim().isEmpty() ? null : address.trim());
+                c.setDateOfBirth(dob);
+                c.setGender(gender == null || gender.trim().isEmpty() ? null : gender.trim());
+                c.setNationalId(natId == null || natId.trim().isEmpty() ? null : natId.trim());
+                c.setOccupation(occup == null || occup.trim().isEmpty() ? null : occup.trim());
+                c.setAllergyHistory(allergy == null || allergy.trim().isEmpty() ? null : allergy.trim());
+                c.setChronicDisease(chronic == null || chronic.trim().isEmpty() ? null : chronic.trim());
+
+                boolean ok;
+                if (isNew) {
+                    ok = customerDAO.insert(c);
+                    if (ok) {
+                        Customer created = null;
+                        if (c.getPhone() != null && !c.getPhone().isEmpty()) {
+                            created = customerDAO.findByPhone(c.getPhone());
+                        }
+                        if (created == null) {
+                            // fallback tìm theo ID lớn nhất của tên này
+                            List<Customer> all = customerDAO.findAll();
+                            if (!all.isEmpty()) {
+                                created = all.stream()
+                                    .filter(x -> x.getCustomerName().equals(c.getCustomerName()))
+                                    .max((x, y) -> Integer.compare(x.getCustomerId(), y.getCustomerId()))
+                                    .orElse(null);
+                            }
+                        }
+                        int newId = created != null ? created.getCustomerId() : 0;
+                        out.printf("{\"ok\":true,\"msg\":\"Thêm khách hàng thành công!\",\"id\":%d,\"name\":\"%s\",\"phone\":\"%s\"}",
+                                newId, esc(c.getCustomerName()), esc(c.getPhone() != null ? c.getPhone() : ""));
+                    } else {
+                        out.print("{\"ok\":false,\"msg\":\"Lỗi khi lưu vào cơ sở dữ liệu!\"}");
+                    }
+                } else {
+                    c.setCustomerId(Integer.parseInt(idStr.trim()));
+                    ok = customerDAO.update(c);
+                    if (ok) {
+                        out.printf("{\"ok\":true,\"msg\":\"Cập nhật khách hàng thành công!\",\"id\":%d,\"name\":\"%s\",\"phone\":\"%s\"}",
+                                c.getCustomerId(), esc(c.getCustomerName()), esc(c.getPhone() != null ? c.getPhone() : ""));
+                    } else {
+                        out.print("{\"ok\":false,\"msg\":\"Lỗi khi cập nhật vào cơ sở dữ liệu!\"}");
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                out.printf("{\"ok\":false,\"msg\":\"Lỗi hệ thống: %s\"}", esc(e.getMessage()));
+            }
+            return;
+        }
 
         if ("complete-sale".equals(action)) {
             String clientReqId = req.getParameter("clientRequestId");
@@ -416,46 +514,6 @@ public class PosServlet extends HttpServlet {
                 BigDecimal discount = (discStr != null && !discStr.isEmpty())
                         ? new BigDecimal(discStr) : BigDecimal.ZERO;
 
-                // Thanh toán QR (PayOS) — KHÔNG tin trạng thái "đã trả" từ client (FE có thể bỏ
-                // qua bước quét mã và gọi thẳng complete-sale). Bắt buộc kèm orderCode và xác
-                // minh lại với PayOS rằng đơn đó thực sự đã PAID trước khi lập hóa đơn.
-                if ("QR_CODE".equals(payMethod)) {
-                    String qrOrderCodeStr = req.getParameter("qrOrderCode");
-                    if (qrOrderCodeStr == null || qrOrderCodeStr.isBlank()) {
-                        if (clientReqId != null && !clientReqId.isBlank()) saleResponseCache.remove(clientReqId);
-                        out.print("{\"ok\":false,\"msg\":\"Thiếu mã đơn PayOS — vui lòng quét QR lại!\"}");
-                        return;
-                    }
-                    try {
-                        long qrOrderCode = Long.parseLong(qrOrderCodeStr.trim());
-                        String payOsStatus = com.medicare.service.PayOSService.checkStatus(qrOrderCode);
-                        if (!"PAID".equals(payOsStatus)) {
-                            if (clientReqId != null && !clientReqId.isBlank()) saleResponseCache.remove(clientReqId);
-                            out.print("{\"ok\":false,\"msg\":\"Đơn PayOS chưa thanh toán (trạng thái: "
-                                    + esc(payOsStatus) + ")\"}");
-                            return;
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        if (clientReqId != null && !clientReqId.isBlank()) saleResponseCache.remove(clientReqId);
-                        out.print("{\"ok\":false,\"msg\":\"Không xác minh được thanh toán PayOS\"}");
-                        return;
-                    }
-                }
-
-                // Đổi điểm thân thiết (1 điểm = 1đ) — chỉ áp dụng khi có khách hàng.
-                // Số điểm thực trừ luôn được chốt lại theo số dư thật trong DB (không tin
-                // số điểm client gửi lên) để tránh trừ vượt mức hoặc gian lận request.
-                Integer redeemPointsReq = parseIntOrNull(req.getParameter("redeemPoints"));
-                int redeemPoints = 0;
-                if (customerId != null && redeemPointsReq != null && redeemPointsReq > 0) {
-                    com.medicare.entity.LoyaltyCard card = new com.medicare.dao.LoyaltyDAO().findByCustomer(customerId);
-                    if (card != null) {
-                        redeemPoints = Math.min(redeemPointsReq, card.getAvailablePoints());
-                        if (redeemPoints > 0) discount = discount.add(BigDecimal.valueOf(redeemPoints));
-                    }
-                }
-
                 String[] medIdStrs = req.getParameterValues("medId[]");
                 String[] qtyStrs   = req.getParameterValues("qty[]");
 
@@ -473,26 +531,18 @@ public class PosServlet extends HttpServlet {
                 String jsonResp;
                 if (result.isOk()) {
                     Invoice inv = result.getData();
-                    // Điểm loyalty (1 điểm / 1.000đ) đã được trigger TRG_EarnLoyaltyPoints
-                    // trong DB tự cộng ngay khi UPDATE Status='COMPLETED' (InvoiceDAO.completeSaleTransaction).
-                    // Ở đây CHỈ tính lại để hiển thị trên POS — KHÔNG ghi lại, tránh cộng trùng 2 lần.
+                    // Tích điểm loyalty (1 điểm / 10.000đ) nếu hóa đơn gắn khách hàng
                     int earned = 0;
                     if (customerId != null && inv != null) {
-                        earned = (int) (inv.getFinalAmount().longValue() / com.medicare.dao.LoyaltyDAO.VND_PER_POINT);
-                    }
-                    // Trừ điểm đã dùng SAU khi hóa đơn tạo thành công, gắn InvoiceID vào lịch sử điểm
-                    if (redeemPoints > 0 && customerId != null && inv != null) {
-                        boolean redeemed = new com.medicare.dao.LoyaltyDAO().redeem(
-                                customerId, redeemPoints, "Đổi điểm trừ tiền hóa đơn " + inv.getInvoiceCode(),
-                                inv.getInvoiceId());
-                        if (!redeemed) redeemPoints = 0;
+                        earned = new com.medicare.dao.LoyaltyDAO().earnFromInvoice(
+                                customerId, inv.getInvoiceId(), inv.getFinalAmount(), accountId);
                     }
                     jsonResp = String.format(
-                            "{\"ok\":true,\"invoiceId\":%d,\"invoiceCode\":\"%s\",\"total\":%s,\"earnedPoints\":%d,\"redeemedPoints\":%d}",
+                            "{\"ok\":true,\"invoiceId\":%d,\"invoiceCode\":\"%s\",\"total\":%s,\"earnedPoints\":%d}",
                             inv != null ? inv.getInvoiceId()  : 0,
                             inv != null ? esc(inv.getInvoiceCode()) : "",
                             inv != null ? inv.getFinalAmount() : "0",
-                            earned, redeemPoints);
+                            earned);
                     // Push tồn kho mới tới tất cả medicine-list tabs qua SSE
                     com.medicare.controller.admin.InventorySSEServlet.broadcast();
                 } else {
@@ -697,61 +747,6 @@ public class PosServlet extends HttpServlet {
     }
 
     // ── Face check-in từ POS (không cần đăng nhập trước) ──────────────────────
-    /**
-     * Nhân viên đang đứng quầy TRONG CHÍNH session gọi request này — do điểm danh khuôn
-     * mặt tại POS ({@code pos-face-checkin}) hoặc do đăng nhập nhân viên đặt vào session.
-     *
-     * <p>CỐ Ý không tra "ai đang check-in ở quầy N" ở đây: đó là dữ liệu dùng chung, ai
-     * gửi kèm {@code posStation=N} cũng khớp, nên không thể dùng để CẤP QUYỀN — chỉ dùng
-     * để ghi nhận (attribution) ở bước sau.</p>
-     *
-     * @return account đang đứng quầy, hoặc null nếu session chưa điểm danh
-     */
-    private Account currentPosStaff(HttpServletRequest req) {
-        HttpSession session = req.getSession(false);
-        if (session == null) return null;
-
-        String uid = req.getParameter("uid");
-        if (uid != null && !uid.isEmpty()) {
-            Object byUid = session.getAttribute("staffAccount_" + uid);
-            if (byUid instanceof Account) return (Account) byUid;
-        }
-        Object cur = session.getAttribute("staffAccount");
-        return (cur instanceof Account) ? (Account) cur : null;
-    }
-
-    /**
-     * BẢO MẬT — dùng cho guard chặn khách vãng lai gọi thẳng action, KHÁC với
-     * {@link #currentPosStaff} (dùng để ATTRIBUTION — ghi nhận hoá đơn cho đúng ai).
-     *
-     * <p>Bug đã xảy ra thực tế: {@code currentPosStaff(req)} chỉ tìm đúng
-     * {@code staffAccount_<uid>} khi request NÀY có kèm tham số {@code uid} khớp — nhưng
-     * nhân viên đăng nhập bình thường qua staff-login (không phải face-checkin ngay tại
-     * POS) có {@code staffAccount_<uid>} trong session mà JS phía client lại không luôn
-     * gửi kèm đúng {@code uid} theo mọi request (chỉ set sau khi face-checkin TẠI POS lần
-     * này). Guard dùng hàm đó bị chặn oan người đã đăng nhập thật.</p>
-     *
-     * <p>Hàm này chỉ trả lời "có AI ĐÓ đã đăng nhập trong session này không" — quét mọi
-     * {@code staffAccount_*}, không đòi khớp đúng uid của request hiện tại. Việc CẤP QUYỀN
-     * chỉ cần biết "không phải khách vãng lai hoàn toàn ẩn danh"; việc "chính xác là ai" để
-     * dành cho currentPosStaff() ở bước ghi nhận hoá đơn (vốn đã có fallback về
-     * POS_ACCOUNT_ID nếu không xác định được — hành vi nghiệp vụ có chủ đích, giữ nguyên).</p>
-     */
-    private boolean hasAnyPosIdentity(HttpServletRequest req) {
-        HttpSession session = req.getSession(false);
-        if (session == null) return false;
-        if (session.getAttribute("adminAccount") instanceof Account) return true;
-        if (session.getAttribute("staffAccount") instanceof Account) return true;
-        java.util.Enumeration<String> names = session.getAttributeNames();
-        while (names.hasMoreElements()) {
-            String name = names.nextElement();
-            if (name.startsWith("staffAccount_") && session.getAttribute(name) instanceof Account) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private void handlePosFaceCheckin(HttpServletRequest req, HttpServletResponse resp,
                                       PrintWriter out) throws IOException {
         String accIdStr   = req.getParameter("accountId");

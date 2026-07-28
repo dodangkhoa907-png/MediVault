@@ -567,7 +567,7 @@ public class MedicineServlet extends HttpServlet {
         }
         if (!isNew) b.setBatchId(Integer.parseInt(bidStr));
 
-        Account adminAcc = (Account) req.getSession(false).getAttribute("adminAccount");
+        Account adminAcc = getAuthorizedUser(req);
         int adminId = adminAcc != null ? adminAcc.getAccountId() : 1;
         boolean forceShortExpiry = "true".equals(req.getParameter("forceShortExpiry"));
 
@@ -1073,8 +1073,7 @@ public class MedicineServlet extends HttpServlet {
         resp.setContentType("application/json;charset=UTF-8");
         PrintWriter out = resp.getWriter();
         try {
-            HttpSession session = req.getSession(false);
-            Account adminAcc = session != null ? (Account) session.getAttribute("adminAccount") : null;
+            Account adminAcc = getAuthorizedUser(req);
             if (adminAcc == null) { out.print("{\"ok\":false,\"error\":\"Chưa đăng nhập!\"}"); return; }
             String supId = req.getParameter("supplierId");
             String notes = req.getParameter("notes");
@@ -1093,5 +1092,24 @@ public class MedicineServlet extends HttpServlet {
         } catch (Exception e) {
             out.print("{\"ok\":false,\"error\":\"" + e.getMessage() + "\"}");
         }
+    }
+
+    private Account getAuthorizedUser(HttpServletRequest req) {
+        HttpSession session = req.getSession(false);
+        if (session == null) return null;
+        Account admin = (Account) session.getAttribute("adminAccount");
+        if (admin != null && (admin.getRoleId() == 1 || admin.getRoleId() == 3)) {
+            return admin;
+        }
+        String uidStr = (String) session.getAttribute("staffUid");
+        if (uidStr != null) {
+            try {
+                Account staff = (Account) session.getAttribute("staffAccount_" + uidStr);
+                if (staff != null && (staff.getRoleId() == 1 || staff.getRoleId() == 3)) {
+                    return staff;
+                }
+            } catch (Exception ignored) {}
+        }
+        return null;
     }
 }

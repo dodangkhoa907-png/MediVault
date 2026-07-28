@@ -40,9 +40,8 @@ public class ReturnsServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        HttpSession session = req.getSession(false);
-        Account adminAcc = session != null ? (Account) session.getAttribute("adminAccount") : null;
-        if (adminAcc == null || adminAcc.getRoleId() != 1) {
+        Account user = getAuthorizedUser(req);
+        if (user == null) {
             resp.sendRedirect(req.getContextPath() + "/login");
             return;
         }
@@ -62,16 +61,15 @@ public class ReturnsServlet extends HttpServlet {
             throws ServletException, IOException {
         req.setCharacterEncoding("UTF-8");
 
-        HttpSession session = req.getSession(false);
-        Account adminAcc = session != null ? (Account) session.getAttribute("adminAccount") : null;
-        if (adminAcc == null || adminAcc.getRoleId() != 1) {
+        Account user = getAuthorizedUser(req);
+        if (user == null) {
             resp.sendRedirect(req.getContextPath() + "/login");
             return;
         }
 
         String action = req.getParameter("action");
         if ("save".equals(action)) {
-            handleSave(req, resp, adminAcc);
+            handleSave(req, resp, user);
         } else {
             resp.sendRedirect(req.getContextPath() + "/returns");
         }
@@ -261,9 +259,25 @@ public class ReturnsServlet extends HttpServlet {
         r.setReason(reason.trim());
         r.setAccountId(adminAcc.getAccountId());
         r.setRestoreStock(restoreStock);
-
         int newId = returnsDAO.insert(r);
         if (newId > 0) {
+            if ("CUSTOMER_RETURN".equals(returnType) && invoiceId != null) {
+                try {
+                    Invoice inv = invoiceDAO.findById(invoiceId);
+                    if (inv != null && inv.getCustomerId() != null && inv.getCustomerId() > 0) {
+                        List<InvoiceDetail> details = detailDAO.findByInvoice(invoiceId);
+                        InvoiceDetail matched = details.stream()
+                                .filter(d -> d.getBatchId() == batchId).findFirst().orElse(null);
+                        if (matched != null) {
+                            java.math.BigDecimal returnedAmount = matched.getUnitPrice().multiply(new java.math.BigDecimal(quantity));
+                            new LoyaltyDAO().deductFromReturn(inv.getCustomerId(), invoiceId, returnedAmount, adminAcc.getAccountId());
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("[ReturnsServlet] Lỗi hoàn trả điểm tích lũy: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
             AuditHelper.log(req, "Tạo phiếu trả/hủy hàng", "Returns", newId,
                     returnType + " — SL: " + quantity + " — " + reason);
 
@@ -325,5 +339,24 @@ public class ReturnsServlet extends HttpServlet {
 
         SidebarHelper.load(req);
         req.getRequestDispatcher("/WEB-INF/views/admin/returns-form.jsp").forward(req, resp);
+    }
+
+    private Account getAuthorizedUser(HttpServletRequest req) {
+        HttpSession session = req.getSession(false);
+        if (session == null) return null;
+        Account admin = (Account) session.getAttribute("adminAccount");
+        if (admin != null && (admin.getRoleId() == 1 || admin.getRoleId() == 3)) {
+            return admin;
+        }
+        String uidStr = (String) session.getAttribute("staffUid");
+        if (uidStr != null) {
+            try {
+                Account staff = (Account) session.getAttribute("staffAccount_" + uidStr);
+                if (staff != null && (staff.getRoleId() == 1 || staff.getRoleId() == 3)) {
+                    return staff;
+                }
+            } catch (Exception ignored) {}
+        }
+        return null;
     }
 }

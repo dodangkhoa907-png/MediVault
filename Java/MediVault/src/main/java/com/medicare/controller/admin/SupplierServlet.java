@@ -20,10 +20,28 @@ public class SupplierServlet extends HttpServlet {
 
     private final SupplierDAO dao = new SupplierDAO();
 
+    private Account getAuthorizedUser(HttpServletRequest req) {
+        HttpSession session = req.getSession(false);
+        if (session == null) return null;
+        Account admin = (Account) session.getAttribute("adminAccount");
+        if (admin != null && (admin.getRoleId() == 1 || admin.getRoleId() == 3)) {
+            return admin;
+        }
+        String uidStr = (String) session.getAttribute("staffUid");
+        if (uidStr != null) {
+            try {
+                Account staff = (Account) session.getAttribute("staffAccount_" + uidStr);
+                if (staff != null && (staff.getRoleId() == 1 || staff.getRoleId() == 3)) {
+                    return staff;
+                }
+            } catch (Exception ignored) {}
+        }
+        return null;
+    }
+
     private boolean guard(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        HttpSession s = req.getSession(false);
-        Account a = s != null ? (Account) s.getAttribute("adminAccount") : null;
-        if (a == null || a.getRoleId() != 1) { resp.sendRedirect(req.getContextPath() + "/login"); return false; }
+        Account user = getAuthorizedUser(req);
+        if (user == null) { resp.sendRedirect(req.getContextPath() + "/login"); return false; }
         return true;
     }
 

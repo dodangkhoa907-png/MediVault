@@ -262,6 +262,37 @@ public class LoyaltyDAO {
         } catch (Exception e) { e.printStackTrace(); }
     }
 
+    /**
+     * Hoàn trả (trừ) điểm tích lũy khi trả hàng.
+     * @return số điểm bị trừ
+     */
+    public int deductFromReturn(int customerId, int invoiceId, java.math.BigDecimal returnedAmount,
+                                Integer staffAccountId) {
+        if (returnedAmount == null) return 0;
+        int points = (int) (returnedAmount.longValue() / VND_PER_POINT);
+        if (points <= 0) return 0;
+        LoyaltyCard card = findByCustomer(customerId);
+        if (card == null) return 0;
+
+        // Trừ điểm từ TotalPoints. Không để TotalPoints âm, tối thiểu về 0.
+        int actualDeduct = Math.min(points, card.getTotalPoints());
+        if (actualDeduct <= 0) return 0;
+
+        String sql = "UPDATE LoyaltyCards SET TotalPoints = TotalPoints - ? WHERE CardID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, actualDeduct);
+            ps.setInt(2, card.getCardId());
+            if (ps.executeUpdate() == 0) return 0;
+        } catch (Exception e) { e.printStackTrace(); return 0; }
+
+        logTransaction(card.getCardId(), invoiceId, "RETURN_DEDUCT", actualDeduct,
+                card.getAvailablePoints(), card.getAvailablePoints() - actualDeduct,
+                "Thu hồi điểm tích lũy do khách trả hàng (HĐ ID " + invoiceId + ")", staffAccountId);
+        recalcTier(card.getCardId());
+        return actualDeduct;
+    }
+
     /** Thăng hạng tự động theo tổng điểm tích lũy. */
     private void recalcTier(int cardId) {
         String sql = "UPDATE lc SET lc.TierID = t.TierID " +
