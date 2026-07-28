@@ -130,7 +130,7 @@ BEGIN
         SELECT @cardID = CardID, @oldPts = TotalPoints
         FROM LoyaltyCards WHERE CustomerID = @custID;
 
-        SET @earnPts = CAST(@amount / 10000 AS INT);
+        SET @earnPts = CAST(@amount / 1000 AS INT);
 
         IF @earnPts > 0
         BEGIN
