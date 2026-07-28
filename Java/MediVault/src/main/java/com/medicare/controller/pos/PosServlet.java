@@ -6,6 +6,7 @@ import com.medicare.entity.*;
 import com.medicare.service.SaleService;
 import com.medicare.service.ServiceResult;
 import com.medicare.service.interfaces.ISaleService;
+import com.medicare.util.ValidationUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -120,7 +121,7 @@ public class PosServlet extends HttpServlet {
         }
 
         if ("find-customer".equals(action)) {
-            String phone = req.getParameter("phone");
+            String phone = ValidationUtil.normalizePhoneVN(req.getParameter("phone"));
             Customer c = customerDAO.findByPhone(phone);
             resp.setContentType("application/json;charset=UTF-8");
             PrintWriter out = resp.getWriter();
@@ -523,17 +524,47 @@ public class PosServlet extends HttpServlet {
      */
     private void handleSearchCustomers(HttpServletRequest req, PrintWriter out) {
         String q = req.getParameter("q");
-        String kw = q != null ? q.trim().toLowerCase() : "";
+        String kw = q != null ? q.trim() : "";
+        String kwNoAccent = ValidationUtil.stripDiacritics(kw);
+        // Nếu query gõ toàn số → so khớp theo SĐT đã chuẩn hoá (bỏ dấu cách/gạch/+84)
+        // để không bỏ sót khách khi người dùng gõ/dán SĐT có định dạng khác trong DB.
+        String kwDigits = kw.replaceAll("[^0-9]", "");
+        boolean isPhoneQuery = !kwDigits.isEmpty()
+                && kw.replaceAll("[0-9+\\-\\s().]", "").isEmpty();
+
         List<Customer> all = customerDAO.findAll();
-        StringBuilder sb = new StringBuilder("[");
-        int n = 0;
-        for (Customer c : all) {
-            if (n >= 50) break;
+        // rank 0 = khớp đầu chuỗi (ưu tiên nhất), 1 = khớp chứa ở giữa, bỏ qua nếu không khớp
+        List<int[]> ranked = new java.util.ArrayList<>(); // [rank, indexInAll]
+        for (int i = 0; i < all.size(); i++) {
+            Customer c = all.get(i);
             String name  = c.getCustomerName() != null ? c.getCustomerName() : "";
             String phone = c.getPhone() != null ? c.getPhone() : "";
-            if (!kw.isEmpty()
-                    && !name.toLowerCase().contains(kw)
-                    && !phone.contains(kw)) continue;
+            String nameNoAccent = ValidationUtil.stripDiacritics(name);
+            String phoneDigits  = phone.replaceAll("[^0-9]", "");
+
+            int rank;
+            if (kwNoAccent.isEmpty()) {
+                rank = 0;
+            } else if (nameNoAccent.startsWith(kwNoAccent)
+                    || (isPhoneQuery && phoneDigits.startsWith(kwDigits))) {
+                rank = 0;
+            } else if (nameNoAccent.contains(kwNoAccent)
+                    || (isPhoneQuery && phoneDigits.contains(kwDigits))) {
+                rank = 1;
+            } else {
+                continue;
+            }
+            ranked.add(new int[]{rank, i});
+        }
+        ranked.sort((a, b) -> a[0] != b[0] ? a[0] - b[0] : a[1] - b[1]);
+
+        StringBuilder sb = new StringBuilder("[");
+        int n = 0;
+        for (int[] r : ranked) {
+            if (n >= 50) break;
+            Customer c = all.get(r[1]);
+            String name  = c.getCustomerName() != null ? c.getCustomerName() : "";
+            String phone = c.getPhone() != null ? c.getPhone() : "";
             if (n > 0) sb.append(",");
             sb.append("{\"id\":").append(c.getCustomerId())
               .append(",\"name\":\"").append(esc(name)).append("\"")

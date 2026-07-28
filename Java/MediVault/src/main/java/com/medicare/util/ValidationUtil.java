@@ -49,6 +49,34 @@ public class ValidationUtil {
         return phone != null && PHONE.matcher(phone.trim()).matches();
     }
 
+    /**
+     * Chuẩn hoá SĐT VN về dạng "0xxxxxxxxx" (10 số) bất kể người dùng gõ/dán
+     * theo định dạng nào — bỏ khoảng trắng/dấu gạch/ngoặc, đổi tiền tố quốc tế
+     * "+84"/"84" thành "0". Dùng trước khi so khớp với DB để tránh bỏ sót
+     * khách hàng đã tồn tại (và vô tình tạo trùng) chỉ vì lệch định dạng.
+     * Trả về chuỗi rỗng nếu không rút ra được số hợp lệ.
+     */
+    public static String normalizePhoneVN(String phone) {
+        if (phone == null) return "";
+        String digits = phone.trim().replaceAll("[^0-9]", "");
+        if (digits.startsWith("84") && digits.length() == 11) {
+            digits = "0" + digits.substring(2);
+        }
+        return digits;
+    }
+
+    // Bảng đổi ký tự có dấu tiếng Việt → không dấu, dùng cho tìm kiếm không phân biệt dấu.
+    private static final java.util.regex.Pattern DIACRITICS =
+            java.util.regex.Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+
+    /** Bỏ dấu tiếng Việt + hạ chữ thường — dùng để so khớp tìm kiếm không phân biệt dấu. */
+    public static String stripDiacritics(String s) {
+        if (s == null) return "";
+        String norm = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD);
+        norm = DIACRITICS.matcher(norm).replaceAll("");
+        return norm.replace('đ', 'd').replace('Đ', 'D').toLowerCase();
+    }
+
     /** Kiểm tra username hợp lệ */
     public static boolean isValidUsername(String username) {
         return username != null && USERNAME.matcher(username.trim()).matches();

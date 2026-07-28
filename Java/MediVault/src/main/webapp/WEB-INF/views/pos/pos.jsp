@@ -1828,7 +1828,11 @@ function refreshAllergyWarnings() {
 }
 
 function searchCustomer() {
-  const phone = document.getElementById('custPhone').value.trim();
+  const raw = document.getElementById('custPhone').value.trim();
+  // Chuẩn hoá về số thuần (bỏ khoảng trắng/gạch/+84) trước khi tìm — tránh gõ/dán
+  // SĐT có định dạng khác khiến không khớp được khách đã tồn tại (tạo trùng oan).
+  let phone = raw.replace(/\D/g, '');
+  if (phone.startsWith('84') && phone.length === 11) phone = '0' + phone.slice(2);
   if (phone.length < 9) return;
   fetch(ctx + '/pos?action=find-customer&phone=' + encodeURIComponent(phone))
     .then(r => r.json()).then(data => {
