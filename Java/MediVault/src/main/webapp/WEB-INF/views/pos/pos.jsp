@@ -1726,8 +1726,16 @@ function fetchCustSuggest() {
   custSuggestTimer = setTimeout(async () => {
     try {
       const res = await fetch(ctx + '/pos?action=search-customers&q=' + encodeURIComponent(q));
-      const list = await res.json();
-      renderCustSuggest(list.slice(0, 8), q);
+      const data = await res.json();
+      // Chưa điểm danh khuôn mặt → server trả object lỗi (không phải mảng khách hàng) —
+      // phải báo rõ, không được coi là "không có khách nào khớp".
+      if (!Array.isArray(data)) {
+        const box = document.getElementById('custSuggest');
+        box.innerHTML = '<div class="cs-empty">⚠️ ' + escHtml(data.msg || 'Chưa điểm danh — không thể tra cứu khách hàng.') + '</div>';
+        box.style.display = 'block';
+        return;
+      }
+      renderCustSuggest(data.slice(0, 8), q);
     } catch (e) { hideCustSuggest(); }
   }, 200);
 }
@@ -1836,6 +1844,13 @@ function searchCustomer() {
   if (phone.length < 9) return;
   fetch(ctx + '/pos?action=find-customer&phone=' + encodeURIComponent(phone))
     .then(r => r.json()).then(data => {
+      if (data.reason === 'not_checked_in') {
+        // CHƯA điểm danh khuôn mặt → server từ chối tra cứu (403), KHÔNG phải khách
+        // không tồn tại. Phải báo rõ ràng, tuyệt đối không rơi xuống nhánh "tạo mới"
+        // bên dưới — nếu không nhân viên sẽ tạo trùng tài khoản cho khách đã có sẵn.
+        showToast('⚠️ Vui lòng điểm danh khuôn mặt tại quầy trước khi tra cứu khách hàng!', 'err');
+        return;
+      }
       if (data.found) {
         hideCustSuggest();
         applyCustomer(data);
@@ -2151,12 +2166,23 @@ function submitSale(qrOrderCode) {
     body: fd,
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' }
   })
-    .then(r => {
-      if (!r.ok && r.status !== 200) throw new Error('HTTP ' + r.status);
-      return r.json();
+    .then(async r => {
+      // Đọc JSON trước khi xét status — 403 (CSRF/hết phiên) vẫn trả JSON có
+      // thông tin thật, không được vứt bỏ để rơi vào catch() rồi báo nhầm
+      // "mất kết nối" (server vẫn sống, chỉ là phiên làm việc đã hết hạn).
+      let data;
+      try { data = await r.json(); }
+      catch (e) { throw new Error('HTTP ' + r.status); } // thật sự không phải JSON (server lỗi/mạng)
+      if (!r.ok && data.error !== 'csrf') throw new Error('HTTP ' + r.status);
+      return data;
     })
     .then(data => {
-      if (data.ok) {
+      if (data.error === 'csrf') {
+        showToast('⚠️ Phiên làm việc đã hết hạn — đang tải lại trang…', 'err');
+        btn.disabled = false; btn.innerHTML = '🛒 THANH TOÁN';
+        _saleInFlight = false;
+        setTimeout(() => location.reload(), 1500);
+      } else if (data.ok) {
         // Tổng in trên hóa đơn LẤY THEO SERVER (data.total = FinalAmount đã kẹp [0, subtotal]),
         // không dùng số client tự tính — nếu server đã chặn giảm giá quá tay thì hóa đơn/tiền
         // thối phải phản ánh đúng con số thật đã ghi vào DB.
