@@ -33,6 +33,9 @@ public class PosServlet extends HttpServlet {
     private final IAccountDAO    accountDAO    = new AccountDAO();
     private final IAttendanceDAO attendanceDAO = new AttendanceDAO();
     private final IShiftScheduleDAO scheduleDAO = new ShiftScheduleDAO();
+    private final IInvoiceDAO       invoiceDAO       = new InvoiceDAO();
+    private final IInvoiceDetailDAO invoiceDetailDAO = new InvoiceDetailDAO();
+    private final IReturnsDAO       returnsDAO       = new ReturnsDAO();
 
     private static final int POS_ACCOUNT_ID = 1;
 
@@ -57,12 +60,22 @@ public class PosServlet extends HttpServlet {
         // điểm tích luỹ) và số liệu doanh thu ca. /pos là public nên trước đây ai cũng
         // đọc được — ví dụ dò SĐT bất kỳ qua find-customer. Danh mục thuốc & nhận diện
         // khuôn mặt vẫn để mở vì cần render được màn kiosk TRƯỚC khi có ai điểm danh.
-        boolean needsStaff = "find-customer".equals(action)
+        //
+        // TẠM TẮT (2026-07-29, theo yêu cầu): chức năng điểm danh khuôn mặt hiện đang
+        // cản trở việc tra cứu/xem khách hàng trong lúc bán hàng, mà bản thân điểm danh
+        // khuôn mặt cũng chưa cần thiết ở giai đoạn này — để dành xử lý cùng lúc với khi
+        // hoàn thiện tính năng điểm danh khuôn mặt. Đổi hằng số dưới thành false để bật
+        // lại yêu cầu điểm danh cho các endpoint này.
+        boolean requireCheckinForCustomerLookup = false;
+        boolean needsStaff = requireCheckinForCustomerLookup && (
+                "find-customer".equals(action)
                 || "nfc-lookup".equals(action)
                 || "search-customers".equals(action)
                 || "pos-customer-detail".equals(action)
                 || "shift-summary".equals(action)
-                || "my-invoices".equals(action);
+                || "my-invoices".equals(action)
+                || "invoice-history".equals(action)
+                || "invoice-detail-pos".equals(action));
         if (needsStaff && !hasAnyPosIdentity(req)) {
             resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
             resp.setContentType("application/json;charset=UTF-8");
@@ -162,6 +175,24 @@ public class PosServlet extends HttpServlet {
             resp.setContentType("application/json;charset=UTF-8");
             PrintWriter out = resp.getWriter();
             handleMyInvoices(req, out);
+            return;
+        }
+
+        // Lịch sử hóa đơn (toàn quầy, không giới hạn ca/nhân viên hiện tại) — dùng cho
+        // màn "Lịch sử hóa đơn" trong POS: tìm theo SĐT khách, mã hóa đơn hoặc tên khách.
+        if ("invoice-history".equals(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            PrintWriter out = resp.getWriter();
+            handleInvoiceHistory(req, out);
+            return;
+        }
+
+        // Chi tiết 1 hóa đơn cho màn Trả hàng trong POS: các dòng hàng + số lượng
+        // đã trả trước đó + số lượng còn có thể trả.
+        if ("invoice-detail-pos".equals(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            PrintWriter out = resp.getWriter();
+            handleInvoiceDetailPos(req, out);
             return;
         }
 
@@ -294,12 +325,18 @@ public class PosServlet extends HttpServlet {
         // KHO, KHÁCH HÀNG thì bắt buộc phải có nhân viên đã điểm danh trong chính session
         // đang gọi. Không dùng "ai đang check-in ở quầy N" để cấp quyền, vì kẻ tấn công chỉ
         // cần gửi kèm posStation=N là mượn được ca của dược sĩ thật.
+        // complete-sale: theo yêu cầu hiện tại CHƯA bắt buộc điểm danh mới được bán —
+        // hóa đơn không xác định được nhân viên vẫn ghi về POS_ACCOUNT_ID mặc định (logic
+        // fallback đã có sẵn bên dưới). Nếu sau này cần siết lại để tránh người ngoài gọi
+        // thẳng complete-sale trừ kho/tạo hoá đơn khống, bỏ dòng "complete-sale" ra khỏi
+        // danh sách bootstrapAction này.
         boolean bootstrapAction = "set-station".equals(action)
                 || "identify-face".equals(action)     // nhận diện "đây là ai" — chạy TRƯỚC khi điểm danh
                 || "pos-face-checkin".equals(action)
                 || "pos-pause".equals(action)
                 || "pos-resume".equals(action)
-                || "check-qr-status".equals(action);
+                || "check-qr-status".equals(action)
+                || "complete-sale".equals(action);
         if (!bootstrapAction && !hasAnyPosIdentity(req)) {
             resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
             out.print("{\"ok\":false,\"reason\":\"not_checked_in\","
@@ -329,6 +366,7 @@ public class PosServlet extends HttpServlet {
 
         if ("quick-create-customer".equals(action)) { handleQuickCreateCustomer(req, out); return; }
         if ("link-nfc".equals(action))              { handleLinkNfc(req, out); return; }
+        if ("pos-return-save".equals(action))       { handlePosReturnSave(req, out); return; }
 
         if ("open-shift".equals(action))  { handleOpenShift(req, out); return; }
         if ("pos-pause".equals(action))   { req.getSession(true).setAttribute("posState","PAUSED");  out.print("{\"ok\":true}"); return; }
@@ -556,7 +594,18 @@ public class PosServlet extends HttpServlet {
             }
             ranked.add(new int[]{rank, i});
         }
-        ranked.sort((a, b) -> a[0] != b[0] ? a[0] - b[0] : a[1] - b[1]);
+        // Cùng rank → ưu tiên khách có giao dịch/tạo gần đây nhất (thường là khách hay
+        // quay lại quầy), thay vì thứ tự alphabet mặc định của findAll() — giúp gõ ít
+        // ký tự vẫn nhanh thấy đúng khách quen thay vì phải gõ hết tên/SĐT.
+        ranked.sort((a, b) -> {
+            if (a[0] != b[0]) return a[0] - b[0];
+            java.time.LocalDateTime ta = all.get(a[1]).getCreatedAt();
+            java.time.LocalDateTime tb = all.get(b[1]).getCreatedAt();
+            if (ta == null && tb == null) return a[1] - b[1];
+            if (ta == null) return 1;
+            if (tb == null) return -1;
+            return tb.compareTo(ta);
+        });
 
         StringBuilder sb = new StringBuilder("[");
         int n = 0;
@@ -1083,6 +1132,203 @@ public class PosServlet extends HttpServlet {
         out.print("{\"ok\":true,\"staffName\":\"" + esc(name) + "\",\"count\":" + count
                 + ",\"totalRevenue\":" + total.toPlainString()
                 + ",\"invoices\":[" + sb + "]}");
+    }
+
+    /**
+     * Lịch sử hóa đơn (toàn quầy) cho màn "Lịch sử hóa đơn" trong POS — tìm theo mã hóa
+     * đơn, SĐT hoặc tên khách (InvoiceDAO.findFiltered đã hỗ trợ khớp cả 3). Chỉ hóa đơn
+     * COMPLETED — hóa đơn PENDING/CANCELLED không có gì để trả.
+     */
+    private void handleInvoiceHistory(HttpServletRequest req, PrintWriter out) {
+        String q = req.getParameter("q");
+        String keyword = (q != null && !q.trim().isEmpty()) ? q.trim() : null;
+        int page = 1;
+        try {
+            int p = Integer.parseInt(req.getParameter("page"));
+            if (p > 0) page = p;
+        } catch (Exception ignored) {}
+        int pageSize = 15;
+
+        List<Invoice> list = invoiceDAO.findFiltered(null, null, "COMPLETED", null, null, keyword, page, pageSize);
+        int total = invoiceDAO.countFiltered(null, null, "COMPLETED", null, null, keyword);
+
+        Map<Integer, Customer> custMap = new HashMap<>();
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < list.size(); i++) {
+            Invoice inv = list.get(i);
+            Customer c = inv.getCustomerId() != null
+                    ? custMap.computeIfAbsent(inv.getCustomerId(), customerDAO::findById) : null;
+            if (i > 0) sb.append(",");
+            sb.append("{\"id\":").append(inv.getInvoiceId())
+              .append(",\"code\":\"").append(esc(inv.getInvoiceCode())).append("\"")
+              .append(",\"time\":\"").append(inv.getCreatedAt() != null
+                      ? inv.getCreatedAt().toString().replace("T", " ") : "").append("\"")
+              .append(",\"amount\":").append(inv.getFinalAmount() != null ? inv.getFinalAmount().toPlainString() : "0")
+              .append(",\"method\":\"").append(esc(inv.getPaymentMethod())).append("\"")
+              .append(",\"custName\":\"").append(esc(c != null ? c.getCustomerName() : "")).append("\"")
+              .append(",\"custPhone\":\"").append(esc(c != null ? c.getPhone() : "")).append("\"")
+              .append("}");
+        }
+        sb.append("]");
+        out.print("{\"ok\":true,\"total\":" + total + ",\"page\":" + page + ",\"invoices\":" + sb + "}");
+    }
+
+    /**
+     * Chi tiết 1 hóa đơn cho màn Trả hàng trong POS: từng dòng hàng kèm số lượng đã bán,
+     * đã trả trước đó (nhiều đợt) và số lượng còn có thể trả — FE dùng để giới hạn input
+     * và tính trước tiền hoàn / điểm bị trừ trước khi nhân viên bấm xác nhận.
+     */
+    private void handleInvoiceDetailPos(HttpServletRequest req, PrintWriter out) {
+        Integer invoiceId = parseIntOrNull(req.getParameter("invoiceId"));
+        Invoice inv = invoiceId != null ? invoiceDAO.findById(invoiceId) : null;
+        if (inv == null) { out.print("{\"ok\":false,\"reason\":\"not_found\"}"); return; }
+        if (!"COMPLETED".equals(inv.getStatus())) {
+            out.print("{\"ok\":false,\"reason\":\"not_completed\"}"); return;
+        }
+
+        Customer c = inv.getCustomerId() != null ? customerDAO.findById(inv.getCustomerId()) : null;
+        com.medicare.entity.LoyaltyCard card = c != null
+                ? new com.medicare.dao.LoyaltyDAO().findByCustomer(c.getCustomerId()) : null;
+
+        List<InvoiceDetail> details = invoiceDetailDAO.findByInvoice(inv.getInvoiceId());
+        StringBuilder items = new StringBuilder("[");
+        for (int i = 0; i < details.size(); i++) {
+            InvoiceDetail d = details.get(i);
+            int already = returnsDAO.sumReturnedQty(inv.getInvoiceId(), d.getBatchId());
+            int returnable = Math.max(0, d.getQuantity() - already);
+            if (i > 0) items.append(",");
+            items.append("{\"batchId\":").append(d.getBatchId())
+                 .append(",\"medicineName\":\"").append(esc(d.getMedicineName())).append("\"")
+                 .append(",\"unit\":\"").append(esc(d.getUnit())).append("\"")
+                 .append(",\"batchNumber\":\"").append(esc(d.getBatchNumber())).append("\"")
+                 .append(",\"quantity\":").append(d.getQuantity())
+                 .append(",\"already\":").append(already)
+                 .append(",\"returnable\":").append(returnable)
+                 .append(",\"unitPrice\":").append(d.getUnitPrice() != null ? d.getUnitPrice().toPlainString() : "0")
+                 .append("}");
+        }
+        items.append("]");
+
+        out.print("{\"ok\":true"
+                + ",\"invoiceId\":" + inv.getInvoiceId()
+                + ",\"code\":\"" + esc(inv.getInvoiceCode()) + "\""
+                + ",\"time\":\"" + (inv.getCreatedAt() != null ? inv.getCreatedAt().toString().replace("T", " ") : "") + "\""
+                + ",\"amount\":" + (inv.getFinalAmount() != null ? inv.getFinalAmount().toPlainString() : "0")
+                + ",\"method\":\"" + esc(inv.getPaymentMethod()) + "\""
+                + ",\"custId\":" + (c != null ? c.getCustomerId() : 0)
+                + ",\"custName\":\"" + esc(c != null ? c.getCustomerName() : "") + "\""
+                + ",\"custPhone\":\"" + esc(c != null ? c.getPhone() : "") + "\""
+                + ",\"custPoints\":" + (card != null ? card.getAvailablePoints() : 0)
+                + ",\"items\":" + items + "}");
+    }
+
+    /**
+     * Trả hàng ngay tại POS (khách mang thuốc đến quầy) — tương đương nghiệp vụ của
+     * admin ReturnsServlet nhưng cho phép NHÂN VIÊN QUẦY thao tác trực tiếp, nhiều dòng
+     * hàng trong 1 lần xác nhận. Mỗi dòng hàng insert 1 bản ghi Returns (trigger
+     * TRG_ProcessReturn tự cộng lại Batches.CurrentQuantity nếu RestoreStock=1); sau khi
+     * insert xong mới gọi LoyaltyDAO.adjustForReturn 1 LẦN với TỔNG giá trị trả để trừ
+     * điểm tích lũy / hoàn điểm đã đổi — tránh gọi lặp làm sai lệch số điểm.
+     *
+     * Validate TOÀN BỘ các dòng trước khi insert bất kỳ dòng nào — không trả "nửa vời"
+     * khi có 1 dòng vượt số lượng có thể trả.
+     */
+    private void handlePosReturnSave(HttpServletRequest req, PrintWriter out) {
+        Integer invoiceId = parseIntOrNull(req.getParameter("invoiceId"));
+        String reason = req.getParameter("reason");
+        boolean restoreStock = "on".equals(req.getParameter("restoreStock"))
+                || "true".equals(req.getParameter("restoreStock"));
+
+        if (invoiceId == null) { out.print("{\"ok\":false,\"msg\":\"Thiếu hóa đơn!\"}"); return; }
+        if (reason == null || reason.trim().length() < 3) {
+            out.print("{\"ok\":false,\"msg\":\"Vui lòng nhập lý do trả hàng (tối thiểu 3 ký tự)!\"}"); return;
+        }
+        Invoice inv = invoiceDAO.findById(invoiceId);
+        if (inv == null || !"COMPLETED".equals(inv.getStatus())) {
+            out.print("{\"ok\":false,\"msg\":\"Hóa đơn không hợp lệ hoặc chưa hoàn tất!\"}"); return;
+        }
+
+        String[] batchIdStrs = req.getParameterValues("batchId[]");
+        String[] qtyStrs     = req.getParameterValues("qty[]");
+        if (batchIdStrs == null || qtyStrs == null || batchIdStrs.length != qtyStrs.length) {
+            out.print("{\"ok\":false,\"msg\":\"Dữ liệu trả hàng không hợp lệ!\"}"); return;
+        }
+
+        List<InvoiceDetail> details = invoiceDetailDAO.findByInvoice(invoiceId);
+        Map<Integer, InvoiceDetail> byBatch = new HashMap<>();
+        for (InvoiceDetail d : details) byBatch.put(d.getBatchId(), d);
+
+        List<int[]> toReturn = new java.util.ArrayList<>(); // [batchId, qty]
+        for (int i = 0; i < batchIdStrs.length; i++) {
+            int batchId, qty;
+            try {
+                batchId = Integer.parseInt(batchIdStrs[i]);
+                qty     = Integer.parseInt(qtyStrs[i]);
+            } catch (Exception e) { continue; }
+            if (qty <= 0) continue;
+
+            InvoiceDetail matched = byBatch.get(batchId);
+            if (matched == null) {
+                out.print("{\"ok\":false,\"msg\":\"Lô hàng không thuộc hóa đơn này!\"}"); return;
+            }
+            int already = returnsDAO.sumReturnedQty(invoiceId, batchId);
+            int maxReturnable = matched.getQuantity() - already;
+            if (qty > maxReturnable) {
+                out.printf("{\"ok\":false,\"msg\":\"%s: số lượng trả (%d) vượt quá số có thể trả (%d)!\"}",
+                        esc(matched.getMedicineName()), qty, maxReturnable);
+                return;
+            }
+            toReturn.add(new int[]{batchId, qty});
+        }
+        if (toReturn.isEmpty()) {
+            out.print("{\"ok\":false,\"msg\":\"Vui lòng nhập số lượng cần trả!\"}"); return;
+        }
+
+        Account staff = currentPosStaff(req);
+        int staffAccountId = staff != null ? staff.getAccountId() : POS_ACCOUNT_ID;
+
+        BigDecimal totalRefund = BigDecimal.ZERO;
+        int createdCount = 0;
+        for (int[] line : toReturn) {
+            int batchId = line[0], qty = line[1];
+            InvoiceDetail matched = byBatch.get(batchId);
+
+            Returns r = new Returns();
+            r.setReturnType("CUSTOMER_RETURN");
+            r.setBatchId(batchId);
+            r.setInvoiceId(invoiceId);
+            r.setQuantity(qty);
+            r.setReason(reason.trim());
+            r.setAccountId(staffAccountId);
+            r.setRestoreStock(restoreStock);
+
+            int newId = returnsDAO.insert(r);
+            if (newId > 0) {
+                createdCount++;
+                if (matched.getUnitPrice() != null) {
+                    totalRefund = totalRefund.add(matched.getUnitPrice().multiply(BigDecimal.valueOf(qty)));
+                }
+                com.medicare.util.AuditHelper.log(req, "Trả hàng (POS)", "Returns", newId,
+                        "HĐ " + inv.getInvoiceCode() + " — SL: " + qty + " — " + reason.trim());
+            }
+        }
+
+        if (createdCount == 0) {
+            out.print("{\"ok\":false,\"msg\":\"Không tạo được phiếu trả hàng, vui lòng thử lại!\"}"); return;
+        }
+
+        int pointsAdjusted = 0;
+        if (inv.getCustomerId() != null && totalRefund.compareTo(BigDecimal.ZERO) > 0) {
+            com.medicare.dao.LoyaltyDAO loyaltyDAO = new com.medicare.dao.LoyaltyDAO();
+            loyaltyDAO.adjustForReturn(inv.getCustomerId(), invoiceId, totalRefund, staffAccountId);
+            pointsAdjusted = (int) (totalRefund.longValue() / com.medicare.dao.LoyaltyDAO.VND_PER_POINT);
+        }
+
+        // Push tồn kho mới nếu có nhập lại kho
+        if (restoreStock) com.medicare.controller.admin.InventorySSEServlet.broadcast();
+
+        out.printf("{\"ok\":true,\"refundAmount\":%s,\"pointsAdjusted\":%d,\"lines\":%d}",
+                totalRefund.toPlainString(), pointsAdjusted, createdCount);
     }
 
     private void handleShiftSummary(HttpServletRequest req, PrintWriter out) {
