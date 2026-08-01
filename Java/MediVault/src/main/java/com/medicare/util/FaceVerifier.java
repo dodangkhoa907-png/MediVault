@@ -72,25 +72,18 @@ public final class FaceVerifier {
     }
 
     /**
-     * Nhận diện 1-vs-N: khuôn mặt này là AI? Trả về account khớp, hoặc null nếu
-     * không đủ tin cậy để kết luận.
-     *
-     * <p>Dùng cho màn POS check-in, THAY CHO việc đổ toàn bộ faceVector của mọi
-     * nhân viên về trình duyệt để client tự so khớp — cách cũ làm rò rỉ dữ liệu
-     * sinh trắc học của cả công ty cho bất kỳ ai gọi được endpoint đó.</p>
-     *
-     * <p>Áp dụng ĐÚNG bộ ngưỡng chặt của {@link #verify}: phải đủ gần
-     * ({@link #MATCH_THRESHOLD}) VÀ phải cách biệt rõ so với người gần nhì
-     * ({@link #AMBIGUITY_MARGIN}) — nếu 2 người quá sát nhau thì từ chối đoán,
-     * để phía sau {@code verify()} không bị đưa vào thế nhận nhầm người.</p>
+     * Identify a descriptor against all enrolled accounts (1-vs-N).
+     * Returns the matching Account if threshold and ambiguity checks pass, otherwise null.
      */
     public static Account identify(String descriptorJson, List<Account> allEnrolled) {
         double[] incoming = parseDescriptor(descriptorJson);
-        if (incoming == null || incoming.length != 128) return null;
+        if (descriptorJson == null || descriptorJson.trim().isEmpty() || incoming == null || incoming.length != 128) {
+            return null;
+        }
 
-        Account best = null;
-        double bestDist   = Double.MAX_VALUE;  // gần nhất
-        double secondDist = Double.MAX_VALUE;  // gần nhì
+        Account bestMatch = null;
+        double bestDist = Double.MAX_VALUE;
+        double secondDist = Double.MAX_VALUE;
 
         for (Account acc : allEnrolled) {
             double[] stored = parseDescriptor(acc.getFaceVector());
@@ -98,16 +91,20 @@ public final class FaceVerifier {
             double dist = euclideanDistance(stored, incoming);
             if (dist < bestDist) {
                 secondDist = bestDist;
-                bestDist   = dist;
-                best       = acc;
+                bestDist = dist;
+                bestMatch = acc;
             } else if (dist < secondDist) {
                 secondDist = dist;
             }
         }
 
-        if (best == null || bestDist > MATCH_THRESHOLD) return null;
-        if (secondDist - bestDist < AMBIGUITY_MARGIN && secondDist <= MATCH_THRESHOLD) return null;
-        return best;
+        if (bestMatch == null) return null;
+        if (bestDist > MATCH_THRESHOLD) return null;
+        // Check margin against second closest match
+        if (secondDist - bestDist < AMBIGUITY_MARGIN && secondDist <= MATCH_THRESHOLD) {
+            return null; // Ambiguous
+        }
+        return bestMatch;
     }
 
     /**

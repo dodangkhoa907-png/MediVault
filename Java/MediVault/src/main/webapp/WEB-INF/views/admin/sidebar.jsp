@@ -44,16 +44,89 @@
     int expiry = (_exc != null) ? _exc : 0;
     Integer _twc = (Integer) request.getAttribute("taskWatchdogCount");
     int taskWatchdog = (_twc != null) ? _twc : 0;
+
+    com.medicare.entity.Account currentUser = (com.medicare.entity.Account) session.getAttribute("adminAccount");
+    if (currentUser == null) {
+        java.util.Enumeration<String> sessionNames = session.getAttributeNames();
+        while (sessionNames.hasMoreElements()) {
+            String name = sessionNames.nextElement();
+            if (name.startsWith("staffAccount_")) {
+                Object val = session.getAttribute(name);
+                if (val instanceof com.medicare.entity.Account) {
+                    currentUser = (com.medicare.entity.Account) val;
+                    break;
+                }
+            }
+        }
+    }
+    boolean isStorekeeper = (currentUser != null && currentUser.getRoleId() == 3);
+    String uidParam = isStorekeeper ? "?uid=" + currentUser.getAccountId() : "";
+    String uidAmp = isStorekeeper ? "&uid=" + currentUser.getAccountId() : "";
 %>
 <aside class="sidebar">
   <div class="sidebar-logo">
     <div style="width:36px;height:36px;border-radius:9px;overflow:hidden;flex-shrink:0;background:#fff"><img src="${pageContext.request.contextPath}/images/NEW_LOGO.png" alt="MediCare" style="width:100%;height:100%;object-fit:cover;object-position:center 15%;display:block"></div>
     <div>
       <div class="logo-text">Medi<span>Care</span></div>
-      <div class="logo-sub">Admin Console</div>
+      <div class="logo-sub"><%= isStorekeeper ? "Storekeeper" : "Admin Console" %></div>
     </div>
   </div>
 
+  <% if (isStorekeeper) { %>
+  <nav class="nav-section">
+    <div class="nav-label">Tổng quan</div>
+    <a href="${pageContext.request.contextPath}/staff-dashboard<%= uidParam %>"
+       class="nav-item <%= "dashboard".equals(activeNav) ? "active" : "" %>">
+      <span class="nav-icon">🏠</span> Trang chủ
+    </a>
+  </nav>
+
+  <nav class="nav-section">
+    <div class="nav-label">Kho hàng</div>
+    <a href="${pageContext.request.contextPath}/medicines<%= uidParam %>"
+       class="nav-item <%= ("medicines".equals(activeNav) || "purchase-orders".equals(activeNav)) ? "active" : "" %>">
+      <span class="nav-icon">💊</span> Quản lý kho
+      <% if (expiry > 0) { %>
+      <span class="nav-badge"><%= expiry %></span>
+      <% } %>
+    </a>
+    <a href="${pageContext.request.contextPath}/purchase-orders<%= uidParam %>"
+       class="nav-item <%= "purchase-orders".equals(activeNav) ? "active" : "" %>">
+      <span class="nav-icon">📦</span> Phiếu nhập kho
+    </a>
+    <a href="${pageContext.request.contextPath}/returns<%= uidParam %>"
+       class="nav-item <%= "returns".equals(activeNav) ? "active" : "" %>">
+      <span class="nav-icon">📤</span> Đơn trả/hủy hàng
+    </a>
+  </nav>
+
+  <nav class="nav-section">
+    <div class="nav-label">Cá nhân</div>
+    <a href="${pageContext.request.contextPath}/staff-profile<%= uidParam %>"
+       class="nav-item <%= "profile".equals(activeNav) ? "active" : "" %>">
+      <span class="nav-icon">👤</span> Hồ sơ của tôi
+    </a>
+    <a href="${pageContext.request.contextPath}/staff-checkin<%= uidParam %>"
+       class="nav-item <%= "checkin".equals(activeNav) ? "active" : "" %>">
+      <span class="nav-icon">✅</span> Điểm danh
+    </a>
+    <a href="${pageContext.request.contextPath}/staff-my-shifts<%= uidParam %>"
+       class="nav-item <%= "shifts".equals(activeNav) ? "active" : "" %>">
+      <span class="nav-icon">🕐</span> Ca làm việc
+    </a>
+    <a href="${pageContext.request.contextPath}/leave-requests?action=my<%= uidAmp %>"
+       class="nav-item <%= "leave".equals(activeNav) ? "active" : "" %>">
+      <span class="nav-icon">🏖️</span> Xin nghỉ phép
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <a href="${pageContext.request.contextPath}/logout?from=staff<%= uidAmp %>" class="logout-btn-full">
+      <span style="font-size:15px;line-height:1">⏻</span>
+      <span>Đăng xuất</span>
+    </a>
+  </div>
+  <% } else { %>
   <nav class="nav-section">
     <div class="nav-label">Tổng quan</div>
     <a href="${pageContext.request.contextPath}/dashboard"
@@ -125,6 +198,8 @@
       <span>Đăng xuất</span>
     </a>
   </div>
+  <% } %>
+</aside>
 </aside>
 <%-- ══ CSS SIDEBAR CHUẨN — đặt trong body nên GHI ĐÈ style riêng của từng trang
      (thắng theo thứ tự nguồn), đảm bảo sidebar ĐỒNG NHẤT trên MỌI tab. ══ --%>

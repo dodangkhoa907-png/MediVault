@@ -161,13 +161,24 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:40px 16p
     <div class="action-row">
       <c:if test="${schedule.status == 'SCHEDULED' or schedule.status == 'LEAVE_PENDING'}">
         <a href="${pageContext.request.contextPath}/shift-schedules?action=edit&id=${schedule.scheduleId}" class="btn-act btn-edit">✏️ Sửa</a>
-        <a href="${pageContext.request.contextPath}/shift-schedules?action=cancel&id=${schedule.scheduleId}"
-           class="btn-act btn-cancel" onclick="return confirm('Hủy lịch ca này?')">🗑 Hủy ca</a>
+        <a href="#" class="btn-act btn-cancel" onclick="return cancelSchedule(${schedule.scheduleId})">🗑 Hủy ca</a>
       </c:if>
       <a href="${pageContext.request.contextPath}/shifts" class="btn-act btn-list">← Danh sách</a>
     </div>
   </div>
 </div>
+
+<script>
+function cancelSchedule(id) {
+    if (!confirm('Hủy lịch ca này?')) return false;
+    const f = document.createElement('form');
+    f.method = 'post';
+    f.action = '${pageContext.request.contextPath}/shift-schedules';
+    f.innerHTML = '<input name="action" value="cancel"><input name="id" value="' + id + '">';
+    document.body.appendChild(f); f.submit();
+    return false;
+}
+</script>
 
 <% if ("updated".equals(msg)) { %><div class="toast toast-ok">✅ Đã cập nhật lịch ca!</div><% }
    else if ("error".equals(msg)) { %><div class="toast toast-err">❌ Có lỗi xảy ra!</div><% }

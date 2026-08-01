@@ -489,6 +489,7 @@ select,option{font-family:inherit;font-size:inherit}
                      value="${keyword}" id="searchInput" autocomplete="off"/>
               <button type="button" id="searchClear" onclick="clearSearch()" title="Xóa tìm kiếm">✕</button>
             </div>
+            <button type="button" class="btn-primary" style="display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 12px; background:var(--blue); color:#fff; border:none; border-radius:10px; font-weight:750; font-size:12.5px; cursor:pointer;" onclick="openBarcodeScan()" title="Quét mã vạch bằng camera">📷 Quét Barcode</button>
             <div class="cs-wrap" id="csCatWrap">
               <div class="cs-trigger" onclick="toggleCs()">
                 <span class="cs-label" id="csLabel">Tất cả danh mục</span>
@@ -1066,7 +1067,17 @@ select,option{font-family:inherit;font-size:inherit}
     <iframe id="poFrame" src="about:blank" title="Tạo phiếu nhập kho"
             style="flex:1;width:100%;border:none;background:#F1F5FB"></iframe>
   </div>
+<%-- ──── BARCODE SCAN MODAL ──── --%>
+<div id="barcodeScanModal" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(11,22,40,.7);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeBarcodeScan()">
+  <div style="background:#fff;border-radius:18px;width:420px;max-width:96vw;box-shadow:0 24px 60px rgba(0,0,0,.35);padding:22px;position:relative">
+    <button onclick="closeBarcodeScan()" style="position:absolute;top:15px;right:15px;background:none;border:none;font-size:22px;color:#94a3b8;cursor:pointer;line-height:1">✕</button>
+    <h3 style="margin:0 0 16px;font-family:'Plus Jakarta Sans',sans-serif;font-size:16.5px;color:#1e293b;font-weight:750">📷 Quét mã vạch</h3>
+    <div id="barcodeReaderBox" style="width:100%;min-height:260px;border-radius:12px;overflow:hidden;background:#0b1628"></div>
+    <div id="barcodeScanStatus" style="margin-top:10px;font-size:12.5px;color:#64748b;text-align:center">Đưa mã vạch vào giữa khung hình.</div>
+  </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <script>
 function toggleCdd(id){var w=document.getElementById(id),m=w.querySelector('.cdd-menu'),b=w.querySelector('.cdd-btn');var open=m.classList.contains('show');document.querySelectorAll('.cdd-menu.show').forEach(function(x){x.classList.remove('show');x.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')});if(!open){m.classList.add('show');b.classList.add('open');var act=m.querySelector('.cdd-opt.active');if(act)act.scrollIntoView({block:'nearest'})}}
@@ -1980,6 +1991,60 @@ function clearSearch() {
 
 // ── INIT ───────────────────────────────────────────────────────────────────────
 filterRows();
+
+// ── Quét mã vạch bằng camera (html5-qrcode) ──
+let barcodeScanner = null;
+function openBarcodeScan() {
+  document.getElementById('barcodeScanModal').style.display = 'flex';
+  const status = document.getElementById('barcodeScanStatus');
+  status.textContent = 'Đang khởi động camera...';
+  status.style.color = '#64748b';
+
+  const config = {
+    fps: 15,
+    qrbox: (width, height) => {
+      const size = Math.min(width, height);
+      return { width: Math.round(size * 0.75), height: Math.round(size * 0.4) };
+    }
+  };
+  let lastCode = '', lastTime = 0;
+  barcodeScanner = new Html5Qrcode('barcodeReaderBox');
+  barcodeScanner.start(
+    { facingMode: 'environment' },
+    config,
+    (decodedText) => {
+      const now = Date.now();
+      if (decodedText === lastCode && now - lastTime < 2000) return;
+      lastCode = decodedText; lastTime = now;
+      handleBarcodeScanned(decodedText, status);
+    },
+    () => {} // Bỏ qua lỗi từng khung hình
+  ).catch(err => {
+    status.textContent = '⚠️ Không mở được camera: ' + (err.message || err);
+    status.style.color = '#ef4444';
+  });
+}
+
+function closeBarcodeScan() {
+  document.getElementById('barcodeScanModal').style.display = 'none';
+  if (barcodeScanner) {
+    const s = barcodeScanner;
+    barcodeScanner = null;
+    s.stop().then(() => s.clear()).catch(() => {});
+  }
+}
+
+function handleBarcodeScanned(code, status) {
+  status.textContent = '✅ Đã tìm thấy: ' + code;
+  status.style.color = '#10b981';
+  document.getElementById('searchInput').value = code;
+  setTimeout(() => {
+    closeBarcodeScan();
+    document.getElementById('searchForm').submit();
+  }, 600);
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBarcodeScan(); });
 </script>
 </body>
 </html>

@@ -52,8 +52,24 @@ public class AuditLogDAO implements IAuditLogDAO {
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
 
+    // Ghép điều kiện WHERE động cho keyword + khoảng ngày — CHỈ thêm điều kiện nào thực sự
+    // có giá trị (không dùng kiểu "? IS NULL OR ..." — xem lý do hiệu năng ở comment cũ bên
+    // dưới), để câu không lọc gì vẫn seek được index IX_AuditLog_CreatedAt như trước giờ.
+    // fromDate/toDate là chuỗi "yyyy-MM-dd" theo giờ VN; CreatedAt lưu theo giờ server (UTC-ish,
+    // hiển thị phải +7h — xem mapRow) nên quy đổi ngược -7h khi so sánh cho đúng mốc giờ VN.
+    private void appendDateRange(List<String> conditions, List<String> params, String fromDate, String toDate) {
+        if (fromDate != null && !fromDate.trim().isEmpty()) {
+            conditions.add("l.CreatedAt >= DATEADD(hour, -7, CAST(? AS DATETIME))");
+            params.add(fromDate.trim());
+        }
+        if (toDate != null && !toDate.trim().isEmpty()) {
+            conditions.add("l.CreatedAt < DATEADD(hour, -7, DATEADD(day, 1, CAST(? AS DATETIME)))");
+            params.add(toDate.trim());
+        }
+    }
+
     @Override
-    public List<AuditLog> findPaginated(int page, int pageSize, String keyword) {
+    public List<AuditLog> findPaginated(int page, int pageSize, String keyword, String fromDate, String toDate) {
         List<AuditLog> list = new ArrayList<>();
         // offset & pageSize là INT nội bộ (không phải input người dùng) → nhúng thẳng an toàn.
         // Tránh lỗi driver mssql-jdbc trả 0 dòng khi OFFSET/FETCH bị tham số hóa (? ROWS).
@@ -66,25 +82,25 @@ public class AuditLogDAO implements IAuditLogDAO {
         // SEEK theo CreatedAt, kể cả khi keyword=null (trường hợp phổ biến NHẤT — mỗi lần
         // vào trang không tìm kiếm gì). Bảng này phình nhanh nhất hệ thống (mọi thao tác admin
         // đều insert vào đây) nên đây chính là nguyên nhân "cực lag" khi vào /audit-logs.
-        // Fix: tách hẳn 2 câu SQL — không keyword thì KHÔNG có WHERE, cho phép seek index
-        // IX_AuditLog_CreatedAt (xem database/performance_indexes.sql) qua ORDER BY+OFFSET/FETCH.
-        String sql = like == null
-                ? "SELECT l.*, a.Username FROM AuditLog l "
-                  + "LEFT JOIN Accounts a ON l.AccountID = a.AccountID "
-                  + "ORDER BY l.CreatedAt DESC "
-                  + "OFFSET " + offset + " ROWS FETCH NEXT " + fetch + " ROWS ONLY"
-                : "SELECT l.*, a.Username FROM AuditLog l "
-                  + "LEFT JOIN Accounts a ON l.AccountID = a.AccountID "
-                  + "WHERE l.Action LIKE ? OR l.EntityType LIKE ? "
-                  + "  OR l.Description LIKE ? OR a.Username LIKE ? "
-                  + "ORDER BY l.CreatedAt DESC "
-                  + "OFFSET " + offset + " ROWS FETCH NEXT " + fetch + " ROWS ONLY";
+        // Fix: chỉ thêm WHERE khi thực sự có lọc, cho phép seek index IX_AuditLog_CreatedAt
+        // (xem database/performance_indexes.sql) qua ORDER BY+OFFSET/FETCH khi không lọc gì.
+        List<String> conditions = new ArrayList<>();
+        List<String> params = new ArrayList<>();
+        if (like != null) {
+            conditions.add("(l.Action LIKE ? OR l.EntityType LIKE ? OR l.Description LIKE ? OR a.Username LIKE ?)");
+            params.add(like); params.add(like); params.add(like); params.add(like);
+        }
+        appendDateRange(conditions, params, fromDate, toDate);
+        String where = conditions.isEmpty() ? "" : "WHERE " + String.join(" AND ", conditions) + " ";
+
+        String sql = "SELECT l.*, a.Username FROM AuditLog l "
+                + "LEFT JOIN Accounts a ON l.AccountID = a.AccountID "
+                + where
+                + "ORDER BY l.CreatedAt DESC "
+                + "OFFSET " + offset + " ROWS FETCH NEXT " + fetch + " ROWS ONLY";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
-            if (like != null) {
-                ps.setString(1, like); ps.setString(2, like);
-                ps.setString(3, like); ps.setString(4, like);
-            }
+            for (int i = 0; i < params.size(); i++) ps.setString(i + 1, params.get(i));
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) list.add(mapRow(rs));
             }
@@ -93,22 +109,29 @@ public class AuditLogDAO implements IAuditLogDAO {
     }
 
     @Override
-    public int countAll(String keyword) {
+    public int countAll(String keyword, String fromDate, String toDate) {
         String like = (keyword == null || keyword.trim().isEmpty()) ? null : "%" + keyword.trim() + "%";
-        // Cùng lý do như findPaginated — không keyword thì đếm thẳng COUNT(*) trên AuditLog,
+        boolean hasRange = (fromDate != null && !fromDate.trim().isEmpty())
+                || (toDate != null && !toDate.trim().isEmpty());
+        // Cùng lý do như findPaginated — không lọc gì thì đếm thẳng COUNT(*) trên AuditLog,
         // cache 15s (bảng chỉ tăng dần, không cần chính xác tuyệt đối tới từng giây) để 2 lần
         // gọi liên tiếp (data + count) trong cùng 1 request không phải quét/đếm 2 lần.
-        if (like == null) {
+        if (like == null && !hasRange) {
             return com.medicare.config.CacheManager.getShort("auditlog.countAll", this::countAllNoFilter);
         }
+        List<String> conditions = new ArrayList<>();
+        List<String> params = new ArrayList<>();
+        if (like != null) {
+            conditions.add("(l.Action LIKE ? OR l.EntityType LIKE ? OR l.Description LIKE ? OR a.Username LIKE ?)");
+            params.add(like); params.add(like); params.add(like); params.add(like);
+        }
+        appendDateRange(conditions, params, fromDate, toDate);
         String sql = "SELECT COUNT(*) FROM AuditLog l "
                 + "LEFT JOIN Accounts a ON l.AccountID = a.AccountID "
-                + "WHERE l.Action LIKE ? OR l.EntityType LIKE ? "
-                + "  OR l.Description LIKE ? OR a.Username LIKE ?";
+                + "WHERE " + String.join(" AND ", conditions);
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
-            ps.setString(1, like); ps.setString(2, like);
-            ps.setString(3, like); ps.setString(4, like);
+            for (int i = 0; i < params.size(); i++) ps.setString(i + 1, params.get(i));
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);
             }

@@ -78,8 +78,7 @@ public class AuditHelper {
                            String description, int accountId) {
         try {
             AuditLog entry = new AuditLog();
-            entry.setAction(action);
-            entry.setEntityType(entityType);
+            entry.setAction(action);            entry.setEntityType(entityType);
             entry.setEntityId(null);
             entry.setDescription(description);
             entry.setIpAddress(getIp(req));

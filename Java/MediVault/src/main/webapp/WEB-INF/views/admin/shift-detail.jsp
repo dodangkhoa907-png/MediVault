@@ -397,9 +397,8 @@ body{display:flex;background:var(--surface);color:var(--ink)}
             </c:if>
 
             <c:if test="${not empty shift.endTime}">
-                <a href="${pageContext.request.contextPath}/shifts?action=delete&id=${shift.shiftId}"
-                   class="btn-action btn-del"
-                   onclick="return confirm('Xóa ca này vĩnh viễn?\nChỉ xóa được nếu không có hóa đơn liên kết!')">
+                <a href="#" class="btn-action btn-del"
+                   onclick="return deleteShift(${shift.shiftId})">
                     🗑️ Xóa ca
                 </a>
             </c:if>
@@ -408,6 +407,15 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 </div>
 
 <script>
+function deleteShift(id) {
+    if (!confirm('Xóa ca này vĩnh viễn?\nChỉ xóa được nếu không có hóa đơn liên kết!')) return false;
+    const f = document.createElement('form');
+    f.method = 'post';
+    f.action = '${pageContext.request.contextPath}/shifts';
+    f.innerHTML = '<input name="action" value="delete"><input name="id" value="' + id + '">';
+    document.body.appendChild(f); f.submit();
+    return false;
+}
 function parseLocalDateTime(raw) {
     if (!raw) return null;
     const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})/);

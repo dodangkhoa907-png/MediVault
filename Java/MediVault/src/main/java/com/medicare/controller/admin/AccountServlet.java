@@ -51,32 +51,6 @@ public class AccountServlet extends HttpServlet {
                 int id = Integer.parseInt(req.getParameter("id"));
                 showForm(req, resp, dao.findById(id));
             }
-            case "toggle" -> {
-                int toggleId = Integer.parseInt(req.getParameter("id"));
-                Account toggleAcc = dao.findById(toggleId);
-                // Bảo vệ: không cho khóa/xóa tài khoản admin gốc (ID=1)
-                if (toggleId == 1) {
-                    resp.sendRedirect(req.getContextPath() + "/accounts?msg=protected-admin");
-                    return;
-                }
-                // Bảo vệ: không cho khóa admin cuối cùng đang active
-                if (toggleAcc != null && toggleAcc.getRoleId() == 1
-                        && toggleAcc.isActive() && dao.countActiveAdmins() <= 1) {
-                    resp.sendRedirect(req.getContextPath() + "/accounts?msg=last-admin");
-                    return;
-                }
-                // Bảo vệ: không cho mở khóa khi TK đang trong reset flow (chờ admin set MK mới)
-                if (toggleAcc != null && !toggleAcc.isActive()) {
-                    PasswordResetRequest pr = resetDAO.findPendingByAccountId(toggleId);
-                    if (pr == null) pr = resetDAO.findConfirmedByAccountId(toggleId);
-                    if (pr != null) {
-                        resp.sendRedirect(req.getContextPath() + "/accounts?msg=in-reset");
-                        return;
-                    }
-                }
-                dao.toggleActive(toggleId);
-                resp.sendRedirect(req.getContextPath() + "/accounts?msg=updated");
-            }
             case "view" -> {
                 int id = Integer.parseInt(req.getParameter("id"));
                 Account a = dao.findById(id);
@@ -84,28 +58,6 @@ public class AccountServlet extends HttpServlet {
                 SidebarHelper.load(req);
 
                 req.getRequestDispatcher("/WEB-INF/views/admin/account-detail.jsp").forward(req, resp);
-            }
-            case "delete" -> {
-                // Bước 1: Chuyển vào thùng rác — KHÔNG cần OTP
-                int id = Integer.parseInt(req.getParameter("id"));
-                Account del = dao.findById(id);
-                if (del != null && del.getRoleId() == 1 && dao.countActiveAdmins() <= 1) {
-                    resp.sendRedirect(req.getContextPath() + "/accounts?msg=last-admin");
-                    return;
-                }
-                if (del == null) { resp.sendRedirect(req.getContextPath() + "/accounts"); return; }
-                dao.softDelete(id);
-                AuditHelper.log(req, "Xóa tài khoản", "Account",
-                        "Chuyển vào thùng rác: @" + (del.getUsername()) + " (" + del.getFullName() + ")");
-                resp.sendRedirect(req.getContextPath() + "/accounts?msg=deleted");
-            }
-            case "restore" -> {
-                int rid = Integer.parseInt(req.getParameter("id"));
-                Account rAcc = dao.findById(rid);
-                dao.restore(rid);
-                AuditHelper.log(req, "Khôi phục tài khoản", "Account",
-                        "Khôi phục từ thùng rác: @" + (rAcc != null ? rAcc.getUsername() : rid));
-                resp.sendRedirect(req.getContextPath() + "/accounts?action=trash&msg=restored");
             }
             case "trash" -> {
                 req.setAttribute("deletedAccounts", dao.findDeleted());
@@ -246,6 +198,70 @@ public class AccountServlet extends HttpServlet {
         // ── AJAX: Admin lưu face descriptor cho nhân viên ──
         if ("save-face".equals(action)) {
             handleSaveFace(req, resp);
+            return;
+        }
+        // ── AJAX: Tải ảnh đại diện lên server ──
+        if ("upload-photo".equals(action)) {
+            handleUploadPhoto(req, resp);
+            return;
+        }
+        // ── AJAX: Xóa ảnh đại diện trên server ──
+        if ("delete-photo".equals(action)) {
+            handleDeletePhoto(req, resp);
+            return;
+        }
+
+        // ── Admin toggle trạng thái tài khoản ──
+        if ("toggle".equals(action)) {
+            int toggleId = Integer.parseInt(req.getParameter("id"));
+            Account toggleAcc = dao.findById(toggleId);
+            // Bảo vệ: không cho khóa/xóa tài khoản admin gốc (ID=1)
+            if (toggleId == 1) {
+                resp.sendRedirect(req.getContextPath() + "/accounts?msg=protected-admin");
+                return;
+            }
+            // Bảo vệ: không cho khóa admin cuối cùng đang active
+            if (toggleAcc != null && toggleAcc.getRoleId() == 1
+                    && toggleAcc.isActive() && dao.countActiveAdmins() <= 1) {
+                resp.sendRedirect(req.getContextPath() + "/accounts?msg=last-admin");
+                return;
+            }
+            // Bảo vệ: không cho mở khóa khi TK đang trong reset flow (chờ admin set MK mới)
+            if (toggleAcc != null && !toggleAcc.isActive()) {
+                PasswordResetRequest pr = resetDAO.findPendingByAccountId(toggleId);
+                if (pr == null) pr = resetDAO.findConfirmedByAccountId(toggleId);
+                if (pr != null) {
+                    resp.sendRedirect(req.getContextPath() + "/accounts?msg=in-reset");
+                    return;
+                }
+            }
+            dao.toggleActive(toggleId);
+            resp.sendRedirect(req.getContextPath() + "/accounts?msg=updated");
+            return;
+        }
+        // ── Admin xóa tài khoản (soft delete) ──
+        if ("delete".equals(action)) {
+            int id = Integer.parseInt(req.getParameter("id"));
+            Account del = dao.findById(id);
+            if (del != null && del.getRoleId() == 1 && dao.countActiveAdmins() <= 1) {
+                resp.sendRedirect(req.getContextPath() + "/accounts?msg=last-admin");
+                return;
+            }
+            if (del == null) { resp.sendRedirect(req.getContextPath() + "/accounts"); return; }
+            dao.softDelete(id);
+            AuditHelper.log(req, "Xóa tài khoản", "Account",
+                    "Chuyển vào thùng rác: @" + (del.getUsername()) + " (" + del.getFullName() + ")");
+            resp.sendRedirect(req.getContextPath() + "/accounts?msg=deleted");
+            return;
+        }
+        // ── Admin khôi phục tài khoản từ thùng rác ──
+        if ("restore".equals(action)) {
+            int rid = Integer.parseInt(req.getParameter("id"));
+            Account rAcc = dao.findById(rid);
+            dao.restore(rid);
+            AuditHelper.log(req, "Khôi phục tài khoản", "Account",
+                    "Khôi phục từ thùng rác: @" + (rAcc != null ? rAcc.getUsername() : rid));
+            resp.sendRedirect(req.getContextPath() + "/accounts?action=trash&msg=restored");
             return;
         }
 
@@ -788,6 +804,115 @@ public class AccountServlet extends HttpServlet {
 
         dao.updateFaceVector(accountId, descriptorJson);
         out.print("{\"ok\":true}");
+    }
+
+    private void handleUploadPhoto(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        java.io.PrintWriter out = resp.getWriter();
+        try {
+            String idStr     = req.getParameter("id");
+            String photoData = req.getParameter("photoData");
+            if (idStr == null || idStr.isEmpty() || photoData == null || photoData.isEmpty()) {
+                out.print("{\"ok\":false,\"msg\":\"Thiếu tham số!\"}");
+                return;
+            }
+
+            int id = Integer.parseInt(idStr);
+            Account a = dao.findById(id);
+            if (a == null) {
+                out.print("{\"ok\":false,\"msg\":\"Tài khoản không tồn tại!\"}");
+                return;
+            }
+
+            String base64Data = photoData;
+            if (photoData.contains(",")) {
+                base64Data = photoData.substring(photoData.indexOf(",") + 1);
+            }
+
+            byte[] decodedBytes = java.util.Base64.getDecoder().decode(base64Data);
+
+            String uploadDir = getServletContext().getRealPath("/uploads/avatars");
+            File dir = new File(uploadDir);
+            if (!dir.exists()) dir.mkdirs();
+
+            String filename = id + "_" + System.currentTimeMillis() + ".png";
+            File file = new File(dir, filename);
+            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(file)) {
+                fos.write(decodedBytes);
+            }
+
+            String relativePath = "uploads/avatars/" + filename;
+            boolean ok = dao.updateAvatar(id, relativePath);
+            if (ok) {
+                HttpSession session = req.getSession(false);
+                if (session != null) {
+                    Account admin = (Account) session.getAttribute("adminAccount");
+                    if (admin != null && admin.getAccountId() == id) {
+                        admin.setFaceEnrollmentPath(relativePath);
+                    }
+                    Account staff = (Account) session.getAttribute("staffAccount_" + id);
+                    if (staff != null) {
+                        staff.setFaceEnrollmentPath(relativePath);
+                    }
+                }
+                out.print("{\"ok\":true}");
+            } else {
+                out.print("{\"ok\":false,\"msg\":\"Không thể lưu vào CSDL!\"}");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            out.print("{\"ok\":false,\"msg\":\"Lỗi: " + e.getMessage() + "\"}");
+        }
+    }
+
+    private void handleDeletePhoto(HttpServletRequest req, HttpServletResponse resp)
+            throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        java.io.PrintWriter out = resp.getWriter();
+        try {
+            String idStr = req.getParameter("id");
+            if (idStr == null || idStr.isEmpty()) {
+                out.print("{\"ok\":false,\"msg\":\"Thiếu tham số!\"}");
+                return;
+            }
+
+            int id = Integer.parseInt(idStr);
+            Account a = dao.findById(id);
+            if (a == null) {
+                out.print("{\"ok\":false,\"msg\":\"Tài khoản không tồn tại!\"}");
+                return;
+            }
+
+            if (a.getFaceEnrollmentPath() != null && !a.getFaceEnrollmentPath().isEmpty()) {
+                String fullPath = getServletContext().getRealPath("/" + a.getFaceEnrollmentPath());
+                File f = new File(fullPath);
+                if (f.exists()) {
+                    f.delete();
+                }
+            }
+
+            boolean ok = dao.updateAvatar(id, null);
+            if (ok) {
+                HttpSession session = req.getSession(false);
+                if (session != null) {
+                    Account admin = (Account) session.getAttribute("adminAccount");
+                    if (admin != null && admin.getAccountId() == id) {
+                        admin.setFaceEnrollmentPath(null);
+                    }
+                    Account staff = (Account) session.getAttribute("staffAccount_" + id);
+                    if (staff != null) {
+                        staff.setFaceEnrollmentPath(null);
+                    }
+                }
+                out.print("{\"ok\":true}");
+            } else {
+                out.print("{\"ok\":false,\"msg\":\"Không thể xóa trong CSDL!\"}");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            out.print("{\"ok\":false,\"msg\":\"Lỗi: " + e.getMessage() + "\"}");
+        }
     }
 
 

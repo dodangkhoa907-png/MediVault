@@ -384,9 +384,12 @@ select,option{font-family:inherit;font-size:inherit}
                             ${a.faceEnrolled ? '📷✓' : '📷'}
                           </button>
                         </c:if>
-                        <a href="${pageContext.request.contextPath}/accounts?action=delete&id=${a.accountId}"
-                           onclick="return confirm('Chuyển tài khoản @${a.username} vào thùng rác?')"
-                           class="act-btn" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca">🗑️</a>
+                        <form method="post" action="${pageContext.request.contextPath}/accounts" style="display:inline"
+                              onsubmit="return confirm('Chuyển tài khoản @${a.username} vào thùng rác?')">
+                          <input type="hidden" name="action" value="delete">
+                          <input type="hidden" name="id" value="${a.accountId}">
+                          <button type="submit" class="act-btn" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;cursor:pointer">🗑️</button>
+                        </form>
                       </div>
                     </td>
                   </tr>

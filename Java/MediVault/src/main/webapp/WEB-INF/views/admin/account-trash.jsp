@@ -251,12 +251,13 @@ select.field-input{cursor:pointer}
               <td style="font-size:12.5px;color:var(--muted)"><%= deletedAtStr %></td>
               <td onclick="event.stopPropagation()">
                 <div class="act-group">
-                  <a href="${pageContext.request.contextPath}/accounts?action=restore&id=<%= a.getAccountId() %>"
-                     class="act-btn act-restore"
-                     onclick="return confirm('Khôi phục tài khoản @<%= a.getUsername() %>?')">
-                    ↩️ Khôi phục
-                  </a>
-                </div>
+                    <form method="post" action="${pageContext.request.contextPath}/accounts" style="display:inline"
+                          onsubmit="return confirm('Khôi phục tài khoản @<%= a.getUsername() %>?')">
+                      <input type="hidden" name="action" value="restore">
+                      <input type="hidden" name="id" value="<%= a.getAccountId() %>">
+                      <button type="submit" class="act-btn act-restore">↩️ Khôi phục</button>
+                    </form>
+                  </div>
               </td>
             </tr>
             <% } } %>

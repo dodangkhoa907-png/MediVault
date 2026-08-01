@@ -160,19 +160,28 @@ td{padding:14px 16px;font-size:13.5px;color:var(--ink);vertical-align:middle}
     <div style="font-size:13px;color:var(--muted);margin-bottom:20px" id="delMsg"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end">
       <button onclick="document.getElementById('delModal').style.display='none'" style="height:36px;padding:0 16px;border:1.5px solid var(--border);border-radius:9px;background:#fff;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit">Hủy</button>
-      <a id="delLink" href="#" style="height:36px;padding:0 16px;background:#DC2626;color:#fff;border-radius:9px;font-size:13px;font-weight:750;text-decoration:none;display:inline-flex;align-items:center">Xóa</a>
+      <button type="button" id="delLink" style="height:36px;padding:0 16px;background:#DC2626;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:750;cursor:pointer;display:inline-flex;align-items:center;font-family:inherit">Xóa</button>
     </div>
   </div>
 </div>
 
 <script>
+let _delCategoryId = null;
 function confirmDelete(id, name) {
   document.getElementById('delMsg').textContent = 'Xóa danh mục "' + name + '"? Hành động này không thể hoàn tác.';
-  document.getElementById('delLink').href = '${pageContext.request.contextPath}/categories?action=delete&id=' + id;
+  _delCategoryId = id;
   const m = document.getElementById('delModal');
   m.style.display = 'flex';
   m.onclick = function(e){ if(e.target===m) m.style.display='none'; };
 }
+document.getElementById('delLink').addEventListener('click', function () {
+  if (_delCategoryId == null) return;
+  const f = document.createElement('form');
+  f.method = 'post';
+  f.action = '${pageContext.request.contextPath}/categories';
+  f.innerHTML = '<input name="action" value="delete"><input name="id" value="' + _delCategoryId + '">';
+  document.body.appendChild(f); f.submit();
+});
 </script>
 </body>
 </html>

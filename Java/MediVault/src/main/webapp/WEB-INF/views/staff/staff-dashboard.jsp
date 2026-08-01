@@ -490,14 +490,14 @@ body{display:flex;background:var(--soft);color:var(--ink)}
   <% } else { %>
   <nav class="nav-block">
     <div class="nav-label">Kho hàng</div>
-    <a href="${pageContext.request.contextPath}/staff-dashboard?uid=<%= _uid %>" class="nav-item" style="opacity:.5;cursor:default">
+    <a href="${pageContext.request.contextPath}/medicines?uid=<%= _uid %>" class="nav-item">
       <span class="nav-icon">📦</span> Quản lý kho
     </a>
-    <a href="${pageContext.request.contextPath}/staff-dashboard?uid=<%= _uid %>" class="nav-item" style="opacity:.5;cursor:default">
+    <a href="${pageContext.request.contextPath}/medicines?tab=low&uid=<%= _uid %>" class="nav-item">
       <span class="nav-icon">⚠️</span> Hàng sắp hết
       <% if (lowStock > 0) { %><span class="nav-badge"><%= lowStock %></span><% } %>
     </a>
-    <a href="${pageContext.request.contextPath}/staff-dashboard?uid=<%= _uid %>" class="nav-item" style="opacity:.5;cursor:default">
+    <a href="${pageContext.request.contextPath}/medicines?tab=expiring&uid=<%= _uid %>" class="nav-item">
       <span class="nav-icon">⏰</span> Sắp hết hạn
       <% if (expiryCount > 0) { %><span class="nav-badge"><%= expiryCount %></span><% } %>
     </a>

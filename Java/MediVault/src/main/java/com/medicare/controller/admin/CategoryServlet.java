@@ -36,14 +36,6 @@ public class CategoryServlet extends HttpServlet {
                 try { showForm(req, resp, dao.findById(Integer.parseInt(rawId))); }
                 catch (NumberFormatException e) { showList(req, resp); }
             }
-            case "delete" -> {
-                String rawId = req.getParameter("id");
-                if (rawId != null && !rawId.isEmpty()) {
-                    try { dao.delete(Integer.parseInt(rawId)); }
-                    catch (NumberFormatException ignored) {}
-                }
-                resp.sendRedirect(req.getContextPath() + "/categories?msg=deleted");
-            }
             default -> showList(req, resp);
         }
     }
@@ -53,6 +45,16 @@ public class CategoryServlet extends HttpServlet {
             throws ServletException, IOException {
 
         req.setCharacterEncoding("UTF-8");
+
+        if ("delete".equals(req.getParameter("action"))) {
+            String rawId = req.getParameter("id");
+            if (rawId != null && !rawId.isEmpty()) {
+                try { dao.delete(Integer.parseInt(rawId)); }
+                catch (NumberFormatException ignored) {}
+            }
+            resp.sendRedirect(req.getContextPath() + "/categories?msg=deleted");
+            return;
+        }
 
         String idStr = req.getParameter("categoryId");
         String name  = req.getParameter("categoryName");

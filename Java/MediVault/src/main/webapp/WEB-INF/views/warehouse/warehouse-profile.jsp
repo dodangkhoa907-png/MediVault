@@ -40,6 +40,8 @@ a{text-decoration:none;color:inherit}
 .alert-error{background:var(--dangerbg);color:var(--danger);border:1px solid var(--danger)}
 .avatar-section{text-align:center;padding-bottom:24px;border-bottom:1px solid var(--line);margin-bottom:24px}
 </style>
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 <%@ include file="warehouse-sidebar.jsp" %>

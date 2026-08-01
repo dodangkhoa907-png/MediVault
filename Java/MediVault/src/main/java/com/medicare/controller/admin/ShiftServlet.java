@@ -60,7 +60,6 @@ public class ShiftServlet extends HttpServlet {
             case "list"        -> showList(req, resp);
             case "detail"      -> showDetail(req, resp);
             case "force-close" -> handleForceClose(req, resp);
-            case "delete"      -> handleDelete(req, resp);
             case "pos-online"  -> handlePosOnline(req, resp);
             default            -> showList(req, resp);
         }
@@ -86,6 +85,7 @@ public class ShiftServlet extends HttpServlet {
             case "open"                  -> handleOpenShift(req, resp);
             case "close"                 -> handleCloseShift(req, resp);
             case "force-close"           -> handleForceClosePost(req, resp);
+            case "delete"                -> handleDelete(req, resp);
             // ── Schedule actions (từ shift-list.jsp) ──
             case "schedule-bulk"         -> handleScheduleBulk(req, resp);
             case "schedule-bulk-update"  -> handleScheduleBulkUpdate(req, resp);
