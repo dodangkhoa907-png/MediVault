@@ -1577,6 +1577,56 @@ function onCustInput() {
   custTimer = setTimeout(searchCustomer, 600);
 }
 
+// ── Dropdown gợi ý khách hàng — sổ ra ngay theo từng ký tự gõ (tên hoặc SĐT) ──
+let custSuggestTimer;
+function fetchCustSuggest() {
+  clearTimeout(custSuggestTimer);
+  const q = document.getElementById('custPhone').value.trim();
+  if (!q) { hideCustSuggest(); return; }
+  custSuggestTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(ctx + '/pos?action=search-customers&q=' + encodeURIComponent(q));
+      const data = await res.json();
+      // Chưa điểm danh khuôn mặt → server trả object lỗi (không phải mảng khách hàng) —
+      // phải báo rõ, không được coi là "không có khách nào khớp".
+      if (!Array.isArray(data)) {
+        const box = document.getElementById('custSuggest');
+        box.innerHTML = '<div class="cs-empty">⚠️ ' + escHtml(data.msg || 'Chưa điểm danh — không thể tra cứu khách hàng.') + '</div>';
+        box.style.display = 'block';
+        return;
+      }
+      renderCustSuggest(data.slice(0, 8), q);
+    } catch (e) { hideCustSuggest(); }
+  }, 200);
+}
+
+function renderCustSuggest(list, q) {
+  const box = document.getElementById('custSuggest');
+  if (!list.length) {
+    box.innerHTML = '<div class="cs-empty">Không tìm thấy khách khớp "' + escHtml(q) + '"</div>';
+  } else {
+    box.innerHTML = list.map(c =>
+      '<div class="cs-item" onmousedown="event.preventDefault();pickCustomer(\'' + (c.phone || '') + '\')">'
+      + '<span>' + (c.hasNfc ? '📶' : '👤') + '</span>'
+      + '<span class="cs-name">' + escHtml(c.name) + '</span>'
+      + '<span class="cs-phone">' + escHtml(c.phone || '—') + '</span>'
+      + '</div>'
+    ).join('');
+  }
+  box.style.display = 'block';
+}
+
+function hideCustSuggest() {
+  const box = document.getElementById('custSuggest');
+  if (box) box.style.display = 'none';
+}
+
+/** Delay nhỏ trước khi ẩn dropdown khi blur, để kịp nhận click chọn (mousedown đã preventDefault). */
+function scheduleHideCustSuggest() {
+  setTimeout(hideCustSuggest, 150);
+}
+
+
 /** Hiển thị khách đã chọn: tên + SĐT + hạng/điểm + CẢNH BÁO ĐỎ dị ứng. */
 function applyCustomer(data) {
   selectedCustomer = { id: data.id, name: data.name, phone: data.phone };
@@ -1598,10 +1648,21 @@ function applyCustomer(data) {
 }
 
 function searchCustomer() {
-  const phone = document.getElementById('custPhone').value.trim();
+  const raw = document.getElementById('custPhone').value.trim();
+  // Chuẩn hoá về số thuần (bỏ khoảng trắng/gạch/+84) trước khi tìm — tránh gõ/dán
+  // SĐT có định dạng khác khiến không khớp được khách đã tồn tại (tạo trùng oan).
+  let phone = raw.replace(/\D/g, '');
+  if (phone.startsWith('84') && phone.length === 11) phone = '0' + phone.slice(2);
   if (phone.length < 9) return;
   fetch(ctx + '/pos?action=find-customer&phone=' + encodeURIComponent(phone))
     .then(r => r.json()).then(data => {
+      if (data.reason === 'not_checked_in') {
+        // CHƯA điểm danh khuôn mặt → server từ chối tra cứu (403), KHÔNG phải khách
+        // không tồn tại. Phải báo rõ ràng, tuyệt đối không rơi xuống nhánh "tạo mới"
+        // bên dưới — nếu không nhân viên sẽ tạo trùng tài khoản cho khách đã có sẵn.
+        showToast('⚠️ Vui lòng điểm danh khuôn mặt tại quầy trước khi tra cứu khách hàng!', 'err');
+        return;
+      }
       if (data.found) {
         applyCustomer(data);
         showToast('✓ ' + data.name + (data.points ? ' · ' + data.points + ' điểm' : ''), 'ok');
@@ -1908,12 +1969,23 @@ function submitSale() {
     body: fd,
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' }
   })
-    .then(r => {
-      if (!r.ok && r.status !== 200) throw new Error('HTTP ' + r.status);
-      return r.json();
+    .then(async r => {
+      // Đọc JSON trước khi xét status — 403 (CSRF/hết phiên) vẫn trả JSON có
+      // thông tin thật, không được vứt bỏ để rơi vào catch() rồi báo nhầm
+      // "mất kết nối" (server vẫn sống, chỉ là phiên làm việc đã hết hạn).
+      let data;
+      try { data = await r.json(); }
+      catch (e) { throw new Error('HTTP ' + r.status); } // thật sự không phải JSON (server lỗi/mạng)
+      if (!r.ok && data.error !== 'csrf') throw new Error('HTTP ' + r.status);
+      return data;
     })
     .then(data => {
-      if (data.ok) {
+      if (data.error === 'csrf') {
+        showToast('⚠️ Phiên làm việc đã hết hạn — đang tải lại trang…', 'err');
+        btn.disabled = false; btn.innerHTML = '🛒 THANH TOÁN';
+        _saleInFlight = false;
+        setTimeout(() => location.reload(), 1500);
+      } else if (data.ok) {
         // Tổng in trên hóa đơn LẤY THEO SERVER (data.total = FinalAmount đã kẹp [0, subtotal]),
         // không dùng số client tự tính — nếu server đã chặn giảm giá quá tay thì hóa đơn/tiền
         // thối phải phản ánh đúng con số thật đã ghi vào DB.
