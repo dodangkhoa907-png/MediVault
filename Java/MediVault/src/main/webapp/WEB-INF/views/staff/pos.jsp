@@ -1596,7 +1596,7 @@ function startFaceDetection() {
 
       busy = true;
       const detection = await faceapi
-        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.3 }))
         .withFaceLandmarks()        // full faceLandmark68Net (no arg = false = full)
         .withFaceDescriptor();
       busy = false;
