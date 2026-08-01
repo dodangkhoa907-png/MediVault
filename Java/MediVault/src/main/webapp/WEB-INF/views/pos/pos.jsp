@@ -492,10 +492,10 @@ body{display:flex}
     <span class="sb-label">Bán hàng POS</span>
     <span class="sb-tip">Bán hàng POS</span>
   </a>
-  <a href="#" class="sb-btn">
+  <a href="#" class="sb-btn" onclick="event.preventDefault();openInvHistModal()">
     <span class="sb-icon">🧾</span>
-    <span class="sb-label">Hóa đơn của tôi</span>
-    <span class="sb-tip">Hóa đơn của tôi</span>
+    <span class="sb-label">Lịch sử hóa đơn</span>
+    <span class="sb-tip">Lịch sử hóa đơn / Trả hàng</span>
   </a>
 
   <div class="sb-divider"></div>
@@ -621,6 +621,37 @@ body{display:flex}
     </div>
   </div>
 
+  <%-- Modal: LỊCH SỬ HÓA ĐƠN + TRẢ HÀNG — tìm hóa đơn cũ, xử lý trả hàng ngay tại quầy --%>
+  <div id="invHistModal" style="display:none;position:fixed;inset:0;z-index:9600;background:rgba(11,22,40,.55);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeInvHistModal()">
+    <div style="background:#fff;border-radius:18px;max-width:640px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden">
+      <div style="padding:18px 22px;background:linear-gradient(135deg,#1558A8,#3ABDE0);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+        <div>
+          <h3 style="margin:0;font-size:17px;font-weight:800" id="invHistTitle">🧾 Lịch sử hóa đơn</h3>
+          <div style="font-size:12px;opacity:.85;margin-top:3px" id="invHistSubtitle">Tìm theo SĐT khách, mã hóa đơn hoặc quét mã vạch trên bill</div>
+        </div>
+        <button onclick="closeInvHistModal()" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:32px;height:32px;border-radius:9px;font-size:16px;cursor:pointer">✕</button>
+      </div>
+
+      <%-- View 1: tìm & danh sách hóa đơn --%>
+      <div id="invHistListView">
+        <div style="padding:14px 22px 0;flex-shrink:0">
+          <input type="text" id="invhQ" placeholder="SĐT khách / mã hóa đơn (VD: HD000123)…" autocomplete="off"
+                 oninput="invhSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault();invhSearch(true);}"
+                 style="width:100%;border:1.5px solid #e2e8f0;border-radius:11px;padding:12px 14px;font-size:14.5px;font-family:inherit;box-sizing:border-box">
+        </div>
+        <div id="invhResults" style="flex:1;overflow-y:auto;padding:14px 22px 22px">
+          <div style="color:#94a3b8;font-size:13px;text-align:center;padding:26px 0">Đang tải hóa đơn gần đây…</div>
+        </div>
+      </div>
+
+      <%-- View 2: chi tiết hóa đơn + form trả hàng --%>
+      <div id="invHistDetailView" style="display:none;flex:1;overflow-y:auto;padding:16px 22px 22px">
+        <button onclick="invhBackToList()" style="background:#f1f5f9;border:none;border-radius:9px;padding:7px 13px;font-size:12.5px;font-weight:750;color:#475569;cursor:pointer;margin-bottom:12px">← Quay lại danh sách</button>
+        <div id="invhDetailBody"></div>
+      </div>
+    </div>
+  </div>
+
   <%-- Modal: TẠO NHANH khách hàng (2 trường, <5 giây) --%>
   <div id="quickCreateModal" style="display:none;position:fixed;inset:0;z-index:9650;background:rgba(11,22,40,.55);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeQuickCreate()">
     <div style="background:#fff;border-radius:18px;max-width:380px;width:100%;padding:26px;box-shadow:0 24px 70px rgba(0,0,0,.35)">
@@ -630,11 +661,11 @@ body{display:flex}
       </div>
       <p style="font-size:12px;color:#64748b;margin:0 0 14px">Chỉ cần SĐT + Tên. Khách tự bổ sung hồ sơ tại Cổng khách hàng sau.</p>
       <label style="font-size:12px;font-weight:750;color:#334155;display:block;margin-bottom:5px">Số điện thoại <span style="color:#dc2626">*</span></label>
-      <input type="tel" id="qcPhone" maxlength="10" inputmode="numeric" placeholder="0901234567"
+      <input type="tel" id="qcPhone" maxlength="10" inputmode="numeric" placeholder="Thêm số điện thoại"
              oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)"
              style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:11px 13px;font-size:16px;font-weight:750;font-family:inherit;letter-spacing:1px;box-sizing:border-box">
       <label style="font-size:12px;font-weight:750;color:#334155;display:block;margin:12px 0 5px">Họ tên khách <span style="color:#dc2626">*</span></label>
-      <input type="text" id="qcName" placeholder="VD: Đào Trần Thanh Trúc"
+      <input type="text" id="qcName" placeholder="VD: Nguyễn Văn A"
              onkeydown="if(event.key==='Enter')submitQuickCreate()"
              style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:11px 13px;font-size:14.5px;font-family:inherit;box-sizing:border-box">
       <div style="display:flex;gap:10px;margin-top:12px">
@@ -2333,6 +2364,218 @@ function showToast(msg, type) {
   t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 2800);
+}
+
+// ── Lịch sử hóa đơn + Trả hàng ─────────────────────────────────────────────
+let invhTimer = null;
+let invhCurrentInvoice = null; // cache chi tiết hóa đơn đang xem để tính lại khi nhập SL
+
+function openInvHistModal() {
+  document.getElementById('invHistModal').style.display = 'flex';
+  invhShowListView();
+  document.getElementById('invhQ').value = '';
+  invhSearch(true);
+  setTimeout(() => document.getElementById('invhQ').focus(), 50);
+}
+function closeInvHistModal() {
+  document.getElementById('invHistModal').style.display = 'none';
+}
+function invhShowListView() {
+  document.getElementById('invHistListView').style.display = 'flex';
+  document.getElementById('invHistListView').style.flexDirection = 'column';
+  document.getElementById('invHistListView').style.flex = '1';
+  document.getElementById('invHistListView').style.overflow = 'hidden';
+  document.getElementById('invHistDetailView').style.display = 'none';
+}
+function invhBackToList() {
+  invhCurrentInvoice = null;
+  invhShowListView();
+  invhSearch(true);
+}
+
+function invhSearch(immediate) {
+  clearTimeout(invhTimer);
+  const run = () => {
+    const q = document.getElementById('invhQ').value.trim();
+    fetch('<%= ctx %>/pos?action=invoice-history&q=' + encodeURIComponent(q))
+      .then(r => r.json())
+      .then(data => {
+        if (data.reason === 'not_checked_in') {
+          document.getElementById('invhResults').innerHTML =
+            '<div style="color:#b45309;font-size:13px;text-align:center;padding:26px 0">⚠️ Vui lòng điểm danh khuôn mặt tại quầy trước khi tra cứu hóa đơn.</div>';
+          return;
+        }
+        renderInvhResults(data.invoices || []);
+      })
+      .catch(() => {
+        document.getElementById('invhResults').innerHTML =
+          '<div style="color:#dc2626;font-size:13px;text-align:center;padding:26px 0">Lỗi kết nối, thử lại.</div>';
+      });
+  };
+  if (immediate) run(); else invhTimer = setTimeout(run, 300);
+}
+
+function invhFmtMoney(v) {
+  return Math.round(Number(v) || 0).toLocaleString('vi-VN') + 'đ';
+}
+
+function renderInvhResults(list) {
+  const box = document.getElementById('invhResults');
+  if (!list.length) {
+    box.innerHTML = '<div style="color:#94a3b8;font-size:13px;text-align:center;padding:26px 0">Không tìm thấy hóa đơn nào.</div>';
+    return;
+  }
+  box.innerHTML = list.map(function(inv) {
+    return '<div onclick="openInvReturnView(' + inv.id + ')" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border:1.5px solid #e2e8f0;border-radius:12px;margin-bottom:8px;cursor:pointer;transition:.15s" onmouseover="this.style.borderColor=\'#3ABDE0\'" onmouseout="this.style.borderColor=\'#e2e8f0\'">'
+      + '<div style="min-width:0">'
+      + '<div style="font-size:13.5px;font-weight:800;color:#0f172a">' + escHtml(inv.code) + '</div>'
+      + '<div style="font-size:11.5px;color:#64748b;margin-top:2px">' + escHtml(inv.time)
+      + (inv.custName ? ' · ' + escHtml(inv.custName) : '') + (inv.custPhone ? ' (' + escHtml(inv.custPhone) + ')' : '') + '</div>'
+      + '</div>'
+      + '<div style="text-align:right;flex-shrink:0">'
+      + '<div style="font-size:14px;font-weight:800;color:#0d9488">' + invhFmtMoney(inv.amount) + '</div>'
+      + '<div style="font-size:11px;color:#94a3b8">' + escHtml(inv.method || '') + '</div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function openInvReturnView(invoiceId) {
+  fetch('<%= ctx %>/pos?action=invoice-detail-pos&invoiceId=' + invoiceId)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.ok) {
+        showToast('❌ Không tải được chi tiết hóa đơn', 'err');
+        return;
+      }
+      invhCurrentInvoice = data;
+      renderInvReturnDetail(data);
+      document.getElementById('invHistListView').style.display = 'none';
+      document.getElementById('invHistDetailView').style.display = 'block';
+    })
+    .catch(() => showToast('❌ Lỗi kết nối', 'err'));
+}
+
+function renderInvReturnDetail(inv) {
+  const rows = inv.items.map(function(it) {
+    const disabled = it.returnable <= 0 ? 'disabled' : '';
+    return '<tr style="border-bottom:1px solid #f1f5f9">'
+      + '<td style="padding:8px 6px">'
+      + '<div style="font-size:13px;font-weight:700;color:#0f172a">' + escHtml(it.medicineName) + '</div>'
+      + '<div style="font-size:11px;color:#94a3b8">Lô ' + escHtml(it.batchNumber || '-') + ' · Đã mua ' + it.quantity + ' ' + escHtml(it.unit)
+      + (it.already > 0 ? ' · Đã trả ' + it.already : '') + '</div>'
+      + '</td>'
+      + '<td style="padding:8px 6px;text-align:right;white-space:nowrap;font-size:12.5px;color:#475569">' + invhFmtMoney(it.unitPrice) + '</td>'
+      + '<td style="padding:8px 6px;text-align:center;width:90px">'
+      + '<input type="number" min="0" max="' + it.returnable + '" value="0" ' + disabled
+      + ' data-batch="' + it.batchId + '" data-price="' + it.unitPrice + '" data-max="' + it.returnable + '"'
+      + ' oninput="invhClampQty(this);invhRecalcReturn()"'
+      + ' style="width:70px;text-align:center;border:1.5px solid #e2e8f0;border-radius:8px;padding:6px 4px;font-size:13px;font-weight:750;font-family:inherit">'
+      + '<div style="font-size:10px;color:#94a3b8;margin-top:2px">tối đa ' + it.returnable + '</div>'
+      + '</td>'
+      + '</tr>';
+  }).join('');
+
+  const custLine = inv.custName
+    ? '👤 ' + escHtml(inv.custName) + ' · ' + escHtml(inv.custPhone) + (inv.custPoints ? ' · ' + inv.custPoints + ' điểm hiện có' : '')
+    : 'Khách lẻ (không lưu SĐT)';
+
+  document.getElementById('invhDetailBody').innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
+    + '<div style="font-size:15px;font-weight:800;color:#0f172a">' + escHtml(inv.code) + '</div>'
+    + '<div style="font-size:12.5px;color:#64748b">' + escHtml(inv.time) + '</div>'
+    + '</div>'
+    + '<div style="font-size:12.5px;color:#64748b;margin-bottom:14px">' + custLine + '</div>'
+    + '<table style="width:100%;border-collapse:collapse">'
+    + '<thead><tr style="border-bottom:2px solid #e2e8f0">'
+    + '<th style="text-align:left;padding:6px;font-size:11px;color:#94a3b8;font-weight:750">SẢN PHẨM</th>'
+    + '<th style="text-align:right;padding:6px;font-size:11px;color:#94a3b8;font-weight:750">ĐƠN GIÁ</th>'
+    + '<th style="text-align:center;padding:6px;font-size:11px;color:#94a3b8;font-weight:750">SL TRẢ</th>'
+    + '</tr></thead>'
+    + '<tbody>' + rows + '</tbody>'
+    + '</table>'
+    + '<label style="font-size:12px;font-weight:750;color:#334155;display:block;margin:16px 0 6px">Lý do trả hàng <span style="color:#dc2626">*</span></label>'
+    + '<textarea id="invhReason" rows="2" placeholder="VD: Khách đổi ý, thuốc mua nhầm loại…" style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:13.5px;font-family:inherit;box-sizing:border-box;resize:vertical"></textarea>'
+    + '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;color:#334155;cursor:pointer">'
+    + '<input type="checkbox" id="invhRestoreStock" checked style="accent-color:#0d9488;width:16px;height:16px"> Hàng còn nguyên vẹn — nhập lại kho để bán tiếp'
+    + '</label>'
+    + '<div id="invhSummary" style="margin-top:16px;padding:14px 16px;background:#f0fdfa;border:1.5px solid #99f6e4;border-radius:12px">'
+    + '<div style="display:flex;justify-content:space-between;font-size:13px;color:#334155;margin-bottom:4px"><span>Số lượng trả</span><span id="invhSumQty" style="font-weight:750">0</span></div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:13px;color:#334155;margin-bottom:4px"><span>Tiền hoàn khách</span><span id="invhSumRefund" style="font-weight:800;color:#0d9488">0đ</span></div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:13px;color:#334155"><span>Điểm tích lũy bị thu hồi</span><span id="invhSumPoints" style="font-weight:750;color:#dc2626">0 điểm</span></div>'
+    + '</div>'
+    + '<button id="invhSubmitBtn" onclick="submitInvReturn()" style="width:100%;margin-top:16px;padding:13px;background:linear-gradient(135deg,#dc2626,#b91c1c);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">✓ Xác nhận trả hàng</button>';
+
+  invhRecalcReturn();
+}
+
+function invhClampQty(input) {
+  const max = parseInt(input.dataset.max, 10) || 0;
+  let v = parseInt(input.value, 10) || 0;
+  if (v < 0) v = 0;
+  if (v > max) v = max;
+  input.value = v;
+}
+
+function invhRecalcReturn() {
+  const inputs = document.querySelectorAll('#invhDetailBody input[type="number"]');
+  let qtyTotal = 0, refundTotal = 0;
+  inputs.forEach(inp => {
+    const qty = parseInt(inp.value, 10) || 0;
+    const price = parseFloat(inp.dataset.price) || 0;
+    qtyTotal += qty;
+    refundTotal += qty * price;
+  });
+  document.getElementById('invhSumQty').textContent = qtyTotal;
+  document.getElementById('invhSumRefund').textContent = invhFmtMoney(refundTotal);
+  // Ước tính — số điểm thực trừ do server chốt lại theo điểm khả dụng thật (LoyaltyDAO.adjustForReturn)
+  const points = Math.floor(refundTotal / 1000);
+  document.getElementById('invhSumPoints').textContent = points + ' điểm';
+}
+
+function submitInvReturn() {
+  if (!invhCurrentInvoice) return;
+  const reason = document.getElementById('invhReason').value.trim();
+  if (reason.length < 3) {
+    showToast('⚠️ Vui lòng nhập lý do trả hàng (tối thiểu 3 ký tự)', 'err');
+    return;
+  }
+  const inputs = document.querySelectorAll('#invhDetailBody input[type="number"]');
+  const lines = [];
+  inputs.forEach(inp => {
+    const qty = parseInt(inp.value, 10) || 0;
+    if (qty > 0) lines.push({ batchId: inp.dataset.batch, qty });
+  });
+  if (!lines.length) {
+    showToast('⚠️ Vui lòng nhập số lượng cần trả', 'err');
+    return;
+  }
+
+  const btn = document.getElementById('invhSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Đang xử lý…';
+
+  const params = new URLSearchParams();
+  params.set('action', 'pos-return-save');
+  params.set('invoiceId', invhCurrentInvoice.invoiceId);
+  params.set('reason', reason);
+  if (document.getElementById('invhRestoreStock').checked) params.set('restoreStock', 'on');
+  lines.forEach(l => { params.append('batchId[]', l.batchId); params.append('qty[]', l.qty); });
+
+  fetch('<%= ctx %>/pos', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        showToast('✓ Đã trả hàng — hoàn ' + invhFmtMoney(data.refundAmount) + (data.pointsAdjusted > 0 ? ' · thu hồi ' + data.pointsAdjusted + ' điểm' : ''), 'ok');
+        openInvReturnView(invhCurrentInvoice.invoiceId); // reload lại để cập nhật SL còn có thể trả
+      } else {
+        showToast('❌ ' + (data.msg || 'Trả hàng thất bại'), 'err');
+        btn.disabled = false; btn.textContent = '✓ Xác nhận trả hàng';
+      }
+    })
+    .catch(() => {
+      showToast('❌ Lỗi kết nối', 'err');
+      btn.disabled = false; btn.textContent = '✓ Xác nhận trả hàng';
+    });
 }
 
 function toggleCheckinPanel() {
