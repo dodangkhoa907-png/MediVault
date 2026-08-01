@@ -1,0 +1,94 @@
+[Version]
+Signature="$Windows NT$"
+Provider=POSPrinter
+ClassGUID={4D36E979-E325-11CE-BFC1-08002BE10318}
+Class=Printer
+DriverVer=01/11/2024,2024.01.11.1
+CatalogFile=posprtdrv6.cat
+
+[Manufacturer]
+%PRV%=POSPrinter, NTx86, NTamd64, NTarm64, NTarm
+
+[POSPrinter]
+"POSPrinter POS80" = PRNTDRV,USBPRINT\POSPrinterPOS80AD02
+"POSPrinter POS58" = PRNTDRV,USBPRINT\POSPrinterPOS58FB07
+
+[POSPrinter.NTx86]
+"POSPrinter POS80" = PRNTDRV,USBPRINT\POSPrinterPOS80AD02
+"POSPrinter POS58" = PRNTDRV,USBPRINT\POSPrinterPOS58FB07
+
+[POSPrinter.NTamd64]
+"POSPrinter POS80" = PRNTDRV,USBPRINT\POSPrinterPOS80AD02
+"POSPrinter POS58" = PRNTDRV,USBPRINT\POSPrinterPOS58FB07
+
+[POSPrinter.NTarm64]
+"POSPrinter POS80" = PRNTDRV,USBPRINT\POSPrinterPOS80AD02
+"POSPrinter POS58" = PRNTDRV,USBPRINT\POSPrinterPOS58FB07
+
+[POSPrinter.NTarm]
+"POSPrinter POS80" = PRNTDRV,USBPRINT\POSPrinterPOS80AD02
+"POSPrinter POS58" = PRNTDRV,USBPRINT\POSPrinterPOS58FB07
+
+[DRVFILES]
+posprtdrv6.dll
+posprtdrv6ui.dll
+posprtdrv6.dat
+
+[PRNTDRV]
+DriverFile=posprtdrv6.dll
+ConfigFile=posprtdrv6ui.dll
+DataFile=posprtdrv6.dat
+CopyFiles=DRVFILES
+
+[PRNTDRV.NTarm.Services]
+AddService = ,0x2
+
+[PRNTDRV.NTarm64.Services]
+AddService = ,0x2
+
+[PRNTDRV.NTamd64.Services]
+AddService = ,0x2
+
+[PRNTDRV.NTx86.Services]
+AddService = ,0x2
+
+[PRNTDRV.Services]
+AddService = ,0x2
+
+[DestinationDirs]
+DefaultDestDir=66000
+
+[SourceDisksNames.x86]
+1   = ,,,
+
+[SourceDisksNames.amd64]
+1   = ,,,
+
+[SourceDisksNames.arm64]
+1   = ,,,
+
+[SourceDisksNames.arm]
+1   = ,,,
+
+
+[SourceDisksFiles]
+posprtdrv6.dat = 1, dat
+
+[SourceDisksFiles.x86]
+posprtdrv6.dll  = 1,i386
+posprtdrv6ui.dll   = 1,i386
+
+[SourceDisksFiles.amd64]
+posprtdrv6.dll  = 1,amd64
+posprtdrv6ui.dll   = 1,amd64
+
+[SourceDisksFiles.arm64]
+posprtdrv6.dll  = 1,arm64
+posprtdrv6ui.dll   = 1,arm64
+
+[SourceDisksFiles.arm]
+posprtdrv6.dll  = 1,arm
+posprtdrv6ui.dll   = 1,arm
+
+[Strings]
+PRV="POSPrinter"
