@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
  *       làm nguồn Nhập, không bịa thêm cột/luồng ghi log mới).</li>
  * </ul>
  */
-@WebServlet("/warehouse-dashboard")
+@WebServlet(urlPatterns = {"/warehouse", "/warehouse-dashboard"})
 public class WarehouseDashboardServlet extends HttpServlet {
 
     private static final int ROLE_WAREHOUSE = 3;
