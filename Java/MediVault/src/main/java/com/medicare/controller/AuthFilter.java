@@ -117,6 +117,8 @@ public class AuthFilter implements Filter {
         // ── 1. Public URLs — không cần đăng nhập ──
         boolean isPublic = uri.equals(ctx + "/login")
                 || uri.equals(ctx + "/staff-login")
+                || uri.equals(ctx + "/warehouse-login")
+                || uri.equals(ctx + "/warehouse-forgot-password")
                 || uri.startsWith(ctx + "/assets")
                 || uri.startsWith(ctx + "/css")
                 || uri.startsWith(ctx + "/js")
@@ -313,6 +315,17 @@ public class AuthFilter implements Filter {
                 && req.getParameter("uid") != null)) {
             if (staffAcc == null) {
                 resp.sendRedirect(ctx + "/staff-login");
+                return;
+            }
+            chain.doFilter(request, response);
+            return;
+        }
+
+        // ── 8b. Trang chỉ dành cho Quản lý kho ──
+        if (uri.equals(ctx + "/warehouse")
+                || uri.startsWith(ctx + "/warehouse-")) {
+            if (staffAcc == null || staffAcc.getRoleId() != 3) {
+                resp.sendRedirect(ctx + "/warehouse-login");
                 return;
             }
             chain.doFilter(request, response);
