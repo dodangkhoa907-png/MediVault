@@ -5,6 +5,6 @@ import java.util.List;
 
 public interface IAuditLogDAO {
     boolean insert(AuditLog log);
-    List<AuditLog> findPaginated(int page, int pageSize, String keyword);
-    int countAll(String keyword);
+    List<AuditLog> findPaginated(int page, int pageSize, String keyword, String fromDate, String toDate);
+    int countAll(String keyword, String fromDate, String toDate);
 }

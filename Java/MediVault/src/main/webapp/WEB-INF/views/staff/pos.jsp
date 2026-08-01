@@ -486,7 +486,8 @@ body{display:flex}
 .esr-confirm:hover:not(:disabled){background:linear-gradient(135deg,#B91C1C,#991B1B)}
 .esr-confirm:disabled{background:#CBD5E1;cursor:not-allowed}
 </style>
-    
+<meta name="csrf-token" content="${csrfToken}">
+<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
 </head>
 <body>
 

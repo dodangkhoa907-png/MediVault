@@ -33,9 +33,16 @@
     Integer currentPage = (Integer) request.getAttribute("currentPage");
     Integer totalPages  = (Integer) request.getAttribute("totalPages");
     java.lang.String searchKeyword = (java.lang.String) request.getAttribute("searchKeyword");
+    java.lang.String filterFrom = (java.lang.String) request.getAttribute("filterFrom");
+    java.lang.String filterTo   = (java.lang.String) request.getAttribute("filterTo");
     if (currentPage  == null) currentPage  = 1;
     if (totalPages   == null) totalPages   = 1;
     if (searchKeyword == null) searchKeyword = "";
+    if (filterFrom == null) filterFrom = "";
+    if (filterTo   == null) filterTo   = "";
+    java.lang.String pageQS = "&search=" + java.net.URLEncoder.encode(searchKeyword, java.nio.charset.StandardCharsets.UTF_8)
+            + "&from=" + java.net.URLEncoder.encode(filterFrom, java.nio.charset.StandardCharsets.UTF_8)
+            + "&to="   + java.net.URLEncoder.encode(filterTo, java.nio.charset.StandardCharsets.UTF_8);
 
     @SuppressWarnings("unchecked")
     java.util.Map<Integer,Integer> auditRoleMap =
@@ -346,8 +353,8 @@ select,option{font-family:inherit;font-size:inherit}
         <div class="table-card">
             <div class="table-card-header">
                 <div>
-                    <div class="table-card-title">📋 Lịch sử hoạt động</div>
-                    <div class="table-card-subtitle">Ghi lại toàn bộ thao tác của admin và nhân viên</div>
+                    <div class="table-card-title">🕒 Toàn hệ thống — Dòng thời gian chung</div>
+                    <div class="table-card-subtitle">Mọi vai trò, mới nhất lên đầu — soi sự cố liên hoàn giữa các phòng ban</div>
                 </div>
             </div>
 
@@ -358,8 +365,14 @@ select,option{font-family:inherit;font-size:inherit}
                            placeholder="Tìm theo hành động, module, mô tả, username…"
                            value="<%= searchKeyword %>">
                 </div>
+                <div style="display:flex;align-items:center;gap:6px">
+                    <span style="font-size:11.5px;font-weight:750;color:var(--muted)">Từ</span>
+                    <input type="date" name="from" value="<%= filterFrom %>" style="padding:8px 10px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;color:var(--ink)">
+                    <span style="font-size:11.5px;font-weight:750;color:var(--muted)">Đến</span>
+                    <input type="date" name="to" value="<%= filterTo %>" style="padding:8px 10px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;color:var(--ink)">
+                </div>
                 <button type="submit" class="btn-primary">🔍 Lọc</button>
-                <% if (!searchKeyword.isEmpty()) { %>
+                <% if (!searchKeyword.isEmpty() || !filterFrom.isEmpty() || !filterTo.isEmpty()) { %>
                 <a href="${pageContext.request.contextPath}/audit-logs" class="filter-chip">✕ Xóa lọc</a>
                 <% } %>
             </form>
@@ -406,6 +419,24 @@ select,option{font-family:inherit;font-size:inherit}
               .af-cat.active{background:var(--navy);color:#fff;border-color:transparent}
               .rolechip{display:inline-block;font-size:10px;font-weight:800;padding:1px 7px;border-radius:20px;margin-left:6px}
               .rc1{background:#FEE2E2;color:#991B1B}.rc2{background:#EFF6FF;color:#1558A8}.rc3{background:#FFFBEB;color:#92400E}.rc0{background:#F1F5F9;color:#64748B}
+            </style>
+
+            <style>
+              /* Tầng 2 — role summary cards */
+              .role-card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all .18s}
+              .role-card:hover{border-color:var(--cyan);background:#fff;transform:translateY(-2px);box-shadow:0 8px 24px rgba(15,38,69,.08)}
+              .role-card-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:10px}
+              .rc-bg2{background:#EFF6FF}.rc-bg3{background:#FFFBEB}.rc-bg0{background:#F1F5F9}
+              .role-card-name{font-size:13.5px;font-weight:750;color:var(--ink)}
+              .role-card-count{font-family:'Lora',serif;font-size:26px;font-weight:750;color:var(--navy);margin-top:6px}
+              .role-card-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+              /* Drawer trượt từ phải */
+              .drawer-backdrop{position:fixed;inset:0;background:rgba(11,22,40,.4);z-index:300;opacity:0;visibility:hidden;transition:opacity .22s}
+              .drawer-backdrop.open{opacity:1;visibility:visible}
+              .role-drawer{position:fixed;top:0;right:0;bottom:0;width:min(720px,92vw);background:#fff;z-index:301;box-shadow:-12px 0 40px rgba(15,38,69,.18);transform:translateX(100%);transition:transform .26s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;overflow-y:auto}
+              .role-drawer.open{transform:translateX(0)}
+              .role-drawer-head{padding:20px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2}
             </style>
 
             <!-- Table -->
@@ -478,23 +509,77 @@ select,option{font-family:inherit;font-size:inherit}
                     Trang <%= currentPage %> / <%= totalPages %>
                 </div>
                 <div class="pagination-btns">
-                    <a href="${pageContext.request.contextPath}/audit-logs?page=<%= currentPage - 1 %>&search=<%= searchKeyword %>"
+                    <a href="${pageContext.request.contextPath}/audit-logs?page=<%= currentPage - 1 %><%= pageQS %>"
                        class="page-btn <%= currentPage <= 1 ? "disabled" : "" %>">‹</a>
                     <%
                        int start = Math.max(1, currentPage - 2);
                        int end   = Math.min(totalPages, currentPage + 2);
                        for (int p = start; p <= end; p++) {
                     %>
-                    <a href="${pageContext.request.contextPath}/audit-logs?page=<%= p %>&search=<%= searchKeyword %>"
+                    <a href="${pageContext.request.contextPath}/audit-logs?page=<%= p %><%= pageQS %>"
                        class="page-btn <%= p == currentPage ? "active" : "" %>"><%= p %></a>
                     <% } %>
-                    <a href="${pageContext.request.contextPath}/audit-logs?page=<%= currentPage + 1 %>&search=<%= searchKeyword %>"
+                    <a href="${pageContext.request.contextPath}/audit-logs?page=<%= currentPage + 1 %><%= pageQS %>"
                        class="page-btn <%= currentPage >= totalPages ? "disabled" : "" %>">›</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ TẦNG 2 — Tổng quan theo phòng ban (quick filter / deep-dive) ══ -->
+        <div class="table-card" style="margin-top:20px">
+            <div class="table-card-header">
+                <div>
+                    <div class="table-card-title">🗂️ Theo phòng ban</div>
+                    <div class="table-card-subtitle">Bấm 1 thẻ để xem chi tiết nhật ký riêng của phòng ban đó, có filter loại hành động</div>
+                </div>
+            </div>
+            <div style="padding:20px 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
+                <div class="role-card" onclick="openRoleDrawer('2','💊 Dược sĩ / Staff POS')">
+                    <div class="role-card-icon rc-bg2">💊</div>
+                    <div class="role-card-name">Dược sĩ / Staff POS</div>
+                    <div class="role-card-count" id="cardCount2">0</div>
+                    <div class="role-card-sub">hành động · trong <%= auditLogs.size() %> gần nhất</div>
+                </div>
+                <div class="role-card" onclick="openRoleDrawer('3','📦 Thủ kho / Inventory')">
+                    <div class="role-card-icon rc-bg3">📦</div>
+                    <div class="role-card-name">Thủ kho / Inventory</div>
+                    <div class="role-card-count" id="cardCount3">0</div>
+                    <div class="role-card-sub">hành động · trong <%= auditLogs.size() %> gần nhất</div>
+                </div>
+                <div class="role-card" onclick="openRoleDrawer('0','⚙️ Hệ thống / Tự động')">
+                    <div class="role-card-icon rc-bg0">⚙️</div>
+                    <div class="role-card-name">Hệ thống / Tự động</div>
+                    <div class="role-card-count" id="cardCount0">0</div>
+                    <div class="role-card-sub">hành động · trong <%= auditLogs.size() %> gần nhất</div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- ══ DRAWER chi tiết theo phòng ban (trượt từ phải) ══ -->
+<div class="drawer-backdrop" id="roleDrawerBackdrop" onclick="closeRoleDrawer()"></div>
+<aside class="role-drawer" id="roleDrawer">
+    <div class="role-drawer-head">
+        <div id="drawerTitle" style="font-family:'Lora',serif;font-weight:750;font-size:17px">—</div>
+        <button type="button" class="topbar-icon-btn" onclick="closeRoleDrawer()" title="Đóng" aria-label="Đóng">✕</button>
+    </div>
+    <div id="drawerCats" style="padding:14px 20px 0;display:flex;gap:6px;flex-wrap:wrap">
+        <% String[][] dcats = {{"","Tất cả loại"},{"pos","🛒 Bán hàng"},{"shift","📅 Ca làm việc"},{"attendance","⏱️ Điểm danh"},{"inventory","📦 Kho / Nhập lô"},{"account","👤 Tài khoản"},{"auth","🔑 Đăng nhập"},{"other","⚙️ Khác"}};
+           for (int i=0;i<dcats.length;i++) { %>
+        <button type="button" class="af-cat <%= i==0?"active":"" %>" data-cat="<%= dcats[i][0] %>" onclick="drawerCat(this,'<%= dcats[i][0] %>')"><%= dcats[i][1] %></button>
+        <% } %>
+    </div>
+    <div style="padding:10px 20px;font-size:12px;color:var(--muted)">Đang hiện <b id="drawerCount">0</b> nhật ký.</div>
+    <div class="table-wrap" style="padding:0 20px 20px">
+        <table class="data-table">
+            <thead>
+                <tr><th>#</th><th>Người thực hiện</th><th>Hành động</th><th>Module</th><th>Mô tả</th><th>IP</th><th>Thời gian</th></tr>
+            </thead>
+            <tbody id="drawerTbody"></tbody>
+        </table>
+    </div>
+</aside>
 
 <script>
 function toggleCdd(id){var w=document.getElementById(id),m=w.querySelector('.cdd-menu'),b=w.querySelector('.cdd-btn');var open=m.classList.contains('show');document.querySelectorAll('.cdd-menu.show').forEach(function(x){x.classList.remove('show');x.closest('.cdd').querySelector('.cdd-btn').classList.remove('open')});if(!open){m.classList.add('show');b.classList.add('open');var act=m.querySelector('.cdd-opt.active');if(act)act.scrollIntoView({block:'nearest'})}}
@@ -572,6 +657,54 @@ function afApply() {
     } else if (shown > 0 && none) { none.remove(); }
 }
 afApply(); // đếm ban đầu
+
+// ── TẦNG 2: đếm số dòng theo role (trong dữ liệu đã tải) cho từng thẻ ──
+function countRole(role) {
+    return document.querySelectorAll('.data-table tbody tr[data-role="' + role + '"]').length;
+}
+['2','3','0'].forEach(function (r) {
+    var el = document.getElementById('cardCount' + r);
+    if (el) el.textContent = countRole(r);
+});
+
+// ── DRAWER chi tiết theo phòng ban ──
+function openRoleDrawer(role, label) {
+    document.getElementById('drawerTitle').textContent = label;
+    var tbody = document.getElementById('drawerTbody');
+    tbody.innerHTML = '';
+    var count = 0;
+    document.querySelectorAll('.data-table tbody tr[data-role]').forEach(function (row) {
+        if (row.dataset.role === String(role)) {
+            tbody.appendChild(row.cloneNode(true));
+            count++;
+        }
+    });
+    if (count === 0) {
+        tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">📋</div><p>Chưa có nhật ký nào.</p></div></td></tr>';
+    }
+    document.getElementById('drawerCount').textContent = count;
+    document.querySelectorAll('#drawerCats .af-cat').forEach(function (b, i) { b.classList.toggle('active', i === 0); });
+    document.getElementById('roleDrawer').classList.add('open');
+    document.getElementById('roleDrawerBackdrop').classList.add('open');
+}
+function closeRoleDrawer() {
+    document.getElementById('roleDrawer').classList.remove('open');
+    document.getElementById('roleDrawerBackdrop').classList.remove('open');
+}
+function drawerCat(btn, cat) {
+    document.querySelectorAll('#drawerCats .af-cat').forEach(function (c) { c.classList.remove('active'); });
+    btn.classList.add('active');
+    var shown = 0;
+    document.querySelectorAll('#drawerTbody tr[data-role]').forEach(function (row) {
+        var show = !cat || row.dataset.cat === cat;
+        row.style.display = show ? '' : 'none';
+        if (show) shown++;
+    });
+    document.getElementById('drawerCount').textContent = shown;
+}
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeRoleDrawer();
+});
 </script>
 </body>
 </html>

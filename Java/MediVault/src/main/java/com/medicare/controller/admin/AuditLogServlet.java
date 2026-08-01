@@ -37,14 +37,16 @@ public class AuditLogServlet extends HttpServlet {
         int pageSize = 100; // tải nhiều hơn để lọc theo Role/Nhân viên/Loại phía client cho đủ dữ liệu
         String pageStr = req.getParameter("page");
         String keyword = req.getParameter("search");
+        String fromDate = req.getParameter("from");
+        String toDate   = req.getParameter("to");
 
         if (pageStr != null && !pageStr.isEmpty()) {
             try { page = Integer.parseInt(pageStr); }
             catch (NumberFormatException ignored) { page = 1; }
         }
 
-        List<AuditLog> logs  = auditLogDAO.findPaginated(page, pageSize, keyword);
-        int total            = auditLogDAO.countAll(keyword);
+        List<AuditLog> logs  = auditLogDAO.findPaginated(page, pageSize, keyword, fromDate, toDate);
+        int total            = auditLogDAO.countAll(keyword, fromDate, toDate);
         int totalPages       = (int) Math.ceil((double) total / pageSize);
         if (totalPages < 1) totalPages = 1;
 
@@ -52,6 +54,8 @@ public class AuditLogServlet extends HttpServlet {
         req.setAttribute("currentPage",   page);
         req.setAttribute("totalPages",    totalPages);
         req.setAttribute("searchKeyword", keyword);
+        req.setAttribute("filterFrom",    fromDate);
+        req.setAttribute("filterTo",      toDate);
 
         com.medicare.dao.interfaces.IAccountDAO accountDAO = new com.medicare.dao.AccountDAO();
         com.medicare.dao.interfaces.IPasswordResetDAO resetDAO = new com.medicare.dao.PasswordResetDAO();

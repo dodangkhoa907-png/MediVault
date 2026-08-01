@@ -83,7 +83,7 @@ public class PosServlet extends HttpServlet {
         // ── Chặn action lộ thông tin khách hàng (PII) khi chưa có nhân viên nào
         // xác thực trên session này. Không áp dụng cho action render trang /
         // tra cứu sản phẩm — những cái đó cần public cho màn hình chờ check-in. ──
-        if (NEEDS_STAFF_GET.contains(action) && !hasAnyPosIdentity(req)) {
+        if (action != null && NEEDS_STAFF_GET.contains(action) && !hasAnyPosIdentity(req)) {
             resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             resp.setContentType("application/json;charset=UTF-8");
             resp.getWriter().print("{\"ok\":false,\"error\":\"unauthorized\"}");
@@ -343,7 +343,7 @@ public class PosServlet extends HttpServlet {
         // ── Chặn mọi action mutate dữ liệu / bán hàng khi chưa có nhân viên nào
         // xác thực trên session này. Danh sách BOOTSTRAP_ACTIONS là các bước cần
         // public để nhân viên còn CHƯA đăng nhập có thể chọn quầy + check-in mặt. ──
-        if (!BOOTSTRAP_ACTIONS.contains(action) && !hasAnyPosIdentity(req)) {
+        if ((action == null || !BOOTSTRAP_ACTIONS.contains(action)) && !hasAnyPosIdentity(req)) {
             resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             out.print("{\"ok\":false,\"error\":\"unauthorized\"}");
             return;
