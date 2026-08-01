@@ -94,6 +94,7 @@ public class DBContext {
             // =0, và nếu lần thử đó fail ngay trong bước setup connection (chạy
             // connectionInitSql phía trên — SET QUOTED_IDENTIFIER...) thay vì lúc mở socket,
             // nó ném ConnectionSetupException NGAY LẬP TỨC bất kể initializationFailTimeout=0,
+
             // làm sập cả Tomcat lúc start (đã xảy ra thực tế: "Read timed out" ngay tại
             // PoolBase.setupConnection). Giá trị ÂM mới thực sự bỏ qua hẳn bước fail-fast này,
             // để pool khởi tạo rỗng và tự tạo connection khi có request đầu tiên.
