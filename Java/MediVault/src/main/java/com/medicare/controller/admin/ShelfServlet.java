@@ -54,18 +54,6 @@ public class ShelfServlet extends HttpServlet {
         switch (action) {
             case "new"  -> showForm(req, resp, null);
             case "edit" -> showForm(req, resp, dao.findById(parseInt(req.getParameter("id"))));
-            case "delete" -> {
-                int id = parseInt(req.getParameter("id"));
-                if (id > 0) {
-                    int used = dao.countMedicinesOnShelf(id);
-                    if (used > 0) { resp.sendRedirect(req.getContextPath() + "/shelves?msg=has-medicine"); return; }
-                    boolean ok = dao.delete(id);
-                    if (ok) AuditHelper.log(req, "Xóa vị trí kệ", "Shelf", id, "Xóa kệ ID " + id);
-                    resp.sendRedirect(req.getContextPath() + "/shelves?msg=" + (ok ? "deleted" : "error"));
-                    return;
-                }
-                resp.sendRedirect(req.getContextPath() + "/shelves");
-            }
             default -> showList(req, resp);
         }
     }
@@ -75,6 +63,20 @@ public class ShelfServlet extends HttpServlet {
             throws ServletException, IOException {
         if (!guard(req, resp)) return;
         req.setCharacterEncoding("UTF-8");
+
+        if ("delete".equals(req.getParameter("action"))) {
+            int id = parseInt(req.getParameter("id"));
+            if (id > 0) {
+                int used = dao.countMedicinesOnShelf(id);
+                if (used > 0) { resp.sendRedirect(req.getContextPath() + "/shelves?msg=has-medicine"); return; }
+                boolean ok = dao.delete(id);
+                if (ok) AuditHelper.log(req, "Xóa vị trí kệ", "Shelf", id, "Xóa kệ ID " + id);
+                resp.sendRedirect(req.getContextPath() + "/shelves?msg=" + (ok ? "deleted" : "error"));
+                return;
+            }
+            resp.sendRedirect(req.getContextPath() + "/shelves");
+            return;
+        }
 
         String idStr = req.getParameter("shelfId");
         String name  = req.getParameter("shelfName");

@@ -18,7 +18,7 @@ import java.math.BigDecimal;
  * POST action=create  → tạo mới
  * POST action=update  → sửa
  * POST action=toggle  → bật/tắt
- * GET  action=delete&id=X → xóa (chỉ khi không có lịch liên kết)
+ * POST action=delete&id=X → xóa (chỉ khi không có lịch liên kết)
  */
 @WebServlet("/shift-types")
 public class ShiftTypeServlet extends HttpServlet {
@@ -29,9 +29,7 @@ public class ShiftTypeServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         Account admin = getAdmin(req, resp); if (admin == null) return;
-        String action = req.getParameter("action");
-        if ("delete".equals(action)) handleDelete(req, resp, admin);
-        else resp.sendRedirect(req.getContextPath() + "/shifts?tab=types");
+        resp.sendRedirect(req.getContextPath() + "/shifts?tab=types");
     }
 
     @Override
@@ -44,6 +42,7 @@ public class ShiftTypeServlet extends HttpServlet {
             case "create" -> handleCreate(req, resp, admin);
             case "update" -> handleUpdate(req, resp, admin);
             case "toggle" -> handleToggle(req, resp, admin);
+            case "delete" -> handleDelete(req, resp, admin);
             case "bulk-delete" -> handleBulkDelete(req, resp, admin);
             default -> resp.sendRedirect(req.getContextPath() + "/shifts?tab=types");
         }

@@ -127,7 +127,6 @@ public class AuthFilter implements Filter {
                 || uri.equals(ctx + "/forgot-password")
                 || uri.startsWith(ctx + "/admin/confirm-reset")
                 || uri.equals(ctx + "/staff-ping")
-                || uri.endsWith("/fix.jsp")
                 // ── NFC: không cần session — xác thực bằng cardId ──
                 || uri.startsWith(ctx + "/nfc-checkin")
                 || uri.startsWith(ctx + "/api/nfc")
@@ -153,7 +152,11 @@ public class AuthFilter implements Filter {
             staffAcc = (Account) session.getAttribute("staffAccount_" + reqUid);
         }
 
-        if (staffAcc == null && session != null) {
+        // Chỉ quét toàn bộ staffAccount_* khi request KHÔNG mang uid cụ thể — nếu URL
+        // đã chỉ rõ uid mà không khớp session nào thì coi như KHÔNG có danh tính, tránh
+        // việc rơi về nhầm 1 tài khoản khác còn sót trong session (máy dùng chung).
+        boolean uidSpecified = reqUid != null && !reqUid.isEmpty();
+        if (staffAcc == null && session != null && !uidSpecified) {
             java.util.Enumeration<String> names = session.getAttributeNames();
             while (names.hasMoreElements()) {
                 String name = names.nextElement();

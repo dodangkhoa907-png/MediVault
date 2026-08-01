@@ -1459,9 +1459,8 @@ select,option{font-family:inherit;font-size:inherit}
                         <a href="${pageContext.request.contextPath}/shifts?action=force-close&id=${s.shiftId}" class="btn-close-shift">🔒 Đóng</a>
                       </c:if>
                       <c:if test="${!s.open}">
-                        <a href="${pageContext.request.contextPath}/shifts?action=delete&id=${s.shiftId}"
-                           class="btn-del" title="Xóa"
-                           onclick="return confirm('Xóa ca #${s.shiftId}?')">🗑</a>
+                        <a href="#" class="btn-del" title="Xóa"
+                           onclick="return deleteShift(${s.shiftId})">🗑</a>
                       </c:if>
                     </div>
                   </td>
@@ -3046,6 +3045,16 @@ function submitTypeForm() {
   if (isNaN(rate) || rate < 50000) { validateRate(document.getElementById('typeRate')); return; }
   document.getElementById('typeForm').submit();
 }
+function deleteShift(id) {
+  if (confirm('Xóa ca #' + id + '?')) {
+    const f = document.createElement('form');
+    f.method = 'post';
+    f.action = ctx_path + '/shifts';
+    f.innerHTML = '<input name="action" value="delete"><input name="id" value="' + id + '">';
+    document.body.appendChild(f); f.submit();
+  }
+  return false;
+}
 function toggleType(id, active) {
   if (confirm(active ? 'Tạm dừng loại ca này?' : 'Kích hoạt lại loại ca này?')) {
     const f = document.createElement('form');
@@ -3057,7 +3066,11 @@ function toggleType(id, active) {
 }
 function deleteType(id, name) {
   if (confirm('Xóa loại ca "'+name+'"?\nChỉ xóa được khi không còn lịch ca nào dùng loại này.')) {
-    location.href = ctx_path + '/shift-types?action=delete&id=' + id;
+    const f = document.createElement('form');
+    f.method = 'post';
+    f.action = ctx_path + '/shift-types';
+    f.innerHTML = '<input name="action" value="delete"><input name="id" value="'+id+'">';
+    document.body.appendChild(f); f.submit();
   }
 }
 

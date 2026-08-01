@@ -84,4 +84,29 @@
       form.appendChild(i);
     }
   }, true);
+
+  // ── 4. form.submit() gọi trực tiếp bằng JS ───────────────────────────────
+  // Theo spec DOM, HTMLFormElement.submit() KHÔNG bắn event 'submit' (khác hẳn
+  // click nút submit / requestSubmit()) — nên listener ở mục 3 không chạy với
+  // các form dựng động kiểu `document.createElement('form'); ...; f.submit()`
+  // (rất nhiều chỗ trong shift-list.jsp, leave-request-*.jsp dùng pattern này).
+  // Vá thẳng vào submit() để không phải sửa tay từng nơi.
+  var origFormSubmit = HTMLFormElement.prototype.submit;
+  HTMLFormElement.prototype.submit = function () {
+    if (UNSAFE.test(this.method || 'GET')) {
+      var enc = (this.enctype || '').toLowerCase();
+      if (enc.indexOf('multipart') === 0) {
+        var act = this.getAttribute('action') || '';
+        if (act.indexOf('_csrf=') === -1) {
+          this.setAttribute('action',
+            act + (act.indexOf('?') === -1 ? '?' : '&') + '_csrf=' + encodeURIComponent(TOKEN));
+        }
+      } else if (!this.querySelector('input[name="_csrf"]')) {
+        var i2 = document.createElement('input');
+        i2.type = 'hidden'; i2.name = '_csrf'; i2.value = TOKEN;
+        this.appendChild(i2);
+      }
+    }
+    return origFormSubmit.call(this);
+  };
 })();

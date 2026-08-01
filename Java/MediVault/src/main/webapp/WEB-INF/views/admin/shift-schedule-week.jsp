@@ -259,7 +259,7 @@ select,option{font-family:inherit;font-size:inherit}
                   </div>
                   <c:if test="${sc.status=='SCHEDULED'}">
                     <button class="chip-cancel"
-                      onclick="event.stopPropagation();if(confirm('Hủy ca này?'))location.href='${pageContext.request.contextPath}/shift-schedules?action=cancel&id=${sc.scheduleId}'">✕</button>
+                      onclick="event.stopPropagation();cancelSchedule(${sc.scheduleId})">✕</button>
                   </c:if>
                 </div>
               </c:if>
@@ -282,5 +282,14 @@ document.addEventListener('click',function(e){if(!e.target.closest('.cdd')){docu
 
 const toast = document.getElementById('toast');
 if (toast) setTimeout(()=>{toast.style.opacity='0';setTimeout(()=>toast.remove(),400)},3500);
+
+function cancelSchedule(id) {
+    if (!confirm('Hủy ca này?')) return;
+    const f = document.createElement('form');
+    f.method = 'post';
+    f.action = '${pageContext.request.contextPath}/shift-schedules';
+    f.innerHTML = '<input name="action" value="cancel"><input name="id" value="' + id + '">';
+    document.body.appendChild(f); f.submit();
+}
 </script>
 </body></html>

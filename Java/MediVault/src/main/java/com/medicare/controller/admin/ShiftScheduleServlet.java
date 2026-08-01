@@ -22,10 +22,10 @@ import java.util.List;
  * GET ?action=new → form tạo mới
  * GET ?action=detail&id=X → chi tiết 1 lịch ca
  * GET ?action=edit&id=X → form sửa
- * GET ?action=cancel&id=X → hủy (soft delete)
- * GET ?action=delete&id=X → xóa hẳn (nếu chưa có điểm danh)
  * POST action=create → lưu mới (bulk)
  * POST action=update → lưu chỉnh sửa
+ * POST action=cancel&id=X → hủy (soft delete)
+ * POST action=delete&id=X → xóa hẳn (nếu chưa có điểm danh)
  */
 @WebServlet("/shift-schedules")
 public class ShiftScheduleServlet extends HttpServlet {
@@ -53,8 +53,6 @@ public class ShiftScheduleServlet extends HttpServlet {
             case "new" -> showCreateForm(req, resp);
             case "detail" -> showDetail(req, resp);
             case "edit" -> showEditForm(req, resp);
-            case "cancel" -> handleCancel(req, resp, admin);
-            case "delete" -> handleDelete(req, resp, admin);
             default -> showWeek(req, resp);
         }
     }
@@ -73,6 +71,8 @@ public class ShiftScheduleServlet extends HttpServlet {
         switch (action != null ? action : "") {
             case "create" -> handleCreate(req, resp, admin);
             case "update" -> handleUpdate(req, resp, admin);
+            case "cancel" -> handleCancel(req, resp, admin);
+            case "delete" -> handleDelete(req, resp, admin);
             default -> resp.sendRedirect(req.getContextPath() + "/shift-schedules");
         }
     }

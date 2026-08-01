@@ -35,6 +35,34 @@ public class PosServlet extends HttpServlet {
 
     private static final int POS_ACCOUNT_ID = 1;
 
+    // ── Action GET yêu cầu đã có nhân viên xác thực (đọc PII khách hàng) ──
+    private static final java.util.Set<String> NEEDS_STAFF_GET = java.util.Set.of(
+            "find-customer", "nfc-lookup", "search-customers", "pos-customer-detail",
+            "list-customers", "customer-detail", "shift-summary", "my-invoices");
+
+    // ── Action POST được phép chạy TRƯỚC khi có nhân viên xác thực (chọn quầy,
+    // check-in khuôn mặt, thanh toán QR đang chờ...) — mọi action POST khác đều
+    // bắt buộc phải có identity trong session (chặn "bấm bill" không đăng nhập). ──
+    private static final java.util.Set<String> BOOTSTRAP_ACTIONS = java.util.Set.of(
+            "set-station", "pos-face-checkin", "pos-face-identify",
+            "pos-pause", "pos-resume", "create-qr", "check-qr-status", "cancel-qr");
+
+    /** Có BẤT KỲ tài khoản nào (admin/nhân viên) đã xác thực trên session này chưa. */
+    private boolean hasAnyPosIdentity(HttpServletRequest req) {
+        HttpSession session = req.getSession(false);
+        if (session == null) return false;
+        if (session.getAttribute("adminAccount") instanceof Account) return true;
+        if (session.getAttribute("staffAccount") instanceof Account) return true;
+        java.util.Enumeration<String> names = session.getAttributeNames();
+        while (names.hasMoreElements()) {
+            String name = names.nextElement();
+            if (name.startsWith("staffAccount_") && session.getAttribute(name) instanceof Account) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // ── Idempotency cho complete-sale ─────────────────────────────────────────
     // Nếu FE gửi trùng clientRequestId (double-submit do click liên tục, mạng lag khiến
     // race giữa các lượt poll QR, F5 giữa lúc đang xử lý...) thì KHÔNG xử lý lại / trừ kho
@@ -50,6 +78,16 @@ public class PosServlet extends HttpServlet {
         resp.setContentType("text/html; charset=UTF-8");
 
         String action = req.getParameter("action");
+
+        // ── Chặn action lộ thông tin khách hàng (PII) khi chưa có nhân viên nào
+        // xác thực trên session này. Không áp dụng cho action render trang /
+        // tra cứu sản phẩm — những cái đó cần public cho màn hình chờ check-in. ──
+        if (NEEDS_STAFF_GET.contains(action) && !hasAnyPosIdentity(req)) {
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            resp.setContentType("application/json;charset=UTF-8");
+            resp.getWriter().print("{\"ok\":false,\"error\":\"unauthorized\"}");
+            return;
+        }
 
         if ("search".equals(action)) {
             String q = req.getParameter("q");
@@ -300,6 +338,15 @@ public class PosServlet extends HttpServlet {
         PrintWriter out = resp.getWriter();
 
         String action = req.getParameter("action");
+
+        // ── Chặn mọi action mutate dữ liệu / bán hàng khi chưa có nhân viên nào
+        // xác thực trên session này. Danh sách BOOTSTRAP_ACTIONS là các bước cần
+        // public để nhân viên còn CHƯA đăng nhập có thể chọn quầy + check-in mặt. ──
+        if (!BOOTSTRAP_ACTIONS.contains(action) && !hasAnyPosIdentity(req)) {
+            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            out.print("{\"ok\":false,\"error\":\"unauthorized\"}");
+            return;
+        }
 
         if ("set-station".equals(action)) {
             String stStr = req.getParameter("station");
