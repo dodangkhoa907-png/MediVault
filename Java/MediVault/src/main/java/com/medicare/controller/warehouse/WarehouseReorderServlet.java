@@ -37,34 +37,8 @@ public class WarehouseReorderServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-
         String uid = req.getParameter("uid");
-        HttpSession session = req.getSession(false);
-        Account acc = (uid != null && session != null)
-                ? (Account) session.getAttribute("staffAccount_" + uid) : null;
-        if (acc == null || acc.getRoleId() != ROLE_WAREHOUSE) {
-            resp.sendRedirect(req.getContextPath() + "/warehouse-login");
-            return;
-        }
-
-        List<Map<String, Object>> pendingSuggestions =
-                CacheManager.getShort("wh.reorderPending", this::findPendingSuggestions);
-        List<Map<String, Object>> tierLight =    // 91-180 ngày
-                CacheManager.getShort("wh.expTierLight", () -> findExpiryTier(91, 180, "ACTIVE"));
-        List<Map<String, Object>> tierRestricted = // 31-90 ngày
-                CacheManager.getShort("wh.expTierRestricted", () -> findExpiryTier(31, 90, "ACTIVE"));
-        List<Map<String, Object>> tierQuarantined = // đã cách ly (<=30 ngày)
-                CacheManager.getShort("wh.expTierQuarantined", this::findQuarantined);
-
-        req.setAttribute("staffUid", uid);
-        req.setAttribute("staffAcc", acc);
-        req.setAttribute("pendingSuggestions", pendingSuggestions);
-        req.setAttribute("tierLight", tierLight);
-        req.setAttribute("tierRestricted", tierRestricted);
-        req.setAttribute("tierQuarantined", tierQuarantined);
-
-        req.getRequestDispatcher("/WEB-INF/views/warehouse/warehouse-reorder.jsp")
-                .forward(req, resp);
+        resp.sendRedirect(req.getContextPath() + "/warehouse-inventory?uid=" + (uid != null ? uid : "") + "&tab=reorder");
     }
 
     /** Phiếu đặt hàng gợi ý (PENDING, do hệ thống tự tạo) — mỗi phiếu 1 dòng thuốc. */

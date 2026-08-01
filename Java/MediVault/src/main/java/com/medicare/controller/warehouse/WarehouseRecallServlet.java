@@ -57,22 +57,8 @@ public class WarehouseRecallServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-
-        Account acc = requireWarehouseAccount(req, resp);
-        if (acc == null) return;
-
         String uid = req.getParameter("uid");
-
-        req.setAttribute("staffUid", uid);
-        req.setAttribute("staffAcc", acc);
-        req.setAttribute("medicines", medicineDAO.findAll());
-        req.setAttribute("history", loadRecallHistory());
-
-        String msg = req.getParameter("msg");
-        if (msg != null) req.setAttribute("msg", msg);
-
-        req.getRequestDispatcher("/WEB-INF/views/warehouse/warehouse-recall.jsp")
-                .forward(req, resp);
+        resp.sendRedirect(req.getContextPath() + "/warehouse-inventory?uid=" + (uid != null ? uid : "") + "&tab=recall");
     }
 
     @Override
@@ -197,7 +183,7 @@ public class WarehouseRecallServlet extends HttpServlet {
                 "Lô " + batch.getBatchNumber() + " (thuốc " + medicineName + ") — Lý do: " + reason.trim(),
                 acc.getAccountId());
 
-        resp.sendRedirect(req.getContextPath() + "/warehouse-recall?uid=" + uid + "&msg=recalled");
+        resp.sendRedirect(req.getContextPath() + "/warehouse-inventory?uid=" + uid + "&tab=recall&msg=recalled");
     }
 
     /** Khi thu hồi thất bại/thiếu lý do, hiển thị lại đúng card xác nhận (không mất ngữ cảnh). */

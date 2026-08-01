@@ -20,39 +20,29 @@
 %>
 <aside class="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-gem">📦</div>
-    <div>
-      <div class="logo-name">Medi<span>Care</span></div>
-      <div class="logo-sub">Warehouse Console</div>
-    </div>
+    <a href="<%= _whCtx %>/warehouse-inventory?uid=<%= _whUid %>" style="display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit">
+      <div class="logo-gem">📦</div>
+      <div>
+        <div class="logo-name">Medi<span>Care</span></div>
+        <div class="logo-sub">Warehouse Console</div>
+      </div>
+    </a>
   </div>
 
   <nav class="nav-block">
-    <div class="nav-label">Tổng quan</div>
-    <a href="<%= _whCtx %>/warehouse-dashboard?uid=<%= _whUid %>"
-       class="nav-item <%= "dashboard".equals(_whActive) ? "active" : "" %>">
-      <span class="nav-icon">🏠</span> Trang chủ
-    </a>
-  </nav>
-
-  <nav class="nav-block">
-    <div class="nav-label">Kho hàng</div>
-    <a href="<%= _whCtx %>/warehouse-inventory?uid=<%= _whUid %>"
-       class="nav-item <%= "inventory".equals(_whActive) ? "active" : "" %>">
+    <div class="nav-label">Quản lý kho</div>
+    <a href="<%= _whCtx %>/warehouse-inventory?uid=<%= _whUid %>&tab=inventory"
+       class="nav-item <%= ("inventory".equals(_whActive) || "reorder".equals(_whActive) || "recall".equals(_whActive) || "dashboard".equals(_whActive)) ? "active" : "" %>">
       <span class="nav-icon">📦</span> Quản lý tồn kho
-    </a>
-    <a href="<%= _whCtx %>/warehouse-stock-movement?uid=<%= _whUid %>"
-       class="nav-item <%= "movement".equals(_whActive) ? "active" : "" %>">
-      <span class="nav-icon">📤</span> Xuất kho &amp; Điều chỉnh
-    </a>
-    <a href="<%= _whCtx %>/warehouse-reorder?uid=<%= _whUid %>"
-       class="nav-item <%= "reorder".equals(_whActive) ? "active" : "" %>">
-      <span class="nav-icon">📈</span> Gợi ý đặt hàng
       <% if (_whExpiry != null && ((Integer) _whExpiry) > 0) { %><span class="nav-badge"><%= _whExpiry %></span><% } %>
     </a>
-    <a href="<%= _whCtx %>/warehouse-recall?uid=<%= _whUid %>"
-       class="nav-item <%= "recall".equals(_whActive) ? "active" : "" %>">
-      <span class="nav-icon">🚨</span> Thu hồi khẩn cấp
+    <a href="<%= _whCtx %>/warehouse-import?uid=<%= _whUid %>"
+       class="nav-item <%= "import".equals(_whActive) ? "active" : "" %>">
+      <span class="nav-icon">📥</span> Nhập kho
+    </a>
+    <a href="<%= _whCtx %>/warehouse-inventory?uid=<%= _whUid %>&tab=movement"
+       class="nav-item <%= "movement".equals(_whActive) ? "active" : "" %>">
+      <span class="nav-icon">📤</span> Xuất kho &amp; Điều chỉnh
     </a>
   </nav>
 
@@ -66,22 +56,10 @@
   </nav>
 
   <nav class="nav-block">
-    <div class="nav-label">Bán hàng</div>
-    <a href="<%= _whCtx %>/pos?uid=<%= _whUid %>"
-       class="nav-item <%= "pos".equals(_whActive) ? "active" : "" %>">
-      <span class="nav-icon">🛒</span> Bán thuốc (POS)
-    </a>
-  </nav>
-
-  <nav class="nav-block">
     <div class="nav-label">Cá nhân</div>
     <a href="<%= _whCtx %>/warehouse-profile?uid=<%= _whUid %>"
        class="nav-item <%= "profile".equals(_whActive) ? "active" : "" %>">
       <span class="nav-icon">👤</span> Hồ sơ cá nhân
-    </a>
-    <a href="<%= _whCtx %>/staff-checkin?uid=<%= _whUid %>"
-       class="nav-item <%= "checkin".equals(_whActive) ? "active" : "" %>">
-      <span class="nav-icon">🕒</span> Điểm danh &amp; Ca làm việc
     </a>
   </nav>
 

@@ -1,5 +1,7 @@
 package com.medicare.controller.warehouse;
 
+import com.medicare.config.CacheManager;
+import com.medicare.config.DBContext;
 import com.medicare.dao.BatchesDAO;
 import com.medicare.dao.MedicineDAO;
 import com.medicare.dao.SupplierDAO;
@@ -16,14 +18,21 @@ import jakarta.servlet.http.*;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @WebServlet("/warehouse-import")
 public class WarehouseImportServlet extends HttpServlet {
 
     private static final int ROLE_WAREHOUSE = 3;
+    private static final String AUTO_NOTES_PREFIX = "Tự động đề xuất bởi hệ thống";
 
     private final BatchesDAO batchesDAO = new BatchesDAO();
     private final MedicineDAO medicineDAO = new MedicineDAO();
@@ -54,19 +63,22 @@ public class WarehouseImportServlet extends HttpServlet {
         Account acc = requireWarehouseStaff(req, resp);
         if (acc == null) return;
         String uid = req.getParameter("uid");
+        String tab = req.getParameter("tab");
+        if (tab == null || tab.trim().isEmpty()) tab = "import";
 
         List<Medicines> medicines = medicineDAO.findAll();
         List<Supplier> suppliers = supplierDAO.findAll();
         List<PurchaseOrders> pos = poDAO.findAll();
+        List<Map<String, Object>> pendingSuggestions = CacheManager.getShort("wh.reorderPending", this::findPendingSuggestions);
 
         req.setAttribute("staffUid", uid);
         req.setAttribute("staffAcc", acc);
+        req.setAttribute("currentTab", tab);
+        req.setAttribute("activeNav", "import");
         req.setAttribute("medicines", medicines);
         req.setAttribute("suppliers", suppliers);
         req.setAttribute("pos", pos);
-        
-        // Define activeNav for sidebar
-        req.setAttribute("activeNav", "inventory"); 
+        req.setAttribute("pendingSuggestions", pendingSuggestions);
         
         SidebarHelper.load(req);
 
@@ -116,5 +128,34 @@ public class WarehouseImportServlet extends HttpServlet {
             e.printStackTrace();
             resp.sendRedirect(req.getContextPath() + "/warehouse-import?uid=" + uid + "&msg=import-error");
         }
+    }
+
+    private List<Map<String, Object>> findPendingSuggestions() {
+        List<Map<String, Object>> list = new ArrayList<>();
+        String sql = "SELECT po.POID, po.OrderDate, po.TotalValue, s.SupplierName, " +
+                "       m.MedicineName, d.Quantity " +
+                "FROM PurchaseOrders po " +
+                "JOIN PurchaseOrderDetails d ON d.POID = po.POID " +
+                "JOIN Medicines m ON m.MedicineID = d.MedicineID " +
+                "JOIN Suppliers s ON s.SupplierID = po.SupplierID " +
+                "WHERE po.Status = 'PENDING' AND po.Notes LIKE ? " +
+                "ORDER BY po.OrderDate DESC";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, AUTO_NOTES_PREFIX + "%");
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("poId", rs.getInt("POID"));
+                    row.put("orderDate", rs.getTimestamp("OrderDate"));
+                    row.put("totalValue", rs.getBigDecimal("TotalValue"));
+                    row.put("supplierName", rs.getString("SupplierName"));
+                    row.put("medicineName", rs.getString("MedicineName"));
+                    row.put("quantity", rs.getInt("Quantity"));
+                    list.add(row);
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
     }
 }

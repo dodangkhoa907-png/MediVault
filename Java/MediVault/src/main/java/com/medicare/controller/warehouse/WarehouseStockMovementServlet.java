@@ -100,7 +100,9 @@ public class WarehouseStockMovementServlet extends HttpServlet {
             return;
         }
 
-        renderPage(req, resp, staffAcc);
+        String medIdParam = req.getParameter("medicineId");
+        String medQuery = (medIdParam != null && !medIdParam.isEmpty()) ? "&medicineId=" + medIdParam : "";
+        resp.sendRedirect(req.getContextPath() + "/warehouse-inventory?uid=" + req.getParameter("uid") + "&tab=movement" + medQuery);
     }
 
     @Override
@@ -191,7 +193,7 @@ public class WarehouseStockMovementServlet extends HttpServlet {
                                 + " (" + reason.trim() + ")",
                         staffAcc.getAccountId());
 
-                resp.sendRedirect(req.getContextPath() + "/warehouse-stock-movement?uid=" + uid + "&msg=success");
+                resp.sendRedirect(req.getContextPath() + "/warehouse-inventory?uid=" + uid + "&tab=movement&msg=success");
                 return;
             }
         }
