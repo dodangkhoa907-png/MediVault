@@ -158,6 +158,38 @@ public class ShiftScheduleDAO implements IShiftScheduleDAO {
         return null;
     }
 
+    /** Ngày có nhiều ca (vd Ca Chiều + Ca Tối, "2 ca/ngày") — findTodaySchedule() luôn trả
+     *  về ca SỚM NHẤT trong ngày (ORDER BY PlannedStart ASC + lấy dòng đầu), bất kể giờ hiện
+     *  tại đang thuộc ca nào. Hệ quả thật: nhân viên có Ca Chiều ở Quầy 1 + Ca Tối ở Quầy 5,
+     *  đang đứng Quầy 5 lúc 20h (giữa Ca Tối) quét mặt vẫn bị so với Quầy 1 (của Ca Chiều) →
+     *  báo "sai quầy" OAN. Hàm này chọn đúng ca có [PlannedStart-15p, PlannedEnd+30p] chứa
+     *  THỜI ĐIỂM GỌI HÀM; không ca nào khớp thì trả về ca sớm nhất (giữ hành vi cũ). */
+    @Override
+    public ShiftSchedule findActiveOrNearestSchedule(int accountId) {
+        String sql = SELECT_FULL
+                + "WHERE ss.AccountID = ? AND ss.WorkDate = ? "
+                + "AND ss.Status NOT IN ('CANCELLED','ABSENT') "
+                + "ORDER BY ss.PlannedStart ASC";
+        List<ShiftSchedule> today = new ArrayList<>();
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, accountId);
+            ps.setDate(2, java.sql.Date.valueOf(java.time.LocalDate.now()));
+            try (ResultSet rs = ps.executeQuery()) { while (rs.next()) today.add(mapRow(rs)); }
+        } catch (Exception e) { e.printStackTrace(); }
+
+        if (today.isEmpty()) return null;
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        for (ShiftSchedule s : today) {
+            if (s.getPlannedStart() == null || s.getPlannedEnd() == null) continue;
+            if (!now.isBefore(s.getPlannedStart().minusMinutes(15))
+                    && !now.isAfter(s.getPlannedEnd().plusMinutes(30))) {
+                return s;
+            }
+        }
+        return today.get(0); // không ca nào khớp giờ hiện tại — giữ hành vi cũ (ca sớm nhất)
+    }
+
     @Override
     public List<ShiftSchedule> findUpcoming(int accountId, int days) {
         List<ShiftSchedule> list = new ArrayList<>();

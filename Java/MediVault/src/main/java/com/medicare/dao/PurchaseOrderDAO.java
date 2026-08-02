@@ -8,7 +8,9 @@ import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class PurchaseOrderDAO implements IPurchaseOrderDAO {
 
@@ -34,6 +36,12 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
         try { po.setStatus(rs.getString("Status")); } catch (SQLException ignored) {}
         try { po.setPaymentMethod(rs.getString("PaymentMethod")); } catch (SQLException ignored) {}
         try { po.setDiscountAmount(rs.getBigDecimal("DiscountAmount")); } catch (SQLException ignored) {}
+        // Cột thêm sau (migration warehouse_po_expected_date_migration.sql) — try/catch để DB
+        // chưa chạy migration vẫn không vỡ các câu SELECT * hiện có.
+        try {
+            Date exp = rs.getDate("ExpectedDate");
+            if (exp != null) po.setExpectedDate(exp.toLocalDate());
+        } catch (SQLException ignored) {}
         return po;
     }
 
@@ -347,6 +355,33 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
             }
         } catch (Exception e) { e.printStackTrace(); }
         return 0;
+    }
+
+    /** Map POID → tổng SL đã đặt (SUM Quantity từ PurchaseOrderDetails) — cột "SL đặt"/progress
+     *  ở trang Đơn hàng (Warehouse). 1 query cho MỌI đơn, tránh N+1 khi render cả danh sách. */
+    public Map<Integer, Integer> sumOrderedQtyMap() {
+        Map<Integer, Integer> map = new HashMap<>();
+        String sql = "SELECT POID, SUM(Quantity) AS Qty FROM PurchaseOrderDetails GROUP BY POID";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) map.put(rs.getInt("POID"), rs.getInt("Qty"));
+        } catch (Exception e) { e.printStackTrace(); }
+        return map;
+    }
+
+    /** Map POID → tổng SL đã THỰC SỰ nhập kho (SUM InitialQuantity từ Batches theo POID) —
+     *  cột "SL đã nhận"/progress. Batches chỉ sinh ra lúc {@link #confirmReceived}, nên trước
+     *  khi nhận sẽ không có dòng nào (map không chứa POID đó, coi như 0). */
+    public Map<Integer, Integer> sumReceivedQtyMap() {
+        Map<Integer, Integer> map = new HashMap<>();
+        String sql = "SELECT POID, SUM(InitialQuantity) AS Qty FROM Batches WHERE POID IS NOT NULL GROUP BY POID";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) map.put(rs.getInt("POID"), rs.getInt("Qty"));
+        } catch (Exception e) { e.printStackTrace(); }
+        return map;
     }
 
     @Override

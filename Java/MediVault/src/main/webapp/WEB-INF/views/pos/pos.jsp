@@ -3029,7 +3029,10 @@ async function confirmFaceCheckin() {
                                                    '✓ Đăng nhập thành công';
       showToast(msg + ' — ' + data.name, 'ok');
     } else if (data.reason === 'wrong-station') {
-      showToast('⚠️ Ca của ' + (data.name || '') + ' được xếp ở ' + stationLabelFor(data.correctStation), 'err');
+      // Kèm tên ca + khung giờ (server đã gửi kèm) để đọc rõ ngay tại quầy POS, thay vì chỉ
+      // có mỗi số quầy — dễ hiểu tương đương modal chi tiết ca bên Admin.
+      var shiftBit = data.shiftName ? (data.shiftName + (data.timeRange ? ' (' + data.timeRange + ')' : '') + ' của ') : 'Ca của ';
+      showToast('⚠️ ' + shiftBit + (data.name || '') + ' được xếp ở ' + stationLabelFor(data.correctStation), 'err');
       btn.disabled    = false;
       btn.textContent = '✓ Xác nhận điểm danh';
     } else {

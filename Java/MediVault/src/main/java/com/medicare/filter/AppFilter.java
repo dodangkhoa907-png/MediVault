@@ -84,10 +84,18 @@ public class AppFilter implements Filter {
         }
 
         // ── GZIP Compression ──────────────────────────────────────────────
+        // KHÔNG BAO GIỜ bọc GZIP các endpoint SSE (/pos/nfc-stream, /medicines/live):
+        // chúng dùng req.startAsync() và giữ kết nối mở vô thời hạn (setTimeout(0)).
+        // finally{ gzipResp.finish() } bên dưới chạy NGAY khi chain.doFilter() trả về —
+        // với request async thì trả về gần như tức thì (container không đợi tới khi
+        // AsyncContext thật sự complete) — nên gzipOut.close() đóng luôn output stream
+        // thật của response trong khi servlet SSE vẫn tưởng kết nối đang mở, dẫn tới
+        // IllegalStateException/500 ngay ở request đầu, hoặc ghi lỗi âm thầm ở các lần
+        // push/heartbeat sau đó (bug thật, không phải do trình duyệt/camera).
         String acceptEncoding = req.getHeader("Accept-Encoding");
         boolean supportsGzip  = acceptEncoding != null
                 && acceptEncoding.contains("gzip");
-        boolean isHtmlOrJson  = isCompressible(uri);
+        boolean isHtmlOrJson  = isCompressible(uri) && !isSseStream(uri);
 
         if (supportsGzip && isHtmlOrJson) {
             GzipResponseWrapper gzipResp = new GzipResponseWrapper(resp);
@@ -155,6 +163,12 @@ public class AppFilter implements Filter {
     private boolean isCompressible(String uri) {
         // GZIP cho HTML (JSP output) và JSON API
         return !isStaticAsset(uri); // mọi thứ không phải static đều compress
+    }
+
+    /** Các endpoint Server-Sent Events (AsyncContext, kết nối mở vô thời hạn) — xem giải
+     *  thích ở doFilter() vì sao GZIP tuyệt đối không được bọc các URL này. */
+    private boolean isSseStream(String uri) {
+        return uri.endsWith("/nfc-stream") || uri.endsWith("/medicines/live");
     }
 
     // ════════════════════════════════════════════════════════════════════

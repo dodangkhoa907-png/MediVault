@@ -17,11 +17,16 @@ import jakarta.servlet.http.*;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @WebServlet("/warehouse-import")
 public class WarehouseImportServlet extends HttpServlet {
@@ -67,6 +72,18 @@ public class WarehouseImportServlet extends HttpServlet {
         req.setAttribute("pos", pos);
         req.setAttribute("latestByMedicine", latestByMedicine);
         req.setAttribute("recentImports", loadRecentImports());
+        // Danh sách ưu tiên ngay trong ô chọn Thuốc — thay vì bắt thủ kho nhớ/mở riêng trang
+        // Gợi ý đặt hàng rồi quay lại đây gõ tên tay. 3 tầng, tầng cao nhất trước:
+        //  1) "Có lô hết hạn" — medicine đang có ít nhất 1 lô ExpiryDate < hôm nay mà vẫn còn
+        //     tồn (CurrentQuantity > 0, Status='ACTIVE') — TẦNG ƯU TIÊN CAO NHẤT: lô đó sắp
+        //     phải xuất huỷ (xem warehouse-inventory.jsp), thuốc phải nhập bù NGAY kẻo đứt hàng,
+        //     dù tổng tồn (gộp cả lô hết hạn) trông có vẻ vẫn "đủ" nên 2 tầng dưới có thể bỏ sót.
+        //  2) "Cần nhập gấp" — đã có phiếu đề xuất PENDING do ReorderAlertService tự sinh, đã
+        //     qua đúng công thức điểm đặt hàng lại (ROP).
+        //  3) "Sắp hết" — tồn <= ngưỡng tối thiểu nhưng job giờ chưa kịp quét tới, tính thẳng ở
+        //     client từ data-stock/data-min có sẵn trên mỗi option, không cần query thêm.
+        req.setAttribute("urgentMedicineIds", findUrgentReorderMedicineIds());
+        req.setAttribute("expiredMedicineIds", findExpiredMedicineIds());
         // Đi thẳng từ nút giỏ hàng "Gợi ý đặt hàng" ở Tồn kho / cảnh báo hạn dùng — trước đây
         // nút đó chỉ đưa tới /warehouse-reorder để XEM gợi ý, không tới được chỗ thao tác thật
         // (nhập kho). Nay truyền medicineId qua để JS pre-select sẵn đúng thuốc ở Bước 1.
@@ -106,7 +123,7 @@ public class WarehouseImportServlet extends HttpServlet {
             int quantity = Integer.parseInt(req.getParameter("quantity"));
 
             // Chặn cứng dữ liệu KHÔNG THỂ có thật, không phải chuyện "rủi ro nghiệp vụ" như lô
-            // sắp hết hạn (cái đó JS đã cảnh báo mềm ở bước 3, vẫn cho ghi). Đây là bất khả thi
+            // sắp hết hạn (cái đó JS chỉ cảnh báo mềm ở bước 3, vẫn cho ghi). Đây là bất khả thi
             // vật lý — không có lý do nghiệp vụ nào hợp thức hoá được, nên chặn ở tầng server
             // dù JS đã chặn từ trước, phòng khi JS bị tắt hoặc bị qua mặt.
             if (!expiryDate.isAfter(manufactureDate)) {
@@ -114,6 +131,13 @@ public class WarehouseImportServlet extends HttpServlet {
                 return;
             }
             if (importDate.isBefore(manufactureDate)) {
+                resp.sendRedirect(req.getContextPath() + "/warehouse-import?msg=import-error");
+                return;
+            }
+            // HSD đã trôi qua quá khứ = lô ĐÃ HẾT HẠN — khác NSX (NSX ở quá khứ là bình thường,
+            // thuốc nào cũng sản xuất trước khi nhập). Không có lý do nghiệp vụ nào để NHẬP KHO
+            // MỚI một lô đã hết hạn, nên chặn cứng ở đây luôn, không chỉ cảnh báo mềm như trước.
+            if (!expiryDate.isAfter(LocalDate.now())) {
                 resp.sendRedirect(req.getContextPath() + "/warehouse-import?msg=import-error");
                 return;
             }
@@ -177,6 +201,39 @@ public class WarehouseImportServlet extends HttpServlet {
      * dựng lại đúng pattern PurchaseOrderServlet.showList() để thủ kho xem lại lô mình vừa
      * nhập ngay tại trang Nhập kho, không phải hỏi Admin hay đoán xem có ghi vào DB hay chưa.
      */
+    /**
+     * ID các thuốc đang có phiếu đề xuất đặt hàng PENDING do {@code ReorderAlertService}
+     * tự sinh (cùng điều kiện lọc với {@code WarehouseReorderServlet.findPendingSuggestions()}
+     * — Notes bắt đầu bằng đúng tiền tố hệ thống, tránh lẫn PO Admin tự tạo tay). Đây là tín
+     * hiệu ưu tiên MẠNH NHẤT: đã qua đúng công thức điểm đặt hàng lại (ROP), không phải suy
+     * đoán tồn/ngưỡng đơn thuần.
+     */
+    private Set<Integer> findUrgentReorderMedicineIds() {
+        Set<Integer> ids = new HashSet<>();
+        String sql = "SELECT DISTINCT d.MedicineID FROM PurchaseOrders po " +
+                "JOIN PurchaseOrderDetails d ON d.POID = po.POID " +
+                "WHERE po.Status = 'PENDING' AND po.Notes LIKE N'Tự động đề xuất bởi hệ thống%'";
+        try (Connection cn = com.medicare.config.DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) ids.add(rs.getInt("MedicineID"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return ids;
+    }
+
+    /**
+     * ID các thuốc đang có ít nhất 1 lô ĐÃ HẾT HẠN mà vẫn còn tồn trong kho — tái dùng thẳng
+     * {@link BatchesDAO#findExpired()} (đúng nguồn dữ liệu với bảng "Quá hạn" bên Tồn kho),
+     * không viết SQL riêng.
+     */
+    private Set<Integer> findExpiredMedicineIds() {
+        Set<Integer> ids = new HashSet<>();
+        for (Batches b : batchesDAO.findExpired()) ids.add(b.getMedicineId());
+        return ids;
+    }
+
     private List<Map<String, Object>> loadRecentImports() {
         List<Map<String, Object>> rows = new java.util.ArrayList<>();
         for (PurchaseOrders po : poDAO.findRecent(20)) {

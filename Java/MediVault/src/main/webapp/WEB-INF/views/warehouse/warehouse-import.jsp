@@ -143,6 +143,8 @@ a{text-decoration:none;color:inherit}
 <meta name="csrf-token" content="${csrfToken}">
 <script src="<%= ctx %>/js/csrf.js"></script>
 <script src="<%= ctx %>/js/warehouse-ui.js" defer></script>
+<!-- Cùng thư viện quét mã vạch đã dùng ở trang Điều chỉnh (warehouse-stock-movement.jsp) -->
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
 </head>
 <body class="wh">
 <%@ include file="/WEB-INF/views/icons.jsp" %>
@@ -153,6 +155,7 @@ a{text-decoration:none;color:inherit}
     <div class="crumb">Kho hàng</div>
     <nav class="tb-nav">
       <a class="on" href="<%= ctx %>/warehouse-import">Nhập kho</a>
+      <a href="<%= ctx %>/warehouse-orders">Đơn hàng</a>
       <a href="<%= ctx %>/warehouse-reorder">Gợi ý đặt hàng</a>
     </nav>
     <div class="right">
@@ -217,7 +220,12 @@ a{text-decoration:none;color:inherit}
         <div class="wh-card-body">
           <div class="wh-row2">
             <div class="wh-fg">
-              <label for="imMed">Thuốc <span aria-hidden="true">*</span></label>
+              <label for="imMed">
+                <span>Thuốc <span aria-hidden="true">*</span></span>
+                <button type="button" class="wh-linkbtn" onclick="openMedBarcodeScan()">
+                  <svg><use href="#ic-scan"/></svg> Quét mã vạch
+                </button>
+              </label>
               <select class="wh-in wh-combo-src" id="imMed" name="medicineId" required data-placeholder="— Chọn thuốc —" data-search="Tìm theo tên thuốc…">
                 <option value="">— Chọn thuốc —</option>
                 <c:forEach var="m" items="${medicines}">
@@ -228,14 +236,18 @@ a{text-decoration:none;color:inherit}
                           data-min="${m.minInventory}"
                           data-generic="${fn:escapeXml(m.genericName)}"
                           data-packaging="${fn:escapeXml(m.packagingSpec)}"
+                          data-barcode="${fn:escapeXml(m.barcode)}"
                           data-lastprice="${latestByMedicine[m.medicineId].importPrice}"
                           data-lastbatch="${fn:escapeXml(latestByMedicine[m.medicineId].batchNumber)}"
                           data-lastdate="${latestByMedicine[m.medicineId].importDate}"
                           data-lastsupplierid="${latestByMedicine[m.medicineId].supplierId}"
+                          data-urgent="${urgentMedicineIds.contains(m.medicineId) ? 'true' : 'false'}"
+                          data-expired="${expiredMedicineIds.contains(m.medicineId) ? 'true' : 'false'}"
                           >${m.medicineName} (${m.unit})</option>
                 </c:forEach>
               </select>
               <div class="err" id="e-med">Chưa chọn thuốc.</div>
+              <div class="hint" id="medPriorityHint" style="display:none"></div>
             </div>
             <div class="wh-fg">
               <label for="imSup">Nhà cung cấp <span aria-hidden="true">*</span></label>
@@ -573,6 +585,24 @@ a{text-decoration:none;color:inherit}
     wrap.appendChild(panel);
 
     var opts = Array.prototype.slice.call(select.options);
+    // ── Ưu tiên nhập hàng ngay trong ô chọn Thuốc — chỉ áp dụng cho combo Thuốc (id="imMed"),
+    // các combo khác (Nhà cung cấp, PO) không có khái niệm "tồn/ngưỡng" nên bỏ qua.
+    // Tầng 2 (đỏ, "Cần nhập gấp"): đã có phiếu đề xuất PENDING do hệ thống tự sinh — tín hiệu
+    //   chắc chắn nhất, đã qua đúng công thức điểm đặt hàng lại (server tính, gắn data-urgent).
+    // Tầng 1 (vàng, "Sắp hết"): tồn <= ngưỡng tối thiểu nhưng job giờ chưa kịp quét ra phiếu đề
+    //   xuất — tính thẳng client-side từ data-stock/data-min đã có sẵn, không cần hỏi server. ──
+    var isMedCombo = select.id === 'imMed';
+    function tierOf(o) {
+      if (!isMedCombo || !o.value) return 0;
+      // Tầng 3 (cao nhất): đang có lô ĐÃ HẾT HẠN còn tồn trong kho — lô đó sắp phải xuất huỷ,
+      // phải nhập bù ngay, dù tổng tồn cộng gộp cả lô hết hạn trông "có vẻ đủ" nên 2 tầng dưới
+      // (đề xuất tự động / tồn<=min) có thể chưa kịp bắt được trường hợp này.
+      if (o.dataset.expired === 'true') return 3;
+      if (o.dataset.urgent === 'true') return 2;
+      var stock = parseInt(o.dataset.stock, 10), min = parseInt(o.dataset.min, 10);
+      if (!isNaN(stock) && !isNaN(min) && min > 0 && stock <= min) return 1;
+      return 0;
+    }
     function norm(s) {
       return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
     }
@@ -586,21 +616,45 @@ a{text-decoration:none;color:inherit}
     function renderList(filter) {
       list.innerHTML = '';
       var k = norm(filter);
-      var shown = 0;
-      opts.forEach(function (o) {
-        if (!o.value && k) return;          // ẩn dòng placeholder khi đang lọc
-        if (k && norm(o.textContent).indexOf(k) === -1) return;
-        shown++;
+      // Dòng placeholder ("— Chọn thuốc —"/"— Chọn nhà cung cấp —") không hiện trong danh
+      // sách nữa — nó không phải 1 lựa chọn thật, để lẫn vào danh sách (nhất là sau khi sắp
+      // theo tầng ưu tiên, thứ tự gốc không còn giữ được) chỉ gây rối. Nhãn "— Chọn... —" đã
+      // hiện sẵn trên nút trigger khi chưa chọn gì, không cần lặp lại trong list.
+      var visible = opts.filter(function (o) {
+        if (!o.value) return false;
+        if (k && norm(o.textContent).indexOf(k) === -1) return false;
+        return true;
+      });
+      // Array.prototype.sort ổn định (stable) từ ES2019 — cùng tier vẫn giữ đúng thứ tự gốc
+      // (alphabet, đã sort sẵn từ server), chỉ tier cao hơn được đôn lên trước.
+      if (isMedCombo) visible.sort(function (a, b) { return tierOf(b) - tierOf(a); });
+      visible.forEach(function (o) {
         var row = document.createElement('div');
         row.className = 'wh-combo-opt';
         row.setAttribute('role', 'option');
         row.dataset.value = o.value;
         row.setAttribute('aria-selected', String(o.value === select.value && o.value !== ''));
-        row.textContent = o.textContent;
+        var label = document.createElement('span');
+        label.textContent = o.textContent;
+        row.appendChild(label);
+        var tier = tierOf(o);
+        if (tier === 3) {
+          var b0 = document.createElement('span');
+          b0.className = 'wh-badge dead'; b0.textContent = 'Có lô hết hạn';
+          row.appendChild(b0);
+        } else if (tier === 2) {
+          var b1 = document.createElement('span');
+          b1.className = 'wh-badge out'; b1.textContent = 'Cần nhập gấp';
+          row.appendChild(b1);
+        } else if (tier === 1) {
+          var b2 = document.createElement('span');
+          b2.className = 'wh-badge low'; b2.textContent = 'Sắp hết';
+          row.appendChild(b2);
+        }
         row.addEventListener('click', function () { choose(o.value); });
         list.appendChild(row);
       });
-      emptyEl.hidden = shown > 0;
+      emptyEl.hidden = visible.length > 0;
     }
     function choose(value) {
       select.value = value;
@@ -695,6 +749,16 @@ a{text-decoration:none;color:inherit}
       if (F.mfg.value && F.imp.value && F.imp.value < F.mfg.value) {
         ok = fail(F.imp, 'e-imp');
       }
+      // HSD đã trôi qua quá khứ = lô hết hạn — KHÔNG được nhập kho mới, khác NSX (NSX ở quá
+      // khứ là chuyện bình thường, thuốc nào cũng sản xuất trước khi nhập). Chặn cứng ở đây
+      // (nút "Xem lại") chứ không chỉ cảnh báo mềm như checkDates() làm trước đây.
+      if (F.exp.value) {
+        var expDays = daysLeft(F.exp.value);
+        if (expDays !== null && expDays < 0) {
+          ok = fail(F.exp, 'e-exp');
+          $('e-exp').textContent = 'Hạn sử dụng đang ở quá khứ (đã hết hạn ' + Math.abs(expDays) + ' ngày) — lô đã hết hạn không được phép nhập kho mới.';
+        }
+      }
     }
     return ok;
   }
@@ -782,13 +846,15 @@ a{text-decoration:none;color:inherit}
 
     if (m && e && e <= m) hardErr = 'Hạn sử dụng đang trước hoặc trùng ngày sản xuất — dữ liệu này không thể đúng, kiểm tra lại vỏ hộp.';
     else if (m && i && i < m) hardErr = 'Ngày nhập đang trước ngày sản xuất — không thể nhận hàng trước khi hàng được sản xuất.';
+    else if (e && daysLeft(e) !== null && daysLeft(e) < 0) {
+      // Khác NSX (ở quá khứ là bình thường) — HSD ở quá khứ nghĩa là lô ĐÃ HẾT HẠN, không
+      // thể nhập kho mới cho một lô đã hết hạn. Trước đây chỉ cảnh báo mềm, giờ chặn cứng.
+      hardErr = 'Hạn sử dụng đang ở quá khứ (đã hết hạn ' + Math.abs(daysLeft(e)) + ' ngày) — lô đã hết hạn không được phép nhập kho mới.';
+    }
 
     if (!hardErr && e) {
       var n = daysLeft(e);
-      if (n !== null) {
-        if (n < 0) softWarn.push('Lô này đã quá hạn ' + Math.abs(n) + ' ngày.');
-        else if (n <= 90) softWarn.push('Lô chỉ còn ' + n + ' ngày sử dụng — vào diện cảnh báo hạn dùng ngay khi nhập.');
-      }
+      if (n !== null && n <= 90) softWarn.push('Lô chỉ còn ' + n + ' ngày sử dụng — vào diện cảnh báo hạn dùng ngay khi nhập.');
     }
 
     $('dateError').hidden = !hardErr;
@@ -872,27 +938,126 @@ a{text-decoration:none;color:inherit}
 
   checkDates();
 
-  // ── Pre-select thuốc khi đi thẳng từ nút giỏ hàng ở Tồn kho/Cảnh báo hạn dùng
-  // (?medicineId=X) — chọn hộ ở Bước 1 rồi bắn 'change' để combo tự render nhãn
-  // (enhanceCombo đã gắn ở trên) VÀ tự đổ dữ liệu xem trước (listener F.med bên dưới),
-  // không cần viết lại logic populate riêng.
+  // ── Tóm tắt ưu tiên phía trên ô chọn Thuốc — "báo cáo" ngay tại chỗ quyết định, khỏi phải
+  // mở riêng trang Gợi ý đặt hàng rồi quay lại đây gõ tên tay. Đếm thẳng trên <option> gốc
+  // (server đã gắn data-urgent/data-stock/data-min), không cần hỏi lại server lần nữa. ──
+  (function () {
+    var expired = 0, urgent = 0, low = 0;
+    Array.prototype.slice.call(F.med.options).forEach(function (o) {
+      if (!o.value) return;
+      if (o.dataset.expired === 'true') { expired++; return; }
+      if (o.dataset.urgent === 'true') { urgent++; return; }
+      var stock = parseInt(o.dataset.stock, 10), min = parseInt(o.dataset.min, 10);
+      if (!isNaN(stock) && !isNaN(min) && min > 0 && stock <= min) low++;
+    });
+    if (expired === 0 && urgent === 0 && low === 0) return;
+    var hint = $('medPriorityHint');
+    var parts = [];
+    if (expired > 0) parts.push('<b style="color:var(--danger)">⛔ ' + expired + ' thuốc có lô hết hạn</b>');
+    if (urgent > 0) parts.push('<b style="color:var(--danger)">🔴 ' + urgent + ' thuốc cần nhập gấp</b>');
+    if (low > 0) parts.push('<b style="color:var(--gold)">🟡 ' + low + ' thuốc sắp hết</b>');
+    hint.innerHTML = parts.join(' · ') + ' — mở danh sách bên dưới để xem, thuốc ưu tiên tự lên đầu.';
+    hint.style.display = 'block';
+  })();
+
+  // ── Chọn thuốc bằng ID rồi tự đổ toàn bộ dữ liệu liên quan — dùng chung cho 2 đường vào:
+  // pre-select từ URL (?medicineId=X, nút giỏ hàng ở Tồn kho/Cảnh báo hạn dùng) VÀ quét mã
+  // vạch (bên dưới). Bắn 'change' để combo tự render nhãn (enhanceCombo đã gắn ở trên) VÀ tự
+  // đổ dữ liệu xem trước (listener F.med), không viết lại logic populate riêng.
   //
   // Đi kèm tự điền "Nhà cung cấp" theo lần nhập gần nhất của đúng thuốc đó (data-lastsupplierid
   // gắn sẵn trên <option>). CHỈ tự điền Nhà cung cấp — KHÔNG đụng tới Số lô/Giá nhập/Ngày SX-HSD
   // dù đã có sẵn gợi ý (.suggest ở Bước 2): đó là thông tin CỦA LÔ VẬT LÝ đang cầm trên tay, tự
-  // điền từ lô CŨ (thậm chí có thể là lô đang hết hạn — chính là lý do bấm giỏ hàng!) vào lô MỚI
-  // là sai hoàn toàn, gây nhập nhầm hạn dùng đã qua. Nhà cung cấp thì không có rủi ro đó — sai
-  // thì đổi lại combo, không sai dữ liệu tồn kho. ──
-  <c:if test="${not empty preSelectMedicineId}">
-  F.med.value = '${preSelectMedicineId}';
-  F.med.dispatchEvent(new Event('change', { bubbles: true }));
-  var _lastSupId = selData(F.med, 'lastsupplierid');
-  if (_lastSupId && F.sup.querySelector('option[value="' + _lastSupId + '"]')) {
-    F.sup.value = _lastSupId;
-    F.sup.dispatchEvent(new Event('change', { bubbles: true }));
+  // điền từ lô CŨ (thậm chí có thể là lô đang hết hạn) vào lô MỚI là sai hoàn toàn, gây nhập
+  // nhầm hạn dùng đã qua. Nhà cung cấp thì không có rủi ro đó — sai thì đổi lại combo, không
+  // sai dữ liệu tồn kho. Trả về true nếu tìm thấy option khớp id, false nếu không. ──
+  function selectMedicineById(id) {
+    if (!F.med.querySelector('option[value="' + id + '"]')) return false;
+    F.med.value = String(id);
+    F.med.dispatchEvent(new Event('change', { bubbles: true }));
+    var lastSupId = selData(F.med, 'lastsupplierid');
+    if (lastSupId && F.sup.querySelector('option[value="' + lastSupId + '"]')) {
+      F.sup.value = lastSupId;
+      F.sup.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    return true;
   }
+  // Lộ ra window: khối quét mã vạch nằm ở <script> RIÊNG bên dưới (ngoài IIFE này) cần gọi
+  // tới, vì F (tham chiếu các field) chỉ tồn tại trong closure của IIFE này.
+  window.selectMedicineById = selectMedicineById;
+
+  <c:if test="${not empty preSelectMedicineId}">
+  selectMedicineById('${preSelectMedicineId}');
   </c:if>
 })();
+</script>
+
+<!-- ══ Modal quét mã vạch THUỐC ở Bước 1 — cùng thư viện Html5Qrcode đã dùng ở trang Điều
+     chỉnh (quét SỐ LÔ). Ở đây quét mã vạch IN TRÊN HỘP THUỐC để nhận diện ĐÚNG THUỐC nào,
+     tương tự cách quầy thu ngân quét sản phẩm — hữu ích nhất khi 1 lần giao hàng có nhiều
+     loại thuốc khác nhau, khỏi phải gõ tìm tên tay từng loại. ══ -->
+<div class="wh-modal" id="medBarcodeModal" onclick="if(event.target===this)closeMedBarcodeScan()">
+  <div class="wh-modal-box" role="dialog" aria-modal="true" aria-labelledby="medBcTitle">
+    <div class="wh-modal-head">
+      <div class="wh-ic"><svg><use href="#ic-scan"/></svg></div>
+      <h3 id="medBcTitle">Quét mã vạch thuốc</h3>
+      <button type="button" class="wh-btn wh-btn-icon wh-btn-ghost" onclick="closeMedBarcodeScan()" aria-label="Đóng">
+        <svg><use href="#ic-x"/></svg>
+      </button>
+    </div>
+    <div class="wh-modal-body">
+      <div id="medBarcodeReaderBox" style="width:100%;min-height:250px;border-radius:14px;overflow:hidden;background:#06201E"></div>
+      <div id="medBarcodeScanStatus" style="margin-top:12px;font-size:12.5px;color:var(--muted);text-align:center">
+        Đưa mã vạch trên hộp thuốc vào giữa khung hình.
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+var medBarcodeScanner = null;
+function openMedBarcodeScan() {
+  var modal = document.getElementById('medBarcodeModal');
+  modal.classList.add('open');
+  var status = document.getElementById('medBarcodeScanStatus');
+  status.textContent = 'Đưa mã vạch trên hộp thuốc vào giữa khung hình…';
+  if (typeof Html5Qrcode === 'undefined') {
+    status.textContent = 'Không tải được thư viện quét mã vạch. Kiểm tra kết nối mạng rồi thử lại.';
+    return;
+  }
+  medBarcodeScanner = new Html5Qrcode('medBarcodeReaderBox');
+  medBarcodeScanner.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: { width: 260, height: 140 },
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.QR_CODE
+      ] },
+    function (decodedText) {
+      var opt = document.querySelector('#imMed option[data-barcode="' + decodedText.replace(/"/g, '') + '"]');
+      if (opt && opt.value && selectMedicineById(opt.value)) {
+        closeMedBarcodeScan();
+      } else {
+        status.textContent = 'Không tìm thấy thuốc nào có mã vạch "' + decodedText + '" trong kho. Thử quét lại hoặc chọn tay bên dưới.';
+      }
+    },
+    function () {}   // lỗi giải mã từng khung hình — bỏ qua
+  ).catch(function (err) {
+    status.textContent = 'Không mở được camera: ' + (err.message || err);
+  });
+}
+function closeMedBarcodeScan() {
+  document.getElementById('medBarcodeModal').classList.remove('open');
+  if (medBarcodeScanner) {
+    var s = medBarcodeScanner;
+    medBarcodeScanner = null;
+    s.stop().then(function () { s.clear(); }).catch(function () {});
+  }
+}
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && document.getElementById('medBarcodeModal').classList.contains('open')) closeMedBarcodeScan();
+});
 </script>
 </body>
 </html>

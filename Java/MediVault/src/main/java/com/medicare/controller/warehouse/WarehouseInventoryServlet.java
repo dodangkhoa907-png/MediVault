@@ -53,15 +53,6 @@ public class WarehouseInventoryServlet extends HttpServlet {
             return;
         }
 
-        // ── AJAX: danh sách kệ cho modal "Quản lý kệ" — CHỈ ĐỌC. Sửa/thêm/xoá kệ vẫn phải
-        // qua Admin (/shelves): đổi vị trí kệ vật lý là quyết định layout kho, không phải
-        // việc Thủ kho tự làm tại chỗ. Trước đây trỏ thẳng sang trang Admin, khiến Thủ kho
-        // bị đổi hẳn giao diện (xanh dương) giữa lúc đang thao tác trong Warehouse Console. ──
-        if ("shelves".equals(req.getParameter("action"))) {
-            apiGetShelves(req, resp);
-            return;
-        }
-
         String q = req.getParameter("q");
         boolean hasKeyword = q != null && !q.trim().isEmpty();
 
@@ -179,32 +170,6 @@ public class WarehouseInventoryServlet extends HttpServlet {
             out.print(sb);
         } catch (Exception e) {
             out.print("{\"error\":\"" + e.getMessage() + "\"}");
-        }
-    }
-
-    /** JSON danh sách kệ + số thuốc đang gán mỗi kệ, cho modal "Quản lý kệ" (chỉ đọc). */
-    private void apiGetShelves(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        resp.setContentType("application/json;charset=UTF-8");
-        resp.setHeader("Cache-Control", "no-store");
-        PrintWriter out = resp.getWriter();
-        try {
-            List<com.medicare.entity.Shelf> shelves = shelfDAO.findAll();
-            StringBuilder sb = new StringBuilder("{\"ok\":true,\"shelves\":[");
-            for (int i = 0; i < shelves.size(); i++) {
-                com.medicare.entity.Shelf s = shelves.get(i);
-                if (i > 0) sb.append(',');
-                sb.append("{\"id\":").append(s.getShelfId())
-                  .append(",\"name\":").append(jsonStr(s.getShelfName()))
-                  .append(",\"type\":").append(jsonStr(s.getShelfType()))
-                  .append(",\"location\":").append(jsonStr(s.getLocationNotes()))
-                  .append(",\"automated\":").append(s.isAutomated())
-                  .append(",\"medicineCount\":").append(shelfDAO.countMedicinesOnShelf(s.getShelfId()))
-                  .append('}');
-            }
-            sb.append("]}");
-            out.print(sb);
-        } catch (Exception e) {
-            out.print("{\"ok\":false,\"error\":\"" + e.getMessage() + "\"}");
         }
     }
 

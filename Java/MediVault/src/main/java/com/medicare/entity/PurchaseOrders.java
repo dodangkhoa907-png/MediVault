@@ -1,6 +1,7 @@
 package com.medicare.entity;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class PurchaseOrders {
@@ -9,6 +10,7 @@ public class PurchaseOrders {
     private int supplierId;
     private int accountId;
     private LocalDateTime orderDate;
+    private LocalDate expectedDate; // nullable — Ngày giao dự kiến, dùng để tính "Quá hạn"
     private BigDecimal totalValue;
     private String notes;
     private String status;          // PENDING | COMPLETED
@@ -37,6 +39,8 @@ public class PurchaseOrders {
     public void setAccountId(int accountId) { this.accountId = accountId; }
     public LocalDateTime getOrderDate() { return orderDate; }
     public void setOrderDate(LocalDateTime orderDate) { this.orderDate = orderDate; }
+    public LocalDate getExpectedDate() { return expectedDate; }
+    public void setExpectedDate(LocalDate expectedDate) { this.expectedDate = expectedDate; }
     public BigDecimal getTotalValue() { return totalValue; }
     public void setTotalValue(BigDecimal totalValue) { this.totalValue = totalValue; }
     public String getNotes() { return notes; }
