@@ -4,7 +4,7 @@ SET QUOTED_IDENTIFIER ON;
 SET ANSI_NULLS ON;
 GO
 
-CREATE OR ALTER PROCEDURE SP_AddSaleByFIFO
+CREATE OR ALTER PROCEDURE SP_AddSaleByFEFO
     @InvoiceID INT, @MedicineID INT, @Quantity INT
 AS
 BEGIN
@@ -42,7 +42,7 @@ BEGIN
 END;
 GO
 
-PRINT 'SP_AddSaleByFIFO created successfully';
+PRINT 'SP_AddSaleByFEFO created successfully';
 
 -- Verify
-SELECT name, type_desc FROM sys.objects WHERE name = 'SP_AddSaleByFIFO';
+SELECT name, type_desc FROM sys.objects WHERE name = 'SP_AddSaleByFEFO';

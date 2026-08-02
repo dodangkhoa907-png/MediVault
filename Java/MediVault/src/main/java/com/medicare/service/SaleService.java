@@ -45,7 +45,7 @@ public class SaleService implements ISaleService {
         Shift currentShift = shiftDAO.findCurrent(accountId);
         Integer shiftId = (currentShift != null) ? currentShift.getShiftId() : null;
 
-        // Chạy transaction: tạo hóa đơn → trừ kho FIFO → hoàn tất
+        // Chạy transaction: tạo hóa đơn → trừ kho FEFO → hoàn tất
         int invoiceId = invoiceDAO.completeSaleTransaction(
                 accountId, shiftId, customerId,
                 paymentMethod, discount,
