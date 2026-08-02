@@ -1,175 +1,136 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c"   uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn"  uri="jakarta.tags.functions" %>
+<%--
+  warehouse-stock-movement.jsp — Xuất kho & Điều chỉnh tồn (Warehouse Console)
+
+  Port sang lớp design system `wh-*` (2026-08-02) cho khớp trang Tồn kho:
+  topbar + sub-nav thay cho hàng section-tabs emoji, .wh-card/.wh-fg/.wh-note/
+  .wh-feed thay cho CSS riêng của trang. Toàn bộ tên field, id, hàm JS và luồng
+  POST giữ nguyên — chỉ đổi lớp trình bày.
+--%>
 <%
-    // ── Gate: chỉ Thủ kho (roleId == 3), session "staffAccount_<uid>" ──
-    String uid = request.getParameter("uid");
-    if (uid == null || uid.isEmpty()) uid = (String) request.getAttribute("uid");
-    if (uid == null || uid.isEmpty()) { response.sendRedirect(request.getContextPath() + "/warehouse-login"); return; }
-
-    com.medicare.entity.Account acc = (com.medicare.entity.Account) session.getAttribute("staffAccount_" + uid);
+    // ── Gate: WarehouseAuth (trong servlet) đã xác thực roleId==3 và đặt sẵn "staffAcc".
+    // Trang này trước đây tự đọc ?uid= rồi tra session — nay danh tính đến từ session,
+    // không từ URL, nên đọc thẳng attribute như mọi trang Kho khác. ──
+    com.medicare.entity.Account acc = (com.medicare.entity.Account) request.getAttribute("staffAcc");
     if (acc == null) { response.sendRedirect(request.getContextPath() + "/warehouse-login"); return; }
-    if (acc.getRoleId() != 3) { response.sendRedirect(request.getContextPath() + "/warehouse-login"); return; }
+    String uid = String.valueOf(acc.getAccountId());
 
+    String ctx = request.getContextPath();
     String fullName = acc.getFullName() != null ? acc.getFullName() : acc.getUsername();
-    String initials = fullName.length() >= 2
-        ? fullName.substring(0,1).toUpperCase() + fullName.substring(1,2).toUpperCase()
-        : fullName.toUpperCase();
+    String initials = fullName.substring(0,1).toUpperCase();
     String activeNav = "movement";
 %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta name="ctx" content="${pageContext.request.contextPath}">
-<title>Xuất kho &amp; Điều chỉnh tồn — MediCare Kho</title>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff-portal.css">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/warehouse-portal.css?v=5">
+<meta name="ctx" content="<%= ctx %>">
+<title>Xuất kho &amp; Điều chỉnh tồn — MediCare</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="<%= ctx %>/css/staff-portal.css">
+<link rel="stylesheet" href="<%= ctx %>/css/warehouse-portal.css?v=11">
 <style>
 a{text-decoration:none;color:inherit}
 
-.wrap{max-width:1180px;margin:0 auto}
-.page-intro{display:flex;gap:10px;align-items:flex-start;max-width:840px;
-  font-size:13.5px;color:var(--muted);line-height:1.55;margin-bottom:22px}
-.page-intro .pi-ic{color:var(--main);font-size:16px;flex:none;margin-top:1px}
-.page-intro b{color:var(--ink);font-weight:750}
-
-.alert{border-radius:12px;padding:13px 18px;margin-bottom:18px;font-size:13.5px;font-weight:600;line-height:1.55}
-.alert-err{background:#FEF2F2;border:1px solid #FCA5A5;color:#B91C1C}
-.alert-ok{background:#ECFDF5;border:1px solid #6EE7B7;color:#047857}
-
-/* ── Bố cục 2 cột: Form thao tác (chính) | Panel lô FEFO + lịch sử (ngữ cảnh) ── */
-.sm-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:22px;align-items:start}
-@media(max-width:920px){.sm-grid{grid-template-columns:1fr}}
-.sm-side{display:flex;flex-direction:column;gap:22px}
-
-.card{background:#fff;border:1px solid #E4E9E7;border-radius:16px;overflow:hidden;
-  box-shadow:0 1px 2px rgba(4,47,46,.04),0 12px 30px -18px rgba(4,47,46,.14)}
-.card-head{padding:15px 20px;border-bottom:1px solid #EAEFED;display:flex;align-items:center;gap:11px}
-.card-head h2{font-size:14.5px;font-weight:800;color:var(--ink)}
-.card-head h2 small{color:var(--muted);font-weight:600;font-size:12px;margin-left:5px}
-.card-body{padding:22px 20px}
-
-.fg{display:flex;flex-direction:column;gap:7px;margin-bottom:17px}
-.fg > label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.fg input,.fg select,.fg textarea{border:1.5px solid #DCE8E5;border-radius:10px;padding:11px 14px;
-  font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:var(--ink);background:#fff;
-  width:100%;transition:border .16s,box-shadow .16s}
-.fg input::placeholder,.fg textarea::placeholder{color:#94A3A0}
-.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--main);outline:none;
-  box-shadow:0 0 0 3.5px rgba(15,118,110,.12)}
-.fg textarea{min-height:84px;resize:vertical}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media(max-width:520px){.row2{grid-template-columns:1fr}}
-
-/* ── FEFO nudge — hộp highlight nhắc lấy đúng lô (💡), chỉ hiện sau khi chọn thuốc ── */
-.fefo-nudge{display:none;align-items:center;gap:11px;margin:-2px 0 17px;padding:12px 15px;border-radius:11px;
-  background:linear-gradient(100deg,#E6FFFA,#ECFDF9);border:1px solid #99F6E4;border-left:4px solid var(--main);
-  font-size:13px;color:var(--deep);line-height:1.45}
+/* ── Nhắc lô FEFO: chỉ hiện sau khi chọn thuốc ──
+   Đặt ngay dưới ô chọn thuốc thay vì chỉ nằm ở panel phải: thao tác kế tiếp là
+   gõ số lô, nên số lô cần lấy phải nằm trong cùng tầm mắt với ô nhập. */
+.fefo-nudge{display:none;margin:-4px 0 18px}
 .fefo-nudge.show{display:flex}
-.fefo-nudge .fn-ic{font-size:18px;flex:none}
-.fefo-nudge b{font-weight:800;color:var(--main)}
+.fefo-nudge .lot{font-family:ui-monospace,"SF Mono",Consolas,monospace;font-weight:800;letter-spacing:-.3px}
 
-.direction-row{display:none;gap:10px;margin:-2px 0 17px}
-.direction-row.show{display:flex}
-.dir-opt{flex:1;display:flex;align-items:center;gap:8px;padding:11px 13px;border:1.5px solid #DCE8E5;
-  border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;color:var(--ink);background:#fff}
-.dir-opt input{accent-color:var(--main)}
-.dir-opt:has(input:checked){border-color:var(--main);background:#E6FFFA}
+.dir-row{display:none;margin:-4px 0 18px}
+.dir-row.show{display:flex}
 
-.btn-submit{width:100%;height:48px;background:linear-gradient(135deg,var(--main),var(--deep));
-  color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;
-  font-family:inherit;transition:filter .15s,transform .05s;box-shadow:0 8px 20px -8px rgba(15,118,110,.5)}
-.btn-submit:hover{filter:brightness(1.07)}
-.btn-submit:active{transform:translateY(1px)}
-
-/* ── Panel lô FEFO (cột phải) — signature: bừng sáng khi chọn thuốc ── */
-.batch-empty{padding:34px 22px;text-align:center;color:var(--muted)}
-.batch-empty .be-ic{font-size:32px;opacity:.45;margin-bottom:10px}
-.batch-empty p{font-size:13px;line-height:1.5}
-.batch-info{display:none;padding:20px}
-.batch-info.show{display:block}
-.bi-tag{font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--main);
-  margin-bottom:7px;display:flex;align-items:center;gap:6px}
-.bi-batch{font-size:23px;font-weight:800;color:var(--ink);letter-spacing:-.3px;
-  font-family:ui-monospace,Consolas,monospace;margin-bottom:17px;word-break:break-all}
-.bi-rows{display:flex;flex-direction:column;gap:0}
-.bi-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #EAEFED}
-.bi-row:last-child{border-bottom:none}
-.bi-lbl{font-size:12.5px;color:var(--muted);font-weight:650;display:flex;align-items:center;gap:7px}
-.bi-val{font-size:14px;font-weight:800;color:var(--ink)}
-.days-badge{display:inline-block;margin-left:7px;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:800}
+/* Panel lô chỉ định — số lô là thứ duy nhất người dùng phải đọc chính xác,
+   nên nó được đặt to nhất trong cả cột phải. */
+.lot-big{font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:24px;font-weight:800;
+  color:var(--ink);letter-spacing:-.6px;word-break:break-all;margin-bottom:4px}
+.lot-tag{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--main);
+  display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.days-chip{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:800}
 .days-ok{background:var(--okbg);color:var(--ok)}
 .days-warn{background:var(--goldbg);color:var(--gold)}
 .days-danger{background:var(--dangerbg);color:var(--danger)}
-.fefo-note{margin-top:17px;padding:11px 13px;border-radius:10px;background:#F0FDFA;border:1px solid #99F6E4;
-  font-size:12px;color:#0F766E;line-height:1.45;display:flex;gap:8px}
-.fefo-note .fnn-ic{flex:none}
 
-/* ── Lịch sử di chuyển kho (mini, gọn trong cột phải) ── */
-.mini-list{display:flex;flex-direction:column}
-.mini-row{display:flex;align-items:center;gap:11px;padding:11px 18px;border-bottom:1px solid #F2ECE7}
-.mini-row:last-child{border-bottom:none}
-.mini-ic{width:34px;height:34px;border-radius:9px;flex:none;display:grid;place-items:center;font-size:14px}
-.mi-OUT{background:var(--dangerbg)}
-.mi-EXPIRED{background:var(--goldbg)}
-.mi-ADJUSTMENT{background:#E0F2FE}
-.mini-body{flex:1;min-width:0}
-.mini-med{font-size:12.5px;font-weight:750;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mini-meta{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mini-qty{font-size:13.5px;font-weight:800;flex:none;font-variant-numeric:tabular-nums}
-.q-neg{color:var(--danger)}.q-pos{color:var(--ok)}
-.mini-empty{padding:28px 20px;text-align:center;color:var(--muted);font-size:12.5px}
+#barcodeReaderBox{width:100%;min-height:250px;border-radius:14px;overflow:hidden;background:#06201E}
 </style>
 <meta name="csrf-token" content="${csrfToken}">
-<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
+<script src="<%= ctx %>/js/csrf.js"></script>
+<script src="<%= ctx %>/js/warehouse-ui.js" defer></script>
 </head>
 <body class="wh">
+<%@ include file="/WEB-INF/views/icons.jsp" %>
 <%@ include file="warehouse-sidebar.jsp" %>
+
 <div class="main">
+  <header class="wh-topbar">
+    <div class="crumb">Kho hàng</div>
+    <nav class="tb-nav">
+      <a href="<%= ctx %>/warehouse-inventory">Tồn kho</a>
+      <a class="on" href="<%= ctx %>/warehouse-stock-movement">Điều chỉnh</a>
+      <a href="<%= ctx %>/warehouse-reorder">Gợi ý đặt hàng</a>
+      <a href="<%= ctx %>/warehouse-recall">Thu hồi</a>
+    </nav>
+    <div class="right">
+      <a href="<%= ctx %>/staff-checkin?uid=<%= uid %>" class="wh-av" title="Ca làm việc của <%= fullName %>"><%= initials %></a>
+    </div>
+  </header>
 
-<header class="wh-topbar">
-  <div class="crumb">📦 Xuất kho &amp; Điều chỉnh tồn</div>
-  <div class="right">
-    <a href="${pageContext.request.contextPath}/staff-checkin?uid=<%= uid %>" class="wh-av" title="Ca làm việc"><%= initials %></a>
-  </div>
-</header>
+  <div class="wh-shell wh-anim">
 
-<div class="wh-content">
- <div class="wrap">
-
-  <p class="page-intro">
-    <span class="pi-ic">🔒</span>
-    <span>Hệ thống chỉ định lô theo <b>FEFO</b> (hạn dùng gần nhất) — bạn phải quét/nhập <b>đúng số lô đó</b> mới được xác nhận. Sai lô sẽ bị chặn, không trừ kho.</span>
-  </p>
-
-  <c:if test="${not empty error}">
-    <div class="alert alert-err">⚠️ <c:out value="${error}"/></div>
-  </c:if>
-  <c:if test="${param.msg == 'success'}">
-    <div class="alert alert-ok">✅ Đã ghi nhận thao tác thành công. Tồn kho lô đã được cập nhật.</div>
-  </c:if>
-
-  <div class="sm-grid">
-
-    <!-- ══ CỘT 1: Form thao tác ══ -->
-    <div class="card">
-      <div class="card-head">
-        <div class="wh-ic">📤</div>
-        <h2>Thao tác xuất kho / điều chỉnh</h2>
+    <div class="wh-head">
+      <div>
+        <h1>Xuất kho &amp; Điều chỉnh tồn</h1>
+        <p class="sub">Ghi nhận xuất kho, huỷ hàng hết hạn và điều chỉnh sau kiểm kê — theo đúng lô hệ thống chỉ định.</p>
       </div>
-      <div class="card-body">
-        <form method="post" action="${pageContext.request.contextPath}/warehouse-stock-movement" id="mvForm">
-          <input type="hidden" name="_csrf" value="${csrfToken}">
-          <input type="hidden" name="uid" value="<%= uid %>"/>
+      <div class="wh-head-actions">
+        <a class="wh-btn" href="<%= ctx %>/warehouse-inventory">
+          <svg><use href="#ic-package"/></svg> Xem tồn kho
+        </a>
+      </div>
+    </div>
 
-          <div class="fg">
-            <label>Thuốc</label>
-            <div class="wh-field">
-              <span class="wh-field-ic">💊</span>
-              <select name="medicineId" id="medicineSelect" required onchange="loadSuggestedBatch()">
+    <div class="wh-note info">
+      <svg><use href="#ic-lock"/></svg>
+      <span>Hệ thống chỉ định lô theo <b>FEFO</b> (hạn dùng gần nhất xuất trước). Bạn phải quét hoặc nhập
+        <b>đúng số lô đó</b> mới xác nhận được — nhập sai lô sẽ bị chặn và không trừ kho.</span>
+    </div>
+
+    <c:if test="${not empty error}">
+      <div class="wh-note danger" role="alert">
+        <svg><use href="#ic-alert"/></svg>
+        <span><c:out value="${error}"/></span>
+      </div>
+    </c:if>
+    <c:if test="${param.msg == 'success'}">
+      <div class="wh-note ok" role="status">
+        <svg><use href="#ic-check-circle"/></svg>
+        <span>Đã ghi nhận thao tác. Tồn kho của lô được cập nhật ngay.</span>
+      </div>
+    </c:if>
+
+    <div class="wh-split">
+
+      <!-- ══ Cột trái: form thao tác ══ -->
+      <div class="wh-card">
+        <div class="wh-card-head">
+          <div class="wh-ic"><svg><use href="#ic-out"/></svg></div>
+          <h2>Thao tác xuất kho / điều chỉnh</h2>
+        </div>
+        <div class="wh-card-body">
+          <form method="post" action="<%= ctx %>/warehouse-stock-movement" id="mvForm">
+            <input type="hidden" name="_csrf" value="${csrfToken}">
+            <input type="hidden" name="uid" value="<%= uid %>"/>
+
+            <div class="wh-fg">
+              <label for="medicineSelect">Thuốc</label>
+              <select class="wh-in" name="medicineId" id="medicineSelect" required onchange="loadSuggestedBatch()">
                 <option value="">— Chọn thuốc —</option>
                 <c:forEach var="m" items="${medicines}">
                   <option value="${m.medicineId}" ${f_medicineId == m.medicineId ? 'selected' : ''}>
@@ -178,153 +139,156 @@ a{text-decoration:none;color:inherit}
                 </c:forEach>
               </select>
             </div>
-          </div>
 
-          <!-- FEFO nudge: nhắc lấy đúng lô hệ thống chỉ định -->
-          <div class="fefo-nudge" id="fefoNudge">
-            <span class="fn-ic">💡</span>
-            <span>Hệ thống chỉ định lô <b id="fnBatch">—</b> — hãy quét/nhập <b>đúng lô này</b> (chi tiết ở panel bên phải).</span>
-          </div>
+            <div class="wh-note info fefo-nudge" id="fefoNudge">
+              <svg><use href="#ic-target"/></svg>
+              <span>Lấy đúng lô <b class="lot" id="fnBatch">—</b> — chi tiết hạn dùng và tồn ở panel bên phải.</span>
+            </div>
 
-          <div class="row2">
-            <div class="fg">
-              <label style="display:flex; justify-content:space-between; align-items:center;">
-                  <span>Số lô (quét hoặc nhập tay)</span>
-                  <button type="button" onclick="openBarcodeScan()" style="background:none;border:none;color:var(--main);font-size:12px;cursor:pointer;font-weight:700;">📷 Quét mã vạch</button>
-              </label>
-              <div class="wh-field">
-                <span class="wh-field-ic">🏷️</span>
-                <input type="text" name="enteredBatchNumber" id="enteredBatchNumber" placeholder="VD: LOT-2026-001"
-                       value="${fn:escapeXml(f_enteredBatchNumber)}" autocomplete="off" required/>
+            <div class="wh-row2">
+              <div class="wh-fg">
+                <label for="enteredBatchNumber">
+                  <span>Số lô</span>
+                  <button type="button" class="wh-linkbtn" onclick="openBarcodeScan()">
+                    <svg><use href="#ic-scan"/></svg> Quét mã vạch
+                  </button>
+                </label>
+                <input class="wh-in" type="text" name="enteredBatchNumber" id="enteredBatchNumber"
+                       placeholder="VD: LOT-2026-001" value="${fn:escapeXml(f_enteredBatchNumber)}"
+                       autocomplete="off" required/>
+              </div>
+              <div class="wh-fg">
+                <label for="mvQty">Số lượng</label>
+                <input class="wh-in" type="number" id="mvQty" name="quantity" min="1"
+                       placeholder="0" value="${fn:escapeXml(f_quantity)}" required/>
               </div>
             </div>
-            <div class="fg">
-              <label>Số lượng</label>
-              <div class="wh-field">
-                <span class="wh-field-ic">🔢</span>
-                <input type="number" name="quantity" min="1" value="${fn:escapeXml(f_quantity)}" required/>
-              </div>
-            </div>
-          </div>
 
-          <div class="fg">
-            <label>Loại thao tác</label>
-            <div class="wh-field">
-              <span class="wh-field-ic">🔄</span>
-              <select name="movementType" id="movementType" required onchange="toggleDirection()">
-                <option value="OUT" ${f_movementType == 'OUT' ? 'selected' : ''}>Xuất kho / Hủy hàng</option>
-                <option value="EXPIRED" ${f_movementType == 'EXPIRED' ? 'selected' : ''}>Hủy hết hạn</option>
+            <div class="wh-fg">
+              <label for="movementType">Loại thao tác</label>
+              <select class="wh-in" name="movementType" id="movementType" required onchange="toggleDirection()">
+                <option value="OUT" ${f_movementType == 'OUT' ? 'selected' : ''}>Xuất kho / Huỷ hàng</option>
+                <option value="EXPIRED" ${f_movementType == 'EXPIRED' ? 'selected' : ''}>Huỷ hết hạn</option>
                 <option value="ADJUSTMENT" ${f_movementType == 'ADJUSTMENT' ? 'selected' : ''}>Điều chỉnh sau kiểm kê</option>
               </select>
             </div>
+
+            <div class="wh-choice dir-row" id="directionRow">
+              <label>
+                <input type="radio" name="adjustDirection" value="DECREASE"
+                       ${f_adjustDirection != 'INCREASE' ? 'checked' : ''}/> Kiểm kê thiếu — giảm tồn
+              </label>
+              <label>
+                <input type="radio" name="adjustDirection" value="INCREASE"
+                       ${f_adjustDirection == 'INCREASE' ? 'checked' : ''}/> Kiểm kê thừa — tăng tồn
+              </label>
+            </div>
+
+            <div class="wh-fg">
+              <label for="mvReason">Lý do</label>
+              <textarea class="wh-in" id="mvReason" name="reason"
+                placeholder="VD: Hộp bị vỡ, phát hiện khi kiểm kê định kỳ…">${fn:escapeXml(f_reason)}</textarea>
+            </div>
+
+            <button type="submit" class="wh-btn wh-btn-primary wh-btn-lg" style="width:100%;justify-content:center">
+              <svg><use href="#ic-check"/></svg> Xác nhận thao tác
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- ══ Cột phải: lô chỉ định + lịch sử ══ -->
+      <div class="wh-stack">
+
+        <div class="wh-card">
+          <div class="wh-card-head">
+            <div class="wh-ic ok"><svg><use href="#ic-target"/></svg></div>
+            <h2>Lô hệ thống chỉ định</h2>
           </div>
 
-          <div class="direction-row" id="directionRow">
-            <label class="dir-opt">
-              <input type="radio" name="adjustDirection" value="DECREASE"
-                     ${f_adjustDirection != 'INCREASE' ? 'checked' : ''}/> Kiểm kê THIẾU (giảm tồn)
-            </label>
-            <label class="dir-opt">
-              <input type="radio" name="adjustDirection" value="INCREASE"
-                     ${f_adjustDirection == 'INCREASE' ? 'checked' : ''}/> Kiểm kê THỪA (tăng tồn)
-            </label>
+          <div class="wh-empty" id="batchEmpty">
+            <div class="art"><svg style="width:26px;height:26px"><use href="#ic-package"/></svg></div>
+            <div class="t">Chưa chọn thuốc</div>
+            <div class="d" id="batchEmptyMsg">Chọn thuốc ở cột bên trái để xem lô phải lấy theo FEFO.</div>
           </div>
 
-          <div class="fg">
-            <label>Lý do</label>
-            <textarea name="reason" placeholder="VD: Hộp bị vỡ, phát hiện khi kiểm kê định kỳ...">${fn:escapeXml(f_reason)}</textarea>
+          <div class="wh-card-body" id="batchInfo" hidden>
+            <div class="lot-tag"><svg style="width:13px;height:13px"><use href="#ic-target"/></svg> Lô cần lấy</div>
+            <div class="lot-big" id="biBatch">—</div>
+            <div class="wh-rows" style="margin-top:14px">
+              <div class="r">
+                <span class="k"><svg><use href="#ic-calendar"/></svg> Hạn dùng</span>
+                <span class="v"><span id="biExpiry">—</span><span id="biDays"></span></span>
+              </div>
+              <div class="r">
+                <span class="k"><svg><use href="#ic-package"/></svg> Còn tồn trong lô</span>
+                <span class="v" id="biQty">—</span>
+              </div>
+            </div>
+            <div class="wh-note ok" style="margin:16px 0 0;font-size:12.5px">
+              <svg><use href="#ic-shield-check"/></svg>
+              <span>Quét đúng số lô này để được xác nhận. Đây là lô hết hạn sớm nhất còn bán được.</span>
+            </div>
           </div>
+        </div>
 
-          <button type="submit" class="btn-submit">Xác nhận thao tác</button>
-        </form>
+        <div class="wh-card">
+          <div class="wh-card-head">
+            <div class="wh-ic"><svg><use href="#ic-history"/></svg></div>
+            <h2>Lịch sử gần đây <small>7 ngày</small></h2>
+          </div>
+          <c:choose>
+            <c:when test="${empty movementRows}">
+              <div class="wh-empty">
+                <div class="art"><svg style="width:26px;height:26px"><use href="#ic-history"/></svg></div>
+                <div class="t">Chưa có thao tác nào</div>
+                <div class="d">Không có lượt xuất kho hay điều chỉnh nào trong 7 ngày qua.</div>
+              </div>
+            </c:when>
+            <c:otherwise>
+              <div class="wh-feed">
+                <c:forEach var="r" items="${movementRows}" end="6">
+                  <div class="it">
+                    <div class="ic <c:choose><c:when test="${r.movementType == 'OUT'}">out</c:when><c:when test="${r.movementType == 'EXPIRED'}">exp</c:when><c:otherwise>adj</c:otherwise></c:choose>">
+                      <svg><use href="#<c:choose><c:when test="${r.movementType == 'OUT'}">ic-out</c:when><c:when test="${r.movementType == 'EXPIRED'}">ic-clock-alert</c:when><c:otherwise>ic-scale</c:otherwise></c:choose>"/></svg>
+                    </div>
+                    <div class="bd">
+                      <div class="t1">${fn:escapeXml(r.medicineName)}</div>
+                      <div class="t2">Lô ${fn:escapeXml(r.batchNumber)} · ${r.createdAt}</div>
+                    </div>
+                    <div class="qty ${r.quantity < 0 ? 'neg' : 'pos'}">${r.quantity}</div>
+                  </div>
+                </c:forEach>
+              </div>
+            </c:otherwise>
+          </c:choose>
+        </div>
+
       </div>
     </div>
-
-    <!-- ══ CỘT 2: Panel lô FEFO + lịch sử ══ -->
-    <div class="sm-side">
-      <div class="card">
-        <div class="card-head">
-          <div class="wh-ic ok">🎯</div>
-          <h2>Lô hệ thống chỉ định</h2>
-        </div>
-        <div class="batch-empty" id="batchEmpty">
-          <div class="be-ic">📦</div>
-          <p>Chọn thuốc để xem lô hệ thống chỉ định theo <b>FEFO</b>.</p>
-        </div>
-        <div class="batch-info" id="batchInfo">
-          <div class="bi-tag">🎯 Lô cần lấy (FEFO)</div>
-          <div class="bi-batch" id="biBatch">—</div>
-          <div class="bi-rows">
-            <div class="bi-row">
-              <span class="bi-lbl">📅 Hạn dùng</span>
-              <span class="bi-val"><span id="biExpiry">—</span><span id="biDays"></span></span>
-            </div>
-            <div class="bi-row">
-              <span class="bi-lbl">📦 Còn tồn trong lô</span>
-              <span class="bi-val" id="biQty">—</span>
-            </div>
-          </div>
-          <div class="fefo-note">
-            <span class="fnn-ic">✅</span>
-            <span>Đây là lô phải lấy theo nguyên tắc <b>hết hạn trước – xuất trước</b>. Quét đúng số lô này để được xác nhận.</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-head">
-          <div class="wh-ic">🕘</div>
-          <h2>Lịch sử gần đây <small>7 ngày</small></h2>
-        </div>
-        <c:choose>
-          <c:when test="${empty movementRows}">
-            <div class="mini-empty">Chưa có thao tác nào trong 7 ngày gần đây.</div>
-          </c:when>
-          <c:otherwise>
-            <div class="mini-list">
-              <c:forEach var="r" items="${movementRows}" varStatus="st" end="6">
-                <div class="mini-row">
-                  <div class="mini-ic mi-${r.movementType}">
-                    <c:choose>
-                      <c:when test="${r.movementType == 'OUT'}">📤</c:when>
-                      <c:when test="${r.movementType == 'EXPIRED'}">⏱️</c:when>
-                      <c:otherwise>⚖️</c:otherwise>
-                    </c:choose>
-                  </div>
-                  <div class="mini-body">
-                    <div class="mini-med">${fn:escapeXml(r.medicineName)}</div>
-                    <div class="mini-meta">Lô ${fn:escapeXml(r.batchNumber)} · ${r.createdAt}</div>
-                  </div>
-                  <div class="mini-qty ${r.quantity < 0 ? 'q-neg' : 'q-pos'}">${r.quantity}</div>
-                </div>
-              </c:forEach>
-            </div>
-          </c:otherwise>
-        </c:choose>
-      </div>
-    </div>
-
   </div>
- </div>
 </div>
 
-<!-- Modal Quét Barcode -->
-<div id="barcodeScanModal" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(11,22,40,.7);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeBarcodeScan()">
-  <div style="background:#fff;border-radius:18px;max-width:420px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden">
-    <div style="padding:16px 20px;background:linear-gradient(135deg,#0f766e,#042f2e);color:#fff;display:flex;align-items:center;justify-content:space-between">
-      <h3 style="margin:0;font-size:16px;font-weight:800">📷 Quét mã vạch lô</h3>
-      <button type="button" onclick="closeBarcodeScan()" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:30px;height:30px;border-radius:9px;font-size:15px;cursor:pointer">✕</button>
+<!-- ══ Modal quét mã vạch ══ -->
+<div class="wh-modal" id="barcodeScanModal" onclick="if(event.target===this)closeBarcodeScan()">
+  <div class="wh-modal-box" role="dialog" aria-modal="true" aria-labelledby="bcTitle">
+    <div class="wh-modal-head">
+      <div class="wh-ic"><svg><use href="#ic-scan"/></svg></div>
+      <h3 id="bcTitle">Quét mã vạch lô</h3>
+      <button type="button" class="wh-btn wh-btn-icon wh-btn-ghost" onclick="closeBarcodeScan()" aria-label="Đóng">
+        <svg><use href="#ic-x"/></svg>
+      </button>
     </div>
-    <div style="padding:16px 20px">
-      <div id="barcodeReaderBox" style="width:100%;min-height:260px;border-radius:12px;overflow:hidden;background:#0b1628"></div>
-      <div id="barcodeScanStatus" style="margin-top:10px;font-size:12.5px;color:#64748b;text-align:center">Đưa mã vạch vào giữa khung hình.</div>
+    <div class="wh-modal-body">
+      <div id="barcodeReaderBox"></div>
+      <div id="barcodeScanStatus" style="margin-top:12px;font-size:12.5px;color:var(--muted);text-align:center">
+        Đưa mã vạch vào giữa khung hình.
+      </div>
     </div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
-
-
 <script>
 function toggleDirection(){
   var mt = document.getElementById('movementType').value;
@@ -332,89 +296,90 @@ function toggleDirection(){
 }
 
 function resetBatchPanel(msg){
-  document.getElementById('batchInfo').classList.remove('show');
+  document.getElementById('batchInfo').hidden = true;
   document.getElementById('fefoNudge').classList.remove('show');
   var empty = document.getElementById('batchEmpty');
-  empty.style.display = 'block';
-  empty.querySelector('p').innerHTML = msg || 'Chọn thuốc để xem lô hệ thống chỉ định theo <b>FEFO</b>.';
+  empty.hidden = false;
+  document.getElementById('batchEmptyMsg').textContent =
+    msg || 'Chọn thuốc ở cột bên trái để xem lô phải lấy theo FEFO.';
 }
 
-function daysBadge(expiry){
-  if(!expiry) return '';
+function daysChip(expiry){
+  if (!expiry) return '';
   var d = Math.ceil((new Date(expiry) - new Date()) / 86400000);
   var cls = d <= 30 ? 'days-danger' : (d <= 90 ? 'days-warn' : 'days-ok');
-  return '<span class="days-badge ' + cls + '">' + (d >= 0 ? 'còn ' + d + ' ngày' : 'ĐÃ HẾT HẠN') + '</span>';
+  return '<span class="days-chip ' + cls + '">' + (d >= 0 ? 'còn ' + d + ' ngày' : 'đã hết hạn') + '</span>';
 }
 
 function loadSuggestedBatch(){
   var medId = document.getElementById('medicineSelect').value;
-  if(!medId){ resetBatchPanel(); return; }
+  if (!medId) { resetBatchPanel(); return; }
   resetBatchPanel('Đang tải lô hệ thống chỉ định…');
   var ctx = document.querySelector('meta[name=ctx]').content;
-  fetch(ctx + '/warehouse-stock-movement?uid=<%= uid %>&action=suggest-batch&medicineId=' + encodeURIComponent(medId))
+  fetch(ctx + '/warehouse-stock-movement?action=suggest-batch&medicineId=' + encodeURIComponent(medId))
     .then(function(r){ return r.json(); })
     .then(function(d){
-      if(d.ok){
-        document.getElementById('batchEmpty').style.display = 'none';
+      if (d.ok) {
+        document.getElementById('batchEmpty').hidden = true;
         document.getElementById('biBatch').textContent = d.batchNumber;
         document.getElementById('biExpiry').textContent = d.expiryDate;
-        document.getElementById('biDays').innerHTML = daysBadge(d.expiryDate);
+        document.getElementById('biDays').innerHTML = daysChip(d.expiryDate);
         document.getElementById('biQty').textContent = d.currentQuantity;
-        document.getElementById('batchInfo').classList.add('show');
+        document.getElementById('batchInfo').hidden = false;
         document.getElementById('fnBatch').textContent = d.batchNumber;
         document.getElementById('fefoNudge').classList.add('show');
       } else {
         resetBatchPanel(d.message || 'Không có lô nào khả dụng cho thuốc này.');
       }
     })
-    .catch(function(){ resetBatchPanel('Không tải được gợi ý lô — vẫn có thể nhập tay, hệ thống sẽ kiểm tra khi xác nhận.'); });
+    .catch(function(){
+      resetBatchPanel('Không tải được gợi ý lô. Bạn vẫn nhập tay được — hệ thống sẽ kiểm tra khi xác nhận.');
+    });
 }
 
 toggleDirection();
 <c:if test="${not empty f_medicineId}">loadSuggestedBatch();</c:if>
 
-let barcodeScanner = null;
-function openBarcodeScan() {
-  document.getElementById('barcodeScanModal').style.display = 'flex';
-  const status = document.getElementById('barcodeScanStatus');
+var barcodeScanner = null;
+function openBarcodeScan(){
+  var modal = document.getElementById('barcodeScanModal');
+  modal.classList.add('open');
+  var status = document.getElementById('barcodeScanStatus');
   status.textContent = 'Đưa mã vạch vào giữa khung hình…';
   if (typeof Html5Qrcode === 'undefined') {
-    status.textContent = '⚠️ Không tải được thư viện quét mã vạch — kiểm tra kết nối mạng.';
+    status.textContent = 'Không tải được thư viện quét mã vạch. Kiểm tra kết nối mạng rồi thử lại.';
     return;
   }
   barcodeScanner = new Html5Qrcode('barcodeReaderBox');
-  const config = {
-    fps: 10,
-    qrbox: { width: 260, height: 140 },
-    formatsToSupport: [
-      Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
-      Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
-      Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
-      Html5QrcodeSupportedFormats.QR_CODE
-    ]
-  };
   barcodeScanner.start(
     { facingMode: 'environment' },
-    config,
-    (decodedText) => {
+    { fps: 10, qrbox: { width: 260, height: 140 },
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.QR_CODE
+      ] },
+    function(decodedText){
       document.getElementById('enteredBatchNumber').value = decodedText;
       closeBarcodeScan();
     },
-    () => {} // lỗi giải mã từng khung hình — bỏ qua
-  ).catch(err => {
-    status.textContent = '⚠️ Không mở được camera: ' + (err.message || err);
+    function(){}   // lỗi giải mã từng khung hình — bỏ qua
+  ).catch(function(err){
+    status.textContent = 'Không mở được camera: ' + (err.message || err);
   });
 }
-function closeBarcodeScan() {
-  document.getElementById('barcodeScanModal').style.display = 'none';
+function closeBarcodeScan(){
+  document.getElementById('barcodeScanModal').classList.remove('open');
   if (barcodeScanner) {
-    const s = barcodeScanner;
+    var s = barcodeScanner;
     barcodeScanner = null;
-    s.stop().then(() => s.clear()).catch(() => {});
+    s.stop().then(function(){ s.clear(); }).catch(function(){});
   }
 }
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape' && document.getElementById('barcodeScanModal').classList.contains('open')) closeBarcodeScan();
+});
 </script>
-
-</div>
 </body>
 </html>

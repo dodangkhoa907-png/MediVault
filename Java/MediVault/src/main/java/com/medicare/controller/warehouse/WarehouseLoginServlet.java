@@ -45,7 +45,7 @@ public class WarehouseLoginServlet extends HttpServlet {
             if (uid != null) {
                 Account acc = (Account) s.getAttribute("staffAccount_" + uid);
                 if (acc != null && acc.getRoleId() == ROLE_WAREHOUSE) {
-                    resp.sendRedirect(req.getContextPath() + "/warehouse-dashboard?uid=" + uid);
+                    resp.sendRedirect(req.getContextPath() + "/warehouse-dashboard");
                     return;
                 }
             }
@@ -109,14 +109,17 @@ public class WarehouseLoginServlet extends HttpServlet {
         int id = account.getAccountId();
         session.setAttribute("staffAccount_" + id, account);
         session.setAttribute("staffUid", String.valueOf(id));
+        // Danh tính chuẩn của portal Kho — mọi servlet Kho đọc từ đây, không đọc từ URL nữa.
+        com.medicare.util.WarehouseAuth.login(session, account);
 
-        String token = com.medicare.util.SessionTracker.login(id);
+        com.medicare.util.SessionTracker.login(id);
         accountDAO.updateLastLogin(id);
         AuditHelper.log(req, "Đăng nhập", "Auth",
                 "Quản lý kho @" + account.getUsername() + " đăng nhập thành công", id);
 
-        resp.sendRedirect(req.getContextPath()
-                + "/warehouse-dashboard?uid=" + id + "&token=" + token);
+        // URL sạch: không còn ?uid=&token= — id tài khoản không được phép nằm trên thanh
+        // địa chỉ (lưu lại trong lịch sử trình duyệt, lộ trên máy dùng chung).
+        resp.sendRedirect(req.getContextPath() + "/warehouse-dashboard");
     }
 
     private void fail(HttpServletRequest req, HttpServletResponse resp, String msg)

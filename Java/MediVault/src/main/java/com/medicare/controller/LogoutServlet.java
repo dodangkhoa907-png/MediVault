@@ -34,6 +34,14 @@ public class LogoutServlet extends HttpServlet {
             // "from" (dễ bị JSP gọi sai/hardcode nhầm, như warehouse-sidebar.jsp trước đây).
             if ("staff".equals(from) || "warehouse".equals(from) || staffUid != null) {
                 redirectUrl = "/staff-login";
+                // Portal Kho không còn gắn ?uid= vào URL (id tài khoản không được lộ trên thanh
+                // địa chỉ) nên link đăng xuất từ đó KHÔNG mang uid. Thiếu uid mà vẫn đi tiếp thì
+                // nhánh dưới bị bỏ qua: session KHÔNG được xoá — người dùng bấm "Đăng xuất" xong
+                // vẫn đang đăng nhập. Vì vậy suy ra danh tính từ chính session khi thiếu uid.
+                if ((staffUid == null || staffUid.isEmpty()) && "warehouse".equals(from)) {
+                    Account whAcc = com.medicare.util.WarehouseAuth.current(req);
+                    if (whAcc != null) staffUid = String.valueOf(whAcc.getAccountId());
+                }
                 if (staffUid != null && !staffUid.isEmpty()) {
                     Account staffAcc = (Account) session.getAttribute("staffAccount_" + staffUid);
                     if (staffAcc != null) {
@@ -43,6 +51,11 @@ public class LogoutServlet extends HttpServlet {
                                 staffAcc.getAccountId());
                         com.medicare.util.SessionTracker.logout(staffAcc.getAccountId());
                         session.removeAttribute("staffAccount_" + staffUid);
+                        // Xoá luôn danh tính portal Kho, nếu không WarehouseAuth.current() vẫn
+                        // trả về tài khoản vừa đăng xuất và người dùng quay lại /warehouse-* được.
+                        if (staffAcc.getRoleId() == 3) {
+                            session.removeAttribute(com.medicare.util.WarehouseAuth.SESSION_KEY);
+                        }
                     }
                 }
                 // Không invalidate session, không xóa adminAccount

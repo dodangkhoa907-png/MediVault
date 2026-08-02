@@ -1,7 +1,7 @@
 # MediVault — Project Tree
 
 > **Stack**: Jakarta EE 10 · Tomcat 10 · SQL Server (remote) · JSP/JSTL · HikariCP · Caffeine Cache  
-> **Cập nhật**: 2026-07-15
+> **Cập nhật**: 2026-08-02
 
 ---
 
@@ -190,7 +190,9 @@ MediVault/
     │       ├── PasswordUtil.java        # BCrypt hash/check
     │       ├── PricingUtil.java         # Tính tiền VND: kẹp giảm giá [0,subtotal], sàn total=0 (settle/calculateFinalTotal)
     │       ├── SessionTracker.java      # Theo dõi nhân viên đang online (in-memory Set)
-    │       ├── SidebarHelper.java       # Load badge counts cho sidebar (cache 30s)
+    │       ├── SidebarHelper.java       # Load badge counts cho sidebar Admin (cache 30s);
+    │       │                            #   loadWarehouse(req, accId) cho sidebar Kho — gọi ở
+    │       │                            #   MỌI servlet Kho, đừng tự set expiryCount/myOpenTaskCount tay
     │       ├── StaffNotifHelper.java    # Helper gửi thông báo chuẩn (created/reset/face)
     │       └── ValidationUtil.java      # Validate email, SĐT, CMND, mật khẩu, username
     │
@@ -272,17 +274,51 @@ MediVault/
         │       │   ├── 404.jsp
         │       │   └── 500.jsp
         │       │
+        │       ├── warehouse/           # Portal Quản lý kho (roleId=3 — Thủ kho)
+        │       │   ├── warehouse-sidebar.jsp        # Sidebar dùng chung (4 mục + badge)
+        │       │   ├── warehouse-login.jsp          # Đăng nhập thủ kho
+        │       │   ├── warehouse-forgot-password.jsp
+        │       │   ├── warehouse-dashboard.jsp      # Trang chủ kho: banner ca làm việc, cảnh báo
+        │       │   │                                #   thu hồi/SLA, 4 KPI bấm được, biểu đồ 7 ngày
+        │       │   ├── warehouse-inventory.jsp      # Tồn kho — bảng enterprise: KPI-là-bộ-lọc,
+        │       │   │                                #   segmented control 5 lát cắt, tìm tức thì
+        │       │   │                                #   (bỏ dấu), sort/phân trang/chọn cột/chọn
+        │       │   │                                #   dòng/xuất CSV client-side, drawer chi tiết
+        │       │   ├── warehouse-stock-movement.jsp # Điều chỉnh / xuất kho FEFO (nhận ?medicineId=)
+        │       │   ├── warehouse-reorder.jsp        # Gợi ý đặt hàng + 3 tầng cảnh báo hạn dùng
+        │       │   │                                #   (gộp 3 bảng cũ thành 1 bảng + segmented)
+        │       │   ├── warehouse-recall.jsp         # Thu hồi khẩn cấp
+        │       │   ├── warehouse-import.jsp         # Nhập lô: wizard 4 bước, combo dropdown tự
+        │       │   │                                #   dựng, gợi ý giá/số lô lần trước, chặn
+        │       │   │                                #   cứng ngày phi lý, bảng "Phiếu nhập gần đây"
+        │       │   ├── warehouse-task.jsp           # Nhiệm vụ & SOP: task hôm nay, dự án + mốc, bảng
+        │       │   └── warehouse-profile.jsp        # Hồ sơ cá nhân (ảnh đại diện + thông tin chỉ đọc)
+        │       │   ── CẢ 8 TRANG ĐÃ DÙNG CHUNG DS `wh-*`; sửa giao diện thì sửa ở
+        │       │      warehouse-portal.css / warehouse-ui.js, đừng thêm <style> mới.
+        │       │
         │       ├── login.jsp            # Đăng nhập admin
         │       ├── forgot-password.jsp  # Quên mật khẩu
         │       ├── otp-verify.jsp       # Nhập OTP
-        │       ├── icons.jsp            # Thư viện icon SVG dùng chung
+        │       ├── icons.jsp            # Thư viện icon SVG dùng chung (bộ Lucide 24×24,
+        │       │                        #   stroke-2) — include rồi dùng <svg><use href="#ic-..."/>
         │       └── loading.jsp          # Màn hình loading (đã tắt — gây white flash)
         │
         ├── css/
-        │   └── staff-portal.css     # CSS riêng cho portal nhân viên
+        │   ├── staff-portal.css     # CSS riêng cho portal nhân viên
+        │   └── warehouse-portal.css # Portal Kho: tông teal + LỚP DESIGN SYSTEM dùng chung cho
+        │                            #   cả 8 trang — wh-shell/wh-head/wh-btn/wh-kpi/wh-toolbar/
+        │                            #   wh-seg/wh-search/wh-table/wh-badge/wh-pager/wh-empty/
+        │                            #   wh-drawer/wh-card/wh-note/wh-fg/wh-choice/wh-rows/
+        │                            #   wh-feed/wh-facts/wh-modal/wh-quick/wh-task/wh-ms/
+        │                            #   wh-progress/tb-nav
         │
         ├── js/
         │   ├── csrf.js              # Tự gắn token CSRF vào mọi fetch/XHR/form (POST/PUT/DELETE)
+        │   ├── warehouse-ui.js      # Hành vi dùng chung của DS Kho: chỉ bật cuộn ngang khi
+        │   │                        #   bảng không vừa khung (giữ sticky header), đo chiều cao
+        │   │                        #   toolbar dính, đổ bóng khi stuck, toast (window.whToast),
+        │   │                        #   đếm số cho ô thống kê. Bỏ qua vùng có data-fit="manual"
+        │   │                        #   (trang tồn kho tự tính min-width).
         │   └── face-api/
         │       └── face-api.min.js  # face-api.js (offline, bundle local)
         │
@@ -333,6 +369,14 @@ MediVault/
 | `/nfc-bridge` | NfcBridgeServlet | — (SSE) | POS |
 | `/staff-dashboard` | StaffDashboardServlet | staff/staff-dashboard.jsp | Nhân viên |
 | `/portal` | CustomerPortalServlet | portal/customer-portal.jsp | Khách hàng |
+| `/warehouse-dashboard` | WarehouseDashboardServlet | warehouse/warehouse-dashboard.jsp | Thủ kho |
+| `/warehouse-inventory` | WarehouseInventoryServlet | warehouse/warehouse-inventory.jsp | Thủ kho |
+| `/warehouse-task` | WarehouseTaskServlet | warehouse/warehouse-task.jsp | Thủ kho |
+| `/warehouse-profile` | WarehouseProfileServlet | warehouse/warehouse-profile.jsp | Thủ kho |
+| `/warehouse-stock-movement` | WarehouseStockMovementServlet | warehouse/warehouse-stock-movement.jsp | Thủ kho |
+| `/warehouse-reorder` | WarehouseReorderServlet | warehouse/warehouse-reorder.jsp | Thủ kho |
+| `/warehouse-recall` | WarehouseRecallServlet | warehouse/warehouse-recall.jsp | Thủ kho |
+| `/warehouse-import` | WarehouseImportServlet | warehouse/warehouse-import.jsp | Thủ kho |
 
 ---
 
