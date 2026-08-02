@@ -19,6 +19,9 @@ public interface IShiftScheduleDAO {
     List<ShiftSchedule> findByAccount(int accountId);
     List<ShiftSchedule> findByAccountAndMonth(int accountId, int month, int year);
     ShiftSchedule findTodaySchedule(int accountId);
+    /** Ngày có nhiều ca (vd Ca Chiều + Ca Tối) — trả ĐÚNG ca đang diễn ra theo giờ hiện tại,
+     *  không phải luôn ca sớm nhất trong ngày như findTodaySchedule(). */
+    ShiftSchedule findActiveOrNearestSchedule(int accountId);
     List<ShiftSchedule> findUpcoming(int accountId, int days);
     ShiftSchedule findByAccountAndDate(int accountId, LocalDate date);
 

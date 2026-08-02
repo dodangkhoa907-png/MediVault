@@ -866,15 +866,36 @@ public class PosServlet extends HttpServlet {
 
         HttpSession session = req.getSession(true);
 
-        // Kiểm tra sai quầy POS trước khi set session
-        ShiftSchedule schedule = scheduleDAO.findTodaySchedule(accountId);
+        // Kiểm tra sai quầy POS trước khi set session — dùng ca ĐANG DIỄN RA theo giờ hiện
+        // tại (không phải luôn ca sớm nhất trong ngày), vì nhân viên "2 ca/ngày" có thể đổi
+        // quầy giữa Ca Chiều và Ca Tối (xem findActiveOrNearestSchedule để biết chi tiết bug cũ).
+        ShiftSchedule schedule = scheduleDAO.findActiveOrNearestSchedule(accountId);
         if (schedule != null && schedule.getPosStation() > 0) {
-            Integer sessStation = (Integer) session.getAttribute("posStation");
-            int currentSt = sessStation != null ? sessStation : 0;
+            // Ưu tiên "station" của CHÍNH request này (đúng quầy trình duyệt đang đứng ngay
+            // lúc quét mặt, client luôn gửi kèm — xem pos.jsp) thay vì session.posStation, vốn
+            // có thể còn SÓT giá trị quầy cũ (test/chuyển quầy mà set-station chưa kịp chạy lại,
+            // hoặc tab khác cùng session ghi đè) — khiến quét mặt ĐÚNG người vẫn bị từ chối oan
+            // vì so sánh với 1 số quầy không còn đúng thực tế.
+            int currentSt = 0;
+            if (stationStr != null && !stationStr.isEmpty()) {
+                try { currentSt = Integer.parseInt(stationStr); } catch (NumberFormatException ignored) {}
+            }
+            if (currentSt <= 0) {
+                Integer sessStation = (Integer) session.getAttribute("posStation");
+                currentSt = sessStation != null ? sessStation : 0;
+            }
             if (currentSt > 0 && schedule.getPosStation() != currentSt) {
                 String n = staff.getFullName() != null ? staff.getFullName() : staff.getUsername();
-                out.printf("{\"ok\":false,\"reason\":\"wrong-station\",\"correctStation\":%d,\"name\":\"%s\"}",
-                        schedule.getPosStation(), esc(n));
+                // Kèm tên ca + khung giờ để màn POS hiện thông báo rõ ràng như modal chi tiết
+                // ca bên Admin (trước đây chỉ có mỗi số quầy, khó hiểu ngay tại quầy bán).
+                String shiftName = schedule.getShiftTypeName() != null ? schedule.getShiftTypeName() : "";
+                String timeRange = "";
+                if (schedule.getPlannedStart() != null && schedule.getPlannedEnd() != null) {
+                    java.time.format.DateTimeFormatter hm = java.time.format.DateTimeFormatter.ofPattern("HH:mm");
+                    timeRange = schedule.getPlannedStart().format(hm) + "–" + schedule.getPlannedEnd().format(hm);
+                }
+                out.printf("{\"ok\":false,\"reason\":\"wrong-station\",\"correctStation\":%d,\"name\":\"%s\",\"shiftName\":\"%s\",\"timeRange\":\"%s\"}",
+                        schedule.getPosStation(), esc(n), esc(shiftName), esc(timeRange));
                 return;
             }
         }

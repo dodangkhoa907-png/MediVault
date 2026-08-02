@@ -6,7 +6,9 @@ import com.medicare.entity.Shelf;
 import com.medicare.util.MojibakeUtil;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ShelfDAO implements IShelfDAO {
 
@@ -83,6 +85,29 @@ public class ShelfDAO implements IShelfDAO {
             ps.setInt(6, s.getShelfId());
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    /** Danh sách rút gọn các thuốc đang gán trên kệ — cho modal "Xem chi tiết" và để chặn xoá
+     *  có LÝ DO RÕ RÀNG (thủ kho thấy ngay cần chuyển thuốc nào đi trước), thay vì chỉ báo
+     *  chung chung "còn thuốc" như bên Admin. */
+    public List<Map<String, Object>> findMedicinesOnShelf(int shelfId) {
+        List<Map<String, Object>> list = new ArrayList<>();
+        String sql = "SELECT MedicineID, MedicineCode, MedicineName, Unit FROM Medicines WHERE ShelfID = ? ORDER BY MedicineName";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, shelfId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", rs.getInt("MedicineID"));
+                    m.put("code", MojibakeUtil.fix(rs.getString("MedicineCode")));
+                    m.put("name", MojibakeUtil.fix(rs.getString("MedicineName")));
+                    m.put("unit", MojibakeUtil.fix(rs.getString("Unit")));
+                    list.add(m);
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
     }
 
     /** Đếm số thuốc đang đặt trên kệ — dùng để chặn xóa kệ đang có hàng. */
