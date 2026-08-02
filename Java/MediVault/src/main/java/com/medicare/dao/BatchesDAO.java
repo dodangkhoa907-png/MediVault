@@ -381,6 +381,35 @@ public class BatchesDAO implements IBatchesDAO {
         return map;
     }
 
+    /**
+     * Lô nhập GẦN NHẤT của mỗi thuốc (theo ImportDate, hoà bằng CreatedAt) — dùng để gợi ý
+     * "giá nhập lần trước" và "số lô gần nhất" trên wizard Nhập kho. Chỉ gợi ý, không ràng
+     * buộc gì; ROW_NUMBER thay vì MAX(...) vì cần lấy CẢ BỘ (giá, số lô, ngày) của đúng 1 lô,
+     * không phải trộn giá của lô này với số lô của lô khác.
+     */
+    public Map<Integer, Batches> getLatestBatchMap() {
+        Map<Integer, Batches> map = new HashMap<>();
+        String sql = "SELECT MedicineID, BatchNumber, ImportPrice, ImportDate FROM (" +
+                "  SELECT MedicineID, BatchNumber, ImportPrice, ImportDate," +
+                "         ROW_NUMBER() OVER (PARTITION BY MedicineID ORDER BY ImportDate DESC, CreatedAt DESC) AS rn" +
+                "  FROM Batches WHERE Status != 'CANCELLED'" +
+                ") x WHERE rn = 1";
+        try (Connection cn = DBContext.getConnection();
+                PreparedStatement ps = cn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Batches b = new Batches();
+                b.setBatchNumber(rs.getString("BatchNumber"));
+                b.setImportPrice(rs.getBigDecimal("ImportPrice"));
+                if (rs.getDate("ImportDate") != null) b.setImportDate(rs.getDate("ImportDate").toLocalDate());
+                map.put(rs.getInt("MedicineID"), b);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return map;
+    }
+
     /** Tóm tắt lô cho tất cả thuốc trong 1 query — dùng cho medicine-list hover card + tab badges */
     public void loadBatchSummary(
             Map<Integer, Integer> activeCountOut,

@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 
 /**
  * WarehouseDashboardServlet — Trang làm việc RIÊNG của Quản lý kho (roleId 3 = Thủ kho).
- * URL: /warehouse-dashboard?uid=&lt;id&gt;
+ * URL: /warehouse-dashboard
  *
  * <p>Bố cục theo góp ý tái thiết kế (bỏ "Lịch làm việc tuần" — không phù hợp với Thủ
  * kho làm giờ hành chính; thay bằng Control Tower: Task &amp; SLA deadline, Cảnh báo
@@ -50,27 +50,11 @@ public class WarehouseDashboardServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        String uid = req.getParameter("uid");
-        if (uid == null || uid.isEmpty()) {
-            resp.sendRedirect(req.getContextPath() + "/warehouse-login"); return;
-        }
-        HttpSession session = req.getSession(false);
-        if (session == null) {
-            resp.sendRedirect(req.getContextPath() + "/warehouse-login"); return;
-        }
-        Account acc = (Account) session.getAttribute("staffAccount_" + uid);
-        if (acc == null) {
-            resp.sendRedirect(req.getContextPath() + "/warehouse-login"); return;
-        }
-        if (acc.getRoleId() == 1) {
-            resp.sendRedirect(req.getContextPath() + "/dashboard"); return;
-        }
-        if (acc.getRoleId() != ROLE_WAREHOUSE) {
-            resp.sendRedirect(req.getContextPath() + "/staff-dashboard?uid=" + uid); return;
-        }
-
-        req.setAttribute("staffUid", uid);
-        req.setAttribute("staffAcc", acc);
+        // WarehouseAuth chi tra ve tai khoan roleId==3; admin/nhan vien ban hang khong lot qua
+        // duoc nen 2 nhanh dieu huong theo role truoc day thanh thua. Danh tinh tu SESSION.
+        Account acc = com.medicare.util.WarehouseAuth.require(req, resp);
+        if (acc == null) return;
+        String uid = String.valueOf(acc.getAccountId());
 
         // ── Số liệu tồn kho (cache 3 phút — dùng chung key với admin dashboard) ──
         req.setAttribute("totalMedicines",
@@ -106,8 +90,55 @@ public class WarehouseDashboardServlet extends HttpServlet {
         req.setAttribute("stockTrendJson",
                 CacheManager.get5("wh.stockTrend7d", this::buildStockTrendJson));
 
+        // ── Widget 4: "Đường chân trời hạn dùng" ──
+        // Dải thời gian trên trang chủ cần TỪNG LÔ (số ngày còn lại + tên thuốc), không
+        // chỉ 2 con số đếm như expiryCount/expiredCount. Dùng lại đúng 2 truy vấn đã có
+        // sẵn (findExpired + findExpiringSoon) rồi gộp, không thêm SQL mới.
+        req.setAttribute("horizonJson",
+                CacheManager.getShort("wh.horizon", () -> buildHorizonJson(medicineDAO)));
+
         req.getRequestDispatcher("/WEB-INF/views/warehouse/warehouse-dashboard.jsp")
                 .forward(req, resp);
+    }
+
+    /**
+     * JSON cho "Đường chân trời hạn dùng": mỗi lô còn tồn là một điểm
+     * {@code {d: số ngày còn lại, n: tên thuốc, b: số lô, q: tồn}}.
+     *
+     * <p>Số ngày âm = đã quá hạn. Chỉ lấy lô còn tồn ({@code currentQuantity > 0}) —
+     * lô đã xuất hết không còn là rủi ro, đưa lên dải chỉ làm nhiễu.</p>
+     */
+    private String buildHorizonJson(IMedicineDAO medDao) {
+        List<com.medicare.entity.Batches> rows = new ArrayList<>();
+        rows.addAll(batchesDAO.findExpired());
+        rows.addAll(batchesDAO.findExpiringSoon());
+
+        Map<Integer, String> names = new HashMap<>();
+        for (com.medicare.entity.Medicines m : medDao.findAll()) {
+            names.put(m.getMedicineId(), m.getMedicineName());
+        }
+
+        LocalDate today = LocalDate.now();
+        StringBuilder sb = new StringBuilder("[");
+        boolean first = true;
+        for (com.medicare.entity.Batches b : rows) {
+            if (b.getExpiryDate() == null || b.getCurrentQuantity() <= 0) continue;
+            long days = java.time.temporal.ChronoUnit.DAYS.between(today, b.getExpiryDate());
+            if (!first) sb.append(',');
+            first = false;
+            sb.append("{\"d\":").append(days)
+              .append(",\"n\":").append(jsonStr(names.getOrDefault(b.getMedicineId(), "—")))
+              .append(",\"b\":").append(jsonStr(b.getBatchNumber()))
+              .append(",\"q\":").append(b.getCurrentQuantity())
+              .append('}');
+        }
+        return sb.append(']').toString();
+    }
+
+    private static String jsonStr(String s) {
+        if (s == null) return "\"\"";
+        return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"")
+                       .replace("\n", " ").replace("\r", " ") + "\"";
     }
 
     /** Lô đang ở trạng thái RECALLED (chưa được xử lý/thu gom xong) — cho banner cảnh báo đỏ. */

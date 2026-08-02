@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  * Backoffice của mục 5 (portal Quản lý kho, roleId 3). Type A (system-auto, xem
  * {@link com.medicare.service.TaskAutoGenService}) hiển thị lẫn với Type B (Manager tự
  * tạo/giao qua form POST action=create ở đây).
- * URL: /warehouse-task?uid=&lt;id&gt;
+ * URL: /warehouse-task
  */
 @WebServlet("/warehouse-task")
 public class WarehouseTaskServlet extends HttpServlet {
@@ -37,19 +37,12 @@ public class WarehouseTaskServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        String uid = req.getParameter("uid");
-        HttpSession session = req.getSession(false);
-        Account acc = (uid != null && session != null)
-                ? (Account) session.getAttribute("staffAccount_" + uid) : null;
-        if (acc == null || acc.getRoleId() != ROLE_WAREHOUSE) {
-            resp.sendRedirect(req.getContextPath() + "/warehouse-login");
-            return;
-        }
+        Account acc = com.medicare.util.WarehouseAuth.require(req, resp);
+        if (acc == null) return;
 
         String statusFilter   = req.getParameter("status");
         String priorityFilter = req.getParameter("priority");
 
-        req.setAttribute("staffUid", uid);
         req.setAttribute("staffAcc", acc);
         req.setAttribute("myTasks", taskDAO.findMyOpenTasks(acc.getAccountId()));
         req.setAttribute("board", taskDAO.findBoard(statusFilter, priorityFilter));
@@ -62,6 +55,10 @@ public class WarehouseTaskServlet extends HttpServlet {
                         .collect(Collectors.toList()));
         req.setAttribute("assignees", assignees);
         req.setAttribute("myOpenTaskCount", taskDAO.countMyOpenTasks(acc.getAccountId()));
+        // Trang này trước đây chỉ set myOpenTaskCount, thiếu expiryCount ⇒ badge "Quản lý
+        // tồn kho" trên sidebar biến mất khi đứng ở trang Nhiệm vụ. loadWarehouse() không
+        // ghi đè myOpenTaskCount vừa set ở trên (chỉ set khi còn null), chỉ bổ sung expiryCount.
+        com.medicare.util.SidebarHelper.loadWarehouse(req, acc.getAccountId());
 
         // ── Dự án dài hạn (Strategic Projects) — mục IV.2 tài liệu, Admin giao qua /task-management ──
         List<Task> myProjects = taskDAO.findMyProjects(acc.getAccountId());
@@ -78,14 +75,8 @@ public class WarehouseTaskServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        String uid = req.getParameter("uid");
-        HttpSession session = req.getSession(false);
-        Account acc = (uid != null && session != null)
-                ? (Account) session.getAttribute("staffAccount_" + uid) : null;
-        if (acc == null || acc.getRoleId() != ROLE_WAREHOUSE) {
-            resp.sendRedirect(req.getContextPath() + "/warehouse-login");
-            return;
-        }
+        Account acc = com.medicare.util.WarehouseAuth.require(req, resp);
+        if (acc == null) return;
 
         String action = req.getParameter("action");
         boolean ok = false;
@@ -119,8 +110,19 @@ public class WarehouseTaskServlet extends HttpServlet {
             msg = "Dữ liệu không hợp lệ.";
         }
 
+        // Bảng kanban kéo-thả gọi đúng 3 action claim/complete/cancel ở trên qua fetch,
+        // nên chỉ cần trả JSON thay vì redirect — không có luồng nghiệp vụ nào mới, và
+        // form submit thường (không JS) vẫn redirect y như cũ.
+        if ("1".equals(req.getParameter("ajax"))) {
+            resp.setContentType("application/json;charset=UTF-8");
+            resp.setHeader("Cache-Control", "no-store");
+            resp.getWriter().print("{\"ok\":" + ok + ",\"msg\":\"" +
+                    msg.replace("\\", "\\\\").replace("\"", "\\\"") + "\"}");
+            return;
+        }
+
         String encoded = java.net.URLEncoder.encode(msg, java.nio.charset.StandardCharsets.UTF_8);
-        resp.sendRedirect(req.getContextPath() + "/warehouse-task?uid=" + uid + "&msg=" + encoded + "&ok=" + ok);
+        resp.sendRedirect(req.getContextPath() + "/warehouse-task?msg=" + encoded + "&ok=" + ok);
     }
 
     private String handleCreate(HttpServletRequest req, Account acc) {

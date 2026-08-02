@@ -2,15 +2,22 @@ package com.medicare.controller.warehouse;
 
 import com.medicare.config.CacheManager;
 import com.medicare.config.DBContext;
+import com.medicare.dao.PurchaseOrderDAO;
+import com.medicare.dao.SupplierDAO;
 import com.medicare.entity.Account;
+import com.medicare.entity.PurchaseOrderDetail;
+import com.medicare.entity.PurchaseOrders;
+import com.medicare.entity.Supplier;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,7 +26,7 @@ import java.util.Map;
 /**
  * WarehouseReorderServlet — Gợi ý đặt hàng tự động (ROP) + Cảnh báo tồn kho đa tầng
  * theo hạn dùng, dành riêng cho Quản lý kho (roleId 3 = Thủ kho).
- * URL: /warehouse-reorder?uid=&lt;id&gt;
+ * URL: /warehouse-reorder
  *
  * <p>Thủ kho chỉ XEM gợi ý (do {@link com.medicare.service.ReorderAlertService} tự tạo mỗi giờ),
  * KHÔNG tự duyệt — việc duyệt/xác nhận nhận hàng do Admin thực hiện qua màn /purchase-orders
@@ -34,16 +41,22 @@ public class WarehouseReorderServlet extends HttpServlet {
     // tự sinh, tránh lẫn với PO Status=PENDING mà Admin tự tạo thủ công qua màn nhập kho.
     private static final String AUTO_NOTES_PREFIX = "Tự động đề xuất bởi hệ thống";
 
+    private final PurchaseOrderDAO poDAO = new PurchaseOrderDAO();
+    private final SupplierDAO supplierDAO = new SupplierDAO();
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        String uid = req.getParameter("uid");
-        HttpSession session = req.getSession(false);
-        Account acc = (uid != null && session != null)
-                ? (Account) session.getAttribute("staffAccount_" + uid) : null;
-        if (acc == null || acc.getRoleId() != ROLE_WAREHOUSE) {
-            resp.sendRedirect(req.getContextPath() + "/warehouse-login");
+        Account acc = com.medicare.util.WarehouseAuth.require(req, resp);
+        if (acc == null) return;
+
+        // ── "Xem đơn" mở MODAL ngay trong trang, không điều hướng sang /purchase-orders
+        // của Admin — trước đây làm vậy khiến Thủ kho bị "văng" từ giao diện teal (Warehouse
+        // Console) sang giao diện xanh dương (Admin Console) giữa chừng thao tác, một luồng
+        // giao diện lạc hẳn khỏi bối cảnh đang làm. Chỉ đọc — Thủ kho không có quyền sửa PO. ──
+        if ("po-detail".equals(req.getParameter("action"))) {
+            apiPoDetail(req, resp);
             return;
         }
 
@@ -56,15 +69,58 @@ public class WarehouseReorderServlet extends HttpServlet {
         List<Map<String, Object>> tierQuarantined = // đã cách ly (<=30 ngày)
                 CacheManager.getShort("wh.expTierQuarantined", this::findQuarantined);
 
-        req.setAttribute("staffUid", uid);
         req.setAttribute("staffAcc", acc);
         req.setAttribute("pendingSuggestions", pendingSuggestions);
         req.setAttribute("tierLight", tierLight);
         req.setAttribute("tierRestricted", tierRestricted);
         req.setAttribute("tierQuarantined", tierQuarantined);
+        // 2 badge sidebar — trang này trước đây không set gì, cả 2 badge đều biến mất ở đây.
+        com.medicare.util.SidebarHelper.loadWarehouse(req, acc.getAccountId());
 
         req.getRequestDispatcher("/WEB-INF/views/warehouse/warehouse-reorder.jsp")
                 .forward(req, resp);
+    }
+
+    /**
+     * JSON chi tiết 1 phiếu đề xuất cho modal "Xem đơn" — CHỈ ĐỌC, gọi thẳng
+     * {@link PurchaseOrderDAO#findById} / {@link PurchaseOrderDAO#findDetails} đã có sẵn,
+     * không thêm SQL mới, không đụng gì tới PurchaseOrderServlet của Admin.
+     */
+    private void apiPoDetail(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        PrintWriter out = resp.getWriter();
+
+        int poId = 0;
+        try { poId = Integer.parseInt(req.getParameter("id")); } catch (Exception ignored) {}
+        PurchaseOrders po = poId > 0 ? poDAO.findById(poId) : null;
+        if (po == null) { out.print("{\"ok\":false}"); return; }
+
+        Supplier sup = supplierDAO.findById(po.getSupplierId());
+        List<PurchaseOrderDetail> lines = poDAO.findDetails(poId);
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"ok\":true")
+          .append(",\"poId\":").append(po.getPoId())
+          .append(",\"status\":\"").append(esc(po.getStatus())).append('"')
+          .append(",\"orderDate\":\"").append(po.getOrderDate() != null ? po.getOrderDate().format(fmt) : "").append('"')
+          .append(",\"supplierName\":\"").append(esc(sup != null ? sup.getSupplierName() : "—")).append('"')
+          .append(",\"totalValue\":").append(po.getTotalValue() != null ? po.getTotalValue().toPlainString() : "0")
+          .append(",\"lines\":[");
+        for (int i = 0; i < lines.size(); i++) {
+            PurchaseOrderDetail d = lines.get(i);
+            if (i > 0) sb.append(',');
+            sb.append("{\"medicineName\":\"").append(esc(d.getMedicineName()))
+              .append("\",\"quantity\":").append(d.getQuantity())
+              .append(",\"importPrice\":").append(d.getImportPrice() != null ? d.getImportPrice().toPlainString() : "0")
+              .append('}');
+        }
+        sb.append("]}");
+        out.print(sb);
+    }
+
+    private static String esc(String s) {
+        return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     /** Phiếu đặt hàng gợi ý (PENDING, do hệ thống tự tạo) — mỗi phiếu 1 dòng thuốc. */

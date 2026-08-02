@@ -337,7 +337,13 @@ public class PurchaseOrderServlet extends HttpServlet {
                 if (staff != null && (staff.getRoleId() == 1 || staff.getRoleId() == 3)) {
                     return staff;
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                // Nuốt exception ở đây trước đây khiến lỗi thật (vd ClassCastException do
+                // hot-reload class Account giữa lúc session đang sống) chỉ hiện ra thành
+                // "tự nhiên bị đá về /login" — không có dấu vết nào để tra. In ra console
+                // để lần sau thấy ngay nguyên nhân thay vì đoán.
+                System.err.println("[PurchaseOrderServlet] getAuthorizedUser lỗi thật: " + e);
+            }
         }
         return null;
     }

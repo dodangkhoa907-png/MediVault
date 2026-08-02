@@ -1,6 +1,21 @@
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c"  uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+<%--
+  warehouse-dashboard.jsp — Trang chủ Quản lý kho (Warehouse Console)
+
+  Thiết kế lại 2026-08-02 (bản độ sâu):
+  • Hero teal sâu làm điểm neo mắt đầu tiên, thay banner phẳng.
+  • SIGNATURE "Đường chân trời hạn dùng": biến chi phối nghiệp vụ kho dược là SỐ
+    NGÀY CÒN LẠI, nên trang chủ có một dải thời gian thật — mỗi lô là một vạch
+    đặt đúng vị trí theo ngày còn lại, trên nền 4 vùng đã là quy ước của hệ thống.
+    Thay cho việc thêm một biểu đồ tròn vô thưởng vô phạt.
+  • Lưới 12 cột lệch (8/4, 7/5) thay vì xếp chồng các chữ nhật bằng nhau.
+
+  Yêu cầu từ servlet: staffAcc, staffUid, totalMedicines, lowStockCount,
+  expiryCount, expiredCount, currentShift, activeAtt, urgentTasks,
+  activeRecalls, stockTrendJson, horizonJson.
+--%>
 <%
     com.medicare.entity.Account acc = (com.medicare.entity.Account) request.getAttribute("staffAcc");
     String uid = (String) request.getAttribute("staffUid");
@@ -17,6 +32,14 @@
     boolean working = activeAtt != null;
     String activeNav = "dashboard";
 
+    int nTotal = totalMed != null ? (Integer) totalMed : 0;
+    int nLow   = lowStock != null ? (Integer) lowStock : 0;
+    int nSoon  = expiry   != null ? (Integer) expiry   : 0;
+    int nDead  = expired  != null ? (Integer) expired  : 0;
+
+    Object horizonJson = request.getAttribute("horizonJson");
+    String horizon = horizonJson != null ? horizonJson.toString() : "[]";
+
     int _hr = java.time.LocalTime.now().getHour();
     String greeting = _hr < 12 ? "Chào buổi sáng" : _hr < 18 ? "Chào buổi chiều" : "Chào buổi tối";
 %>
@@ -25,270 +48,382 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Quản lý kho — MediCare</title>
+<title>Trang chủ Quản lý kho — MediCare</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<%= ctx %>/css/staff-portal.css">
-<link rel="stylesheet" href="<%= ctx %>/css/warehouse-portal.css?v=5">
+<link rel="stylesheet" href="<%= ctx %>/css/warehouse-portal.css?v=11">
 <style>
-/* CSS riêng cho trang chủ Kho (chrome dùng chung ở warehouse-portal.css) */
+a{text-decoration:none;color:inherit}
+.wh-shell{max-width:1560px}
 
-/* ── Banner chào hỏi ── */
-.welcome{
-  border-radius:20px;padding:28px 32px;margin-bottom:20px;
-  background:linear-gradient(140deg,#042F2E 0%,#115E59 55%,#0F766E 100%);
-  display:flex;align-items:center;gap:20px;color:#fff;
-  position:relative;overflow:hidden;
-}
-.welcome::before{content:'';position:absolute;top:-60px;right:-40px;width:240px;height:240px;
-  border-radius:50%;background:rgba(45,212,191,.14);pointer-events:none}
-.welcome::after{content:'';position:absolute;bottom:-80px;right:100px;width:180px;height:180px;
-  border-radius:50%;background:rgba(20,184,166,.18);pointer-events:none}
-.welcome-av{width:58px;height:58px;border-radius:16px;flex-shrink:0;
-  background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.25);
-  display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff}
-.welcome-body{flex:1;min-width:0}
-.welcome-body h2{font-size:22px;font-weight:800;color:#fff;margin-bottom:4px;letter-spacing:-.3px}
-.welcome-body p{font-size:13.5px;color:rgba(255,255,255,.65)}
-.welcome-role-badge{flex-shrink:0;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);
-  border-radius:14px;padding:12px 18px;text-align:center}
-.wrb-icon{font-size:22px;display:block;margin-bottom:5px}
-.wrb-text{font-size:12px;font-weight:750;color:rgba(255,255,255,.85)}
+/* Thẻ KPI trên trang chủ là LỐI TẮT (không phải bộ lọc như trang Tồn kho) nên
+   bỏ dòng mô tả, giữ 4 thẻ trên một hàng để mắt quét ngang một nhịp. */
+.wh-kpis.compact{margin-bottom:24px}
+.wh-kpis.compact .wh-kpi{padding:17px 18px}
+.wh-kpis.compact .wh-kpi .num{font-size:28px}
 
-/* ── Widget 1: Task &amp; SLA Deadline ── */
-.sla-card{border-radius:16px;padding:16px 20px;margin-bottom:14px;background:#FFFBEB;border:1px solid #FDE68A}
-.sla-head{display:flex;align-items:center;gap:9px;margin-bottom:10px}
-.sla-head .ic{font-size:17px}
-.sla-head strong{font-size:13.5px;color:#92400E}
-.sla-list{display:flex;flex-direction:column;gap:8px}
-.sla-item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;
-  border:1px solid #FDE68A;border-radius:10px;padding:9px 13px}
-.sla-item .si-title{font-size:12.5px;font-weight:700;color:var(--ink)}
-.sla-item .si-due{font-size:11px;color:var(--muted);margin-top:1px}
-.sla-item .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:750;white-space:nowrap}
-.badge.danger{background:var(--dangerbg);color:var(--danger)}
-.badge.warn{background:var(--goldbg);color:var(--gold)}
-.sla-cta{display:inline-block;margin-top:10px;font-size:12.5px;font-weight:750;color:var(--main);text-decoration:none}
-.sla-cta:hover{text-decoration:underline}
+.chart-body{padding:20px 22px 22px}
+.hz-empty{padding:26px 22px;text-align:center;color:var(--muted);font-size:13.5px}
 
-/* ── Widget 2: Cảnh báo thu hồi khẩn cấp ── */
-.recall-card{border-radius:16px;padding:16px 20px;margin-bottom:20px;background:#FEF2F2;border:1.5px solid #FCA5A5}
-.recall-head{display:flex;align-items:center;gap:9px;margin-bottom:8px}
-.recall-head .ic{font-size:18px}
-.recall-head strong{font-size:13.5px;color:#991B1B}
-.recall-item{font-size:12.5px;color:#7F1D1D;padding:5px 0}
-.recall-item b{font-weight:800}
-.recall-cta{display:inline-block;margin-top:6px;font-size:12.5px;font-weight:750;color:#991B1B;text-decoration:underline}
-
-.hero{margin-bottom:20px}
-.hero h1{font-size:24px;font-weight:800;letter-spacing:-.5px}
-.hero h1 span{color:var(--main)}
-.hero p{color:var(--muted);font-size:14px;margin-top:5px}
-.status-chip{display:inline-flex;align-items:center;gap:7px;margin-top:12px;padding:6px 13px;border-radius:20px;font-size:12.5px;font-weight:700}
-.status-chip.on{background:var(--okbg);color:var(--ok)}
-.status-chip.off{background:#F3EFEB;color:var(--muted)}
-.status-chip .d{width:8px;height:8px;border-radius:50%;background:currentColor}
-
-/* ── Bố cục 2 cột: Chỉ số &amp; biểu đồ (60%) | Thao tác nhanh (40%) ── */
-.bottom-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:20px;align-items:start}
-@media(max-width:900px){.bottom-grid{grid-template-columns:1fr}}
-.card{background:#fff;border:1px solid #E4E9E7;border-radius:16px;box-shadow:0 1px 2px rgba(4,47,46,.04),0 12px 30px -18px rgba(4,47,46,.12);margin-bottom:20px}
-.card-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
-.card-head h2{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
-.chart-body{padding:16px 20px}
-.pf-field{padding:13px 20px;border-bottom:1px solid #EAEFED;display:flex;align-items:center;justify-content:space-between;gap:10px}
-.pf-field:last-child{border-bottom:none}
-.pf-label{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:650;color:var(--ink)}
-.pf-label .ic{font-size:15px}
-.pf-value{font-size:16px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
-.pf-value.warn{color:var(--gold)}
-.pf-value.danger{color:var(--danger)}
-
-/* ── Thao tác nhanh (cột phải) ── */
-.qa-list{padding:14px}
-.qa-item{display:flex;align-items:center;gap:13px;padding:13px 14px;border-radius:12px;margin-bottom:9px;
-  text-decoration:none;color:inherit;border:1px solid var(--border);background:var(--surface);transition:.15s}
-.qa-item:last-child{margin-bottom:0}
-.qa-item:hover{border-color:var(--main);background:#fff;box-shadow:0 4px 14px -6px rgba(15,118,110,.2)}
-.qa-item.primary{background:linear-gradient(135deg,var(--main),var(--deep));border-color:transparent;color:#fff}
-.qa-item.primary .qa-ic{background:rgba(255,255,255,.18);color:#fff}
-.qa-ic{width:38px;height:38px;border-radius:10px;flex:none;display:grid;place-items:center;font-size:17px;background:var(--soft);color:var(--main)}
-.qa-body{flex:1;min-width:0}
-.qa-title{font-size:13.5px;font-weight:750}
-.qa-sub{font-size:11.5px;opacity:.7;margin-top:1px}
-.qa-arrow{font-size:15px;opacity:.5;flex:none}
+/* Hoạt động gần đây: dòng nhỏ, mốc thời gian bên phải */
+.act-row{display:flex;align-items:center;gap:13px;padding:13px 22px;border-bottom:1px solid var(--line)}
+.act-row:last-child{border-bottom:none}
+.act-row .bd{flex:1;min-width:0}
+.act-row .t1{font-size:13px;font-weight:750;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.act-row .t2{font-size:11.5px;color:var(--muted);margin-top:2px}
+.act-row .n{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;flex:none}
 </style>
 <meta name="csrf-token" content="${csrfToken}">
-<script src="${pageContext.request.contextPath}/js/csrf.js"></script>
+<script src="<%= ctx %>/js/csrf.js"></script>
+<script src="<%= ctx %>/js/warehouse-ui.js" defer></script>
 </head>
 <body class="wh">
-
+<%@ include file="/WEB-INF/views/icons.jsp" %>
 <%@ include file="warehouse-sidebar.jsp" %>
 
 <div class="main">
   <header class="wh-topbar">
-    <div class="crumb">Trang chủ</div>
+    <div class="crumb">Tổng quan</div>
     <div class="right">
       <div class="wh-clock">
         <span id="cH">00</span><span class="sep">:</span><span id="cM">00</span>
         <span class="date" id="cDate"></span>
       </div>
-      <a href="<%= ctx %>/staff-checkin?uid=<%= uid %>" class="wh-av" title="Ca làm việc"><%= initials %></a>
+      <a href="<%= ctx %>/staff-checkin?uid=<%= uid %>" class="wh-av" title="Ca làm việc của <%= fullName %>"><%= initials %></a>
     </div>
   </header>
 
-  <div class="wh-content">
+  <div class="wh-shell wh-anim">
 
-    <!-- Welcome banner -->
-    <div class="welcome">
-      <div class="welcome-av"><%= initials %></div>
-      <div class="welcome-body">
-        <h2><%= greeting %>, <%= fullName %>!</h2>
-        <p>Chúc bạn có một ca làm việc hiệu quả · <span id="welcomeDate"></span></p>
-      </div>
-      <div class="welcome-role-badge">
-        <span class="wrb-icon">📦</span>
-        <div class="wrb-text">Thủ kho</div>
+    <!-- ══ HERO ══ -->
+    <div class="wh-hero">
+        <div class="wh-hero-row">
+          <div class="wh-hero-av"><%= initials %></div>
+          <div class="wh-hero-bd">
+            <h1><%= greeting %>, <%= fullName %></h1>
+            <p class="sub">Nhập kho, kiểm soát tồn theo lô và xử lý nhiệm vụ — mọi thao tác kho ở một nơi.
+              <span id="helloDate"></span></p>
+          </div>
+          <span class="wh-chip <%= working ? "on" : "off" %>">
+            <span class="d"></span> <%= working ? "Đang trong ca làm việc" : "Chưa điểm danh vào ca" %>
+          </span>
       </div>
     </div>
 
-    <!-- ══ Widget 1: Task & SLA Deadline — nổi bật ngay dưới banner chào hỏi ══ -->
-    <c:if test="${not empty urgentTasks}">
-      <div class="sla-card">
-        <div class="sla-head"><span class="ic">🚨</span><strong>${urgentTasks.size()} nhiệm vụ Admin giao sắp/đã đến hạn báo xong</strong></div>
-        <div class="sla-list">
-          <c:forEach var="t" items="${urgentTasks}">
-            <div class="sla-item">
-              <div>
-                <div class="si-title">${fn:escapeXml(t.title)}</div>
-                <div class="si-due">Hạn: ${t.dueDateDisplay}</div>
-              </div>
-              <span class="badge ${t.zoneCssClass}">${t.zoneLabel}</span>
-            </div>
-          </c:forEach>
-        </div>
-        <a class="sla-cta" href="<%= ctx %>/warehouse-task?uid=<%= uid %>">Xem &amp; Báo cáo ngay →</a>
-      </div>
-    </c:if>
-
-    <!-- ══ Widget 2: Cảnh báo thu hồi khẩn cấp ══ -->
+    <!-- ══ Cảnh báo phải xử lý ngay — luôn nằm trên mọi thứ khác ══ -->
     <c:if test="${not empty activeRecalls}">
-      <div class="recall-card">
-        <div class="recall-head"><span class="ic">🚨</span><strong>CẢNH BÁO: ${activeRecalls.size()} lô đang bị khóa khẩn cấp — cần cách ly ngay!</strong></div>
-        <c:forEach var="r" items="${activeRecalls}" end="2">
-          <div class="recall-item">Lô <b>${fn:escapeXml(r.batchNumber)}</b> (${fn:escapeXml(r.medicineName)}) đang bị thu hồi.</div>
-        </c:forEach>
-        <a class="recall-cta" href="<%= ctx %>/warehouse-recall?uid=<%= uid %>">Xem chi tiết thu hồi →</a>
+      <div class="wh-note danger" role="alert">
+        <svg><use href="#ic-siren"/></svg>
+        <span>
+          <b>${activeRecalls.size()} lô đang bị thu hồi khẩn cấp</b> — cần cách ly khỏi kệ ngay.
+          <c:forEach var="r" items="${activeRecalls}" end="2">
+            <br>Lô <b>${fn:escapeXml(r.batchNumber)}</b> — ${fn:escapeXml(r.medicineName)}.
+          </c:forEach>
+          <br><a href="<%= ctx %>/warehouse-recall" style="font-weight:800;text-decoration:underline">Xem chi tiết thu hồi →</a>
+        </span>
       </div>
     </c:if>
 
-    <div class="hero">
-      <h1>Không gian làm việc <span>Quản lý kho</span></h1>
-      <p>Nhập kho, kiểm soát tồn &amp; xử lý nhiệm vụ — mọi thao tác kho ở đây.</p>
-      <% if (working) { %>
-        <span class="status-chip on"><span class="d"></span> Đang trong ca làm việc</span>
-      <% } else { %>
-        <span class="status-chip off"><span class="d"></span> Chưa điểm danh vào ca</span>
-      <% } %>
+    <c:if test="${not empty urgentTasks}">
+      <div class="wh-note warn">
+        <svg><use href="#ic-clock-alert"/></svg>
+        <span>
+          <b>${urgentTasks.size()} nhiệm vụ Admin giao sắp hoặc đã đến hạn báo cáo.</b>
+          <c:forEach var="t" items="${urgentTasks}">
+            <br>${fn:escapeXml(t.title)} — hạn ${t.dueDateDisplay} <span class="wh-badge ${t.zoneCssClass}">${t.zoneLabel}</span>
+          </c:forEach>
+          <br><a href="<%= ctx %>/warehouse-task" style="font-weight:800;text-decoration:underline">Xem &amp; báo cáo ngay →</a>
+        </span>
+      </div>
+    </c:if>
+
+    <!-- ══ 4 chỉ số — mỗi thẻ là lối tắt tới đúng lát cắt bên Tồn kho ══ -->
+    <div class="wh-kpis compact">
+      <a class="wh-kpi k-total" href="<%= ctx %>/warehouse-inventory">
+        <span class="ic"><svg><use href="#ic-pill"/></svg></span>
+        <span class="body">
+          <span class="num"><%= nTotal %></span>
+          <span class="lbl">Thuốc đang kinh doanh</span>
+        </span>
+      </a>
+      <a class="wh-kpi k-low <%= nLow == 0 ? "is-zero" : "" %>" href="<%= ctx %>/warehouse-inventory">
+        <span class="ic"><svg><use href="#ic-trend-down"/></svg></span>
+        <span class="body">
+          <span class="num"><%= nLow %></span>
+          <span class="lbl">Sắp hết hàng</span>
+        </span>
+      </a>
+      <a class="wh-kpi k-soon <%= nSoon == 0 ? "is-zero" : "" %>" href="<%= ctx %>/warehouse-reorder">
+        <span class="ic"><svg><use href="#ic-clock-alert"/></svg></span>
+        <span class="body">
+          <span class="num"><%= nSoon %></span>
+          <span class="lbl">Lô cận hạn</span>
+        </span>
+      </a>
+      <a class="wh-kpi k-dead <%= nDead == 0 ? "is-zero" : "" %>" href="<%= ctx %>/warehouse-inventory">
+        <span class="ic"><svg><use href="#ic-ban"/></svg></span>
+        <span class="body">
+          <span class="num"><%= nDead %></span>
+          <span class="lbl">Lô đã hết hạn</span>
+        </span>
+      </a>
     </div>
 
-    <div class="bottom-grid">
-      <!-- ══ CỘT 1 (60%): Biểu đồ Nhập-Xuất + Tổng quan tồn kho ══ -->
-      <div>
-        <div class="card">
-          <div class="card-head"><div class="wh-ic">📈</div><h2>Nhập - Xuất kho 7 ngày gần nhất</h2></div>
-          <div class="chart-body"><canvas id="stockTrendChart" height="90"></canvas></div>
-        </div>
+    <!-- ══ Lưới lệch 8/4 ══ -->
+    <div class="wh-g12">
 
-        <div class="card">
-          <div class="card-head"><div class="wh-ic">📦</div><h2>Tổng quan tồn kho</h2></div>
-          <div class="pf-field">
-            <span class="pf-label"><span class="ic">💊</span> Thuốc đang kinh doanh</span>
-            <span class="pf-value"><%= totalMed != null ? totalMed : 0 %></span>
+      <!-- ── SIGNATURE: Đường chân trời hạn dùng ── -->
+      <div class="c8">
+        <div class="wh-card" style="margin-bottom:0">
+          <div class="wh-card-head">
+            <div class="wh-ic warn"><svg><use href="#ic-clock-alert"/></svg></div>
+            <div class="tt">
+              <h2>Đường chân trời hạn dùng</h2>
+              <div class="desc">Mỗi vạch là một lô còn tồn, đặt theo số ngày còn lại trước hạn.</div>
+            </div>
+            <div class="sp">
+              <a class="wh-btn" href="<%= ctx %>/warehouse-reorder">
+                Xử lý <svg><use href="#ic-arrow-right"/></svg>
+              </a>
+            </div>
           </div>
-          <div class="pf-field">
-            <span class="pf-label"><span class="ic">📉</span> Sắp hết hàng</span>
-            <span class="pf-value <%= (lowStock != null && ((Integer) lowStock) > 0) ? "warn" : "" %>"><%= lowStock != null ? lowStock : 0 %></span>
+          <div class="wh-horizon">
+            <div class="wh-hz-track" id="hzTrack" role="img" aria-label="Phân bố lô theo số ngày còn lại trước hạn dùng">
+              <div class="wh-hz-zone" style="left:0;width:14%">
+                <span class="zl" style="color:#B91C1C">Quá hạn</span>
+                <span class="zn" id="hzN0" style="color:#B91C1C">0</span>
+              </div>
+              <div class="wh-hz-zone" style="left:14%;width:22%">
+                <span class="zl" style="color:#92400E">≤ 30 ngày</span>
+                <span class="zn" id="hzN1" style="color:#92400E">0</span>
+              </div>
+              <div class="wh-hz-zone" style="left:36%;width:24%">
+                <span class="zl" style="color:#A16207">31–90 ngày</span>
+                <span class="zn" id="hzN2" style="color:#A16207">0</span>
+              </div>
+              <div class="wh-hz-zone" style="left:60%;width:40%">
+                <span class="zl" style="color:#047857">Trên 90 ngày</span>
+                <span class="zn" id="hzN3" style="color:#047857">0</span>
+              </div>
+            </div>
+            <div class="wh-hz-legend">
+              <span><i style="background:#DC2626"></i> Quá hạn — xuất huỷ</span>
+              <span><i style="background:#F59E0B"></i> Cách ly — ngừng bán</span>
+              <span><i style="background:#CA8A04"></i> Ưu tiên bán trước</span>
+              <span><i style="background:#10B981"></i> An toàn</span>
+            </div>
           </div>
-          <div class="pf-field">
-            <span class="pf-label"><span class="ic">⏳</span> Lô cận hạn dùng</span>
-            <span class="pf-value <%= (expiry != null && ((Integer) expiry) > 0) ? "warn" : "" %>"><%= expiry != null ? expiry : 0 %></span>
-          </div>
-          <div class="pf-field">
-            <span class="pf-label"><span class="ic">⛔</span> Lô đã hết hạn</span>
-            <span class="pf-value <%= (expired != null && ((Integer) expired) > 0) ? "danger" : "" %>"><%= expired != null ? expired : 0 %></span>
+          <div class="hz-empty" id="hzEmpty" hidden>
+            Không có lô nào trong vùng cảnh báo. Toàn bộ hàng trong kho còn hạn dài. 🎉
           </div>
         </div>
       </div>
 
-      <!-- ══ CỘT 2 (40%): Thao tác nhanh ══ -->
-      <div class="card">
-        <div class="card-head"><div class="wh-ic ok">⚡</div><h2>Thao tác nhanh</h2></div>
-        <div class="qa-list">
-          <a class="qa-item primary" href="<%= ctx %>/warehouse-stock-movement?uid=<%= uid %>">
-            <div class="qa-ic">📦</div>
-            <div class="qa-body"><div class="qa-title">Xuất / Điều chỉnh kho nhanh</div><div class="qa-sub">Xuất hàng, hủy hết hạn, điều chỉnh kiểm kê</div></div>
-            <div class="qa-arrow">→</div>
-          </a>
-          <a class="qa-item" href="<%= ctx %>/warehouse-task?uid=<%= uid %>">
-            <div class="qa-ic">📋</div>
-            <div class="qa-body"><div class="qa-title">Cập nhật báo cáo Task</div><div class="qa-sub">Xem &amp; báo hoàn thành nhiệm vụ được giao</div></div>
-            <div class="qa-arrow">→</div>
-          </a>
-          <a class="qa-item" href="<%= ctx %>/warehouse-reorder?uid=<%= uid %>">
-            <div class="qa-ic">💡</div>
-            <div class="qa-body"><div class="qa-title">Gợi ý đặt hàng (ROP)</div><div class="qa-sub">Xem đề xuất tự động, Admin duyệt phiếu nhập</div></div>
-            <div class="qa-arrow">→</div>
-          </a>
-          <a class="qa-item" href="<%= ctx %>/staff-checkin?uid=<%= uid %>">
-            <div class="qa-ic">🕒</div>
-            <div class="qa-body"><div class="qa-title">Điểm danh &amp; Ca làm việc</div><div class="qa-sub"><%= currentShift != null ? "Có ca đang mở" : "Không có ca nào đang mở" %></div></div>
-            <div class="qa-arrow">→</div>
-          </a>
+      <!-- ── Thao tác nhanh ── -->
+      <div class="c4">
+        <div class="wh-card" style="margin-bottom:0">
+          <div class="wh-card-head">
+            <div class="wh-ic ok"><svg><use href="#ic-zap"/></svg></div>
+            <div class="tt">
+              <h2>Thao tác nhanh</h2>
+              <div class="desc">Việc hay làm nhất trong ca.</div>
+            </div>
+          </div>
+          <div class="wh-quick">
+            <a class="primary" href="<%= ctx %>/warehouse-stock-movement">
+              <span class="ic"><svg><use href="#ic-out"/></svg></span>
+              <span class="bd">
+                <span class="t1">Xuất / Điều chỉnh kho</span>
+                <span class="t2">Xuất hàng, huỷ hết hạn, chỉnh sau kiểm kê</span>
+              </span>
+              <svg class="go"><use href="#ic-arrow-right"/></svg>
+            </a>
+            <a href="<%= ctx %>/warehouse-import">
+              <span class="ic"><svg><use href="#ic-box-in"/></svg></span>
+              <span class="bd">
+                <span class="t1">Nhập lô mới</span>
+                <span class="t2">Ghi nhận hàng vừa về kho</span>
+              </span>
+              <svg class="go"><use href="#ic-arrow-right"/></svg>
+            </a>
+            <a href="<%= ctx %>/warehouse-task">
+              <span class="ic"><svg><use href="#ic-clipboard"/></svg></span>
+              <span class="bd">
+                <span class="t1">Nhiệm vụ &amp; SOP</span>
+                <span class="t2">Báo hoàn thành việc được giao</span>
+              </span>
+              <svg class="go"><use href="#ic-arrow-right"/></svg>
+            </a>
+            <a href="<%= ctx %>/staff-checkin?uid=<%= uid %>">
+              <span class="ic"><svg><use href="#ic-clock"/></svg></span>
+              <span class="bd">
+                <span class="t1">Điểm danh &amp; Ca làm việc</span>
+                <span class="t2"><%= currentShift != null ? "Có ca đang mở" : "Không có ca nào đang mở" %></span>
+              </span>
+              <svg class="go"><use href="#ic-arrow-right"/></svg>
+            </a>
+          </div>
         </div>
       </div>
+
+      <!-- ── Biểu đồ Nhập–Xuất ── -->
+      <div class="c7">
+        <div class="wh-card" style="margin-bottom:0">
+          <div class="wh-card-head">
+            <div class="wh-ic info"><svg><use href="#ic-bar-chart"/></svg></div>
+            <div class="tt">
+              <h2>Nhập &ndash; Xuất kho</h2>
+              <div class="desc">Lượng hàng vào và ra kho trong 7 ngày gần nhất.</div>
+            </div>
+          </div>
+          <div class="chart-body"><canvas id="stockTrendChart" height="120"></canvas></div>
+        </div>
+      </div>
+
+      <!-- ── Lô cần chú ý sớm nhất ── -->
+      <div class="c5">
+        <div class="wh-card" style="margin-bottom:0">
+          <div class="wh-card-head">
+            <div class="wh-ic danger"><svg><use href="#ic-package"/></svg></div>
+            <div class="tt">
+              <h2>Cần xử lý sớm nhất</h2>
+              <div class="desc">5 lô có hạn dùng gần nhất còn tồn trong kho.</div>
+            </div>
+          </div>
+          <div id="soonList"></div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
 
 <script>
 function tickClock(){
-  var d=new Date(), pad=function(n){return n<10?'0'+n:n};
-  document.getElementById('cH').textContent=pad(d.getHours());
-  document.getElementById('cM').textContent=pad(d.getMinutes());
-  var days=['CN','T2','T3','T4','T5','T6','T7'];
-  document.getElementById('cDate').textContent=days[d.getDay()]+' '+pad(d.getDate())+'/'+pad(d.getMonth()+1);
-  var wd=document.getElementById('welcomeDate');
-  if(wd) wd.textContent=days[d.getDay()]+' '+pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear();
+  var d = new Date(), pad = function(n){ return n < 10 ? '0' + n : n; };
+  document.getElementById('cH').textContent = pad(d.getHours());
+  document.getElementById('cM').textContent = pad(d.getMinutes());
+  var days = ['CN','T2','T3','T4','T5','T6','T7'];
+  document.getElementById('cDate').textContent = days[d.getDay()] + ' ' + pad(d.getDate()) + '/' + pad(d.getMonth() + 1);
+  var wd = document.getElementById('helloDate');
+  if (wd) wd.textContent = '· ' + days[d.getDay()] + ' ' + pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear();
 }
-tickClock(); setInterval(tickClock,1000);
+tickClock(); setInterval(tickClock, 1000);
+</script>
+
+<script>
+/* ══ Đường chân trời hạn dùng ══════════════════════════════════════════════
+   Trục KHÔNG tuyến tính theo ngày. Nếu chia đều 0→365 thì toàn bộ vùng nguy
+   hiểm (0–30 ngày) bị nén vào 8% bề ngang bên trái — đúng chỗ cần nhìn rõ nhất
+   lại nhỏ nhất. Nên mỗi vùng được cấp một khoảng cố định, rộng theo mức độ
+   khẩn chứ không theo độ dài thời gian. */
+(function () {
+  'use strict';
+  var data = <%= horizon %>;
+  var track = document.getElementById('hzTrack');
+  if (!track) return;
+
+  var ZONES = [
+    { max: -1,   from: 0,  to: 14,  color: '#DC2626', n: 0 },   // quá hạn
+    { max: 30,   from: 14, to: 36,  color: '#F59E0B', n: 0 },   // ≤30 — cách ly
+    { max: 90,   from: 36, to: 60,  color: '#CA8A04', n: 0 },   // 31–90 — ưu tiên bán
+    { max: 1e9,  from: 60, to: 100, color: '#10B981', n: 0 }    // >90 — an toàn
+  ];
+  function zoneOf(d){ for (var i = 0; i < ZONES.length; i++) if (d <= ZONES[i].max) return i; return 3; }
+
+  data.forEach(function (b) {
+    var zi = zoneOf(b.d), z = ZONES[zi];
+    z.n++;
+    // Vị trí trong vùng: phân bố đều theo thứ tự để các vạch không chồng khít
+    // lên nhau khi nhiều lô có cùng số ngày.
+    var span = z.to - z.from;
+    var pct = z.from + span * (0.12 + 0.76 * Math.random());
+    var tick = document.createElement('div');
+    tick.className = 'wh-hz-tick';
+    tick.style.left = pct.toFixed(2) + '%';
+    tick.style.background = z.color;
+    tick.title = b.n + ' · Lô ' + b.b + ' · tồn ' + b.q +
+                 (b.d < 0 ? ' · quá hạn ' + Math.abs(b.d) + ' ngày' : ' · còn ' + b.d + ' ngày');
+    track.appendChild(tick);
+  });
+
+  ZONES.forEach(function (z, i) {
+    var el = document.getElementById('hzN' + i);
+    if (el) el.textContent = z.n;
+  });
+
+  if (!data.length) {
+    track.parentNode.hidden = true;
+    document.getElementById('hzEmpty').hidden = false;
+  }
+
+  /* ── Danh sách 5 lô gấp nhất — cùng nguồn dữ liệu, không truy vấn thêm ── */
+  var list = document.getElementById('soonList');
+  var top5 = data.slice().sort(function (a, b) { return a.d - b.d; }).slice(0, 5);
+  if (!top5.length) {
+    list.innerHTML = '<div class="wh-empty good"><div class="art">🎉</div>' +
+      '<div class="t">Không có lô nào cần gấp</div>' +
+      '<div class="d">Không lô nào sắp hết hạn hoặc quá hạn còn tồn trong kho.</div></div>';
+    return;
+  }
+  list.innerHTML = top5.map(function (b) {
+    var over = b.d < 0;
+    var cls = over ? 'out' : (b.d <= 30 ? 'low' : 'soon');
+    var label = over ? 'Quá hạn ' + Math.abs(b.d) + 'n' : 'Còn ' + b.d + 'n';
+    return '<div class="act-row">' +
+      '<span class="wh-ic sm ' + (over ? 'danger' : 'warn') + '"><svg><use href="#' +
+        (over ? 'ic-ban' : 'ic-clock-alert') + '"/></svg></span>' +
+      '<span class="bd"><span class="t1">' + esc(b.n) + '</span>' +
+      '<span class="t2">Lô ' + esc(b.b) + ' · tồn ' + b.q + '</span></span>' +
+      '<span class="wh-badge ' + cls + '">' + label + '</span></div>';
+  }).join('');
+
+  function esc(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c];
+    });
+  }
+})();
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
 (function(){
   if (typeof Chart === 'undefined') return;
-  var trend = <%=request.getAttribute("stockTrendJson")%>;
+  var trend = <%= request.getAttribute("stockTrendJson") %>;
   var canvas = document.getElementById('stockTrendChart');
   if (!canvas || !trend) return;
   Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
   Chart.defaults.color = '#69756F';
-  new Chart(canvas.getContext('2d'), {
+  var ctx2 = canvas.getContext('2d');
+  var gIn = ctx2.createLinearGradient(0, 0, 0, 220);
+  gIn.addColorStop(0, 'rgba(16,185,129,.95)'); gIn.addColorStop(1, 'rgba(16,185,129,.45)');
+  var gOut = ctx2.createLinearGradient(0, 0, 0, 220);
+  gOut.addColorStop(0, 'rgba(15,118,110,.95)'); gOut.addColorStop(1, 'rgba(15,118,110,.42)');
+  new Chart(ctx2, {
     type: 'bar',
     data: {
       labels: trend.labels,
       datasets: [
-        { label: 'Nhập kho', data: trend.nhap, backgroundColor: 'rgba(5,150,105,.75)', borderRadius: 5, maxBarThickness: 22 },
-        { label: 'Xuất kho', data: trend.xuat, backgroundColor: 'rgba(15,118,110,.75)', borderRadius: 5, maxBarThickness: 22 }
+        { label: 'Nhập kho', data: trend.nhap, backgroundColor: gIn,  borderRadius: 8, maxBarThickness: 26 },
+        { label: 'Xuất kho', data: trend.xuat, backgroundColor: gOut, borderRadius: 8, maxBarThickness: 26 }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 11.5, weight: '700' } } } },
+      plugins: {
+        legend: { position: 'top', align: 'end',
+          labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: 'circle',
+                    padding: 16, font: { size: 12, weight: '700' } } },
+        tooltip: { backgroundColor: '#0B1F1D', padding: 12, cornerRadius: 12, displayColors: true,
+                   titleFont: { size: 12.5, weight: '800' }, bodyFont: { size: 12.5 } }
+      },
       scales: {
-        y: { beginAtZero: true, grid: { color: 'rgba(226,229,238,.6)' } },
-        x: { grid: { display: false } }
+        y: { beginAtZero: true, border: { display: false },
+             grid: { color: 'rgba(226,231,229,.75)' }, ticks: { precision: 0, padding: 8 } },
+        x: { border: { display: false }, grid: { display: false }, ticks: { padding: 6 } }
       }
     }
   });

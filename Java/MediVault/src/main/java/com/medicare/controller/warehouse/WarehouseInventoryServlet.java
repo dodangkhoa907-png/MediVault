@@ -23,7 +23,7 @@ import java.util.Map;
 
 /**
  * WarehouseInventoryServlet — Quản lý tồn kho chuyên sâu cho Quản lý kho (roleId 3 = Thủ kho).
- * URL: /warehouse-inventory?uid=&lt;id&gt;&amp;q=&lt;keyword&gt;
+ * URL: /warehouse-inventory&amp;q=&lt;keyword&gt;
  *
  * <p>Đây là bản "mở rộng" của trang thuốc bên admin dành riêng cho thủ kho: danh sách
  * thuốc kèm tồn kho thực tế (SUM CurrentQuantity theo lô), HSD gần nhất, trạng thái
@@ -44,18 +44,21 @@ public class WarehouseInventoryServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        String uid = req.getParameter("uid");
-        HttpSession session = req.getSession(false);
-        Account acc = (uid != null && session != null)
-                ? (Account) session.getAttribute("staffAccount_" + uid) : null;
-        if (acc == null || acc.getRoleId() != ROLE_WAREHOUSE) {
-            resp.sendRedirect(req.getContextPath() + "/warehouse-login");
-            return;
-        }
+        Account acc = com.medicare.util.WarehouseAuth.require(req, resp);
+        if (acc == null) return;
 
         // ── AJAX: chi tiết đầy đủ 1 thuốc + toàn bộ lô (modal "👁️ Xem chi tiết" trên bảng) ──
         if ("detail".equals(req.getParameter("action"))) {
             apiGetDetail(req, resp);
+            return;
+        }
+
+        // ── AJAX: danh sách kệ cho modal "Quản lý kệ" — CHỈ ĐỌC. Sửa/thêm/xoá kệ vẫn phải
+        // qua Admin (/shelves): đổi vị trí kệ vật lý là quyết định layout kho, không phải
+        // việc Thủ kho tự làm tại chỗ. Trước đây trỏ thẳng sang trang Admin, khiến Thủ kho
+        // bị đổi hẳn giao diện (xanh dương) giữa lúc đang thao tác trong Warehouse Console. ──
+        if ("shelves".equals(req.getParameter("action"))) {
+            apiGetShelves(req, resp);
             return;
         }
 
@@ -72,6 +75,15 @@ public class WarehouseInventoryServlet extends HttpServlet {
         Map<Integer, String> medNameMap = new HashMap<>();
         for (Medicines m : allMeds) medNameMap.put(m.getMedicineId(), m.getMedicineName());
 
+        // Map categoryId → tên danh mục. Bảng tồn kho có cột "Danh mục" để thủ kho quét/lọc
+        // theo nhóm hàng, nhưng Medicines chỉ mang CategoryID — nên nạp bảng danh mục 1 lần
+        // (cache 15 phút, dữ liệu gần như tĩnh) rồi tra cứu tại JSP thay vì join thêm.
+        Map<Integer, String> catNameMap = CacheManager.get15("wh.catNameMap", () -> {
+            Map<Integer, String> map = new HashMap<>();
+            categoryDAO.findAll().forEach(c -> map.put(c.getCategoryId(), c.getCategoryName()));
+            return map;
+        });
+
         // Thống kê nhanh (tính từ allMeds để nhất quán với dữ liệu đang hiển thị)
         int lowStock = 0;
         for (Medicines m : allMeds) {
@@ -80,15 +92,18 @@ public class WarehouseInventoryServlet extends HttpServlet {
         List<Batches> expiringBatches = CacheManager.getShort("wh.expiringBatches", batchesDAO::findExpiringSoon);
         List<Batches> expiredBatches  = CacheManager.getShort("wh.expiredBatches",  batchesDAO::findExpired);
 
-        req.setAttribute("staffUid",   uid);
         req.setAttribute("staffAcc",   acc);
         req.setAttribute("keyword",    hasKeyword ? q.trim() : "");
         req.setAttribute("medicines",  displayMeds);
         req.setAttribute("medNameMap", medNameMap);
+        req.setAttribute("catNameMap", catNameMap);
         req.setAttribute("totalActive",     allMeds.size());
         req.setAttribute("lowStockCount",   lowStock);
         req.setAttribute("expiringBatches", expiringBatches);
         req.setAttribute("expiredBatches",  expiredBatches);
+        // 2 badge sidebar (expiryCount + myOpenTaskCount) — trước đây trang này chỉ tự set
+        // expiryCount nên badge "Nhiệm vụ & SOP" biến mất khi đứng ở trang Tồn kho.
+        com.medicare.util.SidebarHelper.loadWarehouse(req, acc.getAccountId());
 
         req.getRequestDispatcher("/WEB-INF/views/warehouse/warehouse-inventory.jsp")
                 .forward(req, resp);
@@ -164,6 +179,32 @@ public class WarehouseInventoryServlet extends HttpServlet {
             out.print(sb);
         } catch (Exception e) {
             out.print("{\"error\":\"" + e.getMessage() + "\"}");
+        }
+    }
+
+    /** JSON danh sách kệ + số thuốc đang gán mỗi kệ, cho modal "Quản lý kệ" (chỉ đọc). */
+    private void apiGetShelves(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        resp.setHeader("Cache-Control", "no-store");
+        PrintWriter out = resp.getWriter();
+        try {
+            List<com.medicare.entity.Shelf> shelves = shelfDAO.findAll();
+            StringBuilder sb = new StringBuilder("{\"ok\":true,\"shelves\":[");
+            for (int i = 0; i < shelves.size(); i++) {
+                com.medicare.entity.Shelf s = shelves.get(i);
+                if (i > 0) sb.append(',');
+                sb.append("{\"id\":").append(s.getShelfId())
+                  .append(",\"name\":").append(jsonStr(s.getShelfName()))
+                  .append(",\"type\":").append(jsonStr(s.getShelfType()))
+                  .append(",\"location\":").append(jsonStr(s.getLocationNotes()))
+                  .append(",\"automated\":").append(s.isAutomated())
+                  .append(",\"medicineCount\":").append(shelfDAO.countMedicinesOnShelf(s.getShelfId()))
+                  .append('}');
+            }
+            sb.append("]}");
+            out.print(sb);
+        } catch (Exception e) {
+            out.print("{\"ok\":false,\"error\":\"" + e.getMessage() + "\"}");
         }
     }
 

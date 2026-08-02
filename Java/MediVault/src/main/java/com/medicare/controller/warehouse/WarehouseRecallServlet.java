@@ -27,7 +27,7 @@ import java.util.List;
 
 /**
  * WarehouseRecallServlet — "Thu hồi lô khẩn cấp" cho Quản lý kho (roleId 3 = Thủ kho).
- * URL: /warehouse-recall?uid=&lt;id&gt;
+ * URL: /warehouse-recall
  *
  * <p>Khi có công văn thu hồi (Cục Quản lý Dược / lỗi chất lượng), thủ kho tìm đúng lô theo
  * số lô, xem thông tin (tồn, vị trí kệ) rồi xác nhận thu hồi — lô bị đổi Status='RECALLED'
@@ -61,12 +61,14 @@ public class WarehouseRecallServlet extends HttpServlet {
         Account acc = requireWarehouseAccount(req, resp);
         if (acc == null) return;
 
-        String uid = req.getParameter("uid");
+        String uid = String.valueOf(acc.getAccountId());   // tu SESSION, khong tu URL
 
         req.setAttribute("staffUid", uid);
         req.setAttribute("staffAcc", acc);
         req.setAttribute("medicines", medicineDAO.findAll());
         req.setAttribute("history", loadRecallHistory());
+        // 2 badge sidebar — trang này trước đây không set gì, cả 2 badge đều biến mất ở đây.
+        com.medicare.util.SidebarHelper.loadWarehouse(req, acc.getAccountId());
 
         String msg = req.getParameter("msg");
         if (msg != null) req.setAttribute("msg", msg);
@@ -82,13 +84,15 @@ public class WarehouseRecallServlet extends HttpServlet {
         Account acc = requireWarehouseAccount(req, resp);
         if (acc == null) return;
 
-        String uid = req.getParameter("uid");
+        String uid = String.valueOf(acc.getAccountId());   // tu SESSION, khong tu URL
         String action = req.getParameter("action");
 
         req.setAttribute("staffUid", uid);
         req.setAttribute("staffAcc", acc);
         req.setAttribute("medicines", medicineDAO.findAll());
         req.setAttribute("history", loadRecallHistory());
+        // Bao mọi nhánh forward bên dưới (search / confirm-recall) — cùng 1 request.
+        com.medicare.util.SidebarHelper.loadWarehouse(req, acc.getAccountId());
 
         if ("confirm-recall".equals(action)) {
             handleConfirmRecall(req, resp, acc, uid);
@@ -197,7 +201,7 @@ public class WarehouseRecallServlet extends HttpServlet {
                 "Lô " + batch.getBatchNumber() + " (thuốc " + medicineName + ") — Lý do: " + reason.trim(),
                 acc.getAccountId());
 
-        resp.sendRedirect(req.getContextPath() + "/warehouse-recall?uid=" + uid + "&msg=recalled");
+        resp.sendRedirect(req.getContextPath() + "/warehouse-recall?msg=recalled");
     }
 
     /** Khi thu hồi thất bại/thiếu lý do, hiển thị lại đúng card xác nhận (không mất ngữ cảnh). */
@@ -257,15 +261,8 @@ public class WarehouseRecallServlet extends HttpServlet {
     }
 
     /** Gate roleId==3, giống hệt WarehouseInventoryServlet. */
+    /** Danh tinh Thu kho lay tu SESSION (WarehouseAuth) — khong con doc ?uid= tren URL. */
     private Account requireWarehouseAccount(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String uid = req.getParameter("uid");
-        HttpSession session = req.getSession(false);
-        Account acc = (uid != null && session != null)
-                ? (Account) session.getAttribute("staffAccount_" + uid) : null;
-        if (acc == null || acc.getRoleId() != ROLE_WAREHOUSE) {
-            resp.sendRedirect(req.getContextPath() + "/warehouse-login");
-            return null;
-        }
-        return acc;
+        return com.medicare.util.WarehouseAuth.require(req, resp);
     }
 }
