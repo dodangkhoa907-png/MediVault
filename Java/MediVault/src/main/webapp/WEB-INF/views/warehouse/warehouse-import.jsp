@@ -231,6 +231,7 @@ a{text-decoration:none;color:inherit}
                           data-lastprice="${latestByMedicine[m.medicineId].importPrice}"
                           data-lastbatch="${fn:escapeXml(latestByMedicine[m.medicineId].batchNumber)}"
                           data-lastdate="${latestByMedicine[m.medicineId].importDate}"
+                          data-lastsupplierid="${latestByMedicine[m.medicineId].supplierId}"
                           >${m.medicineName} (${m.unit})</option>
                 </c:forEach>
               </select>
@@ -874,10 +875,22 @@ a{text-decoration:none;color:inherit}
   // ── Pre-select thuốc khi đi thẳng từ nút giỏ hàng ở Tồn kho/Cảnh báo hạn dùng
   // (?medicineId=X) — chọn hộ ở Bước 1 rồi bắn 'change' để combo tự render nhãn
   // (enhanceCombo đã gắn ở trên) VÀ tự đổ dữ liệu xem trước (listener F.med bên dưới),
-  // không cần viết lại logic populate riêng. ──
+  // không cần viết lại logic populate riêng.
+  //
+  // Đi kèm tự điền "Nhà cung cấp" theo lần nhập gần nhất của đúng thuốc đó (data-lastsupplierid
+  // gắn sẵn trên <option>). CHỈ tự điền Nhà cung cấp — KHÔNG đụng tới Số lô/Giá nhập/Ngày SX-HSD
+  // dù đã có sẵn gợi ý (.suggest ở Bước 2): đó là thông tin CỦA LÔ VẬT LÝ đang cầm trên tay, tự
+  // điền từ lô CŨ (thậm chí có thể là lô đang hết hạn — chính là lý do bấm giỏ hàng!) vào lô MỚI
+  // là sai hoàn toàn, gây nhập nhầm hạn dùng đã qua. Nhà cung cấp thì không có rủi ro đó — sai
+  // thì đổi lại combo, không sai dữ liệu tồn kho. ──
   <c:if test="${not empty preSelectMedicineId}">
   F.med.value = '${preSelectMedicineId}';
   F.med.dispatchEvent(new Event('change', { bubbles: true }));
+  var _lastSupId = selData(F.med, 'lastsupplierid');
+  if (_lastSupId && F.sup.querySelector('option[value="' + _lastSupId + '"]')) {
+    F.sup.value = _lastSupId;
+    F.sup.dispatchEvent(new Event('change', { bubbles: true }));
+  }
   </c:if>
 })();
 </script>

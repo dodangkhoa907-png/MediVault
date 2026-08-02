@@ -389,8 +389,12 @@ public class BatchesDAO implements IBatchesDAO {
      */
     public Map<Integer, Batches> getLatestBatchMap() {
         Map<Integer, Batches> map = new HashMap<>();
-        String sql = "SELECT MedicineID, BatchNumber, ImportPrice, ImportDate FROM (" +
-                "  SELECT MedicineID, BatchNumber, ImportPrice, ImportDate," +
+        // + SupplierID: cho phép wizard Nhập kho tự điền sẵn "Nhà cung cấp" theo lần nhập gần
+        // nhất của đúng thuốc đó — khác với BatchNumber/ImportPrice/ngày tháng (đặc thù RIÊNG
+        // của từng lô vật lý, tự điền sai là nguy hiểm), nhà cung cấp là thông tin ổn định
+        // (ai thường bán thuốc này), tự điền sai chỉ cần đổi lại combo, không rủi ro dữ liệu.
+        String sql = "SELECT MedicineID, SupplierID, BatchNumber, ImportPrice, ImportDate FROM (" +
+                "  SELECT MedicineID, SupplierID, BatchNumber, ImportPrice, ImportDate," +
                 "         ROW_NUMBER() OVER (PARTITION BY MedicineID ORDER BY ImportDate DESC, CreatedAt DESC) AS rn" +
                 "  FROM Batches WHERE Status != 'CANCELLED'" +
                 ") x WHERE rn = 1";
@@ -399,6 +403,7 @@ public class BatchesDAO implements IBatchesDAO {
                 ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Batches b = new Batches();
+                b.setSupplierId(rs.getInt("SupplierID"));
                 b.setBatchNumber(rs.getString("BatchNumber"));
                 b.setImportPrice(rs.getBigDecimal("ImportPrice"));
                 if (rs.getDate("ImportDate") != null) b.setImportDate(rs.getDate("ImportDate").toLocalDate());
