@@ -556,60 +556,82 @@ tbody tr{cursor:pointer}
 /* ════════════════════════════════════════════════════
    DETAIL MODAL — overlay giống modal sửa/xóa
    ════════════════════════════════════════════════════ */
-.detail-overlay{position:fixed;inset:0;background:rgba(11,22,40,.5);z-index:3000;
+.detail-overlay{position:fixed;inset:0;background:rgba(11,22,40,.52);z-index:3000;
   display:flex;align-items:center;justify-content:center;
   opacity:0;pointer-events:none;transition:opacity .2s}
 .detail-overlay.open{opacity:1;pointer-events:auto}
-.detail-modal{background:var(--white);border-radius:16px;width:540px;max-width:94vw;
-  box-shadow:0 24px 70px rgba(0,0,0,.22);
-  transform:translateY(16px);transition:transform .22s;overflow:hidden}
-.detail-overlay.open .detail-modal{transform:translateY(0)}
+.detail-modal{background:var(--white);border-radius:20px;width:520px;max-width:94vw;
+  max-height:88vh;display:flex;flex-direction:column;
+  box-shadow:0 28px 80px rgba(11,22,40,.28),0 2px 8px rgba(11,22,40,.06);
+  transform:translateY(16px) scale(.98);transition:transform .2s cubic-bezier(.2,.8,.2,1);overflow:hidden}
+.detail-overlay.open .detail-modal{transform:translateY(0) scale(1)}
+
+/* ══ 1. Employee Summary ══ */
 .sdp-header{
-  background:linear-gradient(135deg,var(--navy),var(--blue));padding:16px 22px;color:#fff;
-  display:flex;align-items:center;gap:12px;
+  background:linear-gradient(135deg,var(--navy),var(--blue));padding:20px 22px;color:#fff;
+  display:flex;align-items:center;gap:13px;flex-shrink:0;
 }
-.sdp-av{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.15);
-  display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0}
-.sdp-name{font-size:15px;font-weight:750}
-.sdp-type{font-size:11.5px;opacity:.7;margin-top:1px}
-.sdp-badge{margin-left:auto;padding:3px 10px;border-radius:14px;font-size:10.5px;font-weight:750}
+.sdp-av{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.16);
+  display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;flex-shrink:0;
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.2)}
+.sdp-head-info{flex:1;min-width:0}
+.sdp-name{font-size:16px;font-weight:800;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sdp-date{font-size:12px;opacity:.72;margin-top:2px;font-weight:600}
+.sdp-badge{flex-shrink:0;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:750;white-space:nowrap}
 .sdp-badge.ok{background:rgba(110,231,183,.2);color:#6EE7B7}
 .sdp-badge.pend{background:rgba(147,197,253,.2);color:#93C5FD}
 .sdp-badge.err{background:rgba(252,165,165,.2);color:#FCA5A5}
 .sdp-badge.warn{background:rgba(253,224,71,.2);color:#FDE047}
-.sdp-close{margin-left:8px;width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.12);
-  border:none;color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.sdp-close:hover{background:rgba(255,255,255,.2)}
-.sdp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:16px 20px}
-.sdp-item{background:var(--surface);border-radius:8px;padding:9px 11px}
-.sdp-label{font-size:9.5px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
-.sdp-val{font-size:13px;font-weight:750;color:var(--ink)}
-/* ── Timeline ── */
-.sdp-timeline-wrap{padding:14px 20px 10px}
-.sdp-sec-label{font-size:10px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
-.sdp-timeline{position:relative;height:62px;background:var(--surface);border-radius:10px;overflow:visible;padding:0 4px}
-.sdp-tl-track{position:absolute;top:34px;left:0;right:0;height:3px;background:var(--border);border-radius:2px}
-.sdp-tl-seg{position:absolute;height:5px;border-radius:3px;top:33px}
-.sdp-tl-seg.morning{background:linear-gradient(90deg,#3B82F6,#60A5FA)}
-.sdp-tl-seg.afternoon{background:linear-gradient(90deg,#F97316,#FB923C)}
-.sdp-tl-seg.night{background:linear-gradient(90deg,#7C3AED,#A78BFA)}
-.sdp-tl-marker{position:absolute;top:6px;transform:translateX(-50%);text-align:center}
-.sdp-tl-time{font-size:12px;font-weight:750;color:var(--ink)}
-.sdp-tl-label{font-size:8.5px;color:var(--muted);margin-top:1px;white-space:nowrap;max-width:60px;overflow:hidden;text-overflow:ellipsis}
-.sdp-tl-dot{position:absolute;top:31px;width:11px;height:11px;border-radius:50%;border:2px solid var(--white);transform:translateX(-50%);z-index:2}
-/* ── Info chips ── */
-.sdp-info-row{display:flex;gap:6px;padding:4px 20px 12px;flex-wrap:wrap}
-.sdp-chip{display:flex;align-items:center;gap:5px;background:var(--surface);border-radius:8px;padding:7px 11px}
-.sdp-chip-icon{font-size:12px;flex-shrink:0}
-.sdp-chip-val{font-size:12.5px;font-weight:750;color:var(--ink)}
-.sdp-notes{padding:0 20px 12px}
-.sdp-notes-box{background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:9px 12px;font-size:12px;color:#78350F}
-.sdp-actions{display:flex;gap:8px;padding:0 20px 16px}
-.sdp-btn{flex:1;padding:9px;border-radius:8px;border:none;font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:12px;font-weight:750;cursor:pointer;transition:all .18s;text-align:center}
+.sdp-close{width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.12);flex-shrink:0;
+  border:none;color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:background .15s}
+.sdp-close:hover{background:rgba(255,255,255,.22)}
+
+/* ── Scroll body chứa section 2+3 ── */
+.sdp-body{overflow-y:auto;flex:1;min-height:0}
+.sdp-section{padding:18px 22px;border-bottom:1px solid var(--border)}
+.sdp-section:last-child{border-bottom:none}
+.sdp-sec-title{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+
+/* ══ 2. Shift Timeline — dọc, các mốc nối liền bằng 1 đường thẳng ══ */
+.sdp-vtimeline{position:relative;padding-left:22px}
+.sdp-vt-node{position:relative;padding-bottom:18px}
+.sdp-vt-node:last-child{padding-bottom:0}
+.sdp-vt-node::before{content:'';position:absolute;left:-22px;top:2px;width:11px;height:11px;border-radius:50%;
+  background:var(--blue);border:2.5px solid #fff;box-shadow:0 0 0 3px rgba(21,88,168,.15);z-index:2}
+.sdp-vt-node::after{content:'';position:absolute;left:-17px;top:13px;bottom:-4px;width:2px;background:var(--border)}
+.sdp-vt-node:last-child::after{display:none}
+.sdp-vt-node.kind-change::before{background:var(--gold);box-shadow:0 0 0 3px rgba(217,119,6,.15);width:9px;height:9px;left:-21px}
+.sdp-vt-node.kind-end::before{background:var(--green);box-shadow:0 0 0 3px rgba(5,150,105,.15)}
+.sdp-vt-time{font-size:13.5px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+.sdp-vt-label{font-size:12.5px;font-weight:700;color:var(--navy);margin-top:2px}
+.sdp-vt-node.kind-change .sdp-vt-label{color:var(--gold);font-weight:750}
+.sdp-vt-sub{font-size:11.5px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:5px;font-weight:600}
+.sdp-vt-sub svg{width:12px;height:12px;flex-shrink:0}
+.sdp-empty{padding:14px 0;text-align:center;color:var(--muted);font-size:12px}
+
+/* ══ 3. Shift Information Card — key-value, không dùng pill ══ */
+.sdp-kv-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.sdp-kv-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
+  padding:11px 14px;border-bottom:1px solid rgba(213,224,240,.6)}
+.sdp-kv-row:last-child{border-bottom:none}
+.sdp-kv-k{font-size:12px;font-weight:650;color:var(--muted);flex-shrink:0;padding-top:1px}
+.sdp-kv-v{font-size:13px;font-weight:750;color:var(--ink);text-align:right}
+.sdp-kv-v .sdp-kv-multi{display:flex;flex-direction:column;gap:3px;align-items:flex-end}
+.sdp-kv-v .sdp-kv-multi span{font-size:12px}
+.sdp-kv-v .sdp-kv-multi span b{color:var(--blue);font-weight:750}
+
+.sdp-notes-box{background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;padding:11px 14px;
+  font-size:12.5px;color:#78350F;line-height:1.55}
+
+/* ══ 4. Footer Actions: Secondary → Danger → Primary ══ */
+.sdp-actions{display:flex;gap:9px;padding:16px 22px;border-top:1px solid var(--border);flex-shrink:0;background:var(--white)}
+.sdp-btn{flex:1;padding:10px;border-radius:11px;border:none;font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:12.5px;font-weight:750;cursor:pointer;transition:all .16s;text-align:center}
 .sdp-btn:hover{transform:translateY(-1px)}
-.sdp-btn.edit{background:#EFF6FF;color:var(--blue);border:1.5px solid #BFDBFE}
-.sdp-btn.edit:hover{background:#DBEAFE}
+.sdp-btn.edit{background:linear-gradient(135deg,var(--blue),#0D3F85);color:#fff;box-shadow:0 3px 10px rgba(21,88,168,.28)}
+.sdp-btn.edit:hover{box-shadow:0 5px 14px rgba(21,88,168,.36)}
 .sdp-btn.del{background:#FEF2F2;color:var(--red);border:1.5px solid #FECACA}
 .sdp-btn.del:hover{background:#FEE2E2}
 .sdp-btn.close-btn{background:var(--surface);color:var(--muted);border:1.5px solid var(--border)}
@@ -1230,7 +1252,8 @@ select,option{font-family:inherit;font-size:inherit}
                                String ps = ss.getPlannedStart() != null ? ss.getPlannedStart().toString().substring(11,16) : "";
                                String pe = ss.getPlannedEnd() != null ? ss.getPlannedEnd().toString().substring(11,16) : "";
                                sjb.append("\"start\":\"").append(ps).append("\",");
-                               sjb.append("\"end\":\"").append(pe).append("\"");
+                               sjb.append("\"end\":\"").append(pe).append("\",");
+                               sjb.append("\"posStation\":").append(ss.getPosStation());
                                sjb.append("}");
                            }
                            sjb.append("]");
@@ -2758,45 +2781,51 @@ const SCHED_LIST = [
 <div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetailPanel()">
   <div class="detail-modal">
 
-    <%-- ── Header ── --%>
+    <%-- ── 1. Employee Summary ── --%>
     <div class="sdp-header">
       <div class="sdp-av" id="sdpAv">?</div>
-      <div style="flex:1;min-width:0">
+      <div class="sdp-head-info">
         <div class="sdp-name" id="sdpName">—</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap">
-          <span style="font-size:11.5px;opacity:.7" id="sdpDate">—</span>
-          <span style="font-size:10px;opacity:.4">•</span>
-          <span class="sdp-badge pend" id="sdpBadge">—</span>
-        </div>
+        <div class="sdp-date" id="sdpDate">—</div>
       </div>
+      <span class="sdp-badge pend" id="sdpBadge">—</span>
       <button class="sdp-close" onclick="closeDetailPanel()" title="Đóng">✕</button>
     </div>
 
-    <%-- ── Timeline thời gian làm việc ── --%>
-    <div class="sdp-timeline-wrap">
-      <div class="sdp-sec-label">Thời gian làm việc</div>
-      <div class="sdp-timeline" id="sdpTimeline"></div>
+    <div class="sdp-body">
+
+      <%-- ── 2. Shift Timeline (dọc, các mốc nối liền nhau) ── --%>
+      <div class="sdp-section">
+        <div class="sdp-sec-title">🕒 Khung giờ làm việc</div>
+        <div class="sdp-vtimeline" id="sdpTimeline"></div>
+      </div>
+
+      <%-- ── 3. Shift Information Card (key-value, không dùng pill) ── --%>
+      <div class="sdp-section">
+        <div class="sdp-sec-title">📋 Thông tin ca</div>
+        <div class="sdp-kv-card">
+          <div class="sdp-kv-row"><span class="sdp-kv-k">Mã ca</span><span class="sdp-kv-v" id="sdpId">—</span></div>
+          <div class="sdp-kv-row"><span class="sdp-kv-k">Loại ca</span><span class="sdp-kv-v" id="sdpShiftType">—</span></div>
+          <div class="sdp-kv-row"><span class="sdp-kv-k">Quầy phụ trách</span><span class="sdp-kv-v" id="sdpPos">—</span></div>
+          <div class="sdp-kv-row"><span class="sdp-kv-k">Trễ cho phép</span><span class="sdp-kv-v" id="sdpLate">—</span></div>
+          <div class="sdp-kv-row"><span class="sdp-kv-k">Số ca hôm nay</span><span class="sdp-kv-v" id="sdpTotal">—</span></div>
+          <div class="sdp-kv-row"><span class="sdp-kv-k">Tổng thời lượng</span><span class="sdp-kv-v" id="sdpDuration">—</span></div>
+        </div>
+      </div>
+
+      <%-- ── Ghi chú (chỉ hiện khi có) ── --%>
+      <div class="sdp-section" id="sdpNotesWrap" style="display:none">
+        <div class="sdp-sec-title">📝 Ghi chú</div>
+        <div class="sdp-notes-box" id="sdpNotes"></div>
+      </div>
+
     </div>
 
-    <%-- ── Info chips (gọn, dễ scan) ── --%>
-    <div class="sdp-info-row">
-      <div class="sdp-chip" id="sdpChipId"><span class="sdp-chip-icon">#</span><span class="sdp-chip-val" id="sdpId">—</span></div>
-      <div class="sdp-chip" id="sdpChipType"><span class="sdp-chip-icon">📋</span><span class="sdp-chip-val" id="sdpShiftType">—</span></div>
-      <div class="sdp-chip" id="sdpChipLate"><span class="sdp-chip-icon">⏱</span><span class="sdp-chip-val" id="sdpLate">—</span></div>
-      <div class="sdp-chip" id="sdpChipTotal"><span class="sdp-chip-icon">📊</span><span class="sdp-chip-val" id="sdpTotal">—</span></div>
-      <div class="sdp-chip" id="sdpChipPos"><span class="sdp-chip-icon">🖥️</span><span class="sdp-chip-val" id="sdpPos">—</span></div>
-    </div>
-
-    <%-- ── Notes ── --%>
-    <div class="sdp-notes" id="sdpNotesWrap" style="display:none">
-      <div class="sdp-notes-box" id="sdpNotes"></div>
-    </div>
-
-    <%-- ── Actions ── --%>
+    <%-- ── 4. Footer Actions: Secondary → Danger → Primary ── --%>
     <div class="sdp-actions" id="sdpActions">
-      <button class="sdp-btn edit" id="sdpEditBtn" onclick="editFromPanel()">✏️ Sửa ca</button>
-      <button class="sdp-btn del" id="sdpDelBtn" onclick="deleteFromPanel()">🗑 Hủy ca</button>
-      <button class="sdp-btn close-btn" onclick="closeDetailPanel()">✕ Đóng</button>
+      <button class="sdp-btn close-btn" onclick="closeDetailPanel()">Đóng</button>
+      <button class="sdp-btn del" id="sdpDelBtn" onclick="deleteFromPanel()">Hủy ca</button>
+      <button class="sdp-btn edit" id="sdpEditBtn" onclick="editFromPanel()">Sửa ca</button>
     </div>
   </div>
 </div>
@@ -3215,22 +3244,44 @@ function showDetailPanel(cardEl) {
   // ── Timeline ──
   renderTimeline(shifts);
 
-  // ── Info chips ──
+  // ── Info card (key-value) ──
   document.getElementById('sdpId').textContent        = _activeSchedId;
   document.getElementById('sdpShiftType').textContent  = firstShift.type || '—';
-  document.getElementById('sdpLate').textContent       = _activeLateTol + 'p trễ';
+  document.getElementById('sdpLate').textContent       = _activeLateTol + ' phút';
   document.getElementById('sdpTotal').textContent      = total + ' ca/ngày';
-  const posNum = parseInt(_activePosStation) || 0;
-  const posChip = document.getElementById('sdpChipPos');
-  document.getElementById('sdpPos').textContent = posNum > 0 ? 'Quầy ' + posNum : 'Chưa gán';
-  posChip.style.background = posNum > 0 ? '#eff6ff' : '#f8fafc';
-  posChip.style.color      = posNum > 0 ? '#1d4ed8' : '#94a3b8';
+
+  // "Quầy phụ trách": nếu 2+ ca trong ngày ở KHÁC quầy nhau (vd Ca Chiều Q1, Ca Tối Q5),
+  // liệt kê rõ TỪNG CA trên từng dòng riêng — trước đây chỉ hiện 1 số quầy chung cho cả
+  // card (của schedule đầu tiên), khiến admin đọc nhầm quầy của ca kia. Cùng 1 quầy cho
+  // mọi ca thì vẫn hiện gọn 1 dòng như cũ.
+  const stationSet = [...new Set(shifts.map(s => parseInt(s.posStation) || 0).filter(n => n > 0))];
+  const sdpPosEl = document.getElementById('sdpPos');
+  if (stationSet.length === 0) {
+    sdpPosEl.textContent = 'Chưa gán';
+  } else if (stationSet.length === 1) {
+    sdpPosEl.textContent = fullStationLabel(stationSet[0]);
+  } else {
+    sdpPosEl.innerHTML = '<span class="sdp-kv-multi">' + shifts.map(s =>
+      '<span>' + escHtml(s.type || '?') + ': <b>' + (parseInt(s.posStation) > 0 ? escHtml(fullStationLabel(s.posStation)) : '—') + '</b></span>'
+    ).join('') + '</span>';
+  }
+
+  // Tổng thời lượng làm việc — cộng dồn (end-start) của mọi ca trong ngày, xử lý ca qua đêm.
+  let totalMin = 0;
+  shifts.forEach(s => {
+    let a = toMin(s.start), b = toMin(s.end);
+    if (b <= a) b += 1440;
+    totalMin += (b - a);
+  });
+  const durH = Math.floor(totalMin / 60), durM = totalMin % 60;
+  document.getElementById('sdpDuration').textContent =
+    totalMin > 0 ? (durH + ' giờ' + (durM > 0 ? ' ' + durM + ' phút' : '')) : '—';
 
   // Notes
   const nw = document.getElementById('sdpNotesWrap');
   if (_activeNotes && _activeNotes !== 'null' && _activeNotes.trim()) {
     nw.style.display = '';
-    document.getElementById('sdpNotes').textContent = '💬 ' + _activeNotes;
+    document.getElementById('sdpNotes').textContent = _activeNotes;
   } else { nw.style.display = 'none'; }
 
   // Actions
@@ -3242,52 +3293,48 @@ function showDetailPanel(cardEl) {
   document.getElementById('detailOverlay').classList.add('open');
 }
 
-// ── Render timeline bar ──
+// ── Helper dùng chung cho modal chi tiết ca (showDetailPanel + renderTimeline) ──
+function toMin(t) { if (!t) return 0; const [h,m] = t.split(':').map(Number); return h*60+m; }
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+function fullStationLabel(id) {
+  const n = parseInt(id) || 0;
+  if (n <= 0) return null;
+  const st = (typeof _posStations !== 'undefined' ? _posStations : []).find(s => s.id === n);
+  return st && st.name ? st.name : ('Quầy ' + n);
+}
+
+// ── Render timeline DỌC — mỗi ca 1 mốc bắt đầu (giờ + tên ca + quầy), giữa 2 ca liền nhau
+// thêm mốc "Đổi ca" màu vàng, kết ca cuối cùng là mốc "Kết thúc ca" màu xanh lá. Các mốc nối
+// liền bằng 1 đường thẳng dọc — đọc tuần tự từ trên xuống, không cần dịch toạ độ % ngang nữa. ──
 function renderTimeline(shifts) {
   const box = document.getElementById('sdpTimeline');
-  if (!shifts.length) { box.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px">Không có dữ liệu</div>'; return; }
+  if (!shifts.length) { box.innerHTML = '<div class="sdp-empty">Không có dữ liệu</div>'; return; }
 
-  function toMin(t) { if (!t) return 0; const [h,m]=t.split(':').map(Number); return h*60+m; }
-  function fmtH(m)  { return String(Math.floor((m%1440)/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
-  function getColor(m) { return m<720?'#3B82F6':m<1200?'#F97316':'#7C3AED'; }
-  function getCls(m)   { return m<720?'morning':m<1200?'afternoon':'night'; }
-
-  // Tính range
-  let lo=1440, hi=0;
-  shifts.forEach(s => { let a=toMin(s.start),b=toMin(s.end); if(b<=a)b+=1440; lo=Math.min(lo,a); hi=Math.max(hi,b); });
-  const pad=60, rS=Math.max(0,lo-pad), rE=Math.min(2880,hi+pad), rL=rE-rS;
-  function pct(v) { return ((v-rS)/rL*100); }
-
-  // Container padding 3% mỗi bên
-  const PL=3, PR=3;
-  function pos(v) { return (PL + pct(v)*(100-PL-PR)/100).toFixed(1); }
-
-  let h = '<div class="sdp-tl-track" style="left:'+PL+'%;right:'+PR+'%"></div>';
-
-  shifts.forEach(s => {
-    let a=toMin(s.start), b=toMin(s.end);
-    if(b<=a) b+=1440;
-    const col=getColor(a), cls=getCls(a);
-    const lp=pos(a), rp=pos(b), wp=(parseFloat(rp)-parseFloat(lp)).toFixed(1);
-
-    // Bar segment
-    h += '<div class="sdp-tl-seg '+cls+'" style="left:'+lp+'%;width:'+wp+'%"></div>';
-
-    // Start marker
-    h += '<div class="sdp-tl-marker" style="left:'+lp+'%">'
-       +   '<div class="sdp-tl-time">'+s.start+'</div>'
-       +   '<div class="sdp-tl-label">'+( s.type||'' )+'</div>'
-       + '</div>';
-    h += '<div class="sdp-tl-dot" style="left:'+lp+'%;background:'+col+'"></div>';
-
-    // End marker
-    h += '<div class="sdp-tl-marker" style="left:'+rp+'%">'
-       +   '<div class="sdp-tl-time">'+fmtH(b)+'</div>'
-       + '</div>';
-    h += '<div class="sdp-tl-dot" style="left:'+rp+'%;background:'+col+'"></div>';
+  const nodes = [];
+  shifts.forEach((s, i) => {
+    const stLabel = fullStationLabel(s.posStation);
+    nodes.push({
+      kind: 'start',
+      time: s.start,
+      title: s.type || ('Ca ' + (i + 1)),
+      sub: stLabel ? stLabel : 'Chưa gán quầy'
+    });
+    if (i < shifts.length - 1) {
+      nodes.push({ kind: 'change', time: s.end, title: 'Đổi ca', sub: '' });
+    } else {
+      nodes.push({ kind: 'end', time: s.end, title: 'Kết thúc ca', sub: '' });
+    }
   });
 
-  box.innerHTML = h;
+  box.innerHTML = nodes.map(n =>
+    '<div class="sdp-vt-node kind-' + n.kind + '">'
+      + '<div class="sdp-vt-time">' + escHtml(n.time) + '</div>'
+      + '<div class="sdp-vt-label">' + escHtml(n.title) + '</div>'
+      + (n.sub ? '<div class="sdp-vt-sub">🖥️ ' + escHtml(n.sub) + '</div>' : '')
+    + '</div>'
+  ).join('');
 }
 
 function closeDetailPanel() {

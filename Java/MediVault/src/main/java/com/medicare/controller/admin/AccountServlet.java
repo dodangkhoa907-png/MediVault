@@ -333,6 +333,7 @@ public class AccountServlet extends HttpServlet {
             draft.setCitizenId(citizenId);
             draft.setPosition(position);
             if (ValidationUtil.notBlank(roleStr)) draft.setRoleId(Integer.parseInt(roleStr));
+            draft.setWarehouseManager("1".equals(req.getParameter("isWarehouseManager")));
 
             req.setAttribute("account", draft);     // JSP dùng để pre-fill form
             SidebarHelper.load(req);
@@ -351,6 +352,7 @@ public class AccountServlet extends HttpServlet {
         a.setCitizenId(citizenId != null && !citizenId.trim().isEmpty() ? citizenId.trim() : null);
         a.setPosition(position != null ? position.trim() : null);
         a.setRoleId(Integer.parseInt(roleStr));
+        a.setWarehouseManager("1".equals(req.getParameter("isWarehouseManager")));
 
         {
             // ── CHỈNH SỬA ──────────────────────────────────────────────────────

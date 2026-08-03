@@ -663,7 +663,7 @@ function startFaceCiAutoDetect() {
             const ctx = canvas.getContext('2d');
 
             const result = await faceapi
-                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
+                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.3 }))
                 .withFaceLandmarks()
                 .withFaceDescriptor();
 

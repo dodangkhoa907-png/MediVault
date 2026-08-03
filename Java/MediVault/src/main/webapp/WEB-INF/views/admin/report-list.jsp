@@ -165,6 +165,22 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .kpi-num{font-size:22px;font-weight:700;line-height:1.1;white-space:nowrap;letter-spacing:-.5px}
 .kpi-lbl{font-size:10.5px;color:var(--muted);font-weight:650;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
 .kpi-badge-wrap{margin-top:10px;transform:translateZ(20px)}
+.kpi-spark-wrap{margin-top:10px;height:28px;transform:translateZ(20px)}
+.kpi-spark{width:100%;height:100%;overflow:visible}
+.kpi-spark path.line{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.kpi-spark path.fill{stroke:none;opacity:.12}
+
+/* ── Insight Panel ── */
+.insight-panel{display:flex;flex-direction:column;gap:9px;margin-bottom:18px}
+.insight-card{display:flex;align-items:flex-start;gap:11px;padding:12px 15px;border-radius:12px;
+  border:1px solid transparent;font-size:12.5px;font-weight:650;line-height:1.5;
+  animation:insightIn .22s ease both}
+@keyframes insightIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.insight-card .ic{font-size:15px;flex-shrink:0;margin-top:1px}
+.insight-card.good{background:rgba(5,150,105,.07);border-color:rgba(5,150,105,.18);color:#047857}
+.insight-card.warn{background:rgba(245,158,11,.09);border-color:rgba(245,158,11,.22);color:#B45309}
+.insight-card.info{background:rgba(21,88,168,.07);border-color:rgba(21,88,168,.16);color:#1558A8}
+.insight-empty{font-size:12px;color:var(--muted);padding:10px 2px}
 .kpi-detail{margin-top:12px;padding-top:11px;border-top:1px dashed rgba(122,144,176,.35);
   display:flex;flex-direction:column;gap:5px;
   max-height:0;opacity:0;overflow:hidden;transform:translateZ(15px);
@@ -314,6 +330,7 @@ select,option{font-family:inherit;font-size:inherit}
           </div>
         </div>
         <div class="kpi-badge-wrap"><%= trendBadgeHtml(netRevenuePct, false) %></div>
+        <div class="kpi-spark-wrap"><svg class="kpi-spark" id="spark-revenue" viewBox="0 0 100 28" preserveAspectRatio="none"></svg></div>
         <div class="kpi-detail">
           <div class="kpi-drow"><span class="dk">Doanh thu gộp</span><span class="dv"><%= vnd.apply(grossRevenue) %></span></div>
           <div class="kpi-drow"><span class="dk">Số hóa đơn</span><span class="dv"><fmt:formatNumber value="${invoiceCount}"/></span></div>
@@ -332,6 +349,7 @@ select,option{font-family:inherit;font-size:inherit}
           </div>
         </div>
         <div class="kpi-badge-wrap"><%= trendBadgeHtml(cogsPct, true) %></div>
+        <div class="kpi-spark-wrap"><svg class="kpi-spark" id="spark-cogs" viewBox="0 0 100 28" preserveAspectRatio="none"></svg></div>
         <div class="kpi-detail">
           <div class="kpi-drow"><span class="dk">% trên DT thuần</span><span class="dv"><%= String.format("%.1f", cogsPctOfNet) %>%</span></div>
           <div class="kpi-drow"><span class="dk">Doanh thu thuần</span><span class="dv"><%= vnd.apply(netRevenue) %></span></div>
@@ -352,6 +370,7 @@ select,option{font-family:inherit;font-size:inherit}
           </div>
         </div>
         <div class="kpi-badge-wrap"><%= trendBadgeHtml(grossProfitPct, false) %></div>
+        <div class="kpi-spark-wrap"><svg class="kpi-spark" id="spark-profit" viewBox="0 0 100 28" preserveAspectRatio="none"></svg></div>
         <div class="kpi-detail">
           <div class="kpi-drow"><span class="dk">Biên lợi nhuận</span><span class="dv" style="color:<%= profitPositive ? "#059669" : "#DC2626" %>"><%= String.format("%.1f", profitMargin) %>%</span></div>
           <div class="kpi-drow"><span class="dk">Doanh thu thuần</span><span class="dv"><%= vnd.apply(netRevenue) %></span></div>
@@ -380,11 +399,27 @@ select,option{font-family:inherit;font-size:inherit}
       </div>
     </div>
 
+    <%-- ════════════════ INSIGHT PANEL — câu diễn giải từ số liệu đã tính, KHÔNG PHẢI AI thật ════════════════ --%>
+    <div class="insight-panel">
+      <c:forEach var="ins" items="${insights}">
+        <div class="insight-card ${ins[0]}">
+          <span class="ic">${ins[0] == 'good' ? '📈' : ins[0] == 'warn' ? '⚠️' : '💡'}</span>
+          <span>${fn:escapeXml(ins[1])}</span>
+        </div>
+      </c:forEach>
+      <c:if test="${empty insights}">
+        <div class="insight-empty">Chưa đủ dữ liệu để tạo nhận định cho kỳ này.</div>
+      </c:if>
+    </div>
+
     <%-- ════════════════ HERO CHART: Doanh thu — Giá vốn — Lợi nhuận gộp ════════════════ --%>
     <div class="chart-card" style="margin-bottom:16px">
       <div class="chart-card-head">
         <h3>📊 Doanh thu — Giá vốn — Lợi nhuận gộp theo ngày</h3>
         <span style="font-size:11.5px;color:var(--muted)">Khoảng cách giữa cột xanh dương và cột xám càng lớn → lợi nhuận càng cao</span>
+        <button type="button" onclick="downloadChartPng(financeChart,'bao-cao-doanh-thu')"
+                style="margin-left:auto;height:30px;padding:0 12px;border-radius:9px;border:1.5px solid var(--border);background:#fff;color:var(--muted);font-size:11.5px;font-weight:750;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px"
+                title="Tải biểu đồ dạng PNG">⬇️ PNG</button>
       </div>
       <div class="chart-card-body" style="height:280px"><canvas id="financeChart"></canvas></div>
       <div class="chart-legend">
@@ -612,9 +647,46 @@ async function loadAllCharts() {
     try { renderPeakHourChart(data);  } catch(e) { console.warn('peakHourChart lỗi:', e); }
     try { renderHorizontalBar('mfgChart', mfgChart, data.mfgLabels, data.mfgValues, c => mfgChart = c); } catch(e) { console.warn('mfgChart lỗi:', e); }
     try { renderDoughnut('catChart', catChart, data.catLabels, data.catValues, c => catChart = c); } catch(e) { console.warn('catChart lỗi:', e); }
+    try { renderKpiSparklines(data); } catch(e) { console.warn('kpiSparklines lỗi:', e); }
   } catch (e) {
     console.warn('Lỗi tải dữ liệu biểu đồ báo cáo:', e);
   }
+}
+
+// ── Sparkline mini-trend cho 3 thẻ KPI đầu — TÁI DÙNG NGUYÊN mảng finRevenue/finCogs/finProfit
+// đã tải cho hero chart, không gọi thêm API nào. Vẽ SVG polyline tay (không cần thêm chart lib). ──
+function drawSparkline(svgId, values, color) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  const nums = (values || []).map(v => Number(v) || 0);
+  if (nums.length < 2) { svg.innerHTML = ''; return; }
+  const w = 100, h = 28, pad = 2;
+  const min = Math.min(...nums), max = Math.max(...nums);
+  const range = (max - min) || 1;
+  const pts = nums.map((v, i) => {
+    const x = (i / (nums.length - 1)) * (w - pad * 2) + pad;
+    const y = h - pad - ((v - min) / range) * (h - pad * 2);
+    return [x, y];
+  });
+  const linePath = 'M' + pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' L');
+  const fillPath = linePath + ' L' + pts[pts.length - 1][0].toFixed(1) + ',' + h + ' L' + pts[0][0].toFixed(1) + ',' + h + ' Z';
+  svg.innerHTML =
+    '<path class="fill" d="' + fillPath + '" fill="' + color + '"></path>' +
+    '<path class="line" d="' + linePath + '" stroke="' + color + '"></path>';
+}
+function renderKpiSparklines(data) {
+  drawSparkline('spark-revenue', data.finRevenue, '#1558A8');
+  drawSparkline('spark-cogs',    data.finCogs,    '#D97706');
+  drawSparkline('spark-profit',  data.finProfit,  '#059669');
+}
+
+// ── Tải biểu đồ dạng PNG — dùng API có sẵn của Chart.js (toBase64Image), không thêm thư viện ──
+function downloadChartPng(chartInstance, filename) {
+  if (!chartInstance) { alert('Biểu đồ chưa tải xong, thử lại sau giây lát.'); return; }
+  const a = document.createElement('a');
+  a.href = chartInstance.toBase64Image('image/png', 1);
+  a.download = filename + '-' + REP_MONTH + '-' + REP_YEAR + '.png';
+  document.body.appendChild(a); a.click(); a.remove();
 }
 
 function renderCashChart(data) {

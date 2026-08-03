@@ -48,27 +48,9 @@ public class WarehouseStockMovementServlet extends HttpServlet {
     private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     // ── Gate dùng chung cho GET/POST — trả về staff account hợp lệ hoặc null (đã redirect) ──
+    /** Danh tinh Thu kho lay tu SESSION (WarehouseAuth) — khong con doc ?uid= tren URL. */
     private Account requireWarehouseStaff(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String uid = req.getParameter("uid");
-        if (uid == null || uid.isEmpty()) {
-            resp.sendRedirect(req.getContextPath() + "/warehouse-login");
-            return null;
-        }
-        HttpSession session = req.getSession(false);
-        if (session == null) {
-            resp.sendRedirect(req.getContextPath() + "/warehouse-login");
-            return null;
-        }
-        Account staffAcc = (Account) session.getAttribute("staffAccount_" + uid);
-        if (staffAcc == null) {
-            resp.sendRedirect(req.getContextPath() + "/warehouse-login");
-            return null;
-        }
-        if (staffAcc.getRoleId() != 3) {
-            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Thủ kho được truy cập chức năng này!");
-            return null;
-        }
-        return staffAcc;
+        return com.medicare.util.WarehouseAuth.require(req, resp);
     }
 
     @Override
@@ -100,9 +82,7 @@ public class WarehouseStockMovementServlet extends HttpServlet {
             return;
         }
 
-        String medIdParam = req.getParameter("medicineId");
-        String medQuery = (medIdParam != null && !medIdParam.isEmpty()) ? "&medicineId=" + medIdParam : "";
-        resp.sendRedirect(req.getContextPath() + "/warehouse-inventory?uid=" + req.getParameter("uid") + "&tab=movement" + medQuery);
+        renderPage(req, resp, staffAcc);
     }
 
     @Override
@@ -112,7 +92,7 @@ public class WarehouseStockMovementServlet extends HttpServlet {
         Account staffAcc = requireWarehouseStaff(req, resp);
         if (staffAcc == null) return;
 
-        String uid = req.getParameter("uid");
+        String uid = String.valueOf(staffAcc.getAccountId());   // tu SESSION, khong tu URL
         String medicineIdStr = req.getParameter("medicineId");
         String enteredBatchNumber = req.getParameter("enteredBatchNumber");
         String movementType = req.getParameter("movementType"); // OUT | EXPIRED | ADJUSTMENT
@@ -193,7 +173,7 @@ public class WarehouseStockMovementServlet extends HttpServlet {
                                 + " (" + reason.trim() + ")",
                         staffAcc.getAccountId());
 
-                resp.sendRedirect(req.getContextPath() + "/warehouse-inventory?uid=" + uid + "&tab=movement&msg=success");
+                resp.sendRedirect(req.getContextPath() + "/warehouse-stock-movement?msg=success");
                 return;
             }
         }
@@ -261,13 +241,15 @@ public class WarehouseStockMovementServlet extends HttpServlet {
         }
         req.setAttribute("movementRows", rows);
         req.setAttribute("staffAcc", staffAcc);
-        req.setAttribute("uid", req.getParameter("uid"));
+        req.setAttribute("uid", String.valueOf(staffAcc.getAccountId()));
         // Pre-chọn thuốc khi vào trang qua link "?medicineId=X" (nút 👁️ ở warehouse-inventory.jsp) —
         // trước đây f_medicineId chỉ được set trong doPost() lúc redisplay form sau lỗi validate,
         // nên đi thẳng từ link ngoài vào (GET thường) không pre-select được gì, ô "Chọn thuốc" trống trơn.
         if (req.getAttribute("f_medicineId") == null) {
             req.setAttribute("f_medicineId", req.getParameter("medicineId"));
         }
+        // 2 badge sidebar — trang này trước đây không set gì, cả 2 badge đều biến mất ở đây.
+        com.medicare.util.SidebarHelper.loadWarehouse(req, staffAcc.getAccountId());
 
         req.getRequestDispatcher("/WEB-INF/views/warehouse/warehouse-stock-movement.jsp")
                 .forward(req, resp);

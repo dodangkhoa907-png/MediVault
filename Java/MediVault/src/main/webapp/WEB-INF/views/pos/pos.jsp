@@ -302,6 +302,31 @@ body{display:flex}
 .toast-ok{background:#064e3b;color:#fff}
 .toast-err{background:#7f1d1d;color:#fff}
 
+/* BARCODE REDESIGN (Phần 2) — flash xanh khi quét trúng + panel "Unknown Product" */
+.med-card.scan-flash{animation:scanFlash .6s ease}
+@keyframes scanFlash{0%{box-shadow:0 0 0 0 rgba(5,150,105,0)}30%{box-shadow:0 0 0 4px rgba(5,150,105,.55)}100%{box-shadow:0 0 0 0 rgba(5,150,105,0)}}
+.unk-modal{display:none;position:fixed;inset:0;z-index:9800;background:rgba(11,22,40,.7);align-items:center;justify-content:center;padding:20px}
+.unk-modal.show{display:flex}
+.unk-box{background:#fff;border-radius:18px;max-width:380px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden}
+.unk-head{padding:16px 20px;background:linear-gradient(135deg,#7c2d12,#c2410c);color:#fff}
+.unk-head h3{margin:0;font-size:15px;font-weight:800}
+.unk-code{font-family:'Courier New',monospace;font-size:17px;font-weight:800;margin-top:6px;opacity:.95}
+.unk-body{padding:16px 20px}
+.unk-opt{display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;border-radius:12px;
+  border:1.5px solid var(--border);background:#fff;color:var(--navy);font-size:13px;font-weight:750;
+  cursor:pointer;font-family:inherit;text-align:left;margin-bottom:8px;transition:all .15s}
+.unk-opt:hover{border-color:var(--blue);background:#eff6ff}
+.unk-opt .ic{font-size:17px;flex-shrink:0}
+.unk-opt.cancel{color:var(--muted);border-style:dashed}
+.unk-form .wh-fg{margin-bottom:10px}
+.unk-form label{display:block;font-size:12px;font-weight:750;color:var(--navy);margin-bottom:4px}
+.unk-form input,.unk-form select{width:100%;height:38px;padding:0 11px;border:1.5px solid var(--border);
+  border-radius:9px;font-family:inherit;font-size:13px;outline:none}
+.unk-form input:focus,.unk-form select:focus{border-color:var(--blue)}
+.unk-form .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.unk-err{display:none;color:#dc2626;font-size:12px;font-weight:700;margin-top:6px}
+.unk-err.show{display:block}
+
 /* CHECKIN */
 .sb-checkin-wrap{position:relative}
 
@@ -492,10 +517,10 @@ body{display:flex}
     <span class="sb-label">Bán hàng POS</span>
     <span class="sb-tip">Bán hàng POS</span>
   </a>
-  <a href="#" class="sb-btn">
+  <a href="#" class="sb-btn" onclick="event.preventDefault();openInvHistModal()">
     <span class="sb-icon">🧾</span>
-    <span class="sb-label">Hóa đơn của tôi</span>
-    <span class="sb-tip">Hóa đơn của tôi</span>
+    <span class="sb-label">Lịch sử hóa đơn</span>
+    <span class="sb-tip">Lịch sử hóa đơn / Trả hàng</span>
   </a>
 
   <div class="sb-divider"></div>
@@ -621,6 +646,37 @@ body{display:flex}
     </div>
   </div>
 
+  <%-- Modal: LỊCH SỬ HÓA ĐƠN + TRẢ HÀNG — tìm hóa đơn cũ, xử lý trả hàng ngay tại quầy --%>
+  <div id="invHistModal" style="display:none;position:fixed;inset:0;z-index:9600;background:rgba(11,22,40,.55);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeInvHistModal()">
+    <div style="background:#fff;border-radius:18px;max-width:640px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden">
+      <div style="padding:18px 22px;background:linear-gradient(135deg,#1558A8,#3ABDE0);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+        <div>
+          <h3 style="margin:0;font-size:17px;font-weight:800" id="invHistTitle">🧾 Lịch sử hóa đơn</h3>
+          <div style="font-size:12px;opacity:.85;margin-top:3px" id="invHistSubtitle">Tìm theo SĐT khách, mã hóa đơn hoặc quét mã vạch trên bill</div>
+        </div>
+        <button onclick="closeInvHistModal()" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:32px;height:32px;border-radius:9px;font-size:16px;cursor:pointer">✕</button>
+      </div>
+
+      <%-- View 1: tìm & danh sách hóa đơn --%>
+      <div id="invHistListView">
+        <div style="padding:14px 22px 0;flex-shrink:0">
+          <input type="text" id="invhQ" placeholder="SĐT khách / mã hóa đơn (VD: HD000123)…" autocomplete="off"
+                 oninput="invhSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault();invhSearch(true);}"
+                 style="width:100%;border:1.5px solid #e2e8f0;border-radius:11px;padding:12px 14px;font-size:14.5px;font-family:inherit;box-sizing:border-box">
+        </div>
+        <div id="invhResults" style="flex:1;overflow-y:auto;padding:14px 22px 22px">
+          <div style="color:#94a3b8;font-size:13px;text-align:center;padding:26px 0">Đang tải hóa đơn gần đây…</div>
+        </div>
+      </div>
+
+      <%-- View 2: chi tiết hóa đơn + form trả hàng --%>
+      <div id="invHistDetailView" style="display:none;flex:1;overflow-y:auto;padding:16px 22px 22px">
+        <button onclick="invhBackToList()" style="background:#f1f5f9;border:none;border-radius:9px;padding:7px 13px;font-size:12.5px;font-weight:750;color:#475569;cursor:pointer;margin-bottom:12px">← Quay lại danh sách</button>
+        <div id="invhDetailBody"></div>
+      </div>
+    </div>
+  </div>
+
   <%-- Modal: TẠO NHANH khách hàng (2 trường, <5 giây) --%>
   <div id="quickCreateModal" style="display:none;position:fixed;inset:0;z-index:9650;background:rgba(11,22,40,.55);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeQuickCreate()">
     <div style="background:#fff;border-radius:18px;max-width:380px;width:100%;padding:26px;box-shadow:0 24px 70px rgba(0,0,0,.35)">
@@ -630,11 +686,11 @@ body{display:flex}
       </div>
       <p style="font-size:12px;color:#64748b;margin:0 0 14px">Chỉ cần SĐT + Tên. Khách tự bổ sung hồ sơ tại Cổng khách hàng sau.</p>
       <label style="font-size:12px;font-weight:750;color:#334155;display:block;margin-bottom:5px">Số điện thoại <span style="color:#dc2626">*</span></label>
-      <input type="tel" id="qcPhone" maxlength="10" inputmode="numeric" placeholder="0901234567"
+      <input type="tel" id="qcPhone" maxlength="10" inputmode="numeric" placeholder="Thêm số điện thoại"
              oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)"
              style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:11px 13px;font-size:16px;font-weight:750;font-family:inherit;letter-spacing:1px;box-sizing:border-box">
       <label style="font-size:12px;font-weight:750;color:#334155;display:block;margin:12px 0 5px">Họ tên khách <span style="color:#dc2626">*</span></label>
-      <input type="text" id="qcName" placeholder="VD: Đào Trần Thanh Trúc"
+      <input type="text" id="qcName" placeholder="VD: Nguyễn Văn A"
              onkeydown="if(event.key==='Enter')submitQuickCreate()"
              style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:11px 13px;font-size:14.5px;font-family:inherit;box-sizing:border-box">
       <div style="display:flex;gap:10px;margin-top:12px">
@@ -1111,6 +1167,51 @@ body{display:flex}
   </div>
 </div>
 
+<%-- ══ BARCODE REDESIGN (Phần 2) — "Unknown Product": quét trúng mã vạch lạ KHÔNG BAO GIỜ báo
+     lỗi rồi dừng lại — mở panel 4 lựa chọn (tìm tay / báo Thủ kho / tạo thuốc [Admin] / hủy),
+     giỏ hàng vẫn nguyên, không mất thao tác đang làm. ══ --%>
+<div class="unk-modal" id="unkModal" onclick="if(event.target===this)closeUnkModal()">
+  <div class="unk-box">
+    <div class="unk-head">
+      <h3>⚠️ Sản phẩm chưa xác định</h3>
+      <div class="unk-code" id="unkCode">—</div>
+    </div>
+    <div class="unk-body">
+      <div id="unkOptions">
+        <button type="button" class="unk-opt" onclick="unkSearchManually()"><span class="ic">🔍</span> Tìm thủ công</button>
+        <button type="button" class="unk-opt" onclick="unkRequestWarehouse()"><span class="ic">📦</span> Yêu cầu Thủ kho bổ sung</button>
+        <button type="button" class="unk-opt" onclick="unkShowCreateForm()"><span class="ic">➕</span> Tạo thuốc mới (chỉ Admin)</button>
+        <button type="button" class="unk-opt cancel" onclick="closeUnkModal()"><span class="ic">✕</span> Hủy</button>
+      </div>
+      <form class="unk-form" id="unkCreateForm" style="display:none" onsubmit="return false">
+        <div class="wh-fg"><label>Tên thuốc *</label><input type="text" id="unkName" placeholder="VD: Paracetamol 500mg"></div>
+        <div class="row2">
+          <div class="wh-fg"><label>Danh mục *</label>
+            <select id="unkCat"><option value="">— Chọn —</option>
+              <c:forEach var="cat" items="${categories}"><option value="${cat.categoryId}">${cat.categoryName}</option></c:forEach>
+            </select>
+          </div>
+          <div class="wh-fg"><label>Nhà sản xuất *</label>
+            <select id="unkMan"><option value="">— Chọn —</option>
+              <c:forEach var="mf" items="${posManufacturers}"><option value="${mf.manufacturerId}">${mf.name}</option></c:forEach>
+            </select>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="wh-fg"><label>Đơn vị *</label><input type="text" id="unkUnit" placeholder="Hộp / Vỉ…"></div>
+          <div class="wh-fg"><label>Giá bán</label><input type="number" id="unkPrice" min="0" step="1000" placeholder="0"></div>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Thuốc mới tạo chưa có tồn kho — cần Thủ kho nhập lô trước khi bán được.</div>
+        <div class="unk-err" id="unkErr"></div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button type="button" class="unk-opt" style="margin:0;flex:none;width:44px;justify-content:center" onclick="unkBackToOptions()">←</button>
+          <button type="button" class="btn-checkout" style="height:44px;flex:1;border-radius:10px" onclick="unkSubmitCreate()">Tạo thuốc mới</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <%-- defer: cả 3 lib này chỉ dùng bên trong hàm gọi lúc người dùng thao tác (quét mã vạch,
      thanh toán QR, check-in khuôn mặt) — không cái nào cần ngay lúc trang vừa load. Để mặc
      định (blocking) thì HTML parser phải dừng lại chờ tải xong CẢ 3 lib từ CDN ngoài trước
@@ -1189,7 +1290,7 @@ document.getElementById('searchInput').addEventListener('input', function() {
     checkEmpty();
   }, 200);
 });
-// Máy quét mã vạch (kiểu bàn phím) gõ mã rồi gửi Enter — nếu khớp đúng 1 thuốc, tự thêm vào giỏ.
+// Máy quét mã vạch (kiểu bàn phím) gõ mã rồi gửi Enter trong chính ô tìm kiếm — đi qua lõi dùng chung.
 document.getElementById('searchInput').addEventListener('keydown', function(e) {
   if (e.key !== 'Enter') return;
   const q = this.value.trim();
@@ -1197,7 +1298,7 @@ document.getElementById('searchInput').addEventListener('keydown', function(e) {
   const med = allMedicines.find(m => m.barcode && m.barcode === q);
   if (med) {
     e.preventDefault();
-    addToCart(med.el);
+    posHandleBarcodeScanned(q, 'usb', null);
     this.value = '';
     this.dispatchEvent(new Event('input'));
   }
@@ -1232,7 +1333,7 @@ function openBarcodeScan() {
       const now = Date.now();
       if (decodedText === lastCode && now - lastTime < 1500) return; // tránh cộng trùng khi camera lặp khung hình cũ
       lastCode = decodedText; lastTime = now;
-      handleBarcodeScanned(decodedText, status);
+      posHandleBarcodeScanned(decodedText, 'camera', status);
     },
     () => {} // lỗi giải mã từng khung hình — bỏ qua, camera vẫn tiếp tục quét
   ).catch(err => {
@@ -1247,20 +1348,181 @@ function closeBarcodeScan() {
     s.stop().then(() => s.clear()).catch(() => {});
   }
 }
-function handleBarcodeScanned(code, status) {
-  const med = allMedicines.find(m => m.barcode && m.barcode === code);
-  if (!med) {
-    status.textContent = '⚠️ Không tìm thấy thuốc với mã vạch: ' + code;
-    return;
-  }
-  if (med.stock <= 0) {
-    status.textContent = '❌ ' + med.name + ' đã hết hàng!';
-    return;
-  }
-  addToCart(med.el);
-  status.textContent = '✅ Đã thêm vào giỏ: ' + med.name;
-}
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBarcodeScan(); });
+
+/* ══════════════════════════════════════════════════════════════════════════════════════
+   BARCODE REDESIGN (Phần 2) — LÕI DÙNG CHUNG cho cả 3 đường quét (ô tìm kiếm+Enter, camera,
+   máy quét USB toàn cục bên dưới). Quét trúng: tự thêm giỏ + rung/beep/flash xanh, KHÔNG
+   popup (đúng "Fast Mode" — thu ngân quét liên tục không cần chạm chuột). Quét KHÔNG trúng
+   local thì hỏi server (thuốc mới tạo sau khi tải trang / mã vạch phụ) trước khi kết luận
+   "Unknown Product" — không báo lỗi cộc lốc như trước. ══════════════════════════════════ */
+function posBeep() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ac = new Ctx(), o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sine'; o.frequency.value = 1046;
+    g.gain.setValueAtTime(0.13, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.15);
+    o.connect(g); g.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime + 0.15);
+  } catch (e) {}
+}
+function posVibrate() { try { if (navigator.vibrate) navigator.vibrate(50); } catch (e) {} }
+
+function posHandleBarcodeScanned(code, source, statusEl) {
+  code = (code || '').trim();
+  if (!code) return;
+  const med = allMedicines.find(m => m.barcode && m.barcode === code);
+  if (med) {
+    if (med.stock <= 0) {
+      const msg = '❌ ' + med.name + ' đã hết hàng!';
+      if (statusEl) statusEl.textContent = msg; else showToast(msg, 'err');
+      return;
+    }
+    addToCart(med.el);
+    med.el.classList.remove('scan-flash'); void med.el.offsetWidth; med.el.classList.add('scan-flash');
+    posBeep(); posVibrate();
+    const okMsg = '✓ ' + med.name + ' — Đã thêm vào giỏ';
+    if (statusEl) statusEl.textContent = '✅ ' + okMsg; else showToast(okMsg, 'ok');
+    fetch(ctx + '/pos?action=lookup-barcode&barcode=' + encodeURIComponent(code) + '&source=' + source).catch(() => {});
+    return;
+  }
+
+  if (statusEl) statusEl.textContent = 'Đang kiểm tra mã vạch…';
+  fetch(ctx + '/pos?action=lookup-barcode&barcode=' + encodeURIComponent(code) + '&source=' + source)
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok && data.found) {
+        const m = data.medicine;
+        // Thuốc vừa được tạo/gán mã vạch nơi khác sau khi trang này đã tải — nạp vào allMedicines
+        // để lần quét sau tức thời (offline-safe), nhưng KHÔNG có el/stock thật nên chưa bán được
+        // ngay (đúng — thuốc mới chưa chắc đã có lô/tồn), báo rõ cho thu ngân thay vì im lặng.
+        if (!allMedicines.some(x => x.id === m.id)) {
+          allMedicines.push({ id: m.id, name: m.name, price: m.price, unit: m.unit, catId: m.categoryId || 0,
+            rx: !!m.rx, stock: 0, batchNo: '', expiry: '', dosage: '', code: m.code || '', barcode: m.barcode || code,
+            generic: '', contra: '', warning: '', storage: m.storageConditions || '', el: null });
+        }
+        const msg = '⚠️ ' + m.name + ' — có trong danh mục nhưng chưa có tồn kho tại quầy này.';
+        if (statusEl) statusEl.textContent = msg; else showToast(msg, 'err');
+      } else {
+        openUnkModal(code, false);
+      }
+    })
+    .catch(() => {
+      posQueueOfflineScan(code, source);
+      openUnkModal(code, true);
+    });
+}
+
+// ── Offline queue nhẹ — cùng ý tưởng với trang Nhập kho: mất mạng KHÔNG chặn thao tác, chỉ
+// lưu lại để tự kiểm tra khi có mạng trở lại. ──
+function posQueueOfflineScan(code, source) {
+  try {
+    const q = JSON.parse(localStorage.getItem('posPendingBarcodeScans') || '[]');
+    if (!q.some(x => x.code === code)) q.push({ code, source, ts: Date.now() });
+    localStorage.setItem('posPendingBarcodeScans', JSON.stringify(q));
+  } catch (e) {}
+}
+function posSyncOfflineScans() {
+  let q; try { q = JSON.parse(localStorage.getItem('posPendingBarcodeScans') || '[]'); } catch (e) { q = []; }
+  if (!q.length) return;
+  localStorage.setItem('posPendingBarcodeScans', '[]');
+  q.forEach(item => {
+    fetch(ctx + '/pos?action=lookup-barcode&barcode=' + encodeURIComponent(item.code) + '&source=' + item.source)
+      .then(r => r.json())
+      .then(data => { if (data.ok && data.found) showToast('🔄 Đã đồng bộ mã ' + item.code + ' → ' + data.medicine.name, 'ok'); })
+      .catch(() => posQueueOfflineScan(item.code, item.source));
+  });
+}
+window.addEventListener('online', posSyncOfflineScans);
+document.addEventListener('DOMContentLoaded', posSyncOfflineScans);
+
+/* ══ "Unknown Product" panel — 4 lựa chọn, không chặn/không mất thao tác đang làm ══ */
+let unkPendingCode = null;
+let unkPendingOffline = false;
+function openUnkModal(code, offline) {
+  closeBarcodeScan();
+  unkPendingCode = code;
+  unkPendingOffline = !!offline;
+  document.getElementById('unkCode').textContent = code + (offline ? ' (chưa kiểm tra — mất mạng)' : '');
+  unkBackToOptions();
+  document.getElementById('unkModal').classList.add('show');
+}
+function closeUnkModal() {
+  document.getElementById('unkModal').classList.remove('show');
+  unkPendingCode = null;
+}
+function unkSearchManually() {
+  closeUnkModal();
+  const inp = document.getElementById('searchInput');
+  inp.value = unkPendingCode || '';
+  inp.focus();
+  inp.dispatchEvent(new Event('input'));
+}
+function unkRequestWarehouse() {
+  if (!unkPendingCode) return;
+  const fd = new URLSearchParams();
+  fd.set('action', 'request-warehouse-barcode');
+  fd.set('barcode', unkPendingCode);
+  fetch(ctx + '/pos', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: fd.toString() })
+    .then(r => r.json())
+    .then(data => {
+      showToast(data.ok ? '📦 Đã gửi yêu cầu tới Thủ kho' : '⚠️ Gửi yêu cầu thất bại, thử lại', data.ok ? 'ok' : 'err');
+      if (data.ok) closeUnkModal();
+    })
+    .catch(() => showToast('⚠️ Mất kết nối, thử lại khi có mạng', 'err'));
+}
+function unkShowCreateForm() {
+  document.getElementById('unkOptions').style.display = 'none';
+  document.getElementById('unkCreateForm').style.display = 'block';
+  document.getElementById('unkErr').classList.remove('show');
+}
+function unkBackToOptions() {
+  document.getElementById('unkOptions').style.display = 'block';
+  document.getElementById('unkCreateForm').style.display = 'none';
+}
+function unkSubmitCreate() {
+  const errEl = document.getElementById('unkErr');
+  errEl.classList.remove('show');
+  const name = document.getElementById('unkName').value.trim();
+  const cat = document.getElementById('unkCat').value;
+  const man = document.getElementById('unkMan').value;
+  const unit = document.getElementById('unkUnit').value.trim();
+  if (name.length < 2) { errEl.textContent = 'Nhập tên thuốc.'; errEl.classList.add('show'); return; }
+  if (!cat) { errEl.textContent = 'Chọn danh mục.'; errEl.classList.add('show'); return; }
+  if (!man) { errEl.textContent = 'Chọn nhà sản xuất.'; errEl.classList.add('show'); return; }
+  if (!unit) { errEl.textContent = 'Nhập đơn vị tính.'; errEl.classList.add('show'); return; }
+
+  const fd = new URLSearchParams();
+  fd.set('action', 'quick-create-medicine');
+  fd.set('barcode', unkPendingCode || '');
+  fd.set('name', name);
+  fd.set('categoryId', cat);
+  fd.set('manufacturerId', man);
+  fd.set('unit', unit);
+  fd.set('sellingPrice', document.getElementById('unkPrice').value || '0');
+  fd.set('source', 'manual');
+  fetch(ctx + '/pos', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: fd.toString() })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        const m = data.medicine;
+        allMedicines.push({ id: m.id, name: m.name, price: m.price, unit: m.unit, catId: m.categoryId || 0,
+          rx: !!m.rx, stock: 0, batchNo: '', expiry: '', dosage: '', code: m.code || '', barcode: m.barcode || unkPendingCode,
+          generic: '', contra: '', warning: '', storage: m.storageConditions || '', el: null });
+        showToast('✅ Đã tạo thuốc mới: ' + m.name, 'ok');
+        closeUnkModal();
+      } else if (data.reason === 'admin_only') {
+        errEl.textContent = 'Chỉ Admin được tạo thuốc mới tại quầy — dùng "Yêu cầu Thủ kho" thay thế.';
+        errEl.classList.add('show');
+      } else {
+        errEl.textContent = 'Có lỗi xảy ra (' + (data.reason || 'unknown') + '), thử lại.';
+        errEl.classList.add('show');
+      }
+    })
+    .catch(() => { errEl.textContent = 'Mất kết nối, thử lại khi có mạng.'; errEl.classList.add('show'); });
+}
 
 // ── Category filter ──
 let activeCat = 0;
@@ -2201,20 +2463,20 @@ function printReceipt() {
     + '<title>Hóa đơn ' + escHtml(inv.code) + '</title>'
     + '<style>'
     + '* { margin:0; padding:0; box-sizing:border-box; }'
-    + 'body { font-family: "Courier New", monospace; font-size: 12px; color: #000; padding: 6px; max-width: 320px; margin: 0 auto; }'
+    + 'body { font-family: "Courier New", monospace; font-weight: 700; font-size: 12px; color: #000; padding: 6px; max-width: 320px; margin: 0 auto; }'
     + '.center { text-align: center; }'
-    + '.bold { font-weight: bold; }'
-    + '.title { font-size: 15px; font-weight:800; margin: 3px 0; }'
+    + '.bold { font-weight: 900; }'
+    + '.title { font-size: 15px; font-weight:900; margin: 3px 0; }'
     + '.divider { border-top: 1px dashed #000; margin: 4px 0; }'
     + '.divider2 { border-top: 2px solid #000; margin: 4px 0; }'
     + 'table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 11px; }'
-    + 'th { background: #eee; padding: 3px 4px; font-weight:750; border-bottom: 1px solid #000; }'
-    + 'td { vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; padding: 3px 4px; }'
+    + 'th { background: #eee; padding: 3px 4px; font-weight:900; border-bottom: 1px solid #000; }'
+    + 'td { vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; padding: 3px 4px; font-weight: 700; }'
     + '.totals { margin-top: 3px; }'
-    + '.totals-row { display: flex; justify-content: space-between; padding: 1px 0; font-size: 12px; }'
-    + '.totals-row.grand { font-size: 14px; font-weight:800; border-top: 2px solid #000; padding-top: 4px; margin-top: 2px; }'
-    + '.footer { text-align: center; margin-top: 6px; font-style: italic; font-size: 11.5px; }'
-    + '.kv { display: flex; justify-content: space-between; font-size: 11.5px; padding: 1px 0; }'
+    + '.totals-row { display: flex; justify-content: space-between; padding: 1px 0; font-size: 12px; font-weight: 700; }'
+    + '.totals-row.grand { font-size: 14px; font-weight:900; border-top: 2px solid #000; padding-top: 4px; margin-top: 2px; }'
+    + '.footer { text-align: center; margin-top: 6px; font-style: italic; font-size: 11.5px; font-weight: 700; }'
+    + '.kv { display: flex; justify-content: space-between; font-size: 11.5px; padding: 1px 0; font-weight: 700; }'
     // Khối chính sách cố định + khối ghi chú dược sĩ (động)
     + '.policy { font-size: 10.5px; line-height: 1.3; margin-top: 3px; }'
     + '.policy-title { font-weight: 800; text-align: center; margin-bottom: 2px; letter-spacing: .5px; }'
@@ -2335,6 +2597,218 @@ function showToast(msg, type) {
   setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 2800);
 }
 
+// ── Lịch sử hóa đơn + Trả hàng ─────────────────────────────────────────────
+let invhTimer = null;
+let invhCurrentInvoice = null; // cache chi tiết hóa đơn đang xem để tính lại khi nhập SL
+
+function openInvHistModal() {
+  document.getElementById('invHistModal').style.display = 'flex';
+  invhShowListView();
+  document.getElementById('invhQ').value = '';
+  invhSearch(true);
+  setTimeout(() => document.getElementById('invhQ').focus(), 50);
+}
+function closeInvHistModal() {
+  document.getElementById('invHistModal').style.display = 'none';
+}
+function invhShowListView() {
+  document.getElementById('invHistListView').style.display = 'flex';
+  document.getElementById('invHistListView').style.flexDirection = 'column';
+  document.getElementById('invHistListView').style.flex = '1';
+  document.getElementById('invHistListView').style.overflow = 'hidden';
+  document.getElementById('invHistDetailView').style.display = 'none';
+}
+function invhBackToList() {
+  invhCurrentInvoice = null;
+  invhShowListView();
+  invhSearch(true);
+}
+
+function invhSearch(immediate) {
+  clearTimeout(invhTimer);
+  const run = () => {
+    const q = document.getElementById('invhQ').value.trim();
+    fetch('<%= ctx %>/pos?action=invoice-history&q=' + encodeURIComponent(q))
+      .then(r => r.json())
+      .then(data => {
+        if (data.reason === 'not_checked_in') {
+          document.getElementById('invhResults').innerHTML =
+            '<div style="color:#b45309;font-size:13px;text-align:center;padding:26px 0">⚠️ Vui lòng điểm danh khuôn mặt tại quầy trước khi tra cứu hóa đơn.</div>';
+          return;
+        }
+        renderInvhResults(data.invoices || []);
+      })
+      .catch(() => {
+        document.getElementById('invhResults').innerHTML =
+          '<div style="color:#dc2626;font-size:13px;text-align:center;padding:26px 0">Lỗi kết nối, thử lại.</div>';
+      });
+  };
+  if (immediate) run(); else invhTimer = setTimeout(run, 300);
+}
+
+function invhFmtMoney(v) {
+  return Math.round(Number(v) || 0).toLocaleString('vi-VN') + 'đ';
+}
+
+function renderInvhResults(list) {
+  const box = document.getElementById('invhResults');
+  if (!list.length) {
+    box.innerHTML = '<div style="color:#94a3b8;font-size:13px;text-align:center;padding:26px 0">Không tìm thấy hóa đơn nào.</div>';
+    return;
+  }
+  box.innerHTML = list.map(function(inv) {
+    return '<div onclick="openInvReturnView(' + inv.id + ')" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border:1.5px solid #e2e8f0;border-radius:12px;margin-bottom:8px;cursor:pointer;transition:.15s" onmouseover="this.style.borderColor=\'#3ABDE0\'" onmouseout="this.style.borderColor=\'#e2e8f0\'">'
+      + '<div style="min-width:0">'
+      + '<div style="font-size:13.5px;font-weight:800;color:#0f172a">' + escHtml(inv.code) + '</div>'
+      + '<div style="font-size:11.5px;color:#64748b;margin-top:2px">' + escHtml(inv.time)
+      + (inv.custName ? ' · ' + escHtml(inv.custName) : '') + (inv.custPhone ? ' (' + escHtml(inv.custPhone) + ')' : '') + '</div>'
+      + '</div>'
+      + '<div style="text-align:right;flex-shrink:0">'
+      + '<div style="font-size:14px;font-weight:800;color:#0d9488">' + invhFmtMoney(inv.amount) + '</div>'
+      + '<div style="font-size:11px;color:#94a3b8">' + escHtml(inv.method || '') + '</div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function openInvReturnView(invoiceId) {
+  fetch('<%= ctx %>/pos?action=invoice-detail-pos&invoiceId=' + invoiceId)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.ok) {
+        showToast('❌ Không tải được chi tiết hóa đơn', 'err');
+        return;
+      }
+      invhCurrentInvoice = data;
+      renderInvReturnDetail(data);
+      document.getElementById('invHistListView').style.display = 'none';
+      document.getElementById('invHistDetailView').style.display = 'block';
+    })
+    .catch(() => showToast('❌ Lỗi kết nối', 'err'));
+}
+
+function renderInvReturnDetail(inv) {
+  const rows = inv.items.map(function(it) {
+    const disabled = it.returnable <= 0 ? 'disabled' : '';
+    return '<tr style="border-bottom:1px solid #f1f5f9">'
+      + '<td style="padding:8px 6px">'
+      + '<div style="font-size:13px;font-weight:700;color:#0f172a">' + escHtml(it.medicineName) + '</div>'
+      + '<div style="font-size:11px;color:#94a3b8">Lô ' + escHtml(it.batchNumber || '-') + ' · Đã mua ' + it.quantity + ' ' + escHtml(it.unit)
+      + (it.already > 0 ? ' · Đã trả ' + it.already : '') + '</div>'
+      + '</td>'
+      + '<td style="padding:8px 6px;text-align:right;white-space:nowrap;font-size:12.5px;color:#475569">' + invhFmtMoney(it.unitPrice) + '</td>'
+      + '<td style="padding:8px 6px;text-align:center;width:90px">'
+      + '<input type="number" min="0" max="' + it.returnable + '" value="0" ' + disabled
+      + ' data-batch="' + it.batchId + '" data-price="' + it.unitPrice + '" data-max="' + it.returnable + '"'
+      + ' oninput="invhClampQty(this);invhRecalcReturn()"'
+      + ' style="width:70px;text-align:center;border:1.5px solid #e2e8f0;border-radius:8px;padding:6px 4px;font-size:13px;font-weight:750;font-family:inherit">'
+      + '<div style="font-size:10px;color:#94a3b8;margin-top:2px">tối đa ' + it.returnable + '</div>'
+      + '</td>'
+      + '</tr>';
+  }).join('');
+
+  const custLine = inv.custName
+    ? '👤 ' + escHtml(inv.custName) + ' · ' + escHtml(inv.custPhone) + (inv.custPoints ? ' · ' + inv.custPoints + ' điểm hiện có' : '')
+    : 'Khách lẻ (không lưu SĐT)';
+
+  document.getElementById('invhDetailBody').innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
+    + '<div style="font-size:15px;font-weight:800;color:#0f172a">' + escHtml(inv.code) + '</div>'
+    + '<div style="font-size:12.5px;color:#64748b">' + escHtml(inv.time) + '</div>'
+    + '</div>'
+    + '<div style="font-size:12.5px;color:#64748b;margin-bottom:14px">' + custLine + '</div>'
+    + '<table style="width:100%;border-collapse:collapse">'
+    + '<thead><tr style="border-bottom:2px solid #e2e8f0">'
+    + '<th style="text-align:left;padding:6px;font-size:11px;color:#94a3b8;font-weight:750">SẢN PHẨM</th>'
+    + '<th style="text-align:right;padding:6px;font-size:11px;color:#94a3b8;font-weight:750">ĐƠN GIÁ</th>'
+    + '<th style="text-align:center;padding:6px;font-size:11px;color:#94a3b8;font-weight:750">SL TRẢ</th>'
+    + '</tr></thead>'
+    + '<tbody>' + rows + '</tbody>'
+    + '</table>'
+    + '<label style="font-size:12px;font-weight:750;color:#334155;display:block;margin:16px 0 6px">Lý do trả hàng <span style="color:#dc2626">*</span></label>'
+    + '<textarea id="invhReason" rows="2" placeholder="VD: Khách đổi ý, thuốc mua nhầm loại…" style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:13.5px;font-family:inherit;box-sizing:border-box;resize:vertical"></textarea>'
+    + '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;color:#334155;cursor:pointer">'
+    + '<input type="checkbox" id="invhRestoreStock" checked style="accent-color:#0d9488;width:16px;height:16px"> Hàng còn nguyên vẹn — nhập lại kho để bán tiếp'
+    + '</label>'
+    + '<div id="invhSummary" style="margin-top:16px;padding:14px 16px;background:#f0fdfa;border:1.5px solid #99f6e4;border-radius:12px">'
+    + '<div style="display:flex;justify-content:space-between;font-size:13px;color:#334155;margin-bottom:4px"><span>Số lượng trả</span><span id="invhSumQty" style="font-weight:750">0</span></div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:13px;color:#334155;margin-bottom:4px"><span>Tiền hoàn khách</span><span id="invhSumRefund" style="font-weight:800;color:#0d9488">0đ</span></div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:13px;color:#334155"><span>Điểm tích lũy bị thu hồi</span><span id="invhSumPoints" style="font-weight:750;color:#dc2626">0 điểm</span></div>'
+    + '</div>'
+    + '<button id="invhSubmitBtn" onclick="submitInvReturn()" style="width:100%;margin-top:16px;padding:13px;background:linear-gradient(135deg,#dc2626,#b91c1c);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">✓ Xác nhận trả hàng</button>';
+
+  invhRecalcReturn();
+}
+
+function invhClampQty(input) {
+  const max = parseInt(input.dataset.max, 10) || 0;
+  let v = parseInt(input.value, 10) || 0;
+  if (v < 0) v = 0;
+  if (v > max) v = max;
+  input.value = v;
+}
+
+function invhRecalcReturn() {
+  const inputs = document.querySelectorAll('#invhDetailBody input[type="number"]');
+  let qtyTotal = 0, refundTotal = 0;
+  inputs.forEach(inp => {
+    const qty = parseInt(inp.value, 10) || 0;
+    const price = parseFloat(inp.dataset.price) || 0;
+    qtyTotal += qty;
+    refundTotal += qty * price;
+  });
+  document.getElementById('invhSumQty').textContent = qtyTotal;
+  document.getElementById('invhSumRefund').textContent = invhFmtMoney(refundTotal);
+  // Ước tính — số điểm thực trừ do server chốt lại theo điểm khả dụng thật (LoyaltyDAO.adjustForReturn)
+  const points = Math.floor(refundTotal / 1000);
+  document.getElementById('invhSumPoints').textContent = points + ' điểm';
+}
+
+function submitInvReturn() {
+  if (!invhCurrentInvoice) return;
+  const reason = document.getElementById('invhReason').value.trim();
+  if (reason.length < 3) {
+    showToast('⚠️ Vui lòng nhập lý do trả hàng (tối thiểu 3 ký tự)', 'err');
+    return;
+  }
+  const inputs = document.querySelectorAll('#invhDetailBody input[type="number"]');
+  const lines = [];
+  inputs.forEach(inp => {
+    const qty = parseInt(inp.value, 10) || 0;
+    if (qty > 0) lines.push({ batchId: inp.dataset.batch, qty });
+  });
+  if (!lines.length) {
+    showToast('⚠️ Vui lòng nhập số lượng cần trả', 'err');
+    return;
+  }
+
+  const btn = document.getElementById('invhSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Đang xử lý…';
+
+  const params = new URLSearchParams();
+  params.set('action', 'pos-return-save');
+  params.set('invoiceId', invhCurrentInvoice.invoiceId);
+  params.set('reason', reason);
+  if (document.getElementById('invhRestoreStock').checked) params.set('restoreStock', 'on');
+  lines.forEach(l => { params.append('batchId[]', l.batchId); params.append('qty[]', l.qty); });
+
+  fetch('<%= ctx %>/pos', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        showToast('✓ Đã trả hàng — hoàn ' + invhFmtMoney(data.refundAmount) + (data.pointsAdjusted > 0 ? ' · thu hồi ' + data.pointsAdjusted + ' điểm' : ''), 'ok');
+        openInvReturnView(invhCurrentInvoice.invoiceId); // reload lại để cập nhật SL còn có thể trả
+      } else {
+        showToast('❌ ' + (data.msg || 'Trả hàng thất bại'), 'err');
+        btn.disabled = false; btn.textContent = '✓ Xác nhận trả hàng';
+      }
+    })
+    .catch(() => {
+      showToast('❌ Lỗi kết nối', 'err');
+      btn.disabled = false; btn.textContent = '✓ Xác nhận trả hàng';
+    });
+}
+
 function toggleCheckinPanel() {
   const p   = document.getElementById('checkinPanel');
   const sb  = document.getElementById('mainSidebar');
@@ -2380,17 +2854,7 @@ let globalBarcodeBuffer = '';
 let globalLastKeyTime = 0;
 
 function handleGlobalBarcodeScanned(code) {
-  const med = allMedicines.find(m => m.barcode && m.barcode === code);
-  if (!med) {
-    showToast('⚠️ Không tìm thấy thuốc với mã vạch: ' + code, 'err');
-    return;
-  }
-  if (med.stock <= 0) {
-    showToast('❌ ' + med.name + ' đã hết hàng!', 'err');
-    return;
-  }
-  addToCart(med.el);
-  showToast('✅ Đã thêm vào giỏ: ' + med.name, 'ok');
+  posHandleBarcodeScanned(code, 'usb', null);
 }
 
 document.addEventListener('keydown', e => {
@@ -2649,7 +3113,7 @@ function startFaceDetection() {
 
       busy = true;
       const detection = await faceapi
-        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.3 }))
         .withFaceLandmarks()        // full faceLandmark68Net (no arg = false = full)
         .withFaceDescriptor();
       busy = false;
@@ -2786,7 +3250,10 @@ async function confirmFaceCheckin() {
                                                    '✓ Đăng nhập thành công';
       showToast(msg + ' — ' + data.name, 'ok');
     } else if (data.reason === 'wrong-station') {
-      showToast('⚠️ Ca của ' + (data.name || '') + ' được xếp ở ' + stationLabelFor(data.correctStation), 'err');
+      // Kèm tên ca + khung giờ (server đã gửi kèm) để đọc rõ ngay tại quầy POS, thay vì chỉ
+      // có mỗi số quầy — dễ hiểu tương đương modal chi tiết ca bên Admin.
+      var shiftBit = data.shiftName ? (data.shiftName + (data.timeRange ? ' (' + data.timeRange + ')' : '') + ' của ') : 'Ca của ';
+      showToast('⚠️ ' + shiftBit + (data.name || '') + ' được xếp ở ' + stationLabelFor(data.correctStation), 'err');
       btn.disabled    = false;
       btn.textContent = '✓ Xác nhận điểm danh';
     } else {

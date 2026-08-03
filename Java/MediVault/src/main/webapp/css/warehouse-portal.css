@@ -73,16 +73,8 @@ body.wh{
   box-shadow:0 1px 2px rgba(4,47,46,.04), 0 12px 30px -18px rgba(4,47,46,.14);
 }
 
-/* ── Icon-box chuẩn cho card-head ── */
-.wh-ic{
-  width:32px;height:32px;border-radius:9px;flex:none;
-  display:flex;align-items:center;justify-content:center;font-size:15px;
-  background:var(--soft);color:var(--main);
-}
-.wh-ic.warn{background:var(--goldbg);color:var(--gold)}
-.wh-ic.danger{background:var(--dangerbg);color:var(--danger)}
-.wh-ic.ok{background:var(--okbg);color:var(--ok)}
-.wh-ic.jade{background:#F1F5F9;color:var(--jade)}
+/* ── Icon-box: định nghĩa CHUẨN nằm ở lớp độ sâu phía dưới (44×44, gradient).
+      Bản 32×32 phẳng cũ đã bỏ — nó quá nhỏ để neo được tiêu đề section. ── */
 
 /* ── Icon bên trong ô input/select ── */
 .wh-field{position:relative}
@@ -100,4 +92,812 @@ body.wh{
 @media (prefers-reduced-motion: reduce){
   .wh-clock .sep{animation:none}
   .wh-av,.wh *{transition:none !important}
+}
+
+/* ── Tab-bar gộp các trang con trong 1 nhóm (Quản lý tồn kho, Nhập kho) ──
+   Cùng pattern .section-tabs/.section-tab đã dùng ở admin/invoice-list.jsp,
+   đổi màu theo tông teal của portal Kho thay vì xanh dương của Admin. ── */
+.section-tabs{display:flex;gap:6px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content;margin-bottom:18px;flex-wrap:wrap}
+.section-tab{padding:8px 18px;border-radius:9px;font-size:13px;font-weight:750;color:var(--muted);text-decoration:none;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.section-tab:hover{background:var(--surface);color:var(--ink)}
+.section-tab.active{background:linear-gradient(135deg,var(--main),var(--light));color:#fff;box-shadow:0 3px 10px rgba(15,118,110,.25)}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   LỚP DESIGN SYSTEM "ENTERPRISE" (2026-08-02)
+   ────────────────────────────────────────────────────────────────────────────
+   Bộ component dùng chung cho MỌI trang portal Kho, viết một lần ở đây thay vì
+   copy <style> vào từng .jsp như trước (mỗi trang một kiểu nút/bảng/badge lệch
+   nhau vài px là nguyên nhân chính khiến portal trông "rời rạc, không cùng 1 hệ").
+   Tiền tố `wh-` để không đụng class cũ — các trang chưa port vẫn chạy nguyên vẹn.
+
+   Nguyên tắc:
+   • Thang 8pt cho mọi khoảng cách; không dùng số lẻ.
+   • Teal CHỈ dùng cho hành động/điểm nhấn. Nền, card, bảng giữ trung tính —
+     màu no (đỏ/hổ phách/lục) được để dành 100% cho NGỮ NGHĨA nghiệp vụ
+     (hết hàng / cận hạn / đủ hàng), nên khi có màu là mắt biết ngay "có chuyện".
+   • Bo góc: card 22 · nút & input 14 · bảng 22 · pill 999.
+
+   ── LỚP ĐỘ SÂU (2026-08-02, bản 2) ──────────────────────────────────────────
+   Bản 1 dùng card trắng phẳng + 1 bóng mờ ⇒ mọi khối trông ngang hàng nhau,
+   mắt không biết bám vào đâu. Bản 2 dựng 4 tầng độ cao, dùng THEO NGỮ NGHĨA
+   chứ không rải cho đẹp:
+
+     e0  nền trang   #F6F8FB, không bóng          — "mặt bàn"
+     e1  card thường gradient + viền + bóng nhẹ   — "tờ giấy đặt trên bàn"
+     e2  card tương tác  bóng sâu hơn, nhấc 2px khi hover
+     e3  lớp phủ     drawer / modal / popover
+
+   Thứ tạo ra cảm giác "tờ giấy" không phải cái bóng, mà là VẠCH SÁNG 1px ở mép
+   trên card (inset highlight) cộng với nền gradient sáng-dần-lên. Có 2 thứ đó
+   thì bóng chỉ cần rất nhẹ; thiếu chúng thì bóng đậm mấy cũng vẫn trông dán bẹt.
+   ════════════════════════════════════════════════════════════════════════════ */
+:root{
+  --wh-topbar-h:66px;                    /* chiều cao .wh-topbar — mốc cho sticky */
+  --wh-toolbar-h:0px;                    /* JS đo thanh toolbar rồi ghi vào đây   */
+  --wh-r-card:22px; --wh-r-ctl:14px; --wh-r-pop:26px;
+
+  /* Bề mặt: card không bao giờ là #FFF phẳng — luôn có gradient rất nhẹ để mép
+     trên sáng hơn mép dưới, đúng hướng ánh sáng từ trên xuống. */
+  --wh-surf:linear-gradient(180deg,#FFFFFF 0%,#FCFDFE 100%);
+  --wh-surf-raise:linear-gradient(180deg,#FFFFFF 0%,#F8FAFC 100%);
+  --wh-line:#E8EDF3;                     /* viền card, lạnh hơn --border một chút */
+  --wh-hi:inset 0 1px 0 rgba(255,255,255,.9);   /* vạch sáng mép trên */
+
+  --wh-sh-sm:var(--wh-hi), 0 1px 2px rgba(16,40,64,.05);
+  --wh-sh-md:var(--wh-hi), 0 1px 2px rgba(16,40,64,.04), 0 10px 28px -14px rgba(16,40,64,.16);
+  --wh-sh-lg:var(--wh-hi), 0 2px 4px rgba(16,40,64,.04), 0 18px 44px -16px rgba(16,40,64,.22);
+  --wh-sh-pop:0 8px 12px -6px rgba(16,40,64,.10), 0 28px 56px -12px rgba(16,40,64,.28);
+  --wh-glow:0 10px 30px -8px rgba(15,118,110,.35);   /* hào quang teal cho nút chính */
+  --wh-t:180ms cubic-bezier(.4,0,.2,1);
+}
+/* Nền lạnh hơn một chút so với bản 1 (#F6F8F8 → #F6F8FB): thêm chút xanh làm
+   card trắng bật lên rõ hơn mà vẫn không ám màu. */
+body.wh{background:#F6F8FB}
+
+/* ── Khối icon có màu — mở đầu MỌI section ────────────────────────────────
+   44×44, icon 22px, nền gradient theo ngữ nghĩa. Bản 1 dùng 32×32 icon 15px:
+   ở khoảng cách ngồi làm việc thật thì đó chỉ là một chấm xám, không đủ sức
+   neo tiêu đề section. */
+.wh-ic{
+  width:44px;height:44px;border-radius:14px;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,#CCFBF1,#A7F3E4);color:var(--deep);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.75), 0 2px 6px -2px rgba(15,118,110,.25);
+}
+.wh-ic svg{width:22px;height:22px}
+.wh-ic.warn  {background:linear-gradient(160deg,#FEF3C7,#FDE68A);color:#92400E;box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 2px 6px -2px rgba(180,83,9,.25)}
+.wh-ic.danger{background:linear-gradient(160deg,#FEE2E2,#FECACA);color:#B91C1C;box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 2px 6px -2px rgba(220,38,38,.25)}
+.wh-ic.ok    {background:linear-gradient(160deg,#D1FAE5,#A7F3D0);color:#047857;box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 2px 6px -2px rgba(5,150,105,.25)}
+.wh-ic.info  {background:linear-gradient(160deg,#DBEAFE,#BFDBFE);color:#1D4ED8;box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 2px 6px -2px rgba(29,78,216,.22)}
+.wh-ic.violet{background:linear-gradient(160deg,#EDE9FE,#DDD6FE);color:#6D28D9;box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 2px 6px -2px rgba(109,40,217,.22)}
+.wh-ic.jade  {background:linear-gradient(160deg,#F1F5F9,#E2E8F0);color:#475569;box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 2px 6px -2px rgba(71,85,105,.18)}
+.wh-ic.sm{width:36px;height:36px;border-radius:12px}
+.wh-ic.sm svg{width:18px;height:18px}
+
+/* [hidden] phải thắng được display của component (.wh-btn là inline-flex...) */
+.wh [hidden]{display:none !important}
+/* Kích thước icon mặc định. Đặt NGAY ĐẦU khối để mọi rule cụ thể phía dưới (cùng
+   độ đặc hiệu) ghi đè được — <svg> không có width sẽ nở thành 300×150 mặc định. */
+.wh-shell svg,.wh-drawer svg{width:16px;height:16px;flex:none}
+
+/* ── Khung trang ───────────────────────────────────────────────────────────── */
+/* `width:100%` là BẮT BUỘC, không thừa: .main là flex-column, mà một flex item có
+   margin auto ở trục ngang thì bị bỏ qua `align-self:stretch` và co theo nội dung.
+   Thiếu dòng này, bảng rộng sẽ kéo cả shell phình to hơn .main rồi bị cắt cụt bên
+   phải (mất luôn cột Thao tác) thay vì cuộn ngang trong khung bảng. */
+.wh-shell{width:100%;max-width:1600px;margin:0 auto;padding:32px 32px 64px}
+@media(max-width:1024px){.wh-shell{padding:24px 24px 48px}}
+@media(max-width:768px){.wh-shell{padding:16px 16px 40px}}
+
+
+/* Header trang: tiêu đề + phụ đề bên trái, cụm hành động bên phải.
+   Tiêu đề 28px (không phải 36px): đây là công cụ nội bộ dùng 8 tiếng/ngày, chiều
+   cao màn hình là tài nguyên khan hiếm nhất — 36px ăn thêm ~1 dòng dữ liệu mà
+   không thêm thông tin nào, vì người dùng đã biết mình đang ở trang nào. */
+.wh-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:24px}
+.wh-head h1{font-size:28px;font-weight:800;letter-spacing:-.6px;line-height:1.2;color:var(--ink)}
+.wh-head .sub{font-size:13.5px;color:var(--muted);margin-top:6px;max-width:64ch;line-height:1.5}
+.wh-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* ── Nút ───────────────────────────────────────────────────────────────────── */
+/* Không dùng nút phẳng: nút phụ có gradient trắng + vạch sáng mép trên nên vẫn
+   đọc ra là một vật thể bấm được; nút chính có gradient teal + hào quang. */
+.wh-btn{height:42px;padding:0 17px;border-radius:var(--wh-r-ctl);border:1px solid var(--wh-line);
+  display:inline-flex;align-items:center;gap:8px;font-family:inherit;font-size:13.5px;font-weight:750;
+  cursor:pointer;text-decoration:none;white-space:nowrap;
+  transition:background var(--wh-t),border-color var(--wh-t),box-shadow var(--wh-t),transform var(--wh-t);
+  background:var(--wh-surf-raise);color:var(--ink);box-shadow:var(--wh-sh-sm)}
+.wh-btn:hover{border-color:#D5DDE7;box-shadow:var(--wh-hi),0 4px 12px -4px rgba(16,40,64,.18);transform:translateY(-1px)}
+.wh-btn:active{transform:translateY(0);box-shadow:var(--wh-sh-sm)}
+.wh-btn svg{width:17px;height:17px;flex:none}
+.wh-btn-primary{background:linear-gradient(160deg,#14B8A6 0%,#0F766E 60%,#0E6B63 100%);color:#fff;
+  border-color:transparent;box-shadow:inset 0 1px 0 rgba(255,255,255,.28), 0 4px 14px -4px rgba(15,118,110,.45)}
+.wh-btn-primary:hover{background:linear-gradient(160deg,#17C7B4 0%,#116E67 60%,#0D6058 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.32), var(--wh-glow);transform:translateY(-1px)}
+.wh-btn-ghost{background:transparent;border-color:transparent;color:var(--muted);box-shadow:none}
+.wh-btn-ghost:hover{background:rgba(15,23,42,.04);color:var(--ink);border-color:transparent;box-shadow:none;transform:none}
+.wh-btn-icon{width:40px;padding:0;justify-content:center}
+.wh-btn[disabled],.wh-btn.is-disabled{opacity:.45;pointer-events:none}
+.wh-btn.is-busy svg{animation:wh-spin .7s linear infinite}
+@keyframes wh-spin{to{transform:rotate(360deg)}}
+
+/* ── Thẻ chỉ số (KPI) — đồng thời LÀ bộ lọc ────────────────────────────────
+   4 thẻ = 4 lát cắt của cùng một bảng bên dưới. Bấm thẻ là lọc bảng, nên con số
+   trên thẻ và số dòng trong bảng luôn khớp — không còn kiểu "thẻ nói 12, bảng
+   hiện 9" của bố cục cũ (thẻ đếm LÔ còn bảng đếm THUỐC). */
+/* Giữ 4 thẻ trên MỘT hàng xuống tới 900px, chỉ bỏ dòng mô tả và bóp đệm lại.
+   Xếp 2×2 làm cụm KPI cao gấp đôi — ở bố cục app đó là số dòng bảng bị mất. */
+.wh-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+@media(max-width:1240px){
+  .wh-kpis{gap:12px}
+  .wh-kpi{padding:14px 16px;gap:12px}
+  .wh-kpi .hint{display:none}
+  .wh-kpi .num{font-size:26px}
+  .wh-kpi .ic{width:36px;height:36px;border-radius:10px}
+}
+@media(max-width:900px){.wh-kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.wh-kpis{grid-template-columns:1fr}}
+.wh-kpi{position:relative;display:flex;align-items:flex-start;gap:14px;text-align:left;
+  padding:20px;border-radius:var(--wh-r-card);border:1px solid var(--wh-line);background:var(--wh-surf);
+  box-shadow:var(--wh-sh-md);cursor:pointer;font-family:inherit;overflow:hidden;
+  transition:box-shadow var(--wh-t),transform var(--wh-t),border-color var(--wh-t)}
+.wh-kpi::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.7;
+  background:radial-gradient(120% 90% at 100% 0%,var(--kpi-tint,transparent) 0%,transparent 60%)}
+.wh-kpi:hover{transform:translateY(-3px);box-shadow:var(--wh-sh-lg);border-color:#DCE3EC}
+.wh-kpi:active{transform:translateY(-1px)}
+.wh-kpi.is-active{border-color:var(--kpi-c,var(--main));box-shadow:0 0 0 3px var(--kpi-ring,rgba(15,118,110,.14)),var(--wh-sh-lg)}
+.wh-kpi .ic{position:relative;z-index:1;width:44px;height:44px;border-radius:14px;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--kpi-bg,linear-gradient(160deg,#CCFBF1,#A7F3E4));color:var(--kpi-c,var(--main));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8), 0 2px 6px -2px rgba(16,40,64,.18)}
+.wh-kpi .ic svg{width:22px;height:22px}
+.wh-kpi .body{position:relative;z-index:1;min-width:0;display:block}
+.wh-kpi .num{display:block;font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1.05;color:var(--kpi-c,var(--ink));font-variant-numeric:tabular-nums}
+.wh-kpi .lbl{display:block;font-size:13px;font-weight:700;color:var(--ink);margin-top:6px}
+.wh-kpi .hint{display:block;font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4}
+.wh-kpi.k-total{--kpi-c:var(--deep);  --kpi-bg:linear-gradient(160deg,#CCFBF1,#A7F3E4);--kpi-tint:rgba(20,184,166,.16);--kpi-ring:rgba(15,118,110,.14)}
+.wh-kpi.k-low  {--kpi-c:#B45309;      --kpi-bg:linear-gradient(160deg,#FEF3C7,#FDE68A);--kpi-tint:rgba(245,158,11,.20);--kpi-ring:rgba(180,83,9,.14)}
+.wh-kpi.k-soon {--kpi-c:#6D28D9;      --kpi-bg:linear-gradient(160deg,#EDE9FE,#DDD6FE);--kpi-tint:rgba(139,92,246,.16);--kpi-ring:rgba(124,58,237,.14)}
+.wh-kpi.k-dead {--kpi-c:#B91C1C;      --kpi-bg:linear-gradient(160deg,#FEE2E2,#FECACA);--kpi-tint:rgba(239,68,68,.16);--kpi-ring:rgba(220,38,38,.14)}
+.wh-kpi.k-light{--kpi-c:#1D4ED8;      --kpi-bg:linear-gradient(160deg,#DBEAFE,#BFDBFE);--kpi-tint:rgba(59,130,246,.16);--kpi-ring:rgba(29,78,216,.14)}
+/* Thẻ về 0 = tin tốt, không cần hét lên: hạ về xám để mắt chỉ dừng ở thẻ có việc. */
+.wh-kpi.is-zero{--kpi-c:var(--muted);--kpi-bg:var(--surface);--kpi-tint:transparent}
+.wh-kpi.is-zero .num{color:#93A29C}
+
+/* ── Toolbar dính (sticky) ─────────────────────────────────────────────────── */
+.wh-toolbar{position:sticky;top:var(--wh-topbar-h);z-index:30;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:12px;margin-bottom:16px;border-radius:var(--wh-r-card);border:1px solid #E4E9E7;
+  background:rgba(255,255,255,.92);backdrop-filter:blur(12px) saturate(140%);-webkit-backdrop-filter:blur(12px) saturate(140%);
+  box-shadow:var(--wh-sh-sm);transition:box-shadow var(--wh-t)}
+.wh-toolbar.is-stuck{box-shadow:var(--wh-sh-md)}
+/* flex-wrap BẮT BUỘC: thiếu nó, ở khổ hẹp ô tìm + các select không xuống dòng mà
+   tràn ngược ra ngoài mép trái toolbar rồi bị cắt mất một nửa. */
+.wh-toolbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex:1 1 380px;min-width:0;
+  justify-content:flex-end;flex-wrap:wrap}
+
+/* Segmented control — 5 lát cắt của cùng bảng, thay cho tab điều hướng cũ.
+   Mỗi lát có màu ngữ nghĩa riêng khi active để trạng thái lọc "đọc được" từ xa. */
+.wh-seg{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:4px;flex-wrap:wrap}
+.wh-seg button{height:34px;padding:0 14px;border:none;border-radius:10px;background:transparent;cursor:pointer;
+  font-family:inherit;font-size:13px;font-weight:700;color:var(--muted);white-space:nowrap;
+  display:inline-flex;align-items:center;gap:7px;transition:background var(--wh-t),color var(--wh-t),box-shadow var(--wh-t)}
+.wh-seg button:hover{background:rgba(255,255,255,.8);color:var(--ink)}
+.wh-seg button[aria-pressed="true"]{background:#fff;color:var(--seg-c,var(--main));box-shadow:var(--wh-sh-sm);border:none}
+.wh-seg .cnt{min-width:20px;height:19px;padding:0 6px;border-radius:10px;background:rgba(15,23,42,.07);
+  color:inherit;font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+.wh-seg button[aria-pressed="true"] .cnt{background:var(--seg-bg,var(--soft))}
+.wh-seg .s-low {--seg-c:var(--gold);--seg-bg:var(--goldbg)}
+.wh-seg .s-out {--seg-c:var(--danger);--seg-bg:var(--dangerbg)}
+.wh-seg .s-soon{--seg-c:#7C3AED;--seg-bg:#EDE9FE}
+.wh-seg .s-dead{--seg-c:var(--danger);--seg-bg:var(--dangerbg)}
+
+/* Ô tìm kiếm 48px, icon dẫn đầu, nút xoá bên phải.
+   Dùng flex-grow thay vì width cố định + đổi width khi focus: trong một toolbar
+   co giãn, nhảy width sẽ đẩy các nút bên cạnh xuống dòng ngay lúc người dùng vừa
+   bấm vào ô tìm — nở bằng flex-grow thì các nút đứng yên. */
+.wh-search{position:relative;display:flex;align-items:center;flex:1 1 240px;min-width:180px;max-width:440px;
+  transition:flex-grow var(--wh-t)}
+.wh-search:focus-within{flex-grow:2.4}
+.wh-search input{width:100%;height:48px;padding:0 40px 0 44px;border:1.5px solid var(--border);border-radius:14px;
+  font-family:inherit;font-size:14px;color:var(--ink);background:var(--white);outline:none;
+  transition:border-color var(--wh-t),box-shadow var(--wh-t)}
+.wh-search input::placeholder{color:#9AA8A3}
+.wh-search input:focus{border-color:var(--main);box-shadow:0 0 0 4px rgba(15,118,110,.12)}
+.wh-search .lead{position:absolute;left:15px;width:18px;height:18px;color:var(--muted);pointer-events:none}
+.wh-search .clear{position:absolute;right:8px;width:28px;height:28px;border:none;border-radius:8px;background:transparent;
+  color:var(--muted);cursor:pointer;display:none;align-items:center;justify-content:center;padding:0}
+.wh-search .clear svg{width:15px;height:15px}
+.wh-search .clear:hover{background:var(--surface);color:var(--ink)}
+.wh-search.has-value .clear{display:flex}
+
+/* Select gọn dùng chung toolbar */
+.wh-select{height:40px;padding:0 32px 0 12px;border:1px solid var(--border);border-radius:var(--wh-r-ctl);
+  font-family:inherit;font-size:13px;font-weight:650;color:var(--ink);background:var(--white);cursor:pointer;outline:none;
+  appearance:none;background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2369756F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center}
+.wh-select:hover{border-color:#CBD5D1}
+.wh-select:focus{border-color:var(--main);box-shadow:0 0 0 3px rgba(15,118,110,.12)}
+
+/* Popover (chọn cột hiển thị) */
+.wh-pop-wrap{position:relative}
+.wh-pop{position:absolute;right:0;top:calc(100% + 8px);z-index:60;min-width:220px;padding:8px;
+  background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:var(--wh-sh-pop);
+  display:none;flex-direction:column;gap:2px}
+.wh-pop.open{display:flex;animation:wh-pop-in 140ms cubic-bezier(.4,0,.2,1)}
+@keyframes wh-pop-in{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:none}}
+.wh-pop .ttl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:6px 10px 8px}
+.wh-pop label{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;font-size:13px;font-weight:650;cursor:pointer}
+.wh-pop label:hover{background:var(--surface)}
+.wh-pop input{accent-color:var(--main);width:15px;height:15px;cursor:pointer}
+
+/* ── Bảng dữ liệu ──────────────────────────────────────────────────────────── */
+/* KHÔNG đặt overflow:hidden/auto mặc định ở đây. Bất kỳ tổ tiên nào có overflow
+   khác `visible` đều biến chính nó thành scrollport của `position:sticky` bên
+   trong — header bảng sẽ "dính" vào một hộp không bao giờ cuộn, tức là mất sticky
+   mà không báo lỗi gì. Bo góc vì thế làm thủ công ở thead/hàng cuối.
+
+   Cuộn ngang chỉ bật khi bảng THỰC SỰ rộng hơn khung (JS gắn .needs-x): đánh đổi
+   sticky header lấy khả năng nhìn hết cột, và chỉ trong đúng trạng thái đó. */
+.wh-tablecard{background:var(--wh-surf);border:1px solid var(--wh-line);border-radius:var(--wh-r-card);box-shadow:var(--wh-sh-md)}
+.wh-tablescroll{overflow:visible}
+.wh-tablescroll.needs-x{overflow-x:auto;border-radius:calc(var(--wh-r-card) - 1px)}
+.wh-tablescroll.needs-x .wh-table thead th{position:static}
+table.wh-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13.5px;table-layout:fixed}
+.wh-table thead th:first-child{border-top-left-radius:calc(var(--wh-r-card) - 1px)}
+.wh-table thead th:last-child{border-top-right-radius:calc(var(--wh-r-card) - 1px)}
+.wh-table th,.wh-table td{padding:12px 16px;text-align:left;border-bottom:1px solid var(--line);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Header dính ngay dưới toolbar — cuộn 500 dòng vẫn biết cột nào là cột nào. */
+.wh-table thead th{position:sticky;top:calc(var(--wh-topbar-h) + var(--wh-toolbar-h) + 16px);z-index:20;
+  background:#F7FAF9;font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);
+  border-bottom:1px solid var(--border);user-select:none}
+.wh-table thead th.sortable{cursor:pointer}
+.wh-table thead th.sortable:hover{color:var(--ink);background:#EFF4F2}
+.wh-table th .th-in{display:inline-flex;align-items:center;gap:6px}
+.wh-table th .caret{width:12px;height:12px;opacity:.28;flex:none;transition:opacity var(--wh-t),transform var(--wh-t)}
+.wh-table th[aria-sort="ascending"]{color:var(--main)}
+.wh-table th[aria-sort="descending"]{color:var(--main)}
+.wh-table th[aria-sort="ascending"] .caret{opacity:1;color:var(--main)}
+.wh-table th[aria-sort="descending"] .caret{opacity:1;color:var(--main);transform:rotate(180deg)}
+.wh-table th .grip{position:absolute;right:0;top:0;height:100%;width:9px;cursor:col-resize;z-index:2}
+.wh-table th .grip:hover::after,.wh-table th .grip.dragging::after{content:'';position:absolute;right:4px;top:20%;height:60%;width:2px;background:var(--main);border-radius:2px}
+.wh-table tbody tr{transition:background 120ms linear}
+.wh-table tbody tr:nth-child(even) td{background:#FBFCFC}
+.wh-table tbody tr:hover td{background:#F0FDFA}
+.wh-table tbody tr.is-picked td{background:#E6FFFA}
+.wh-table tbody tr:last-child td{border-bottom:none}
+.wh-table td.num{text-align:right;font-variant-numeric:tabular-nums}
+.wh-table .c-check{width:44px;padding-right:0}
+.wh-table .c-check input{accent-color:var(--main);width:15px;height:15px;cursor:pointer;display:block}
+.wh-code{font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:12px;color:#5A6B66;letter-spacing:-.2px}
+.wh-name{font-weight:750;color:#0F172A;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wh-sub{font-size:11.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wh-stock{font-weight:800;font-size:14px;color:#0F172A}
+.wh-stock.is-low{color:var(--gold)} .wh-stock.is-out{color:var(--danger)}
+.wh-min{color:var(--muted);font-weight:650;font-size:12.5px}
+/* Thanh tồn kho: đọc "còn bao nhiêu so với ngưỡng" bằng liếc mắt, không phải đọc số. */
+.wh-bar{height:4px;border-radius:2px;background:var(--surface);margin-top:6px;overflow:hidden}
+.wh-bar i{display:block;height:100%;border-radius:2px;background:var(--ok);transition:width var(--wh-t)}
+.wh-bar.is-low i{background:var(--gold)} .wh-bar.is-out i{background:var(--danger)}
+.wh-price{text-align:right;font-variant-numeric:tabular-nums;font-weight:800;color:#0F172A}
+
+/* Badge trạng thái — 4 nghĩa nghiệp vụ, mỗi nghĩa 1 màu, không dùng lại ở đâu khác. */
+.wh-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px 3px 7px;border-radius:999px;
+  font-size:11.5px;font-weight:750;white-space:nowrap;border:1px solid transparent}
+.wh-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.wh-badge.ok  {background:var(--okbg);color:#047857;border-color:#A7F3D0}
+.wh-badge.low {background:var(--goldbg);color:var(--gold);border-color:#FDE68A}
+.wh-badge.out {background:var(--dangerbg);color:var(--danger);border-color:#FCA5A5}
+.wh-badge.soon{background:#EDE9FE;color:#6D28D9;border-color:#DDD6FE}
+.wh-badge.dead{background:var(--dangerbg);color:var(--danger);border-color:#FCA5A5}
+.wh-badge.mute{background:var(--surface);color:var(--muted);border-color:var(--border)}
+
+/* Nút hành động trên dòng — hiện mờ, rõ hẳn khi hover/focus dòng: bảng 10 dòng
+   không còn 30 nút icon tranh nhau gây nhiễu, nhưng vẫn luôn tab tới được. */
+.wh-acts{display:flex;gap:2px;justify-content:flex-end;opacity:.35;transition:opacity var(--wh-t)}
+tr:hover .wh-acts,tr:focus-within .wh-acts{opacity:1}
+.wh-act{width:30px;height:30px;border:none;border-radius:8px;background:transparent;color:var(--muted);
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;padding:0;
+  transition:background var(--wh-t),color var(--wh-t)}
+.wh-act svg{width:16px;height:16px}
+.wh-act:hover{background:var(--soft);color:var(--main)}
+.wh-act.a-warn:hover{background:var(--goldbg);color:var(--gold)}
+.wh-act.a-danger:hover{background:var(--dangerbg);color:var(--danger)}
+
+/* Thanh "đã chọn N dòng" — trượt lên từ đáy, chỉ khi có lựa chọn */
+.wh-selbar{position:sticky;bottom:0;z-index:25;display:none;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:12px 20px;background:var(--ink);color:#fff;border-radius:14px;margin-top:12px;box-shadow:var(--wh-sh-pop)}
+.wh-selbar.show{display:flex;animation:wh-slide-up 200ms cubic-bezier(.4,0,.2,1)}
+@keyframes wh-slide-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.wh-selbar .n{font-size:13.5px;font-weight:750}
+.wh-selbar .n b{font-variant-numeric:tabular-nums}
+.wh-selbar .sp{margin-left:auto;display:flex;gap:8px}
+.wh-selbar .wh-btn{height:34px;background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#fff}
+.wh-selbar .wh-btn:hover{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.32)}
+
+/* ── Phân trang ────────────────────────────────────────────────────────────── */
+.wh-pager{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 20px;border-top:1px solid var(--line);
+  background:#FCFDFD;border-radius:0 0 calc(var(--wh-r-card) - 1px) calc(var(--wh-r-card) - 1px)}
+.wh-pager .info{font-size:13px;color:var(--muted);flex:1;min-width:180px}
+.wh-pager .info b{color:var(--ink);font-weight:750;font-variant-numeric:tabular-nums}
+.wh-pager .nav{display:flex;align-items:center;gap:4px}
+.wh-pg{min-width:34px;height:34px;padding:0 9px;border:1px solid var(--border);border-radius:9px;background:#fff;
+  color:var(--ink);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;
+  align-items:center;justify-content:center;transition:background var(--wh-t),border-color var(--wh-t),color var(--wh-t)}
+.wh-pg svg{width:15px;height:15px}
+.wh-pg:hover:not(:disabled){border-color:var(--main);color:var(--main);background:#F0FDFA}
+.wh-pg[aria-current="page"]{background:var(--main);border-color:var(--main);color:#fff}
+.wh-pg:disabled{opacity:.4;cursor:default}
+.wh-pg.gap{border:none;background:transparent;cursor:default;color:var(--muted)}
+.wh-pager .wh-select{height:34px}
+
+/* ── Trạng thái rỗng — thấp, thân thiện, và luôn nói bước tiếp theo ────────── */
+.wh-empty{padding:44px 24px;text-align:center}
+.wh-empty .art{width:64px;height:64px;margin:0 auto 14px;border-radius:20px;display:flex;align-items:center;justify-content:center;
+  font-size:28px;background:var(--surface);color:var(--muted)}
+.wh-empty.good .art{background:var(--okbg);color:var(--ok)}
+.wh-empty .t{font-size:15px;font-weight:750;color:var(--ink)}
+.wh-empty .d{font-size:13px;color:var(--muted);margin-top:5px;line-height:1.55;max-width:44ch;margin-left:auto;margin-right:auto}
+.wh-empty .wh-btn{margin-top:16px}
+
+/* ── Drawer chi tiết (thay modal giữa màn hình) ────────────────────────────
+   Trượt từ phải, không che bảng: thủ kho vẫn thấy dòng vừa bấm và các dòng lân
+   cận, mở/đóng liên tục nhiều thuốc mà không mất ngữ cảnh đang quét tới đâu. */
+.wh-scrim{position:fixed;inset:0;z-index:9000;background:rgba(6,32,30,.42);backdrop-filter:blur(2px);
+  opacity:0;pointer-events:none;transition:opacity var(--wh-t)}
+.wh-scrim.open{opacity:1;pointer-events:auto}
+.wh-drawer{position:fixed;top:0;right:0;bottom:0;z-index:9001;width:min(560px,100vw);background:#fff;
+  display:flex;flex-direction:column;box-shadow:-24px 0 60px -20px rgba(4,47,46,.35);
+  transform:translateX(100%);transition:transform 240ms cubic-bezier(.4,0,.2,1);visibility:hidden}
+.wh-drawer.open{transform:none;visibility:visible}
+.wh-drawer-head{padding:20px 24px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:12px;flex:none}
+.wh-drawer-head h3{font-size:17px;font-weight:800;letter-spacing:-.3px;line-height:1.3}
+.wh-drawer-head .sub{font-size:12.5px;color:var(--muted);margin-top:4px}
+.wh-drawer-head .wh-btn-icon{margin-left:auto;flex:none}
+.wh-drawer-body{padding:22px 24px 32px;overflow-y:auto;flex:1}
+.wh-drawer-foot{padding:14px 24px;border-top:1px solid var(--line);display:flex;gap:8px;background:#FCFDFD;flex:none}
+.wh-kv{display:grid;grid-template-columns:1fr 1fr;gap:16px 20px}
+.wh-kv .f{min-width:0}
+.wh-kv .f.full{grid-column:1/-1}
+.wh-kv .k{font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.wh-kv .v{font-size:13.5px;font-weight:650;color:#0F172A;margin-top:3px;line-height:1.45;word-break:break-word}
+.wh-kv .v.none{color:#9AA8A3;font-weight:500;font-style:italic}
+.wh-sec{font-size:11.5px;font-weight:800;color:var(--main);text-transform:uppercase;letter-spacing:.06em;
+  margin:26px 0 12px;padding-top:18px;border-top:1px solid var(--line);display:flex;align-items:center;gap:7px}
+.wh-sec:first-child{margin-top:0;padding-top:0;border-top:none}
+.wh-drawer .wh-table th,.wh-drawer .wh-table td{padding:9px 12px;font-size:12.5px}
+.wh-drawer .wh-table thead th{position:static}
+
+/* ── Skeleton khi nạp dữ liệu drawer ──────────────────────────────────────── */
+.wh-sk{height:13px;border-radius:6px;background:linear-gradient(90deg,#EEF2F1 25%,#F7FAF9 37%,#EEF2F1 63%);
+  background-size:400% 100%;animation:wh-sk 1.3s ease infinite;margin-bottom:10px}
+@keyframes wh-sk{0%{background-position:100% 50%}100%{background-position:0 50%}}
+
+/* ── Sub-nav trong topbar ──────────────────────────────────────────────────
+   Điều hướng giữa 4 trang con của nhóm "Quản lý tồn kho". Đặt ở topbar (cấp
+   TRANG) để tách bạch hẳn với segmented control trong toolbar (cấp BỘ LỌC) —
+   hai hàng tab trông giống nhau xếp chồng là lý do người dùng không biết mình
+   vừa đổi trang hay vừa đổi bộ lọc. */
+.tb-nav{display:flex;gap:2px;margin-left:18px;min-width:0;overflow-x:auto;scrollbar-width:none}
+.tb-nav::-webkit-scrollbar{display:none}
+.tb-nav a{padding:7px 14px;border-radius:10px;font-size:13px;font-weight:700;color:var(--muted);
+  white-space:nowrap;transition:background var(--wh-t),color var(--wh-t)}
+.tb-nav a:hover{background:var(--surface);color:var(--ink)}
+.tb-nav a.on{background:var(--soft);color:var(--deep)}
+@media(max-width:820px){.tb-nav{display:none}}
+
+/* ── Card nội dung tổng quát (khác .wh-tablecard: có padding, có head) ─────── */
+.wh-card{background:var(--wh-surf);border:1px solid var(--wh-line);border-radius:var(--wh-r-card);
+  box-shadow:var(--wh-sh-md);margin-bottom:24px}
+.wh-stack .wh-card{margin-bottom:0}
+.wh-sec-gap{margin-bottom:24px}
+
+/* Đầu section: khối icon màu + tiêu đề + mô tả + chỗ cho hành động.
+   Mô tả nằm ngay dưới tiêu đề (không phải chỉ mỗi chữ trần) — đó là thứ cho
+   người mới biết section này để làm gì mà không phải đoán. */
+.wh-card-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:18px 22px;border-bottom:1px solid var(--line)}
+.wh-card-head .tt{min-width:0}
+.wh-card-head h2{font-size:16px;font-weight:800;letter-spacing:-.3px;color:var(--ink);line-height:1.3}
+.wh-card-head h2 small{color:var(--muted);font-weight:600;font-size:12.5px;margin-left:7px}
+.wh-card-head .desc{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45}
+.wh-card-head .sp{margin-left:auto;display:flex;align-items:center;gap:8px}
+.wh-card-body{padding:22px}
+.wh-card.danger{border-color:var(--danger);border-width:1.5px}
+.wh-card.danger .wh-card-head{background:var(--danger);color:#fff;border-bottom:none;
+  border-radius:calc(var(--wh-r-card) - 1px) calc(var(--wh-r-card) - 1px) 0 0}
+.wh-card.danger .wh-card-head h2{color:#fff}
+.wh-card.danger .wh-card-head .wh-ic{background:rgba(255,255,255,.18);color:#fff}
+
+/* ── Bố cục 2 cột: việc chính | ngữ cảnh ──────────────────────────────────── */
+.wh-split{display:grid;grid-template-columns:1.55fr 1fr;gap:24px;align-items:start}
+.wh-stack{display:flex;flex-direction:column;gap:24px}
+@media(max-width:1080px){.wh-split{grid-template-columns:1fr}}
+
+/* ── Note / callout — 4 mức ngữ nghĩa, dùng lại đúng bảng màu của badge ───── */
+.wh-note{display:flex;gap:11px;align-items:flex-start;padding:13px 16px;border-radius:12px;
+  font-size:13.5px;line-height:1.55;border:1px solid;margin-bottom:20px}
+.wh-note svg{width:17px;height:17px;flex:none;margin-top:2px}
+.wh-note b{font-weight:800}
+.wh-note.info  {background:#F0FDFA;border-color:#99F6E4;color:#115E59}
+.wh-note.ok    {background:var(--okbg);border-color:#A7F3D0;color:#047857}
+.wh-note.warn  {background:#FFFBEB;border-color:#FDE68A;color:var(--gold)}
+.wh-note.danger{background:#FEF2F2;border-color:#FCA5A5;color:#B91C1C}
+
+/* ── Form ─────────────────────────────────────────────────────────────────── */
+.wh-fg{display:flex;flex-direction:column;gap:7px;margin-bottom:18px}
+.wh-fg:last-child{margin-bottom:0}
+.wh-fg > label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;
+  display:flex;align-items:center;justify-content:space-between;gap:10px}
+/* 52px: form nhập lô/tạo việc là thao tác lặp đi lặp lại cả ca, ô cao hơn giúp
+   bấm trúng nhanh hơn. Điều khiển trong toolbar vẫn giữ 40–42px vì chúng là
+   thao tác phụ, cao bằng nhau sẽ làm toolbar nặng nề. */
+.wh-in{width:100%;height:52px;padding:0 16px;border:1.5px solid var(--border);border-radius:var(--wh-r-ctl);
+  font-family:inherit;font-size:14.5px;font-weight:600;color:var(--ink);outline:none;
+  background:linear-gradient(180deg,#FBFCFE 0%,#FFFFFF 100%);
+  box-shadow:inset 0 1px 2px rgba(16,40,64,.04);
+  transition:border-color var(--wh-t),box-shadow var(--wh-t),background var(--wh-t)}
+.wh-in::placeholder{color:#9AA8A3;font-weight:500}
+.wh-in:focus{border-color:var(--main);background:#fff;
+  box-shadow:0 0 0 4px rgba(15,118,110,.13), inset 0 1px 2px rgba(16,40,64,.03)}
+.wh-in:hover:not(:focus){border-color:#CBD5D1}
+textarea.wh-in{height:auto;min-height:104px;padding:14px 16px;resize:vertical;line-height:1.6;font-weight:500}
+/* Mũi tên + gradient phải khai cùng một chỗ: nếu để `background-image` riêng nó
+   sẽ ghi đè luôn gradient nền của .wh-in và ô select thành phẳng trắng. */
+select.wh-in{appearance:none;cursor:pointer;padding-right:42px;
+  background:
+    url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%2369756F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4.5 7 4.5 4.5L13.5 7'/%3E%3C/svg%3E") no-repeat right 14px center,
+    linear-gradient(180deg,#FBFCFE 0%,#FFFFFF 100%)}
+select.wh-in:focus{background:
+    url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%230F766E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4.5 7 4.5 4.5L13.5 7'/%3E%3C/svg%3E") no-repeat right 14px center,
+    #fff}
+.wh-in.on-danger:focus{border-color:var(--danger);box-shadow:0 0 0 3.5px rgba(220,38,38,.12)}
+.wh-row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:560px){.wh-row2{grid-template-columns:1fr}}
+.wh-linkbtn{background:none;border:none;padding:0;font-family:inherit;font-size:12px;font-weight:750;
+  color:var(--main);cursor:pointer;display:inline-flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0}
+.wh-linkbtn:hover{color:var(--deep);text-decoration:underline}
+.wh-linkbtn svg{width:14px;height:14px}
+
+/* Lựa chọn dạng thẻ (radio) */
+.wh-choice{display:flex;gap:10px;flex-wrap:wrap}
+.wh-choice label{flex:1;min-width:180px;display:flex;align-items:center;gap:9px;padding:12px 14px;
+  border:1.5px solid var(--border);border-radius:var(--wh-r-ctl);cursor:pointer;background:#fff;
+  font-size:13px;font-weight:700;color:var(--ink);transition:border-color var(--wh-t),background var(--wh-t)}
+.wh-choice label:hover{border-color:#CBD5D1}
+.wh-choice input{accent-color:var(--main);width:15px;height:15px;flex:none}
+.wh-choice label:has(input:checked){border-color:var(--main);background:#F0FDFA;color:var(--deep)}
+
+/* ── Hàng nhãn–giá trị (panel ngữ cảnh) ───────────────────────────────────── */
+.wh-rows{display:flex;flex-direction:column}
+.wh-rows .r{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.wh-rows .r:last-child{border-bottom:none}
+.wh-rows .k{font-size:12.5px;color:var(--muted);font-weight:650;display:flex;align-items:center;gap:8px}
+.wh-rows .k svg{width:15px;height:15px;opacity:.7}
+.wh-rows .v{font-size:14px;font-weight:800;color:var(--ink);text-align:right}
+
+/* ── Ô sự kiện (lịch sử gần đây) ──────────────────────────────────────────── */
+.wh-feed{display:flex;flex-direction:column}
+.wh-feed .it{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line)}
+.wh-feed .it:last-child{border-bottom:none}
+.wh-feed .ic{width:34px;height:34px;border-radius:10px;flex:none;display:flex;align-items:center;justify-content:center}
+.wh-feed .ic svg{width:16px;height:16px}
+.wh-feed .ic.out{background:var(--dangerbg);color:var(--danger)}
+.wh-feed .ic.exp{background:var(--goldbg);color:var(--gold)}
+.wh-feed .ic.adj{background:#E0F2FE;color:#0369A1}
+.wh-feed .bd{flex:1;min-width:0}
+.wh-feed .t1{font-size:12.5px;font-weight:750;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wh-feed .t2{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wh-feed .qty{font-size:14px;font-weight:800;flex:none;font-variant-numeric:tabular-nums}
+.wh-feed .qty.neg{color:var(--danger)} .wh-feed .qty.pos{color:var(--ok)}
+
+/* ── Lưới dữ kiện (thông tin lô cần thu hồi) ──────────────────────────────── */
+.wh-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:14px}
+.wh-fact{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:13px 15px;min-width:0}
+.wh-fact .k{font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.wh-fact .v{font-size:17px;font-weight:800;color:var(--ink);margin-top:5px;word-break:break-word;line-height:1.3}
+.wh-fact.hot .v{color:var(--danger)}
+.wh-fact .v.mono{font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:15px;letter-spacing:-.3px}
+
+/* ── Nút nguy hiểm ────────────────────────────────────────────────────────── */
+.wh-btn-danger{background:var(--danger);color:#fff;border-color:var(--danger);box-shadow:0 1px 2px rgba(220,38,38,.3)}
+.wh-btn-danger:hover{background:#B91C1C;border-color:#B91C1C;box-shadow:0 4px 12px -2px rgba(220,38,38,.42)}
+.wh-btn-lg{height:48px;padding:0 24px;font-size:14.5px}
+
+/* ── Modal giữa màn (quét mã vạch) ────────────────────────────────────────── */
+.wh-modal{position:fixed;inset:0;z-index:9500;display:none;align-items:center;justify-content:center;padding:20px;
+  background:rgba(6,32,30,.55);backdrop-filter:blur(3px)}
+.wh-modal.open{display:flex}
+.wh-modal-box{background:#fff;border-radius:20px;max-width:440px;width:100%;overflow:hidden;box-shadow:var(--wh-sh-pop);
+  animation:wh-modal-in 200ms cubic-bezier(.4,0,.2,1)}
+@keyframes wh-modal-in{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}
+.wh-modal-head{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.wh-modal-head h3{font-size:15.5px;font-weight:800}
+.wh-modal-head .wh-btn-icon{margin-left:auto}
+.wh-modal-body{padding:18px 20px 20px}
+
+/* ── Danh sách thao tác nhanh (trang chủ) ─────────────────────────────────── */
+.wh-quick{display:flex;flex-direction:column;gap:8px;padding:14px}
+.wh-quick a{display:flex;align-items:center;gap:13px;padding:12px 14px;border-radius:14px;
+  border:1px solid var(--border);background:var(--surface);color:inherit;
+  transition:border-color var(--wh-t),background var(--wh-t),box-shadow var(--wh-t),transform var(--wh-t)}
+.wh-quick a:hover{border-color:var(--main);background:#fff;box-shadow:0 4px 14px -6px rgba(15,118,110,.28);transform:translateX(2px)}
+.wh-quick a.primary{background:var(--main);border-color:var(--main);color:#fff}
+.wh-quick a.primary:hover{background:var(--deep);border-color:var(--deep)}
+.wh-quick a.primary .ic{background:rgba(255,255,255,.18);color:#fff}
+.wh-quick .ic{width:38px;height:38px;border-radius:11px;flex:none;display:flex;align-items:center;justify-content:center;
+  background:var(--soft);color:var(--main)}
+.wh-quick .ic svg{width:18px;height:18px}
+.wh-quick .bd{flex:1;min-width:0}
+.wh-quick .t1{font-size:13.5px;font-weight:750}
+.wh-quick .t2{font-size:11.5px;opacity:.72;margin-top:2px}
+.wh-quick .go{flex:none;opacity:.5}
+
+/* ── Thanh tiến độ ────────────────────────────────────────────────────────── */
+.wh-progress{height:8px;border-radius:999px;background:var(--border);overflow:hidden}
+.wh-progress i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--main),var(--light));
+  transition:width .4s cubic-bezier(.4,0,.2,1)}
+
+/* ── Dòng nhiệm vụ (thẻ, không phải bảng — dễ quét mắt hơn) ───────────────── */
+.wh-task{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border:1px solid var(--line);
+  border-radius:14px;background:#fff;flex-wrap:wrap;transition:border-color var(--wh-t),box-shadow var(--wh-t)}
+.wh-task:hover{border-color:#CBD5D1;box-shadow:var(--wh-sh-sm)}
+.wh-task + .wh-task{margin-top:10px}
+.wh-task .dot{width:9px;height:9px;border-radius:50%;flex:none;margin-top:6px}
+.wh-task .dot.HIGH{background:var(--danger)}
+.wh-task .dot.MEDIUM{background:var(--gold)}
+.wh-task .dot.LOW{background:var(--jade)}
+.wh-task .bd{flex:1;min-width:220px}
+.wh-task .t1{font-size:14px;font-weight:750;color:var(--ink);line-height:1.4}
+.wh-task .t2{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.5}
+.wh-task .meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:var(--muted);margin-top:7px}
+.wh-task .meta .m{display:inline-flex;align-items:center;gap:5px}
+.wh-task .meta .m svg{width:13px;height:13px;opacity:.75}
+.wh-task .acts{display:flex;gap:8px;flex:none;flex-wrap:wrap}
+.wh-task .acts form{display:inline}
+
+/* Mốc công việc trong dự án dài hạn */
+.wh-ms{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:11px;background:#fff;border:1px solid var(--line)}
+.wh-ms + .wh-ms{margin-top:6px}
+.wh-ms.done{opacity:.6}
+.wh-ms.done .t{text-decoration:line-through}
+.wh-ms > svg{width:16px;height:16px;flex:none;color:var(--muted)}
+.wh-ms.done > svg{color:var(--ok)}
+.wh-ms .t{flex:1;font-size:13px;color:var(--ink);min-width:0}
+.wh-ms .due{font-size:11.5px;color:var(--muted);flex:none}
+
+/* ── Ảnh đại diện lớn (hồ sơ) ─────────────────────────────────────────────── */
+.wh-avatar-lg{width:112px;height:112px;border-radius:50%;object-fit:cover;border:3px solid var(--border);display:block}
+.wh-avatar-lg.ph{background:var(--soft);color:var(--main);display:flex;align-items:center;justify-content:center;
+  font-size:44px;font-weight:800;letter-spacing:-1px}
+
+/* Ô chọn tệp — cao tự nhiên, con trỏ tay, nút Browse theo tông teal */
+input[type=file].wh-in{height:auto;padding:10px 12px;font-weight:600;cursor:pointer;line-height:1.5}
+input[type=file].wh-in::file-selector-button{margin-right:12px;padding:7px 13px;border:none;border-radius:9px;
+  background:var(--soft);color:var(--deep);font-family:inherit;font-size:13px;font-weight:750;cursor:pointer}
+input[type=file].wh-in::file-selector-button:hover{background:#A7F3EB}
+
+/* ══ LỚP ĐỘ SÂU — COMPONENT BỔ SUNG ═══════════════════════════════════════ */
+
+/* ── Lưới 12 cột: dùng cho bố cục lệch, không xếp chồng chữ nhật bằng nhau ── */
+.wh-g12{display:grid;grid-template-columns:repeat(12,1fr);gap:24px;align-items:start}
+.wh-g12 > .c4{grid-column:span 4} .wh-g12 > .c5{grid-column:span 5}
+.wh-g12 > .c6{grid-column:span 6} .wh-g12 > .c7{grid-column:span 7}
+.wh-g12 > .c8{grid-column:span 8} .wh-g12 > .c12{grid-column:span 12}
+@media(max-width:1180px){.wh-g12 > *{grid-column:span 12 !important}}
+
+/* ── Hero: nền teal sâu + khối sáng lơ lửng, chỗ neo mắt đầu tiên của trang ── */
+.wh-hero{position:relative;overflow:hidden;border-radius:var(--wh-r-pop);padding:32px 34px;margin-bottom:24px;color:#fff;
+  background:linear-gradient(135deg,#042F2E 0%,#0B4F4A 42%,#0F766E 78%,#12907F 100%);
+  box-shadow:0 2px 4px rgba(4,47,46,.14), 0 24px 56px -20px rgba(4,47,46,.45)}
+.wh-hero::before,.wh-hero::after{content:'';position:absolute;border-radius:50%;pointer-events:none}
+.wh-hero::before{top:-120px;right:-60px;width:340px;height:340px;
+  background:radial-gradient(circle at 30% 30%,rgba(94,234,212,.30),transparent 65%)}
+.wh-hero::after{bottom:-160px;right:180px;width:280px;height:280px;
+  background:radial-gradient(circle at 50% 50%,rgba(20,184,166,.26),transparent 68%)}
+.wh-hero > *{position:relative;z-index:1}
+.wh-hero-row{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.wh-hero-av{width:62px;height:62px;border-radius:20px;flex:none;display:flex;align-items:center;justify-content:center;
+  font-size:23px;font-weight:800;background:rgba(255,255,255,.14);border:1.5px solid rgba(255,255,255,.26);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 6px 18px -6px rgba(0,0,0,.4)}
+.wh-hero h1{font-size:clamp(24px,2.4vw,32px);font-weight:800;letter-spacing:-.8px;line-height:1.15}
+.wh-hero .sub{font-size:14px;color:rgba(255,255,255,.72);margin-top:7px;line-height:1.5;max-width:62ch}
+.wh-hero-bd{flex:1;min-width:240px}
+.wh-chip{display:inline-flex;align-items:center;gap:9px;padding:10px 17px;border-radius:999px;
+  font-size:13px;font-weight:750;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+.wh-chip .d{width:9px;height:9px;border-radius:50%;flex:none}
+.wh-chip.on .d{background:#5EEAD4;box-shadow:0 0 0 4px rgba(94,234,212,.24)}
+.wh-chip.off .d{background:rgba(255,255,255,.45)}
+
+/* ── SIGNATURE: Đường chân trời hạn dùng ──────────────────────────────────
+   Biến chi phối toàn bộ nghiệp vụ kho dược là SỐ NGÀY CÒN LẠI trước hạn — không
+   phải doanh thu, không phải số lượng. Nên thay vì thêm một biểu đồ tròn nữa,
+   trang chủ có một dải thời gian: mỗi lô là một vạch, đặt đúng vị trí theo số
+   ngày còn lại, trên nền 4 vùng đã là quy ước sẵn của hệ thống
+   (quá hạn · ≤30 cách ly · 31–90 hạn chế · 91–180 theo dõi).
+   Nhìn một cái là biết "cái gì sắp đập vào mặt mình, và còn bao lâu". */
+.wh-horizon{padding:22px}
+.wh-hz-track{position:relative;height:104px;border-radius:18px;overflow:hidden;
+  background:linear-gradient(90deg,
+    #FEE2E2 0%, #FEE2E2 14%,
+    #FEF3C7 14%, #FEF3C7 36%,
+    #FEF9C3 36%, #FEF9C3 60%,
+    #ECFDF5 60%, #ECFDF5 100%);
+  box-shadow:inset 0 1px 3px rgba(16,40,64,.10), inset 0 -1px 0 rgba(255,255,255,.6)}
+.wh-hz-zone{position:absolute;top:0;bottom:0;border-right:1px dashed rgba(16,40,64,.16)}
+.wh-hz-zone:last-child{border-right:none}
+.wh-hz-zone .zl{position:absolute;top:9px;left:11px;font-size:10.5px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.06em;opacity:.62;white-space:nowrap}
+.wh-hz-zone .zn{position:absolute;bottom:9px;left:11px;font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
+.wh-hz-tick{position:absolute;top:34px;width:5px;height:36px;border-radius:3px;transform:translateX(-50%);
+  box-shadow:0 2px 5px rgba(16,40,64,.28), inset 0 1px 0 rgba(255,255,255,.5);cursor:default}
+.wh-hz-tick:hover{filter:brightness(1.12)}
+.wh-hz-legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:12px;color:var(--muted)}
+.wh-hz-legend span{display:inline-flex;align-items:center;gap:7px;font-weight:650}
+.wh-hz-legend i{width:10px;height:10px;border-radius:3px;display:block}
+
+/* ── Ô thống kê nhỏ (hồ sơ, nhiệm vụ) ─────────────────────────────────────── */
+.wh-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px}
+.wh-tile{background:var(--wh-surf);border:1px solid var(--wh-line);border-radius:18px;padding:18px;
+  box-shadow:var(--wh-sh-sm)}
+.wh-tile .ic{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  margin-bottom:12px;background:linear-gradient(160deg,#CCFBF1,#A7F3E4);color:var(--deep)}
+.wh-tile .ic svg{width:18px;height:18px}
+.wh-tile .ic.violet{background:linear-gradient(160deg,#EDE9FE,#DDD6FE);color:#6D28D9}
+.wh-tile .ic.info{background:linear-gradient(160deg,#DBEAFE,#BFDBFE);color:#1D4ED8}
+.wh-tile .ic.warn{background:linear-gradient(160deg,#FEF3C7,#FDE68A);color:#92400E}
+.wh-tile .n{font-size:26px;font-weight:800;letter-spacing:-.8px;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1}
+.wh-tile .l{font-size:12.5px;font-weight:700;color:var(--ink);margin-top:7px}
+.wh-tile .s{font-size:11.5px;color:var(--muted);margin-top:2px}
+
+/* ── Chỉ dẫn bước (wizard) ────────────────────────────────────────────────── */
+.wh-steps{display:flex;align-items:flex-start;gap:0;margin-bottom:24px;flex-wrap:wrap}
+.wh-step{flex:1;min-width:130px;display:flex;flex-direction:column;align-items:center;gap:9px;
+  position:relative;padding:0 6px;background:none;border:none;font-family:inherit;cursor:pointer}
+.wh-step::before{content:'';position:absolute;top:19px;left:calc(-50% + 20px);right:calc(50% + 20px);height:2px;
+  background:var(--border);border-radius:2px}
+.wh-step:first-child::before{display:none}
+.wh-step.done::before,.wh-step.on::before{background:linear-gradient(90deg,var(--light),var(--main))}
+.wh-step .dot{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:800;flex:none;position:relative;z-index:1;
+  background:var(--wh-surf-raise);border:1.5px solid var(--border);color:var(--muted);
+  box-shadow:var(--wh-sh-sm);transition:all var(--wh-t)}
+.wh-step .dot svg{width:18px;height:18px}
+.wh-step.on .dot{background:linear-gradient(160deg,#14B8A6,#0F766E);border-color:transparent;color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 0 0 5px rgba(15,118,110,.13), 0 6px 16px -6px rgba(15,118,110,.5);
+  transform:scale(1.06)}
+.wh-step.done .dot{background:linear-gradient(160deg,#D1FAE5,#A7F3D0);border-color:transparent;color:#047857}
+.wh-step .lb{font-size:12.5px;font-weight:750;color:var(--muted);text-align:center;line-height:1.35}
+.wh-step.on .lb{color:var(--deep)}
+.wh-step.done .lb{color:var(--ink)}
+.wh-step .sb{font-size:11px;color:var(--muted);opacity:.8;text-align:center}
+@media(max-width:640px){.wh-step .sb{display:none}}
+
+/* ── Bảng tóm tắt tiền / số liệu (bước xác nhận) ──────────────────────────── */
+.wh-sum{display:flex;flex-direction:column;gap:0}
+.wh-sum .r{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 0;
+  border-bottom:1px dashed var(--line)}
+.wh-sum .r:last-child{border-bottom:none}
+.wh-sum .k{font-size:13px;color:var(--muted);font-weight:650}
+.wh-sum .v{font-size:14.5px;font-weight:750;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+.wh-sum .r.total{border-top:2px solid var(--line);border-bottom:none;margin-top:6px;padding-top:16px}
+.wh-sum .r.total .k{font-size:14px;font-weight:800;color:var(--ink)}
+.wh-sum .r.total .v{font-size:23px;font-weight:800;color:var(--deep);letter-spacing:-.5px}
+
+/* ── Bảng kanban kéo-thả ───────────────────────────────────────────────────
+   4 cột = 4 trạng thái. Kéo thẻ chỉ gọi lại đúng 3 hành động đã có
+   (claim / complete / cancel) — không có đường đi trạng thái nào mới, nên
+   không thể kéo ra một trạng thái mà nghiệp vụ chưa cho phép. */
+.wh-kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:start}
+@media(max-width:1180px){.wh-kanban{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:680px){.wh-kanban{grid-template-columns:1fr}}
+.kb-col{background:linear-gradient(180deg,#F1F5F9,#F6F8FB);border:1px solid var(--wh-line);
+  border-radius:20px;padding:14px;min-height:180px;transition:background var(--wh-t),border-color var(--wh-t),box-shadow var(--wh-t)}
+.kb-col-head{display:flex;align-items:center;gap:9px;padding:2px 4px 12px}
+.kb-col-head .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.kb-col-head .t{font-size:12.5px;font-weight:800;color:var(--ink);letter-spacing:-.1px}
+.kb-col-head .n{margin-left:auto;min-width:22px;height:21px;padding:0 7px;border-radius:11px;
+  background:rgba(15,23,42,.07);color:var(--muted);font-size:11.5px;font-weight:800;
+  display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+.kb-col[data-st="PENDING"]   .kb-col-head .dot{background:#F59E0B}
+.kb-col[data-st="IN_PROGRESS"] .kb-col-head .dot{background:#8B5CF6}
+.kb-col[data-st="DONE"]      .kb-col-head .dot{background:#10B981}
+.kb-col[data-st="CANCELLED"] .kb-col-head .dot{background:#94A3B8}
+/* Trạng thái khi đang kéo: cột nhận được sáng lên, cột không nhận thì mờ đi —
+   người dùng biết thả được vào đâu TRƯỚC khi thả, không phải thử rồi báo lỗi. */
+.wh-kanban.dragging .kb-col{opacity:.5}
+.wh-kanban.dragging .kb-col.can{opacity:1;border-color:var(--main);border-style:dashed;
+  background:linear-gradient(180deg,#ECFDF5,#F0FDFA);box-shadow:0 0 0 3px rgba(15,118,110,.10)}
+.wh-kanban.dragging .kb-col.over{box-shadow:0 0 0 4px rgba(15,118,110,.20);transform:translateY(-2px)}
+
+.kb-card{background:var(--wh-surf);border:1px solid var(--wh-line);border-radius:16px;padding:13px 14px;
+  box-shadow:var(--wh-sh-sm);position:relative;padding-left:17px;
+  transition:box-shadow var(--wh-t),transform var(--wh-t),opacity var(--wh-t)}
+.kb-card + .kb-card{margin-top:10px}
+.kb-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:16px 0 0 16px}
+.kb-card.pr-HIGH::before  {background:linear-gradient(180deg,#F87171,#DC2626)}
+.kb-card.pr-MEDIUM::before{background:linear-gradient(180deg,#FBBF24,#D97706)}
+.kb-card.pr-LOW::before   {background:linear-gradient(180deg,#94A3B8,#64748B)}
+.kb-card[draggable=true]{cursor:grab}
+.kb-card[draggable=true]:hover{box-shadow:var(--wh-sh-md);transform:translateY(-2px)}
+.kb-card.drag{opacity:.4;cursor:grabbing}
+.kb-card.busy{opacity:.55;pointer-events:none}
+.kb-card .t{font-size:13px;font-weight:750;color:var(--ink);line-height:1.4}
+.kb-card .m{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px;font-size:11px;color:var(--muted)}
+.kb-card .m svg{width:12px;height:12px;opacity:.75}
+.kb-card .m span{display:inline-flex;align-items:center;gap:4px}
+.kb-col .empty{padding:22px 10px;text-align:center;font-size:12px;color:#94A3B8;line-height:1.5}
+
+/* ── Thành tích ────────────────────────────────────────────────────────────
+   Mỗi huy hiệu là một NGƯỠNG trên một số liệu có thật; chưa đạt thì hiện xám
+   kèm thanh tiến độ, không giấu đi — người dùng biết còn thiếu bao nhiêu. */
+.wh-ach{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+.wh-ach-i{border:1px solid var(--wh-line);border-radius:18px;padding:16px;background:var(--wh-surf);
+  box-shadow:var(--wh-sh-sm);position:relative;overflow:hidden}
+.wh-ach-i .ic{width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+  margin-bottom:12px;background:linear-gradient(160deg,#E2E8F0,#CBD5E1);color:#94A3B8}
+.wh-ach-i .ic svg{width:21px;height:21px}
+.wh-ach-i .t{font-size:13.5px;font-weight:800;color:#94A3B8}
+.wh-ach-i .d{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+.wh-ach-i .bar{height:5px;border-radius:999px;background:var(--border);overflow:hidden;margin-top:11px}
+.wh-ach-i .bar i{display:block;height:100%;border-radius:999px;background:#CBD5E1;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.wh-ach-i.got{border-color:transparent;box-shadow:var(--wh-sh-md)}
+.wh-ach-i.got .t{color:var(--ink)}
+.wh-ach-i.got .ic{color:#fff}
+.wh-ach-i.got::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.55;
+  background:radial-gradient(120% 90% at 100% 0%,var(--ach-tint) 0%,transparent 62%)}
+.wh-ach-i.got .bar i{background:var(--ach-c)}
+.wh-ach-i.got.g-teal  {--ach-c:#0F766E;--ach-tint:rgba(20,184,166,.20)}
+.wh-ach-i.got.g-teal   .ic{background:linear-gradient(160deg,#2DD4BF,#0F766E)}
+.wh-ach-i.got.g-violet{--ach-c:#7C3AED;--ach-tint:rgba(139,92,246,.18)}
+.wh-ach-i.got.g-violet .ic{background:linear-gradient(160deg,#A78BFA,#7C3AED)}
+.wh-ach-i.got.g-amber {--ach-c:#D97706;--ach-tint:rgba(245,158,11,.20)}
+.wh-ach-i.got.g-amber  .ic{background:linear-gradient(160deg,#FBBF24,#D97706)}
+.wh-ach-i.got.g-green {--ach-c:#059669;--ach-tint:rgba(16,185,129,.20)}
+.wh-ach-i.got.g-green  .ic{background:linear-gradient(160deg,#34D399,#059669)}
+
+/* ── Toast (phản hồi sau khi kéo-thả) ──────────────────────────────────────── */
+.wh-toast-wrap{position:fixed;right:24px;bottom:24px;z-index:9800;display:flex;flex-direction:column;gap:10px;
+  pointer-events:none}
+.wh-toast{display:flex;align-items:center;gap:11px;padding:13px 17px;border-radius:16px;min-width:250px;
+  background:var(--ink);color:#fff;font-size:13.5px;font-weight:650;box-shadow:var(--wh-sh-pop);
+  animation:wh-toast-in 240ms cubic-bezier(.4,0,.2,1);pointer-events:auto}
+.wh-toast svg{width:18px;height:18px;flex:none}
+.wh-toast.ok svg{color:#5EEAD4}
+.wh-toast.err{background:#7F1D1D}
+.wh-toast.out{animation:wh-toast-out 200ms ease forwards}
+@keyframes wh-toast-in{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes wh-toast-out{to{opacity:0;transform:translateY(8px) scale(.97)}}
+
+/* ── LỚP CHUYỂN ĐỘNG ───────────────────────────────────────────────────────
+   Chỉ MỘT nhịp vào trang, không có hiệu ứng theo cuộn, không parallax. Mục
+   đích là dẫn mắt đi từ trên xuống một lần rồi thôi — thêm nữa là thành nhiễu
+   với người ngồi nhìn màn hình này 8 tiếng. */
+@keyframes wh-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.wh-anim > *{animation:wh-rise 420ms cubic-bezier(.16,1,.3,1) backwards}
+.wh-anim > *:nth-child(1){animation-delay:.02s}
+.wh-anim > *:nth-child(2){animation-delay:.07s}
+.wh-anim > *:nth-child(3){animation-delay:.12s}
+.wh-anim > *:nth-child(4){animation-delay:.17s}
+.wh-anim > *:nth-child(5){animation-delay:.22s}
+.wh-anim > *:nth-child(6){animation-delay:.27s}
+.wh-anim > *:nth-child(n+7){animation-delay:.30s}
+
+/* ── Chuyển động: tôn trọng prefers-reduced-motion ─────────────────────────── */
+@media (prefers-reduced-motion: reduce){
+  .wh-kpi:hover,.wh-btn:hover,.wh-quick a:hover,.kb-card[draggable=true]:hover{transform:none}
+  .wh-drawer{transition:none}
+  .wh-pop.open,.wh-selbar.show,.wh-modal-box,.wh-toast{animation:none}
+  .wh-sk{animation:none}
+  .wh-anim > *{animation:none}
+  .wh-progress i,.wh-ach-i .bar i{transition:none}
+}
+
+/* ── In ấn: bỏ chrome, giữ dữ liệu ────────────────────────────────────────── */
+@media print{
+  .sidebar,.wh-topbar,.wh-toolbar,.wh-head-actions,.wh-selbar,.wh-pager,.wh-acts,.c-check{display:none !important}
+  .main{margin-left:0}
+  .wh-tablecard{box-shadow:none;border:none}
+  .wh-table thead th{position:static}
 }

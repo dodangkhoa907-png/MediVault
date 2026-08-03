@@ -94,4 +94,28 @@ public class SidebarHelper {
             }
         }
     }
+
+    /**
+     * Badge cho sidebar portal Kho (warehouse-sidebar.jsp): "Quản lý tồn kho" (expiryCount)
+     * và "Nhiệm vụ &amp; SOP" (myOpenTaskCount, riêng theo từng thủ kho).
+     *
+     * Trước đây mỗi servlet Kho tự set 2 attribute này rời rạc — Dashboard và Task set đủ,
+     * còn Inventory/StockMovement/Reorder/Recall/Import/Profile thiếu myOpenTaskCount (có
+     * trang còn thiếu cả expiryCount), nên badge "Nhiệm vụ & SOP" HIỆN ở trang chủ rồi
+     * BIẾN MẤT ngay khi chuyển sang trang khác — không phải do hết việc, mà do trang đó
+     * không set attribute nên sidebar coi như null. Gọi đúng 1 hàm này ở mọi trang Kho để
+     * badge nhất quán bất kể đang đứng ở trang nào.
+     */
+    public static void loadWarehouse(HttpServletRequest req, int warehouseAccountId) {
+        load(req); // expiryCount (+ các badge admin khác, vô hại nếu trang Kho không dùng tới)
+
+        if (req.getAttribute("myOpenTaskCount") == null) {
+            try {
+                req.setAttribute("myOpenTaskCount", taskDAO.countMyOpenTasks(warehouseAccountId));
+            } catch (Exception e) {
+                req.setAttribute("myOpenTaskCount", 0);
+                System.err.println("[SidebarHelper] myOpenTaskCount: " + e.getMessage());
+            }
+        }
+    }
 }

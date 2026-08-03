@@ -83,18 +83,22 @@
 
   <nav class="nav-section">
     <div class="nav-label">Kho hàng</div>
-    <a href="${pageContext.request.contextPath}/medicines<%= uidParam %>"
+    <%-- Không gắn uidParam ở 3 link này: MedicineServlet/PurchaseOrderServlet/ReturnsServlet
+         đều tự lấy account từ session.getAttribute("staffUid") rồi tra staffAccount_<uid> —
+         KHÔNG đọc uid từ URL. uidParam ở đây vốn thừa và làm lộ AccountID trên thanh địa chỉ
+         mỗi khi Thủ kho rẽ từ Warehouse Console sang các trang dùng chung với Admin. --%>
+    <a href="${pageContext.request.contextPath}/medicines"
        class="nav-item <%= ("medicines".equals(activeNav) || "purchase-orders".equals(activeNav)) ? "active" : "" %>">
       <span class="nav-icon">💊</span> Quản lý kho
       <% if (expiry > 0) { %>
       <span class="nav-badge"><%= expiry %></span>
       <% } %>
     </a>
-    <a href="${pageContext.request.contextPath}/purchase-orders<%= uidParam %>"
+    <a href="${pageContext.request.contextPath}/purchase-orders"
        class="nav-item <%= "purchase-orders".equals(activeNav) ? "active" : "" %>">
       <span class="nav-icon">📦</span> Phiếu nhập kho
     </a>
-    <a href="${pageContext.request.contextPath}/returns<%= uidParam %>"
+    <a href="${pageContext.request.contextPath}/returns"
        class="nav-item <%= "returns".equals(activeNav) ? "active" : "" %>">
       <span class="nav-icon">📤</span> Đơn trả/hủy hàng
     </a>
