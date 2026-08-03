@@ -208,12 +208,14 @@ public class WarehouseExportDAO implements IWarehouseExportDAO {
         }
     }
 
-    private void seedReasonsIfEmpty() {
-        String checkSql = "SELECT COUNT(*) FROM sys.tables WHERE name = 'ExportReasons'";
-        try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(checkSql);
-             ResultSet rs = ps.executeQuery()) {
-            if (rs.next() && rs.getInt(1) == 0) {
+    private synchronized void seedReasonsIfEmpty() {
+        try (Connection cn = DBContext.getConnection()) {
+            String checkTable = "SELECT COUNT(*) FROM sys.tables WHERE name = 'ExportReasons'";
+            boolean tableExists = false;
+            try (PreparedStatement ps = cn.prepareStatement(checkTable); ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) tableExists = true;
+            }
+            if (!tableExists) {
                 String createSql = "CREATE TABLE ExportReasons (" +
                         "ReasonID INT IDENTITY(1,1) PRIMARY KEY," +
                         "ReasonCode VARCHAR(30) NOT NULL," +
@@ -224,19 +226,32 @@ public class WarehouseExportDAO implements IWarehouseExportDAO {
                         ")";
                 try (PreparedStatement cps = cn.prepareStatement(createSql)) { cps.executeUpdate(); }
             }
-        } catch (Exception ignored) {}
 
-        String insertSql = "INSERT INTO ExportReasons (ReasonCode, ReasonName, Description, RequiresReceiver, IsActive) VALUES " +
-                "('RETAIL_SALE', N'Bán lẻ (POS)', N'Xuất thuốc phục vụ bán hàng trực tiếp tại quầy POS', 0, 1)," +
-                "('CUSTOMER_ORDER', N'Đơn hàng khách (Portal)', N'Xuất thuốc cho đơn hàng đặt qua Cổng khách hàng', 1, 1)," +
-                "('TRANSFER', N'Chuyển kho / Điều chuyển', N'Xuất chuyển thuốc sang kho chi nhánh, tủ trực hoặc khoa phòng khác', 1, 1)," +
-                "('RETURN_SUPPLIER', N'Trả nhà cung cấp', N'Xuất trả lại thuốc kém chất lượng, lỗi sản xuất hoặc cận hạn cho NCC', 1, 1)," +
-                "('EXPIRED_DISPOSAL', N'Tiêu huỷ hết hạn', N'Xuất tiêu huỷ thuốc quá hạn sử dụng, biến chất hoặc nứt vỡ', 0, 1)," +
-                "('INTERNAL_USAGE', N'Sử dụng nội bộ', N'Xuất dùng cho đào tạo, kiểm nghiệm, mẫu thử hoặc nghiên cứu nội bộ', 0, 1)," +
-                "('ADJUSTMENT', N'Điều chỉnh tồn kho', N'Xuất cân bằng số lượng sau kỳ kiểm kê kho phát hiện chênh lệch', 0, 1)";
-        try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(insertSql)) {
-            ps.executeUpdate();
+            // Deduplicate any existing duplicate reason rows in DB
+            try {
+                String cleanDupes = "WITH CTE AS (" +
+                        "  SELECT ReasonID, ReasonCode, ROW_NUMBER() OVER (PARTITION BY ReasonCode ORDER BY ReasonID ASC) as rn" +
+                        "  FROM ExportReasons" +
+                        ") DELETE FROM CTE WHERE rn > 1";
+                try (PreparedStatement ps = cn.prepareStatement(cleanDupes)) { ps.executeUpdate(); }
+            } catch (Exception ignored) {}
+
+            String checkCount = "SELECT COUNT(*) FROM ExportReasons";
+            int count = 0;
+            try (PreparedStatement ps = cn.prepareStatement(checkCount); ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) count = rs.getInt(1);
+            }
+            if (count == 0) {
+                String insertSql = "INSERT INTO ExportReasons (ReasonCode, ReasonName, Description, RequiresReceiver, IsActive) VALUES " +
+                        "('RETAIL_SALE', N'Bán lẻ (POS)', N'Xuất thuốc phục vụ bán hàng trực tiếp tại quầy POS', 0, 1)," +
+                        "('CUSTOMER_ORDER', N'Đơn hàng khách (Portal)', N'Xuất thuốc cho đơn hàng đặt qua Cổng khách hàng', 1, 1)," +
+                        "('TRANSFER', N'Chuyển kho / Điều chuyển', N'Xuất chuyển thuốc sang kho chi nhánh, tủ trực hoặc khoa phòng khác', 1, 1)," +
+                        "('RETURN_SUPPLIER', N'Trả nhà cung cấp', N'Xuất trả lại thuốc kém chất lượng, lỗi sản xuất hoặc cận hạn cho NCC', 1, 1)," +
+                        "('EXPIRED_DISPOSAL', N'Tiêu huỷ hết hạn', N'Xuất tiêu huỷ thuốc quá hạn sử dụng, biến chất hoặc nứt vỡ', 0, 1)," +
+                        "('INTERNAL_USAGE', N'Sử dụng nội bộ', N'Xuất dùng cho đào tạo, kiểm nghiệm, mẫu thử hoặc nghiên cứu nội bộ', 0, 1)," +
+                        "('ADJUSTMENT', N'Điều chỉnh tồn kho', N'Xuất cân bằng số lượng sau kỳ kiểm kê kho phát hiện chênh lệch', 0, 1)";
+                try (PreparedStatement ps = cn.prepareStatement(insertSql)) { ps.executeUpdate(); }
+            }
         } catch (Exception e) { e.printStackTrace(); }
     }
 
