@@ -3,11 +3,16 @@ package com.medicare.dao;
 import com.medicare.config.DBContext;
 import com.medicare.dao.interfaces.ITaskDAO;
 import com.medicare.entity.Task;
+import com.medicare.entity.TaskChecklistItem;
+import com.medicare.entity.TaskComment;
+import com.medicare.util.MojibakeUtil;
 
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * TaskDAO — Mô-đun "To-do List / Task Management" (Quản Lý Task &amp; SOP) cho portal
@@ -39,6 +44,7 @@ public class TaskDAO implements ITaskDAO {
         t.setParentTaskId((Integer) rs.getObject("ParentTaskID"));
         t.setProgressPercentage(rs.getInt("ProgressPercentage"));
         t.setLastNudgeZone(rs.getString("LastNudgeZone"));
+        try { t.setEstimatedHours(rs.getBigDecimal("EstimatedHours")); } catch (Exception ignored) {}
         return t;
     }
 
@@ -210,6 +216,250 @@ public class TaskDAO implements ITaskDAO {
             }
             return ok;
         } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    @Override
+    public Task findById(int taskId) {
+        String sql = SELECT_JOINED + "WHERE t.TaskID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, taskId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapRow(rs);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return null;
+    }
+
+    @Override
+    public boolean updateExtras(int taskId, java.math.BigDecimal estimatedHours, String refTable, Integer refId) {
+        String sql = "UPDATE Tasks SET EstimatedHours = ?, RefTable = COALESCE(?, RefTable), RefID = COALESCE(?, RefID) WHERE TaskID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            if (estimatedHours != null) ps.setBigDecimal(1, estimatedHours); else ps.setNull(1, Types.DECIMAL);
+            if (refTable != null && !refTable.isBlank()) ps.setString(2, refTable); else ps.setNull(2, Types.VARCHAR);
+            if (refId != null) ps.setInt(3, refId); else ps.setNull(3, Types.INTEGER);
+            ps.setInt(4, taskId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    // Whitelist cố định — KHÔNG nhận newStatus tuỳ ý từ client vào SQL (chặn injection +
+    // chặn move thẳng sang Done, phải qua markComplete() để tính đúng ON_TIME/LATE).
+    private static final java.util.Set<String> MOVABLE_STATUSES =
+            java.util.Set.of("PENDING", "IN_PROGRESS", "REVIEW", "BLOCKED");
+
+    @Override
+    public boolean moveStatus(int taskId, String newStatus) {
+        if ("CANCELLED".equals(newStatus)) return cancel(taskId);
+        if (!MOVABLE_STATUSES.contains(newStatus)) return false;
+        String sql = "UPDATE Tasks SET Status = ? " +
+                "WHERE TaskID = ? AND Status NOT IN ('COMPLETED_ON_TIME','COMPLETED_LATE','CANCELLED')";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, newStatus);
+            ps.setInt(2, taskId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    @Override
+    public boolean assign(int taskId, Integer accountId) {
+        String sql = "UPDATE Tasks SET AssignedTo = ? " +
+                "WHERE TaskID = ? AND Status NOT IN ('COMPLETED_ON_TIME','COMPLETED_LATE','CANCELLED')";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            if (accountId != null) ps.setInt(1, accountId); else ps.setNull(1, Types.INTEGER);
+            ps.setInt(2, taskId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    // ── Checklist ──
+
+    @Override
+    public List<TaskChecklistItem> findChecklist(int taskId) {
+        List<TaskChecklistItem> list = new ArrayList<>();
+        String sql = "SELECT * FROM TaskChecklistItems WHERE TaskID = ? ORDER BY SortOrder ASC, ChecklistItemID ASC";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, taskId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    TaskChecklistItem it = new TaskChecklistItem();
+                    it.setChecklistItemId(rs.getInt("ChecklistItemID"));
+                    it.setTaskId(rs.getInt("TaskID"));
+                    it.setItemText(MojibakeUtil.fix(rs.getString("ItemText")));
+                    it.setDone(rs.getBoolean("IsDone"));
+                    it.setSortOrder(rs.getInt("SortOrder"));
+                    if (rs.getTimestamp("CreatedAt") != null) it.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
+                    list.add(it);
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
+    }
+
+    @Override
+    public int addChecklistItem(int taskId, String itemText) {
+        String sql = "INSERT INTO TaskChecklistItems (TaskID, ItemText, SortOrder) " +
+                "VALUES (?, ?, (SELECT ISNULL(MAX(SortOrder),0)+1 FROM TaskChecklistItems WHERE TaskID = ?))";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setInt(1, taskId);
+            ps.setNString(2, itemText);
+            ps.setInt(3, taskId);
+            if (ps.executeUpdate() > 0) {
+                try (ResultSet keys = ps.getGeneratedKeys()) {
+                    if (keys.next()) return keys.getInt(1);
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return -1;
+    }
+
+    @Override
+    public boolean toggleChecklistItem(int checklistItemId, boolean done) {
+        String sql = "UPDATE TaskChecklistItems SET IsDone = ? WHERE ChecklistItemID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setBoolean(1, done);
+            ps.setInt(2, checklistItemId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    @Override
+    public boolean deleteChecklistItem(int checklistItemId) {
+        String sql = "DELETE FROM TaskChecklistItems WHERE ChecklistItemID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, checklistItemId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    // ── Comments ──
+
+    @Override
+    public List<TaskComment> findComments(int taskId) {
+        List<TaskComment> list = new ArrayList<>();
+        String sql = "SELECT c.*, a.FullName AS AccountName FROM TaskComments c " +
+                "LEFT JOIN Accounts a ON a.AccountID = c.AccountID WHERE c.TaskID = ? ORDER BY c.CreatedAt ASC";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, taskId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    TaskComment c = new TaskComment();
+                    c.setTaskCommentId(rs.getInt("TaskCommentID"));
+                    c.setTaskId(rs.getInt("TaskID"));
+                    c.setAccountId(rs.getInt("AccountID"));
+                    c.setAccountName(MojibakeUtil.fix(rs.getString("AccountName")));
+                    c.setBody(MojibakeUtil.fix(rs.getString("Body")));
+                    if (rs.getTimestamp("CreatedAt") != null) c.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
+                    list.add(c);
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
+    }
+
+    @Override
+    public int addComment(int taskId, int accountId, String body) {
+        String sql = "INSERT INTO TaskComments (TaskID, AccountID, Body) VALUES (?, ?, ?)";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setInt(1, taskId);
+            ps.setInt(2, accountId);
+            ps.setNString(3, body);
+            if (ps.executeUpdate() > 0) {
+                try (ResultSet keys = ps.getGeneratedKeys()) {
+                    if (keys.next()) return keys.getInt(1);
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return -1;
+    }
+
+    // ── Analytics (Admin — bottom charts) ──
+
+    @Override
+    public Map<String, Integer> countByStatusAll() {
+        Map<String, Integer> map = new LinkedHashMap<>();
+        String sql = "SELECT Status, COUNT(*) AS N FROM Tasks GROUP BY Status";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) map.put(rs.getString("Status"), rs.getInt("N"));
+        } catch (Exception e) { e.printStackTrace(); }
+        return map;
+    }
+
+    @Override
+    public Map<String, Integer> countByAssignee() {
+        Map<String, Integer> map = new LinkedHashMap<>();
+        String sql = "SELECT TOP 8 ISNULL(a.FullName, N'Chưa gán') AS N, COUNT(*) AS C FROM Tasks t " +
+                "LEFT JOIN Accounts a ON a.AccountID = t.AssignedTo " +
+                "WHERE t.Status <> 'CANCELLED' GROUP BY a.FullName ORDER BY C DESC";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) map.put(MojibakeUtil.fix(rs.getString("N")), rs.getInt("C"));
+        } catch (Exception e) { e.printStackTrace(); }
+        return map;
+    }
+
+    @Override
+    public Map<String, Integer> countByModule() {
+        Map<String, Integer> map = new LinkedHashMap<>();
+        String sql = "SELECT ISNULL(RefTable, N'Chung') AS M, COUNT(*) AS C FROM Tasks " +
+                "WHERE Status <> 'CANCELLED' GROUP BY RefTable ORDER BY C DESC";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) map.put(rs.getString("M"), rs.getInt("C"));
+        } catch (Exception e) { e.printStackTrace(); }
+        return map;
+    }
+
+    @Override
+    public Map<String, Integer> countByPriority() {
+        Map<String, Integer> map = new LinkedHashMap<>();
+        String sql = "SELECT Priority, COUNT(*) AS N FROM Tasks WHERE Status <> 'CANCELLED' GROUP BY Priority";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) map.put(rs.getString("Priority"), rs.getInt("N"));
+        } catch (Exception e) { e.printStackTrace(); }
+        return map;
+    }
+
+    @Override
+    public double avgCompletionHours() {
+        String sql = "SELECT AVG(CAST(DATEDIFF(MINUTE, CreatedAt, CompletedAt) AS FLOAT)) FROM Tasks " +
+                "WHERE Status IN ('COMPLETED_ON_TIME','COMPLETED_LATE') AND CompletedAt IS NOT NULL";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                double minutes = rs.getDouble(1);
+                return rs.wasNull() ? 0 : minutes / 60.0;
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return 0;
+    }
+
+    @Override
+    public int countOverdue() {
+        String sql = "SELECT COUNT(*) FROM Tasks WHERE DueDate IS NOT NULL AND DueDate < GETDATE() " +
+                "AND Status IN ('PENDING','IN_PROGRESS','REVIEW','BLOCKED')";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) return rs.getInt(1);
+        } catch (Exception e) { e.printStackTrace(); }
+        return 0;
     }
 
     private Integer findParentIdOf(int taskId) throws SQLException {
