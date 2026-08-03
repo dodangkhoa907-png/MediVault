@@ -33,6 +33,7 @@ public class PosServlet extends HttpServlet {
     private final IAccountDAO    accountDAO    = new AccountDAO();
     private final IAttendanceDAO attendanceDAO = new AttendanceDAO();
     private final IShiftScheduleDAO scheduleDAO = new ShiftScheduleDAO();
+    private final com.medicare.util.BarcodeService barcodeService = new com.medicare.util.BarcodeService();
 
     private static final int POS_ACCOUNT_ID = 1;
 
@@ -115,6 +116,18 @@ public class PosServlet extends HttpServlet {
             return;
         }
 
+        // Barcode redesign (Phần 2) — fallback tra cứu phía server khi mảng thuốc đã tải sẵn ở
+        // client (allMedicines) không khớp: thuốc mới tạo sau khi trang tải, mã vạch phụ/NCC/nội
+        // bộ/QR bind qua MedicineBarcodes... Quét trúng thì ghi nhận lượt quét (BarcodeService).
+        if ("lookup-barcode".equals(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            PrintWriter out = resp.getWriter();
+            Medicines m = barcodeService.lookup(req.getParameter("barcode"), normSource(req.getParameter("source")));
+            out.print(m != null
+                    ? "{\"ok\":true,\"found\":true,\"medicine\":" + com.medicare.util.BarcodeService.medicineJson(m) + "}"
+                    : "{\"ok\":true,\"found\":false}");
+            return;
+        }
 
         if ("find-customer".equals(action)) {
             String phone = ValidationUtil.normalizePhoneVN(req.getParameter("phone"));
@@ -307,6 +320,8 @@ public class PosServlet extends HttpServlet {
 
         req.setAttribute("screenState", screenState);
         req.setAttribute("categories",  categoryDAO.findAll());
+        // Barcode redesign (Phần 2) — cho form "Tạo nhanh thuốc" (Admin) trong panel Unknown Product.
+        req.setAttribute("posManufacturers", new ManufacturerDAO().findAll());
 
         // Luôn tải danh sách thuốc — POS bán hàng bình thường không cần điểm danh
         List<Medicines> medicines = medicineDAO.findAllWithStock();
@@ -371,6 +386,10 @@ public class PosServlet extends HttpServlet {
 
         if ("quick-create-customer".equals(action)) { handleQuickCreateCustomer(req, out); return; }
         if ("link-nfc".equals(action))              { handleLinkNfc(req, out); return; }
+
+        // Barcode redesign (Phần 2) — "Unknown Product" panel khi quét trúng mã vạch lạ.
+        if ("quick-create-medicine".equals(action))    { handleQuickCreateMedicineAtPos(req, out); return; }
+        if ("request-warehouse-barcode".equals(action)) { handleRequestWarehouseBarcode(req, out); return; }
 
         if ("open-shift".equals(action))  { handleOpenShift(req, out); return; }
         if ("pos-pause".equals(action))   { req.getSession(true).setAttribute("posState","PAUSED");  out.print("{\"ok\":true}"); return; }
@@ -794,6 +813,65 @@ public class PosServlet extends HttpServlet {
     }
 
     /**
+     * Barcode redesign (Phần 2) — "Unknown Product → Create Medicine (Admin only)". Chỉ Admin
+     * (RoleID=1) mới được tạo thuốc thẳng từ quầy POS — thu ngân/dược sĩ đứng quầy chỉ có 2 lựa
+     * chọn còn lại (tìm tay / báo Thủ kho), tránh dữ liệu danh mục thuốc bị tạo tuỳ tiện giữa ca bán.
+     */
+    private void handleQuickCreateMedicineAtPos(HttpServletRequest req, PrintWriter out) {
+        HttpSession session = req.getSession(false);
+        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
+        if (staff == null || staff.getRoleId() != 1) {
+            out.print("{\"ok\":false,\"reason\":\"admin_only\"}"); return;
+        }
+        String name = req.getParameter("name");
+        String barcode = req.getParameter("barcode");
+        String unit = req.getParameter("unit");
+        if (name == null || name.trim().length() < 2) { out.print("{\"ok\":false,\"reason\":\"invalid_name\"}"); return; }
+        if (barcode == null || barcode.trim().isEmpty()) { out.print("{\"ok\":false,\"reason\":\"invalid_barcode\"}"); return; }
+        if (unit == null || unit.trim().isEmpty()) { out.print("{\"ok\":false,\"reason\":\"invalid_unit\"}"); return; }
+        Integer categoryId = parseIntOrNull(req.getParameter("categoryId"));
+        Integer manufacturerId = parseIntOrNull(req.getParameter("manufacturerId"));
+        if (categoryId == null) { out.print("{\"ok\":false,\"reason\":\"invalid_category\"}"); return; }
+        if (manufacturerId == null) { out.print("{\"ok\":false,\"reason\":\"invalid_manufacturer\"}"); return; }
+        BigDecimal price;
+        try { price = new BigDecimal(req.getParameter("sellingPrice")); } catch (Exception e) { price = BigDecimal.ZERO; }
+
+        Medicines created = barcodeService.quickCreate(name.trim(), req.getParameter("genericName"), barcode.trim(),
+                categoryId, manufacturerId, unit.trim(), price,
+                "true".equals(req.getParameter("prescriptionRequired")),
+                req.getParameter("storageConditions"), staff.getAccountId(), normSource(req.getParameter("source")));
+        if (created == null) { out.print("{\"ok\":false,\"reason\":\"conflict_or_db_error\"}"); return; }
+
+        com.medicare.util.AuditHelper.log(req, "Tạo nhanh thuốc từ quét mã vạch (POS)", "Medicine",
+                created.getMedicineId(), "Mã vạch " + barcode.trim() + " — " + created.getMedicineName());
+        out.print("{\"ok\":true,\"medicine\":" + com.medicare.util.BarcodeService.medicineJson(created) + "}");
+    }
+
+    /**
+     * Barcode redesign (Phần 2) — "Unknown Product → Request Warehouse": thay vì hàng đợi ticket
+     * riêng (chưa có hệ thống), tạo thẳng 1 Task hệ thống KHÔNG giao sẵn ai (AssignedTo=null) —
+     * hiện ngay trên bảng "Nhiệm vụ hôm nay" của mọi Thủ kho, dùng lại {@link ITaskDAO} có sẵn
+     * thay vì xây 1 hàng đợi mới.
+     */
+    private void handleRequestWarehouseBarcode(HttpServletRequest req, PrintWriter out) {
+        HttpSession session = req.getSession(false);
+        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
+        String barcode = req.getParameter("barcode");
+        if (barcode == null || barcode.trim().isEmpty()) { out.print("{\"ok\":false,\"reason\":\"invalid_barcode\"}"); return; }
+
+        String staffName = staff != null ? staff.getFullName() : "Nhân viên POS";
+        String title = "Bổ sung mã vạch mới: " + barcode.trim();
+        String desc = "Thu ngân " + staffName + " quét phải mã vạch chưa có trong hệ thống tại quầy POS ("
+                + "\"Yêu cầu Thủ kho\" — Unknown Product). Cần xác nhận đây là thuốc gì và nhập kho/gán mã vạch.";
+        int taskId = new com.medicare.dao.TaskDAO().insertSystemTask(title, desc, "MEDIUM", null, "Medicines", null, null);
+        if (taskId <= 0) { out.print("{\"ok\":false,\"reason\":\"db_error\"}"); return; }
+
+        com.medicare.util.AuditHelper.log(req, "Yêu cầu Thủ kho bổ sung mã vạch", "Medicine", null,
+                "Mã vạch " + barcode.trim() + " — tạo task #" + taskId + " cho Thủ kho");
+        out.print("{\"ok\":true,\"taskId\":" + taskId + "}");
+    }
+
+    /**
      * Liên kết thẻ NFC trắng với khách (tra theo SĐT). Thẻ đã gán cho người
      * khác thì từ chối. Nếu SĐT chưa có tài khoản → client mở form tạo nhanh.
      */
@@ -1211,5 +1289,10 @@ public class PosServlet extends HttpServlet {
     private String esc(String s) {
         if (s == null) return "";
         return s.replace("\\","\\\\").replace("\"","\\\"").replace("\n"," ").replace("\r","");
+    }
+
+    private String normSource(String s) {
+        if ("camera".equals(s) || "usb".equals(s) || "manual".equals(s)) return s;
+        return "manual";
     }
 }

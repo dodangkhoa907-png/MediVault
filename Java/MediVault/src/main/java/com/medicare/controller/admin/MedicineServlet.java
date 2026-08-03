@@ -120,7 +120,12 @@ public class MedicineServlet extends HttpServlet {
         int totalPages = Math.max(1, (int) Math.ceil((double) total / pageSize));
         page = Math.min(page, totalPages);
 
-        List<Medicines> list = medicineDAO.findPaged(keyword, catId, page, pageSize);
+        // Sắp xếp — whitelist cố định trong DAO (name|price), tham số lạ tự rơi về mặc định cũ.
+        String sortBy  = req.getParameter("sort");
+        String sortDir = req.getParameter("dir");
+        List<Medicines> list = medicineDAO.findPaged(keyword, catId, page, pageSize, sortBy, sortDir);
+        req.setAttribute("sortBy",  sortBy  != null ? sortBy  : "");
+        req.setAttribute("sortDir", sortDir != null ? sortDir : "");
 
         // 1 query cho toàn bộ tồn kho — cache 30s để chuyển trang liên tục không query lại
         Map<Integer, Integer> stockMap =

@@ -5,9 +5,9 @@
 
   Trang gọi PHẢI định nghĩa trước 2 biến page-scope:
     String uid       — id nhân sự (đưa vào mọi link ?uid=)
-    String activeNav — 1 trong: dashboard|inventory|movement|reorder|recall|import|orders|shelves|task|profile
-    ("orders" tô sáng chung với "import" — trang /warehouse-orders chỉ vào được qua tb-nav
-    của Nhập kho, không có mục sidebar riêng.)
+    String activeNav — 1 trong: dashboard|inventory|movement|reorder|recall|import|orders|export|shelves|task|profile
+    ("orders" và "export" tô sáng chung với "import" — /warehouse-orders và /warehouse-export
+    chỉ vào được qua tb-nav của Nhập kho, không có mục sidebar riêng.)
 
   Sidebar CHỈ còn 4 mục chính (2026-08-01, rút gọn theo yêu cầu) — inventory/movement/
   reorder/recall gộp chung 1 mục "Quản lý tồn kho", chuyển qua lại bằng .section-tabs
@@ -53,7 +53,7 @@
       <% if (_whExpiry != null && ((Integer) _whExpiry) > 0) { %><span class="nav-badge"><%= _whExpiry %></span><% } %>
     </a>
     <a href="<%= _whCtx %>/warehouse-import"
-       class="nav-item <%= ("import".equals(_whActive) || "orders".equals(_whActive)) ? "active" : "" %>">
+       class="nav-item <%= ("import".equals(_whActive) || "orders".equals(_whActive) || "export".equals(_whActive)) ? "active" : "" %>">
       <span class="nav-icon">📥</span> Nhập kho
     </a>
     <%-- Trang riêng /warehouse-shelf (2026-08-05) — trước đây mở modal ngay ở đây, nhưng

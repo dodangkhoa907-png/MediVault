@@ -16,6 +16,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -47,10 +48,19 @@ public class WarehouseImportServlet extends HttpServlet {
         return com.medicare.util.WarehouseAuth.require(req, resp);
     }
 
+    private final com.medicare.util.BarcodeService barcodeService = new com.medicare.util.BarcodeService();
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         Account acc = requireWarehouseStaff(req, resp);
         if (acc == null) return;
+
+        // ── Barcode redesign (Phần 1) — tra cứu AJAX, không render lại trang ──
+        if ("lookup-barcode".equals(req.getParameter("action"))) {
+            apiLookupBarcode(req, resp);
+            return;
+        }
+
         String uid = String.valueOf(acc.getAccountId());   // tu SESSION, khong tu URL
 
         // findAllWithStock (không phải findAll): wizard nhập kho cần tồn hiện tại và
@@ -89,6 +99,11 @@ public class WarehouseImportServlet extends HttpServlet {
         // (nhập kho). Nay truyền medicineId qua để JS pre-select sẵn đúng thuốc ở Bước 1.
         req.setAttribute("preSelectMedicineId", req.getParameter("medicineId"));
 
+        // Barcode redesign (Phần 1) — Category/Manufacturer cho form "Tạo nhanh thuốc" trong
+        // wizard "Phát hiện mã vạch mới" (Option B), tránh thủ kho phải rời trang.
+        req.setAttribute("bcCategories", new com.medicare.dao.CategoryDAO().findAll());
+        req.setAttribute("bcManufacturers", new com.medicare.dao.ManufacturerDAO().findAll());
+
         // Define activeNav for sidebar
         req.setAttribute("activeNav", "inventory");
 
@@ -104,6 +119,13 @@ public class WarehouseImportServlet extends HttpServlet {
         req.setCharacterEncoding("UTF-8");
         Account acc = requireWarehouseStaff(req, resp);
         if (acc == null) return;
+
+        // ── Barcode redesign (Phần 1) — wizard "Phát hiện mã vạch mới": trả JSON, không
+        // redirect/render lại trang (đúng yêu cầu "NO page reload"). ──
+        String action = req.getParameter("action");
+        if ("quick-create-medicine".equals(action)) { handleQuickCreateMedicine(req, resp, acc); return; }
+        if ("bind-barcode".equals(action))          { handleBindBarcode(req, resp, acc); return; }
+
         String uid = String.valueOf(acc.getAccountId());   // tu SESSION, khong tu URL
 
         try {
@@ -194,6 +216,102 @@ public class WarehouseImportServlet extends HttpServlet {
             e.printStackTrace();
             resp.sendRedirect(req.getContextPath() + "/warehouse-import?msg=import-error");
         }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  BARCODE REDESIGN (Phần 1) — tra cứu / tạo nhanh / bind mã vạch, AJAX JSON
+    // ══════════════════════════════════════════════════════════════════════
+
+    /** action=lookup-barcode&barcode=...&source=camera|usb|manual — GET, gọi mỗi lần quét.
+     *  Khớp → JSON {"ok":true,"found":true,"medicine":{...}}. Không khớp → {"ok":true,"found":false}
+     *  ("mã vạch mới", KHÔNG phải lỗi — đúng tinh thần "Never interrupt the workflow"). */
+    private void apiLookupBarcode(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        resp.setHeader("Cache-Control", "no-store");
+        String barcode = req.getParameter("barcode");
+        String source  = normSource(req.getParameter("source"));
+        Medicines m = barcodeService.lookup(barcode, source);
+        PrintWriter out = resp.getWriter();
+        if (m != null) {
+            out.print("{\"ok\":true,\"found\":true,\"medicine\":" + com.medicare.util.BarcodeService.medicineJson(m) + "}");
+        } else {
+            out.print("{\"ok\":true,\"found\":false}");
+        }
+    }
+
+    /** action=quick-create-medicine — POST, Option B của wizard "Phát hiện mã vạch mới":
+     *  tạo thuốc hoàn toàn mới ngay tại chỗ, mã vừa quét trở thành Barcode chính. Trả về
+     *  thuốc mới để JS chọn thẳng vào Bước 1 mà KHÔNG reload trang. */
+    private void handleQuickCreateMedicine(HttpServletRequest req, HttpServletResponse resp, Account acc) throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        PrintWriter out = resp.getWriter();
+        try {
+            String name = req.getParameter("name");
+            String barcode = req.getParameter("barcode");
+            String unit = req.getParameter("unit");
+            if (name == null || name.trim().length() < 2) { out.print("{\"ok\":false,\"reason\":\"invalid_name\"}"); return; }
+            if (barcode == null || barcode.trim().isEmpty()) { out.print("{\"ok\":false,\"reason\":\"invalid_barcode\"}"); return; }
+            if (unit == null || unit.trim().isEmpty()) { out.print("{\"ok\":false,\"reason\":\"invalid_unit\"}"); return; }
+            Integer categoryId = parseIntOrNull(req.getParameter("categoryId"));
+            Integer manufacturerId = parseIntOrNull(req.getParameter("manufacturerId"));
+            if (categoryId == null) { out.print("{\"ok\":false,\"reason\":\"invalid_category\"}"); return; }
+            if (manufacturerId == null) { out.print("{\"ok\":false,\"reason\":\"invalid_manufacturer\"}"); return; }
+
+            BigDecimal price;
+            try { price = new BigDecimal(req.getParameter("sellingPrice")); }
+            catch (Exception e) { price = BigDecimal.ZERO; }
+
+            Medicines created = barcodeService.quickCreate(
+                    name.trim(), req.getParameter("genericName"), barcode.trim(),
+                    categoryId, manufacturerId, unit.trim(), price,
+                    "on".equals(req.getParameter("prescriptionRequired")) || "true".equals(req.getParameter("prescriptionRequired")),
+                    req.getParameter("storageConditions"), acc.getAccountId(), normSource(req.getParameter("source")));
+
+            if (created == null) { out.print("{\"ok\":false,\"reason\":\"conflict_or_db_error\"}"); return; }
+
+            com.medicare.util.AuditHelper.log(req, "Tạo nhanh thuốc từ quét mã vạch", "Medicine",
+                    created.getMedicineId(), "Mã vạch " + barcode.trim() + " — " + created.getMedicineName());
+
+            out.print("{\"ok\":true,\"medicine\":" + com.medicare.util.BarcodeService.medicineJson(created) + "}");
+        } catch (Exception e) {
+            e.printStackTrace();
+            out.print("{\"ok\":false,\"reason\":\"server_error\"}");
+        }
+    }
+
+    /** action=bind-barcode — POST, Option A của wizard: gán mã vạch vừa quét vào 1 thuốc ĐÃ CÓ
+     *  (thủ kho tự tìm/chọn thuốc). */
+    private void handleBindBarcode(HttpServletRequest req, HttpServletResponse resp, Account acc) throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        PrintWriter out = resp.getWriter();
+        try {
+            Integer medicineId = parseIntOrNull(req.getParameter("medicineId"));
+            String barcode = req.getParameter("barcode");
+            if (medicineId == null) { out.print("{\"ok\":false,\"reason\":\"invalid_medicine\"}"); return; }
+            if (barcode == null || barcode.trim().isEmpty()) { out.print("{\"ok\":false,\"reason\":\"invalid_barcode\"}"); return; }
+
+            boolean ok = barcodeService.bindToExisting(medicineId, barcode.trim(), acc.getAccountId(), normSource(req.getParameter("source")));
+            if (!ok) { out.print("{\"ok\":false,\"reason\":\"conflict_or_db_error\"}"); return; }
+
+            Medicines m = medicineDAO.findById(medicineId);
+            com.medicare.util.AuditHelper.log(req, "Gán mã vạch", "Medicine", medicineId,
+                    "Gán mã vạch " + barcode.trim() + " vào thuốc " + (m != null ? m.getMedicineName() : "#" + medicineId));
+
+            out.print("{\"ok\":true,\"medicine\":" + com.medicare.util.BarcodeService.medicineJson(m) + "}");
+        } catch (Exception e) {
+            e.printStackTrace();
+            out.print("{\"ok\":false,\"reason\":\"server_error\"}");
+        }
+    }
+
+    private String normSource(String s) {
+        if ("camera".equals(s) || "usb".equals(s) || "manual".equals(s)) return s;
+        return "manual";
+    }
+
+    private Integer parseIntOrNull(String s) {
+        if (s == null || s.trim().isEmpty()) return null;
+        try { return Integer.parseInt(s.trim()); } catch (NumberFormatException e) { return null; }
     }
 
     /**

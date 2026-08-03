@@ -87,15 +87,24 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 .tab-sep{width:1px;height:22px;background:var(--border);flex-shrink:0;margin:0 2px}
 /* ── STATS ── */
 .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
-.stat-card{background:#fff;border:1.5px solid rgba(213,224,240,.5);border-radius:14px;padding:16px 18px;cursor:pointer;transition:all .25s;user-select:none;
-  box-shadow:0 1px 3px rgba(15,38,69,.03),0 4px 12px rgba(15,38,69,.04)}
-.stat-card:hover{border-color:var(--blue);box-shadow:0 4px 14px rgba(21,88,168,.1);transform:translateY(-2px)}
-.stat-card.sc-active{border-color:var(--blue);box-shadow:0 0 0 3px rgba(21,88,168,.12),0 4px 16px rgba(21,88,168,.12);transform:translateY(-2px)}
-.stat-card.warn.sc-active{border-color:var(--gold);box-shadow:0 0 0 3px rgba(217,119,6,.12),0 4px 16px rgba(217,119,6,.12)}
-.stat-card.danger.sc-active{border-color:var(--red);box-shadow:0 0 0 3px rgba(220,38,38,.12),0 4px 16px rgba(220,38,38,.12)}
-.stat-card.sc-active .stat-lbl::before{content:'▶ ';font-size:10px}
-.stat-val{font-size:26px;font-weight:700;color:var(--ink)}
-.stat-lbl{font-size:12px;color:var(--muted);margin-top:3px;font-weight:600}
+.stat-card{background:#fff;border:1.5px solid rgba(213,224,240,.5);border-radius:14px;padding:16px 18px;cursor:pointer;transition:all .2s;user-select:none;
+  box-shadow:0 1px 3px rgba(15,38,69,.03),0 4px 12px rgba(15,38,69,.04);display:flex;align-items:center;gap:13px}
+.stat-card:hover{border-color:var(--blue);box-shadow:0 6px 18px rgba(21,88,168,.1);transform:translateY(-2px)}
+.stat-card.sc-active{border-color:var(--blue);box-shadow:0 0 0 3px rgba(21,88,168,.12),0 6px 18px rgba(21,88,168,.12);transform:translateY(-2px)}
+.stat-card.warn.sc-active{border-color:var(--gold);box-shadow:0 0 0 3px rgba(217,119,6,.12),0 6px 18px rgba(217,119,6,.12)}
+.stat-card.danger.sc-active{border-color:var(--red);box-shadow:0 0 0 3px rgba(220,38,38,.12),0 6px 18px rgba(220,38,38,.12)}
+.stat-icon{width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;transition:transform .2s}
+.stat-card:hover .stat-icon{transform:scale(1.06)}
+.stat-icon.si-blue{background:linear-gradient(150deg,#DBEAFE,#EFF6FF)}
+.stat-icon.si-gold{background:linear-gradient(150deg,#FEF3C7,#FFFBEB)}
+.stat-icon.si-purple{background:linear-gradient(150deg,#EDE9FE,#F5F3FF)}
+.stat-icon.si-red{background:linear-gradient(150deg,#FEE2E2,#FFF5F5)}
+.stat-body{min-width:0}
+.stat-card.sc-active .stat-body::before{content:'ĐANG LỌC';display:block;font-size:9px;font-weight:800;color:var(--blue);letter-spacing:.6px;margin-bottom:2px}
+.stat-card.warn.sc-active .stat-body::before{color:var(--gold)}
+.stat-card.danger.sc-active .stat-body::before{color:var(--red)}
+.stat-val{font-size:25px;font-weight:750;color:var(--ink);line-height:1;font-variant-numeric:tabular-nums}
+.stat-lbl{font-size:12px;color:var(--muted);margin-top:5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stat-card.warn .stat-val{color:var(--gold)}
 .stat-card.danger .stat-val{color:var(--red)}
 /* ── ICON ACTION BUTTONS ── */
@@ -151,13 +160,52 @@ body{display:flex;background:var(--surface);color:var(--ink)}
 /* ── TABLE ── */
 .table-wrap{background:#fff;border:1px solid rgba(213,224,240,.45);border-radius:16px;overflow:hidden;
   box-shadow:0 1px 3px rgba(15,38,69,.03),0 4px 12px rgba(15,38,69,.04)}
+/* Vùng cuộn RIÊNG cho bảng — thead sticky bám theo scroll của chính div này, không phải cả
+   trang. Tách ra thay vì sticky trực tiếp trên .table-wrap vì .table-wrap có overflow:hidden
+   (để bo góc 16px) — overflow:hidden lập ra 1 scroll container riêng khiến sticky "top:0" bị
+   tính theo khung đó thay vì viewport, kết quả là dính sai chỗ/không dính. */
+.table-scroll{max-height:640px;overflow-y:auto}
+.table-scroll::-webkit-scrollbar{width:8px}
+.table-scroll::-webkit-scrollbar-thumb{background:#D5E0F0;border-radius:8px}
+.table-scroll::-webkit-scrollbar-thumb:hover{background:#B8C9E0}
 table{width:100%;border-collapse:collapse}
-thead th{padding:11px 14px;font-size:11px;font-weight:750;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:#F8FAFE;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
-tbody td{padding:12px 14px;font-size:13.5px;border-bottom:.5px solid #F0F4FB;vertical-align:middle}
+thead th{padding:11px 14px;font-size:11px;font-weight:750;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:#F8FAFE;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;position:sticky;top:0;z-index:3}
+tbody td{padding:13px 14px;font-size:13.5px;border-bottom:.5px solid #F0F4FB;vertical-align:middle}
 tbody tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:#FAFBFF}
 .med-name{font-weight:750;color:var(--ink)}
 .med-code{font-size:11px;color:var(--muted);font-family:monospace;margin-top:1px}
+/* Thanh mức tồn — mốc "đầy" tham chiếu = 2× ngưỡng tối thiểu, chỉ để quét nhanh bằng mắt,
+   không thay cho số thật (số vẫn hiện riêng ngay trên thanh). */
+.stock-bar-wrap{width:64px;height:5px;background:var(--surface);border-radius:20px;overflow:hidden;margin-top:5px;margin-left:auto}
+.stock-bar{height:100%;border-radius:20px;transition:width .3s}
+.stock-bar.bar-ok{background:linear-gradient(90deg,var(--green),#34D399)}
+.stock-bar.bar-warn{background:linear-gradient(90deg,var(--gold),#FBBF24)}
+.stock-bar.bar-out{background:var(--red)}
+/* ── Sort headers ── */
+th.th-sort{cursor:pointer;user-select:none;transition:color .12s}
+th.th-sort:hover{color:var(--blue)}
+.sort-arrow{display:inline-block;margin-left:3px;font-size:9px;opacity:.35}
+th.th-sort.sorted .sort-arrow{opacity:1;color:var(--blue)}
+/* ── Resizable columns — chỉ đặt width khi user thực sự kéo, table-layout vẫn auto như cũ ── */
+th.th-resizable{position:relative}
+.col-resizer{position:absolute;right:-3px;top:0;bottom:0;width:7px;cursor:col-resize;user-select:none;z-index:4}
+.col-resizer:hover,.col-resizer.resizing{background:rgba(21,88,168,.3)}
+/* ── Checkbox column + bulk action bar ── */
+.chk-col{width:38px;text-align:center}
+.row-chk,#selectAllChk{width:16px;height:16px;cursor:pointer;accent-color:var(--blue)}
+.bulk-bar{display:none;align-items:center;gap:12px;padding:11px 18px;margin-bottom:12px;background:var(--navy);
+  border-radius:12px;color:#fff;box-shadow:0 4px 16px rgba(15,38,69,.18);animation:bulkIn .18s ease}
+@keyframes bulkIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.bulk-bar.show{display:flex}
+.bulk-bar-count{font-size:13px;font-weight:750;flex-shrink:0}
+.bulk-bar-count b{color:var(--cyan)}
+.bulk-bar-actions{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+.bulk-btn{height:32px;padding:0 13px;border-radius:8px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);
+  color:#fff;font-size:12px;font-weight:750;cursor:pointer;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+.bulk-btn:hover{background:rgba(255,255,255,.16)}
+.bulk-btn.bulk-danger{border-color:rgba(252,165,165,.35);color:#FCA5A5}
+.bulk-btn.bulk-danger:hover{background:rgba(220,38,38,.18)}
 .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:750}
 .badge-green{background:#D1FAE5;color:#065F46}
 .badge-red{background:#FEE2E2;color:#991B1B}
@@ -359,7 +407,7 @@ textarea.dw-input{height:72px;padding:9px 12px;resize:vertical}
 @keyframes spin{to{transform:rotate(360deg)}}
 select,option{font-family:inherit;font-size:inherit}
 .cdd{position:relative;user-select:none;display:inline-block}
-.cdd-btn{display:flex;align-items:center;gap:6px;padding:9px 14px;background:var(--white,#fff);border:1.5px solid var(--border,#D5E0F0);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;color:var(--ink,#0B1628);cursor:pointer;transition:all .18s;white-space:nowrap}
+.cdd-btn{display:flex;align-items:center;gap:6px;height:38px;padding:0 14px;background:var(--white,#fff);border:1.5px solid var(--border,#D5E0F0);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:750;color:var(--ink,#0B1628);cursor:pointer;transition:all .18s;white-space:nowrap}
 .cdd-btn:hover{border-color:var(--cyan,#3ABDE0);background:var(--cyan-soft,#EBF8FD)}
 .cdd-btn.open{border-color:var(--cyan,#3ABDE0);box-shadow:0 0 0 3px rgba(58,189,224,.12)}
 .cdd-arrow{font-size:9px;color:var(--muted,#7A90B0);transition:transform .2s}
@@ -462,20 +510,32 @@ select,option{font-family:inherit;font-size:inherit}
 
     <div class="stats-row">
       <div class="stat-card sc-active" id="scAll" onclick="switchCard('all')">
-        <div class="stat-val">${totalActive}</div>
-        <div class="stat-lbl">💊 Thuốc đang kinh doanh</div>
+        <div class="stat-icon si-blue">💊</div>
+        <div class="stat-body">
+          <div class="stat-val">${totalActive}</div>
+          <div class="stat-lbl">Thuốc đang kinh doanh</div>
+        </div>
       </div>
       <div class="stat-card warn" id="scLow" onclick="switchCard('low')">
-        <div class="stat-val">${lowStock}</div>
-        <div class="stat-lbl">⚠️ Sắp hết hàng</div>
+        <div class="stat-icon si-gold">⚠️</div>
+        <div class="stat-body">
+          <div class="stat-val">${lowStock}</div>
+          <div class="stat-lbl">Sắp hết hàng</div>
+        </div>
       </div>
       <div class="stat-card danger" id="scExpiring" onclick="switchCard('expiring')">
-        <div class="stat-val">${totalExpiringSoon}</div>
-        <div class="stat-lbl">⏳ Thuốc có lô cận HH</div>
+        <div class="stat-icon si-purple">⏳</div>
+        <div class="stat-body">
+          <div class="stat-val">${totalExpiringSoon}</div>
+          <div class="stat-lbl">Thuốc có lô cận HH</div>
+        </div>
       </div>
       <div class="stat-card danger" id="scExpired" onclick="switchCard('expired')">
-        <div class="stat-val">${totalExpiredMeds}</div>
-        <div class="stat-lbl">⛔ Thuốc có lô đã HH</div>
+        <div class="stat-icon si-red">⛔</div>
+        <div class="stat-body">
+          <div class="stat-val">${totalExpiredMeds}</div>
+          <div class="stat-lbl">Thuốc có lô đã HH</div>
+        </div>
       </div>
     </div>
 
@@ -489,7 +549,7 @@ select,option{font-family:inherit;font-size:inherit}
                      value="${keyword}" id="searchInput" autocomplete="off"/>
               <button type="button" id="searchClear" onclick="clearSearch()" title="Xóa tìm kiếm">✕</button>
             </div>
-            <button type="button" class="btn-primary" style="display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 12px; background:var(--blue); color:#fff; border:none; border-radius:10px; font-weight:750; font-size:12.5px; cursor:pointer;" onclick="openBarcodeScan()" title="Quét mã vạch bằng camera">📷 Quét Barcode</button>
+            <button type="button" class="btn-primary" onclick="openBarcodeScan()" title="Quét mã vạch bằng camera">📷 Quét Barcode</button>
             <div class="cs-wrap" id="csCatWrap">
               <div class="cs-trigger" onclick="toggleCs()">
                 <span class="cs-label" id="csLabel">Tất cả danh mục</span>
@@ -540,19 +600,39 @@ select,option{font-family:inherit;font-size:inherit}
         </div>
       </form>
 
+    <%-- ── Bulk action bar — chỉ hiện khi có ≥1 dòng được chọn. Tái dùng NGUYÊN 2 action POST
+         đã có sẵn (toggle-medicine / delete-medicine) gọi lặp qua fetch(), không thêm endpoint
+         mới ở backend. ── --%>
+    <div class="bulk-bar" id="bulkBar">
+      <span class="bulk-bar-count">Đã chọn <b id="bulkCount">0</b> thuốc</span>
+      <div class="bulk-bar-actions">
+        <button type="button" class="bulk-btn" onclick="bulkSetStatus(false)">🙈 Ẩn (đang bán)</button>
+        <button type="button" class="bulk-btn" onclick="bulkSetStatus(true)">👁 Hiện (đã ẩn)</button>
+        <button type="button" class="bulk-btn bulk-danger" onclick="bulkDelete()">🗑️ Xóa (chỉ hết hàng)</button>
+        <button type="button" class="bulk-btn" onclick="clearSelection()">✕ Bỏ chọn</button>
+      </div>
+    </div>
+
     <div class="table-wrap">
+      <div class="table-scroll">
       <table>
         <thead>
           <tr>
-            <th>#</th><th>Thuốc</th><th>Danh mục</th><th>Đơn vị</th>
-            <th style="text-align:right">Giá bán</th><th style="text-align:right">Tồn kho</th><th>Loại</th><th>Trạng thái</th><th>Thao tác</th>
+            <th class="chk-col"><input type="checkbox" id="selectAllChk" onchange="toggleSelectAll(this)" title="Chọn tất cả trong trang này"></th>
+            <th>#</th>
+            <th class="th-sort th-resizable ${sortBy == 'name' ? 'sorted' : ''}" onclick="sortByColumn('name')">Thuốc <span class="sort-arrow">${sortBy == 'name' ? (sortDir == 'desc' ? '▼' : '▲') : '↕'}</span></th>
+            <th class="th-resizable">Danh mục</th>
+            <th class="th-resizable">Đơn vị</th>
+            <th style="text-align:right" class="th-sort th-resizable ${sortBy == 'price' ? 'sorted' : ''}" onclick="sortByColumn('price')">Giá bán <span class="sort-arrow">${sortBy == 'price' ? (sortDir == 'desc' ? '▼' : '▲') : '↕'}</span></th>
+            <th style="text-align:right" class="th-resizable">Tồn kho</th>
+            <th>Loại</th><th>Trạng thái</th><th>Thao tác</th>
           </tr>
         </thead>
         <tbody id="medTable">
           <c:choose>
             <c:when test="${empty medicines}">
               <tr class="empty-row">
-                <td colspan="9">
+                <td colspan="10">
                   <c:choose>
                     <c:when test="${not empty keyword || not empty catId}">
                       🔍 Không tìm thấy kết quả nào phù hợp với bộ lọc hiện tại.
@@ -593,6 +673,9 @@ select,option{font-family:inherit;font-size:inherit}
                     data-med-id="${m.medicineId}"
                     class="med-row"
                     onclick="rowClick(event,this,${m.medicineId})">
+                  <td class="chk-col" onclick="event.stopPropagation()">
+                    <input type="checkbox" class="row-chk" onchange="updateBulkBar()">
+                  </td>
                   <td style="color:var(--muted);font-size:12px;user-select:none">
                     <div class="expand-cell">
                       <span class="row-caret">›</span>
@@ -642,6 +725,12 @@ select,option{font-family:inherit;font-size:inherit}
                           <span class="stock-val stock-ok">${stock}</span>
                         </c:otherwise>
                       </c:choose>
+                    </div>
+                    <%-- Thanh mức tồn — quét nhanh bằng mắt, mốc "đầy" tham chiếu = 2× ngưỡng
+                         tối thiểu. Không có ngưỡng thì chỉ hiện đầy/rỗng theo còn hàng hay không. --%>
+                    <c:set var="stockPct" value="${m.minInventory > 0 ? (stock * 100 / (m.minInventory * 2)) : (stock > 0 ? 100 : 0)}"/>
+                    <div class="stock-bar-wrap" title="${stock} / ngưỡng tối thiểu ${m.minInventory}">
+                      <div class="stock-bar ${stock == 0 ? 'bar-out' : (stock <= m.minInventory ? 'bar-warn' : 'bar-ok')}" style="width:${stockPct}%"></div>
                     </div>
                     <c:if test="${not empty soonBatches and soonBatches > 0}">
                       <div class="badge badge-gold" style="margin-top:5px;font-size:10px;padding:2px 6px">
@@ -694,6 +783,7 @@ select,option{font-family:inherit;font-size:inherit}
           </c:choose>
         </tbody>
       </table>
+      </div><%-- /table-scroll --%>
     </div><%-- /table-wrap --%>
 
     <%-- ── PAGINATION ── --%>
@@ -1189,7 +1279,7 @@ async function toggleExpand(tr, medicineId) {
     }
     inner += '</div>';
 
-    bRow.innerHTML = '<td colspan="9">' + inner + '</td>';
+    bRow.innerHTML = '<td colspan="10">' + inner + '</td>';
     tr.insertAdjacentElement('afterend', bRow);
     tr.classList.add('expanded');
   } catch(e) {
@@ -1468,6 +1558,101 @@ function changePageSize(size) {
   window.location.href = u.toString();
 }
 
+// ── Sắp xếp cột (server-side, whitelist name|price ở DAO) ──────────────────
+function sortByColumn(col) {
+  const u = new URL(window.location.href);
+  const curSort = u.searchParams.get('sort');
+  const curDir  = u.searchParams.get('dir') || 'asc';
+  const newDir  = (curSort === col && curDir === 'asc') ? 'desc' : 'asc';
+  u.searchParams.set('sort', col);
+  u.searchParams.set('dir', newDir);
+  u.searchParams.set('page', '1');
+  window.location.href = u.toString();
+}
+
+// ── Resize cột bằng kéo thả — chỉ set width khi user kéo thật, table-layout vẫn auto như
+// trước giờ nên các cột không kéo tới không bị vỡ layout. ──────────────────────────────
+function initColumnResize() {
+  document.querySelectorAll('.th-resizable').forEach(function (th) {
+    const handle = document.createElement('div');
+    handle.className = 'col-resizer';
+    th.appendChild(handle);
+    handle.addEventListener('click', function (e) { e.stopPropagation(); });
+    handle.addEventListener('mousedown', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      const startX = e.pageX, startW = th.offsetWidth;
+      handle.classList.add('resizing');
+      function onMove(ev) { th.style.width = Math.max(60, startW + (ev.pageX - startX)) + 'px'; }
+      function onUp() {
+        handle.classList.remove('resizing');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+}
+initColumnResize();
+
+// ── Bulk actions — tái dùng NGUYÊN action=toggle-medicine / delete-medicine đã có sẵn
+// (POST y hệt form 1 dòng, gọi lặp qua fetch), KHÔNG thêm endpoint mới ở backend. ──────
+function selectedRows() {
+  return Array.prototype.slice.call(document.querySelectorAll('.row-chk:checked'))
+    .map(function (cb) { return cb.closest('tr'); });
+}
+function toggleSelectAll(cb) {
+  document.querySelectorAll('.row-chk').forEach(function (c) { c.checked = cb.checked; });
+  updateBulkBar();
+}
+function updateBulkBar() {
+  const rows = selectedRows();
+  document.getElementById('bulkBar').classList.toggle('show', rows.length > 0);
+  document.getElementById('bulkCount').textContent = rows.length;
+  const all = document.querySelectorAll('.row-chk');
+  const allChecked = all.length > 0 && rows.length === all.length;
+  const selAll = document.getElementById('selectAllChk');
+  if (selAll) selAll.checked = allChecked;
+}
+function clearSelection() {
+  document.querySelectorAll('.row-chk').forEach(function (c) { c.checked = false; });
+  const selAll = document.getElementById('selectAllChk');
+  if (selAll) selAll.checked = false;
+  updateBulkBar();
+}
+async function postAction(action, id) {
+  const body = new URLSearchParams({ action: action, id: id });
+  const res = await fetch((typeof CTX !== 'undefined' ? CTX : '') + '/medicines', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString()
+  });
+  return res.ok;
+}
+// targetShowing=false → ẩn các dòng ĐANG bán đã chọn; true → hiện lại các dòng ĐÃ ẩn đã chọn.
+// Lọc theo trạng thái hiện tại của từng dòng trước khi gọi toggle, vì toggle-medicine đảo
+// ngược trạng thái — gọi bừa lên dòng đã đúng trạng thái mong muốn sẽ làm nó bật ngược lại.
+async function bulkSetStatus(targetShowing) {
+  const rows = selectedRows().filter(function (r) {
+    return targetShowing ? r.dataset.status === 'inactive' : r.dataset.status === 'active';
+  });
+  if (!rows.length) { alert(targetShowing ? 'Không có thuốc đã ẩn nào trong danh sách đã chọn.' : 'Không có thuốc đang bán nào trong danh sách đã chọn.'); return; }
+  if (!confirm((targetShowing ? 'Hiện lại ' : 'Ẩn ') + rows.length + ' thuốc đã chọn?')) return;
+  for (const r of rows) { await postAction('toggle-medicine', r.dataset.medId); }
+  location.reload();
+}
+async function bulkDelete() {
+  const rows = selectedRows();
+  const eligible = rows.filter(function (r) { return r.dataset.stock === '0'; });
+  const skipped = rows.length - eligible.length;
+  if (!eligible.length) { alert('Không có thuốc nào đủ điều kiện xóa (chỉ xóa được thuốc đã hết hàng).'); return; }
+  let msg = 'Xóa ' + eligible.length + ' thuốc đã chọn (đã hết hàng)?\nKhông thể hoàn tác!';
+  if (skipped > 0) msg += '\n\n(' + skipped + ' thuốc còn tồn kho sẽ được bỏ qua.)';
+  if (!confirm(msg)) return;
+  for (const r of eligible) { await postAction('delete-medicine', r.dataset.medId); }
+  location.reload();
+}
+
 function filterRows() {
   const catFilter    = document.getElementById('catFilter').value;
   const statusFilter = document.getElementById('statusFilter').value;
@@ -1512,7 +1697,7 @@ function filterRows() {
       const tr = document.createElement('tr');
       tr.id = 'noResultsRow';
       tr.className = 'empty-row';
-      tr.innerHTML = '<td colspan="9" style="text-align:center;padding:36px;color:var(--muted);font-size:14px">🔍 Không tìm thấy thuốc nào khớp với bộ lọc.<br><span style="font-size:12px;margin-top:6px;display:inline-block">Thử thay đổi bộ lọc hoặc <a href="javascript:void(0)" onclick="resetFilters()" style="color:var(--blue)">đặt lại tất cả</a>.</span></td>';
+      tr.innerHTML = '<td colspan="10" style="text-align:center;padding:36px;color:var(--muted);font-size:14px">🔍 Không tìm thấy thuốc nào khớp với bộ lọc.<br><span style="font-size:12px;margin-top:6px;display:inline-block">Thử thay đổi bộ lọc hoặc <a href="javascript:void(0)" onclick="resetFilters()" style="color:var(--blue)">đặt lại tất cả</a>.</span></td>';
       tbody.appendChild(tr);
       noRes = tr;
     }

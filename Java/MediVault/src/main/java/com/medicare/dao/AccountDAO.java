@@ -54,6 +54,9 @@ public class AccountDAO implements IAccountDAO {
             a.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
         if (rs.getTimestamp("LastLoginAt") != null)
             a.setLastLoginAt(rs.getTimestamp("LastLoginAt").toLocalDateTime());
+        // Cột thêm sau (database/warehouse_export_migration.sql) — try/catch để DB chưa chạy
+        // migration vẫn không vỡ các câu SELECT * hiện có (giống PackagingSpec/ExpectedDate).
+        try { a.setWarehouseManager(rs.getBoolean("IsWarehouseManager")); } catch (SQLException ignored) {}
         return a;
     }
 
@@ -277,7 +280,7 @@ public class AccountDAO implements IAccountDAO {
         }
         String sql = "UPDATE Accounts SET " +
                 "FullName=?, Email=?, Phone=?, RoleID=?, CitizenId=?, Position=?, " +
-                "ProfessionalCertNo=?, ProfessionalCertExp=?, TrainingDate=? " +
+                "ProfessionalCertNo=?, ProfessionalCertExp=?, TrainingDate=?, IsWarehouseManager=? " +
                 "WHERE AccountID=?";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
@@ -296,7 +299,8 @@ public class AccountDAO implements IAccountDAO {
             if (a.getTrainingDate() != null)
                 ps.setDate(9, java.sql.Date.valueOf(a.getTrainingDate()));
             else ps.setNull(9, java.sql.Types.DATE);
-            ps.setInt(10, a.getAccountId());
+            ps.setBoolean(10, a.isWarehouseManager());
+            ps.setInt(11, a.getAccountId());
             int rows = ps.executeUpdate();
             System.out.println("[AccountDAO] update accountId=" + a.getAccountId() + " → rows=" + rows);
             return rows > 0;
