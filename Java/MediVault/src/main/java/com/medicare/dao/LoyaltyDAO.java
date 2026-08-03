@@ -189,6 +189,20 @@ public class LoyaltyDAO {
         recalcTier(card.getCardId());
     }
 
+    /** Tổng điểm đã EARN cho 1 hóa đơn cụ thể — dùng cho trang chi tiết hóa đơn. */
+    public int sumEarnedForInvoice(int invoiceId) {
+        String sql = "SELECT ISNULL(SUM(Points),0) FROM PointTransactions " +
+                "WHERE InvoiceID = ? AND TransType = 'EARN'";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, invoiceId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return 0;
+    }
+
     /** Tổng điểm đã REDEEM cho 1 hóa đơn cụ thể. */
     public int sumRedeemedForInvoice(int invoiceId) {
         String sql = "SELECT ISNULL(SUM(Points),0) FROM PointTransactions " +
@@ -215,6 +229,24 @@ public class LoyaltyDAO {
             }
         } catch (Exception e) { e.printStackTrace(); }
         return 0;
+    }
+
+    /** Điểm EARN theo từng hóa đơn của 1 khách hàng — dùng hiển thị "Điểm đã tích" trên mỗi hóa đơn trong portal. */
+    public java.util.Map<Integer, Integer> earnedPointsByInvoice(int customerId) {
+        java.util.Map<Integer, Integer> map = new java.util.HashMap<>();
+        String sql = "SELECT pt.InvoiceID, SUM(pt.Points) AS Pts " +
+                "FROM PointTransactions pt " +
+                "JOIN LoyaltyCards lc ON lc.CardID = pt.CardID " +
+                "WHERE lc.CustomerID = ? AND pt.TransType = 'EARN' AND pt.InvoiceID IS NOT NULL " +
+                "GROUP BY pt.InvoiceID";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, customerId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) map.put(rs.getInt("InvoiceID"), rs.getInt("Pts"));
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return map;
     }
 
     /** Lịch sử giao dịch điểm (mới nhất trước) — hiển thị trong portal. */

@@ -23,9 +23,23 @@ public class StaffLoginServlet extends HttpServlet {
         HttpSession s = req.getSession(false);
         if (s != null) {
             String uid = (String) s.getAttribute("staffUid");
-            if (uid != null && s.getAttribute("staffAccount_" + uid) != null) {
-                resp.sendRedirect(req.getContextPath() + "/staff-dashboard?uid=" + uid);
-                return;
+            // BUG THẬT (đã fix): staffAccount_<uid>/staffUid là session key DÙNG CHUNG với
+            // Warehouse (xem WarehouseLoginServlet — cố tình tái sử dụng để không phải sửa
+            // AuthFilter). "staffUid" chỉ là con trỏ "tab vừa chạm gần nhất", có thể đang trỏ
+            // tới 1 tài khoản Thủ kho (roleId 3) nếu người dùng vừa đăng nhập/thao tác bên
+            // Warehouse ở tab khác. Trước đây đoạn này KHÔNG kiểm tra role — cứ thấy staffUid
+            // có giá trị là tự redirect sang /staff-dashboard, rồi StaffDashboardServlet lại
+            // bắn tiếp sang /warehouse-dashboard vì thấy roleId=3 → vòng lặp, và trang login
+            // KHÔNG BAO GIỜ hiện ra để đăng nhập tài khoản staff khác (uid khác) được nữa.
+            // Fix: chỉ tự-redirect khi tài khoản dưới staffUid THẬT SỰ là tài khoản staff
+            // (roleId != 3) — nếu không, coi như "chưa đăng nhập staff" và hiện form login.
+            if (uid != null) {
+                Object acc = s.getAttribute("staffAccount_" + uid);
+                if (acc instanceof com.medicare.entity.Account
+                        && ((com.medicare.entity.Account) acc).getRoleId() != 3) {
+                    resp.sendRedirect(req.getContextPath() + "/staff-dashboard?uid=" + uid);
+                    return;
+                }
             }
         }
         req.getRequestDispatcher("/WEB-INF/views/staff/staff-login.jsp").forward(req, resp);
