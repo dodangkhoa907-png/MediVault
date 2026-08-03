@@ -198,6 +198,7 @@ a{text-decoration:none;color:inherit}
     <div class="crumb">Kho hàng</div>
     <nav class="tb-nav">
       <a class="on" href="<%= ctx %>/warehouse-import">Nhập kho</a>
+      <a href="<%= ctx %>/warehouse-export">Xuất kho</a>
       <a href="<%= ctx %>/warehouse-orders">Đơn hàng</a>
       <a href="<%= ctx %>/warehouse-reorder">Gợi ý đặt hàng</a>
     </nav>
@@ -273,6 +274,7 @@ a{text-decoration:none;color:inherit}
                 <option value="">— Chọn thuốc —</option>
                 <c:forEach var="m" items="${medicines}">
                   <option value="${m.medicineId}"
+                          ${m.medicineId == preSelectMedicineId ? 'selected' : ''}
                           data-name="${fn:escapeXml(m.medicineName)}"
                           data-unit="${fn:escapeXml(m.unit)}"
                           data-stock="${m.totalStock}"
@@ -297,7 +299,7 @@ a{text-decoration:none;color:inherit}
               <select class="wh-in wh-combo-src" id="imSup" name="supplierId" required data-placeholder="— Chọn nhà cung cấp —" data-search="Tìm theo tên nhà cung cấp…">
                 <option value="">— Chọn nhà cung cấp —</option>
                 <c:forEach var="s" items="${suppliers}">
-                  <option value="${s.supplierId}" data-name="${fn:escapeXml(s.supplierName)}">${s.supplierName}</option>
+                  <option value="${s.supplierId}" ${s.supplierId == preSelectSupplierId ? 'selected' : ''} data-name="${fn:escapeXml(s.supplierName)}">${s.supplierName}</option>
                 </c:forEach>
               </select>
               <div class="err" id="e-sup">Chưa chọn nhà cung cấp.</div>
@@ -309,7 +311,7 @@ a{text-decoration:none;color:inherit}
             <select class="wh-in wh-combo-src" id="imPo" name="poId" data-placeholder="— Không gắn với đơn nào —">
               <option value="">— Không gắn với đơn nào —</option>
               <c:forEach var="po" items="${pos}">
-                <option value="${po.poId}">PO #${po.poId} — ${po.orderDate}</option>
+                <option value="${po.poId}" ${po.poId == preSelectPoId ? 'selected' : ''}>PO #${po.poId} — ${po.orderDate}</option>
               </c:forEach>
             </select>
             <div class="hint">Gắn PO để hệ thống đối chiếu số lượng đã đặt với số lượng thực nhận. Không có PO tương ứng thì để trống — hệ thống tự tạo phiếu nhập nhanh cho lần này.</div>
@@ -365,7 +367,7 @@ a{text-decoration:none;color:inherit}
             <div class="wh-fg">
               <label for="imQty">Số lượng <span aria-hidden="true">*</span></label>
               <div class="qty-row">
-                <input class="wh-in" type="number" id="imQty" name="quantity" min="1" placeholder="0" required>
+                <input class="wh-in" type="number" id="imQty" name="quantity" min="1" placeholder="0" value="${preSelectQty}" required>
                 <span class="qty-unit" id="qtyUnit">—</span>
               </div>
               <div class="err" id="e-qty">Số lượng phải lớn hơn 0.</div>
@@ -378,7 +380,7 @@ a{text-decoration:none;color:inherit}
 
           <div class="wh-fg">
             <label for="imPrice">Giá nhập <span aria-hidden="true">*</span></label>
-            <input class="wh-in" type="number" id="imPrice" name="importPrice" step="1000" min="0" placeholder="0" required>
+            <input class="wh-in" type="number" id="imPrice" name="importPrice" step="1000" min="0" placeholder="0" value="${preSelectPrice}" required>
             <div class="hint">Giá cho <b>một đơn vị</b> theo quy cách của thuốc, không phải tổng tiền cả lô.
               <span id="priceLive"></span></div>
             <div class="err" id="e-price">Chưa nhập giá nhập.</div>
@@ -740,6 +742,11 @@ a{text-decoration:none;color:inherit}
     wrap.__whComboRefresh = function () { opts = Array.prototype.slice.call(select.options); renderLabel(); };
   }
   document.querySelectorAll('select.wh-combo-src').forEach(enhanceCombo);
+
+  // Trigger change event nếu có sẵn giá trị pre-select
+  if (F.med && F.med.value) F.med.dispatchEvent(new Event('change', { bubbles: true }));
+  if (F.sup && F.sup.value) F.sup.dispatchEvent(new Event('change', { bubbles: true }));
+  if (F.po && F.po.value) F.po.dispatchEvent(new Event('change', { bubbles: true }));
 
   /* ── Chuyển bước ─────────────────────────────────────────────────────── */
   function show(n) {

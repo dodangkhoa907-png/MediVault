@@ -19,6 +19,7 @@
     String uid = (String) request.getAttribute("staffUid");
     String activeNav = "export";
     boolean isManager = acc.isWarehouseManager();
+    request.setAttribute("isManager", isManager);
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -144,10 +145,10 @@ a{text-decoration:none;color:inherit}
   <header class="wh-topbar">
     <div class="crumb">Kho hàng</div>
     <nav class="tb-nav">
-      <a href="<%= ctx %>/warehouse-inventory">Tồn kho</a>
       <a href="<%= ctx %>/warehouse-import">Nhập kho</a>
       <a class="on" href="<%= ctx %>/warehouse-export">Xuất kho</a>
-      <a href="<%= ctx %>/warehouse-orders">Gợi ý đặt hàng</a>
+      <a href="<%= ctx %>/warehouse-orders">Đơn hàng</a>
+      <a href="<%= ctx %>/warehouse-reorder">Gợi ý đặt hàng</a>
     </nav>
     <div class="right">
       <a href="<%= ctx %>/staff-checkin?uid=<%= uid %>" class="wh-av" title="Ca làm việc của <%= fullName %>"><%= initials %></a>
@@ -524,7 +525,7 @@ a{text-decoration:none;color:inherit}
 <script>
 (function () {
   var ctx = "<%= ctx %>";
-  var isManager = <%= isManager %>;
+  var isManager = "<%= isManager %>" === "true";
 
   // ── State ──────────────────────────────────────────────────────────────
   var selectedReason = null;   // {id, code, name, requiresReceiver}

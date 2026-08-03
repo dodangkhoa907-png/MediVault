@@ -53,8 +53,12 @@
       <% if (_whExpiry != null && ((Integer) _whExpiry) > 0) { %><span class="nav-badge"><%= _whExpiry %></span><% } %>
     </a>
     <a href="<%= _whCtx %>/warehouse-import"
-       class="nav-item <%= ("import".equals(_whActive) || "orders".equals(_whActive) || "export".equals(_whActive)) ? "active" : "" %>">
+       class="nav-item <%= ("import".equals(_whActive) || "orders".equals(_whActive)) ? "active" : "" %>">
       <span class="nav-icon">📥</span> Nhập kho
+    </a>
+    <a href="<%= _whCtx %>/warehouse-export"
+       class="nav-item <%= "export".equals(_whActive) ? "active" : "" %>">
+      <span class="nav-icon">📤</span> Xuất kho
     </a>
     <%-- Trang riêng /warehouse-shelf (2026-08-05) — trước đây mở modal ngay ở đây, nhưng
          modal quá chật cho danh sách có thể dài và không có chỗ cho tìm kiếm/lọc về sau.

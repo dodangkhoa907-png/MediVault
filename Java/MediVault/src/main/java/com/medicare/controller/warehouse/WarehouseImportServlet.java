@@ -94,10 +94,44 @@ public class WarehouseImportServlet extends HttpServlet {
         //     client từ data-stock/data-min có sẵn trên mỗi option, không cần query thêm.
         req.setAttribute("urgentMedicineIds", findUrgentReorderMedicineIds());
         req.setAttribute("expiredMedicineIds", findExpiredMedicineIds());
-        // Đi thẳng từ nút giỏ hàng "Gợi ý đặt hàng" ở Tồn kho / cảnh báo hạn dùng — trước đây
-        // nút đó chỉ đưa tới /warehouse-reorder để XEM gợi ý, không tới được chỗ thao tác thật
-        // (nhập kho). Nay truyền medicineId qua để JS pre-select sẵn đúng thuốc ở Bước 1.
-        req.setAttribute("preSelectMedicineId", req.getParameter("medicineId"));
+
+        // Đọc poId, supplierId, medicineId để pre-select sẵn thông tin nếu chuyển từ Đơn hàng / Gợi ý
+        String poIdParam = req.getParameter("poId");
+        String supIdParam = req.getParameter("supplierId");
+        Integer preSelectPoId = null;
+        Integer preSelectSupplierId = null;
+        Integer preSelectMedId = null;
+        Integer preSelectQty = null;
+        BigDecimal preSelectPrice = null;
+
+        if (poIdParam != null && !poIdParam.trim().isEmpty()) {
+            try {
+                preSelectPoId = Integer.parseInt(poIdParam.trim());
+                PurchaseOrders targetPo = poDAO.findById(preSelectPoId);
+                if (targetPo != null) {
+                    preSelectSupplierId = targetPo.getSupplierId();
+                    List<com.medicare.entity.PurchaseOrderDetail> details = poDAO.findDetails(preSelectPoId);
+                    if (details != null && !details.isEmpty()) {
+                        com.medicare.entity.PurchaseOrderDetail d = details.get(0);
+                        preSelectMedId = d.getMedicineId();
+                        preSelectQty = d.getQuantity();
+                        preSelectPrice = d.getImportPrice();
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+        if (preSelectSupplierId == null && supIdParam != null && !supIdParam.trim().isEmpty()) {
+            try { preSelectSupplierId = Integer.parseInt(supIdParam.trim()); } catch (Exception ignored) {}
+        }
+        if (preSelectMedId == null && req.getParameter("medicineId") != null && !req.getParameter("medicineId").trim().isEmpty()) {
+            try { preSelectMedId = Integer.parseInt(req.getParameter("medicineId").trim()); } catch (Exception ignored) {}
+        }
+
+        req.setAttribute("preSelectPoId", preSelectPoId);
+        req.setAttribute("preSelectSupplierId", preSelectSupplierId);
+        req.setAttribute("preSelectMedicineId", preSelectMedId);
+        req.setAttribute("preSelectQty", preSelectQty);
+        req.setAttribute("preSelectPrice", preSelectPrice);
 
         // Barcode redesign (Phần 1) — Category/Manufacturer cho form "Tạo nhanh thuốc" trong
         // wizard "Phát hiện mã vạch mới" (Option B), tránh thủ kho phải rời trang.

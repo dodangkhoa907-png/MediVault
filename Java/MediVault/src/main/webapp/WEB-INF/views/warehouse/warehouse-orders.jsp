@@ -69,6 +69,7 @@ a{text-decoration:none;color:inherit}
     <div class="crumb">Kho hàng</div>
     <nav class="tb-nav">
       <a href="<%= ctx %>/warehouse-import">Nhập kho</a>
+      <a href="<%= ctx %>/warehouse-export">Xuất kho</a>
       <a class="on" href="<%= ctx %>/warehouse-orders">Đơn hàng</a>
       <a href="<%= ctx %>/warehouse-reorder">Gợi ý đặt hàng</a>
     </nav>
@@ -93,6 +94,18 @@ a{text-decoration:none;color:inherit}
         </button>
       </div>
     </div>
+
+    <% if ("receive-success".equals(request.getParameter("msg"))) { %>
+      <div class="wh-note ok" role="status" style="margin-bottom:18px">
+        <svg><use href="#ic-check-circle"/></svg>
+        <span>Đã nhận hàng thành công cho đơn <b><c:out value="${param.poCode}"/></b>. Tồn kho đã được tự động cập nhật!</span>
+      </div>
+    <% } else if ("receive-fail".equals(request.getParameter("msg"))) { %>
+      <div class="wh-note danger" role="alert" style="margin-bottom:18px">
+        <svg><use href="#ic-alert"/></svg>
+        <span>Xác nhận nhận hàng không thành công: <c:out value="${param.err != null ? param.err : 'Kiểm tra lại trạng thái đơn.'}"/></span>
+      </div>
+    <% } %>
 
     <!-- ══ KPI tổng quan — bấm thẻ để lọc nhanh theo trạng thái ══ -->
     <div class="wh-kpis" role="group" aria-label="Tổng quan đơn hàng">
@@ -227,18 +240,18 @@ a{text-decoration:none;color:inherit}
                     <td class="po-ord num">${row.orderedQty}</td>
                     <td class="po-rcv num">${row.receivedQty}</td>
                     <td class="po-prog">
-                      <div class="wh-progress"><i style="width:${row.progressPct}%"></i></div>
+                      <div class="wh-progress"><i style="--pct: ${row.progressPct}%; width: var(--pct);"></i></div>
                       <div class="po-progtext">${row.progressPct}%</div>
                     </td>
                     <td class="po-act">
                       <div class="po-row-acts">
-                        <button type="button" class="wh-btn wh-btn-ghost" onclick="return openPoModal(${po.poId})">
+                        <button type="button" class="wh-btn wh-btn-ghost" onclick="return openPoModal('${po.poId}')">
                           <svg><use href="#ic-eye"/></svg> Xem
                         </button>
                         <c:if test="${bucket != 'COMPLETED'}">
-                          <a class="wh-btn wh-btn-primary" href="<%= ctx %>/warehouse-import">
+                          <button type="button" class="wh-btn wh-btn-primary" onclick="return openReceiveConfirmModal('${po.poId}', '${fn:escapeXml(po.poCode)}', '${fn:escapeXml(row.supplierName)}')">
                             <svg><use href="#ic-truck"/></svg> Nhận hàng
-                          </a>
+                          </button>
                         </c:if>
                       </div>
                     </td>
@@ -259,8 +272,7 @@ a{text-decoration:none;color:inherit}
   </div>
 </div>
 
-<!-- ══ Modal "Xem đơn" — tái dùng NGUYÊN endpoint action=po-detail đã có ở
-     WarehouseReorderServlet (dùng cho trang Gợi ý đặt hàng), thêm nút "Nhận hàng"/"In phiếu". ══ -->
+<!-- ══ Modal "Xem đơn" ══ -->
 <div class="wh-modal" id="poModal" onclick="if(event.target===this)closePoModal()">
   <div class="wh-modal-box" role="dialog" aria-modal="true" aria-labelledby="poModalTitle" style="max-width:520px">
     <div class="wh-modal-head">
@@ -272,6 +284,22 @@ a{text-decoration:none;color:inherit}
     </div>
     <div class="wh-modal-body" id="poModalBody">
       <div style="text-align:center;color:var(--muted);padding:20px 0">Đang tải…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Modal "Xác nhận nhận hàng" ══ -->
+<div class="wh-modal" id="rcvModal" onclick="if(event.target===this)closeRcvModal()">
+  <div class="wh-modal-box" role="dialog" aria-modal="true" aria-labelledby="rcvModalTitle" style="max-width:540px">
+    <div class="wh-modal-head">
+      <div class="wh-ic info"><svg><use href="#ic-truck"/></svg></div>
+      <h3 id="rcvModalTitle">Xác nhận nhận hàng</h3>
+      <button type="button" class="wh-btn wh-btn-icon wh-btn-ghost" onclick="closeRcvModal()" aria-label="Đóng">
+        <svg><use href="#ic-x"/></svg>
+      </button>
+    </div>
+    <div class="wh-modal-body" id="rcvModalBody">
+      <div style="text-align:center;color:var(--muted);padding:20px 0">Đang tải thông tin đơn hàng…</div>
     </div>
   </div>
 </div>
@@ -307,7 +335,7 @@ function openPoModal(poId) {
         + '<div style="display:flex;gap:10px;margin-top:16px">'
         + '<button type="button" class="wh-btn" style="flex:1" onclick="printPo()"><svg><use href="#ic-printer"/></svg> In phiếu</button>'
         + (d.status !== 'COMPLETED'
-            ? '<a class="wh-btn wh-btn-primary" style="flex:1" href="' + CTX + '/warehouse-import"><svg><use href="#ic-truck"/></svg> Nhận hàng</a>'
+            ? '<button type="button" class="wh-btn wh-btn-primary" style="flex:1" onclick="closePoModal();openReceiveConfirmModal(' + d.poId + ',\'PO #' + d.poId + '\',\'' + (d.supplierName ? d.supplierName.replace(/'/g, "\\'") : '') + '\')"><svg><use href="#ic-truck"/></svg> Nhận hàng</button>'
             : '')
         + '</div>';
     })
@@ -315,6 +343,64 @@ function openPoModal(poId) {
   return false;
 }
 function closePoModal() { document.getElementById('poModal').classList.remove('open'); }
+
+function openReceiveConfirmModal(poId, poCode, supplierName) {
+  var modal = document.getElementById('rcvModal');
+  var body  = document.getElementById('rcvModalBody');
+  modal.classList.add('open');
+  body.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px 0">Đang tải thông tin đơn hàng…</div>';
+  fetch(CTX + '/warehouse-reorder?action=po-detail&id=' + poId)
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d.ok) {
+        body.innerHTML = '<div style="color:var(--danger);text-align:center;padding:16px 0">Không tải được chi tiết đơn hàng.</div>';
+        return;
+      }
+      var fmtV = function (n) { return new Intl.NumberFormat('vi-VN').format(n) + 'đ'; };
+      var rowsHtml = '';
+      if (d.lines && d.lines.length > 0) {
+        rowsHtml = d.lines.map(function (l) {
+          return '<div style="display:flex;justify-content:space-between;align-items:center;background:var(--surface);border-radius:10px;padding:9px 12px;margin-bottom:6px">'
+            + '<div><div style="font-weight:750;font-size:13px">' + l.medicineName + '</div>'
+            + '<div style="font-size:11px;color:var(--muted)">Đặt: ' + l.quantity + ' × ' + fmtV(l.importPrice) + '</div></div>'
+            + '<b style="font-size:12.5px">' + fmtV(l.quantity * l.importPrice) + '</b></div>';
+        }).join('');
+      } else {
+        rowsHtml = '<div style="padding:12px;text-align:center;color:var(--muted);font-size:12.5px">Đơn này chưa có chi tiết mặt hàng — chọn Nhập kho chi tiết để bổ sung.</div>';
+      }
+
+      var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+      var csrfToken = csrfMeta ? csrfMeta.content : '';
+
+      body.innerHTML =
+          '<div style="font-size:13px;margin-bottom:14px;background:var(--soft);padding:12px 14px;border-radius:12px">'
+        + '<div style="font-size:14.5px;font-weight:800;color:var(--deep);margin-bottom:3px">Xác nhận hàng về cho đơn ' + (poCode || ('PO #' + poId)) + '</div>'
+        + '<div style="color:var(--muted);font-size:12px">Nhà cung cấp: <b>' + (d.supplierName || supplierName || '—') + '</b> · Ngày đặt: ' + (d.orderDate || '') + '</div>'
+        + '</div>'
+        + '<div style="font-size:11.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Danh sách mặt hàng thực nhận</div>'
+        + rowsHtml
+        + '<div style="display:flex;justify-content:space-between;align-items:center;background:var(--surface);border-radius:11px;padding:10px 14px;margin:12px 0">'
+        + '<span style="font-size:12px;font-weight:750;color:var(--deep)">Tổng giá trị đơn</span>'
+        + '<b style="font-size:16px;color:var(--deep)">' + fmtV(d.totalValue || 0) + '</b></div>'
+        + '<div style="font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.4">'
+        + 'Bấm <b>Xác nhận nhập kho ngay</b> để hệ thống tự động ghi tăng tồn kho. Nếu cần nhập thêm thông tin số lô, NSX, HSD thủ công, chọn <b>Nhập kho chi tiết</b>.'
+        + '</div>'
+        + '<form action="' + CTX + '/warehouse-orders" method="POST" id="quickReceiveForm">'
+        + '<input type="hidden" name="_csrf" value="' + csrfToken + '">'
+        + '<input type="hidden" name="action" value="confirm-receive">'
+        + '<input type="hidden" name="poId" value="' + poId + '">'
+        + '<div style="display:flex;flex-direction:column;gap:8px">'
+        + '<button type="submit" class="wh-btn wh-btn-primary" style="width:100%;height:40px;justify-content:center"><svg><use href="#ic-truck"/></svg> Xác nhận nhập kho ngay</button>'
+        + '<a class="wh-btn wh-btn-ghost" style="width:100%;height:38px;justify-content:center" href="' + CTX + '/warehouse-import?poId=' + poId + '"><svg><use href="#ic-edit"/></svg> Nhập kho chi tiết (sửa số lô/HSD)</a>'
+        + '</div>'
+        + '</form>';
+    })
+    .catch(function () {
+      body.innerHTML = '<div style="color:var(--danger);text-align:center;padding:16px 0">Lỗi kết nối.</div>';
+    });
+  return false;
+}
+function closeRcvModal() { document.getElementById('rcvModal').classList.remove('open'); }
 function printPo() {
   document.body.classList.add('wh-printing-po');
   window.print();

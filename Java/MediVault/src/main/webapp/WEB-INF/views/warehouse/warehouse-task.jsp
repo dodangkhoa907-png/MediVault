@@ -250,7 +250,7 @@ a{text-decoration:none;color:inherit}
                       <div class="proj-pct">${p.progressPercentage}%</div>
                     </div>
                     <c:if test="${not empty p.description}"><div class="proj-desc">${fn:escapeXml(p.description)}</div></c:if>
-                    <div class="wh-progress"><i style="width:${p.progressPercentage}%"></i></div>
+                    <div class="wh-progress"><i style="--pct: ${p.progressPercentage}%; width: var(--pct);"></i></div>
                     <c:if test="${not empty p.dueDate}">
                       <div class="proj-due"><svg><use href="#ic-clock"/></svg> Hạn báo cáo tổng: ${p.dueDateDisplay}</div>
                     </c:if>

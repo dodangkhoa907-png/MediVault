@@ -5,6 +5,7 @@ import com.medicare.dao.SupplierDAO;
 import com.medicare.entity.Account;
 import com.medicare.entity.PurchaseOrders;
 import com.medicare.entity.Supplier;
+import com.medicare.util.AuditHelper;
 import com.medicare.util.SidebarHelper;
 import com.medicare.util.WarehouseAuth;
 import jakarta.servlet.ServletException;
@@ -14,6 +15,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,17 +27,6 @@ import java.util.Map;
 /**
  * WarehousePurchaseOrderServlet — "Đơn hàng" trong Warehouse Console, dành riêng cho Thủ kho
  * (roleId 3). URL: /warehouse-orders
- *
- * <p>CHỈ ĐỌC — tạo/duyệt PO vẫn do Admin thực hiện qua {@code /purchase-orders}. Trang này cho
- * Thủ kho một nơi để THEO DÕI trạng thái giao hàng của các đơn (đã đặt / quá hạn / đã nhận) mà
- * không phải văng sang giao diện Admin. Dựng lại hoàn toàn giao diện cho Warehouse Console (khác
- * bảng của Admin) — dùng chung {@link PurchaseOrderDAO} đã có, không thêm bảng mới.</p>
- *
- * <p>Trạng thái thực tế trong DB hiện chỉ có {@code PENDING}/{@code COMPLETED} (xem
- * {@link PurchaseOrderDAO#confirmReceived}) — nhận hàng là MỘT LẦN trọn gói, chưa hỗ trợ nhận
- * từng phần. Nên "Quá hạn" ở đây là suy ra (PENDING mà ExpectedDate đã qua), và "SL đã nhận"
- * chỉ có 2 giá trị thực tế: 0 (chưa nhận) hoặc bằng SL đặt (đã nhận xong) — cho tới khi luồng
- * Nhận hàng từng phần (nếu làm) được thêm.</p>
  */
 @WebServlet("/warehouse-orders")
 public class WarehousePurchaseOrderServlet extends HttpServlet {
@@ -97,5 +89,46 @@ public class WarehousePurchaseOrderServlet extends HttpServlet {
         SidebarHelper.loadWarehouse(req, acc.getAccountId());
 
         req.getRequestDispatcher("/WEB-INF/views/warehouse/warehouse-orders.jsp").forward(req, resp);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+        req.setCharacterEncoding("UTF-8");
+
+        Account acc = WarehouseAuth.require(req, resp);
+        if (acc == null) return;
+
+        String action = req.getParameter("action");
+        if ("confirm-receive".equals(action)) {
+            int poId = 0;
+            try {
+                poId = Integer.parseInt(req.getParameter("poId"));
+            } catch (Exception ignored) {}
+
+            if (poId > 0) {
+                int created = poDAO.confirmReceived(poId);
+                if (created > 0) {
+                    PurchaseOrders po = poDAO.findById(poId);
+                    String poCode = po != null ? po.getPoCode() : ("#" + poId);
+                    AuditHelper.log(req, "Nhận hàng kho", "PurchaseOrder", poId,
+                            "Xác nhận nhận hàng — đã tạo " + created + " lô vào kho (Đơn " + poCode + ")");
+                    resp.sendRedirect(req.getContextPath() + "/warehouse-orders?msg=receive-success&poCode=" + URLEncoder.encode(poCode, StandardCharsets.UTF_8));
+                    return;
+                } else {
+                    String err = poDAO.getLastConfirmError();
+                    if (err != null && (err.contains("không có dòng hàng") || err.contains("chưa có"))) {
+                        // Đơn chưa có dòng chi tiết -> tự chuyển sang trang Nhập kho chi tiết
+                        PurchaseOrders po = poDAO.findById(poId);
+                        int supplierId = po != null ? po.getSupplierId() : 0;
+                        resp.sendRedirect(req.getContextPath() + "/warehouse-import?poId=" + poId + (supplierId > 0 ? "&supplierId=" + supplierId : ""));
+                        return;
+                    }
+                    resp.sendRedirect(req.getContextPath() + "/warehouse-orders?msg=receive-fail&err=" + (err != null ? URLEncoder.encode(err, StandardCharsets.UTF_8) : ""));
+                    return;
+                }
+            }
+        }
+        resp.sendRedirect(req.getContextPath() + "/warehouse-orders");
     }
 }
