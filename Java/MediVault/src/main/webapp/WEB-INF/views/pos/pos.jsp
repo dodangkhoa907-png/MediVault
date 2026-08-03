@@ -1896,8 +1896,8 @@ function applyCustomer(data) {
   document.getElementById('custFoundName').textContent  = data.name;
   document.getElementById('custFoundPhone').textContent = data.phone;
   const badge = document.getElementById('custTierBadge');
-  if (data.tier) {
-    badge.textContent = data.tier + ' · ' + (data.points || 0) + 'đ';
+  if (data.points !== undefined) {
+    badge.textContent = (data.points || 0) + ' điểm';
     badge.style.display = 'inline-block';
   } else badge.style.display = 'none';
   document.getElementById('custFound').style.display = 'flex';
