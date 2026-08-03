@@ -400,13 +400,16 @@ public class MedicineDAO implements IMedicineDAO {
             "  WHERE CurrentQuantity > 0 AND ExpiryDate > CAST(GETDATE() AS DATE) AND Status = 'ACTIVE'" +
             ") ";
 
-    private Medicines mapRowWithStock(ResultSet rs) throws SQLException {
+    public Medicines mapRowWithStock(ResultSet rs) throws SQLException {
         Medicines m = mapRow(rs);
         m.setTotalStock(rs.getInt("TotalStock"));
         String exp = rs.getString("NearestExpiry");
         m.setNearestExpiry(exp != null ? exp : "");
         String bn = rs.getString("NearestBatchNo");
         m.setNearestBatchNo(bn != null ? bn : "");
+        try { m.setShelfName(MojibakeUtil.fix(rs.getString("ShelfName"))); } catch (Exception ignored) {}
+        try { m.setCategoryName(MojibakeUtil.fix(rs.getString("CategoryName"))); } catch (Exception ignored) {}
+        try { m.setManufacturerName(MojibakeUtil.fix(rs.getString("ManufacturerName"))); } catch (Exception ignored) {}
         return m;
     }
 
@@ -416,10 +419,14 @@ public class MedicineDAO implements IMedicineDAO {
         String sql = STOCK_CTE +
                 "SELECT m.*, ISNULL(bs.TotalStock,0) AS TotalStock," +
                 "  CONVERT(VARCHAR(10), nb.NearestExpiry, 120) AS NearestExpiry," +
-                "  nb.NearestBatchNo" +
+                "  nb.NearestBatchNo," +
+                "  c.CategoryName, mf.Name AS ManufacturerName, s.ShelfName" +
                 " FROM Medicines m" +
                 " LEFT JOIN bs ON bs.MedicineID = m.MedicineID" +
                 " LEFT JOIN nb ON nb.MedicineID = m.MedicineID AND nb.rn = 1" +
+                " LEFT JOIN Categories c ON c.CategoryID = m.CategoryID" +
+                " LEFT JOIN Manufacturers mf ON mf.ManufacturerID = m.ManufacturerID" +
+                " LEFT JOIN Shelves s ON s.ShelfID = m.ShelfID" +
                 " WHERE m.Status = 1" +
                 "  AND (m.MedicineName LIKE ? OR m.GenericName LIKE ? OR m.Barcode LIKE ? OR m.MedicineCode LIKE ?)" +
                 " ORDER BY m.MedicineName";
@@ -450,12 +457,14 @@ public class MedicineDAO implements IMedicineDAO {
         String sql = STOCK_CTE +
                 "SELECT m.*, ISNULL(bs.TotalStock,0) AS TotalStock," +
                 "  CONVERT(VARCHAR(10), nb.NearestExpiry, 120) AS NearestExpiry," +
-                "  nb.NearestBatchNo" +
+                "  nb.NearestBatchNo," +
+                "  c.CategoryName, mf.Name AS ManufacturerName, s.ShelfName" +
                 " FROM Medicines m" +
                 " LEFT JOIN bs ON bs.MedicineID = m.MedicineID" +
                 " LEFT JOIN nb ON nb.MedicineID = m.MedicineID AND nb.rn = 1" +
                 " LEFT JOIN Categories c ON c.CategoryID = m.CategoryID" +
                 " LEFT JOIN Manufacturers mf ON mf.ManufacturerID = m.ManufacturerID" +
+                " LEFT JOIN Shelves s ON s.ShelfID = m.ShelfID" +
                 " WHERE m.Status = 1" +
                 "  AND (m.MedicineName LIKE ? OR m.GenericName LIKE ? OR m.Barcode LIKE ? OR m.MedicineCode LIKE ?" +
                 "       OR c.CategoryName LIKE ? OR mf.Name LIKE ?)" +
