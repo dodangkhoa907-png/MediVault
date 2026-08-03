@@ -650,7 +650,7 @@ CREATE INDEX IX_Med_Name       ON Medicines(MedicineName);
 CREATE INDEX IX_Med_Barcode    ON Medicines(Barcode)            WHERE Barcode IS NOT NULL;
 CREATE INDEX IX_Med_SDK        ON Medicines(RegistrationNumber) WHERE RegistrationNumber IS NOT NULL;
 CREATE INDEX IX_Batch_Expiry   ON Batches(ExpiryDate);
-CREATE INDEX IX_Batch_Med_FIFO ON Batches(MedicineID, ExpiryDate);
+CREATE INDEX IX_Batch_Med_FEFO ON Batches(MedicineID, ExpiryDate);
 CREATE INDEX IX_Inv_Date       ON Invoices(CreatedAt);
 CREATE INDEX IX_Inv_Account    ON Invoices(AccountID, CreatedAt);
 CREATE INDEX IX_Inv_Shift      ON Invoices(ShiftID);
@@ -1186,7 +1186,7 @@ GO
    BƯỚC 6 — STORED PROCEDURES
    ================================================================ */
 
-CREATE OR ALTER PROCEDURE SP_AddSaleByFIFO
+CREATE OR ALTER PROCEDURE SP_AddSaleByFEFO
     @InvoiceID INT, @MedicineID INT, @Quantity INT
 AS
 BEGIN

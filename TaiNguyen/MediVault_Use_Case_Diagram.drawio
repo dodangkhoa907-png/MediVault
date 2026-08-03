@@ -802,7 +802,7 @@
         <mxCell id="wLP1WO8koZDyNV19MH5g-227" parent="wLP1WO8koZDyNV19MH5g-261" style="ellipse;whiteSpace=wrap;strokeWidth=2;" value="Cảnh báo sắp hết hàng" vertex="1">
           <mxGeometry height="52.10050251256281" width="220.79000957246336" x="544.6153569454096" y="1669.145787531407" as="geometry" />
         </mxCell>
-        <mxCell id="wLP1WO8koZDyNV19MH5g-228" parent="wLP1WO8koZDyNV19MH5g-261" style="ellipse;whiteSpace=wrap;strokeWidth=2;" value="Xem lịch sử xuất kho FIFO" vertex="1">
+        <mxCell id="wLP1WO8koZDyNV19MH5g-228" parent="wLP1WO8koZDyNV19MH5g-261" style="ellipse;whiteSpace=wrap;strokeWidth=2;" value="Xem lịch sử xuất kho FEFO" vertex="1">
           <mxGeometry height="52.10050251256281" width="243.35965499542627" x="544.6153569454096" y="1755.9799583856784" as="geometry" />
         </mxCell>
         <mxCell id="wLP1WO8koZDyNV19MH5g-229" edge="1" parent="wLP1WO8koZDyNV19MH5g-261" source="wLP1WO8koZDyNV19MH5g-250" style="curved=1;startArrow=none;endArrow=block;exitX=1;exitY=0.3333333333333333;entryX=0;entryY=0.5;rounded=0;exitDx=0;exitDy=0;exitPerimeter=0;" target="wLP1WO8koZDyNV19MH5g-208" value="">
@@ -1211,7 +1211,7 @@
             <mxPoint x="52" y="-13" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="wLP1WO8koZDyNV19MH5g-323" parent="wLP1WO8koZDyNV19MH5g-350" style="ellipse;whiteSpace=wrap;html=1;" value="FIFO Stock Allocation" vertex="1">
+        <mxCell id="wLP1WO8koZDyNV19MH5g-323" parent="wLP1WO8koZDyNV19MH5g-350" style="ellipse;whiteSpace=wrap;html=1;" value="FEFO Stock Allocation" vertex="1">
           <mxGeometry height="70" width="200" x="698" y="1380" as="geometry" />
         </mxCell>
         <mxCell id="wLP1WO8koZDyNV19MH5g-324" edge="1" parent="wLP1WO8koZDyNV19MH5g-350" source="wLP1WO8koZDyNV19MH5g-274" style="curved=1;endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="wLP1WO8koZDyNV19MH5g-323" value="">
