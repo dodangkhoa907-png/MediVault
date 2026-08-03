@@ -115,6 +115,7 @@ public class WarehouseExportDAO implements IWarehouseExportDAO {
 
     @Override
     public List<ExportReason> findReasons() {
+        ensureExportTablesExist();
         List<ExportReason> list = new ArrayList<>();
         String sql = "SELECT * FROM ExportReasons WHERE IsActive = 1 ORDER BY ReasonID";
         try (Connection cn = DBContext.getConnection();
@@ -122,7 +123,144 @@ public class WarehouseExportDAO implements IWarehouseExportDAO {
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapReason(rs));
         } catch (Exception e) { e.printStackTrace(); }
+
+        if (list.isEmpty()) {
+            seedReasonsIfEmpty();
+            try (Connection cn = DBContext.getConnection();
+                 PreparedStatement ps = cn.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) list.add(mapReason(rs));
+            } catch (Exception e) { e.printStackTrace(); }
+        }
+
+        if (list.isEmpty()) {
+            list = getDefaultFallbackReasons();
+        }
         return list;
+    }
+
+    private synchronized void ensureExportTablesExist() {
+        try (Connection cn = DBContext.getConnection()) {
+            seedReasonsIfEmpty();
+
+            String check1 = "SELECT COUNT(*) FROM sys.tables WHERE name = 'WarehouseExports'";
+            boolean hasExports = false;
+            try (PreparedStatement ps = cn.prepareStatement(check1); ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) hasExports = true;
+            }
+            if (!hasExports) {
+                String createExports = "CREATE TABLE WarehouseExports (" +
+                        "ExportID INT IDENTITY(1,1) PRIMARY KEY," +
+                        "ReasonID INT NOT NULL," +
+                        "Status VARCHAR(20) NOT NULL DEFAULT 'PENDING'," +
+                        "Receiver NVARCHAR(255) NULL," +
+                        "Notes NVARCHAR(500) NULL," +
+                        "IsFefoOverridden BIT NOT NULL DEFAULT 0," +
+                        "OverrideReason NVARCHAR(500) NULL," +
+                        "OverrideBy INT NULL," +
+                        "CreatedBy INT NOT NULL," +
+                        "CreatedAt DATETIME NOT NULL DEFAULT GETDATE()," +
+                        "ConfirmedAt DATETIME NULL" +
+                        ")";
+                try (PreparedStatement ps = cn.prepareStatement(createExports)) { ps.executeUpdate(); }
+                try {
+                    String altCode = "ALTER TABLE WarehouseExports ADD ExportCode AS ('PX' + RIGHT('00000' + CAST(ExportID AS VARCHAR(10)), 6))";
+                    try (PreparedStatement ps = cn.prepareStatement(altCode)) { ps.executeUpdate(); }
+                } catch (Exception ignored) {}
+            }
+
+            String check2 = "SELECT COUNT(*) FROM sys.tables WHERE name = 'WarehouseExportDetails'";
+            boolean hasDetails = false;
+            try (PreparedStatement ps = cn.prepareStatement(check2); ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) hasDetails = true;
+            }
+            if (!hasDetails) {
+                String createDetails = "CREATE TABLE WarehouseExportDetails (" +
+                        "ExportDetailID INT IDENTITY(1,1) PRIMARY KEY," +
+                        "ExportID INT NOT NULL," +
+                        "MedicineID INT NOT NULL," +
+                        "BatchID INT NOT NULL," +
+                        "RequestedQuantity INT NOT NULL," +
+                        "AllocatedQuantity INT NOT NULL," +
+                        "IsFefoOverridden BIT NOT NULL DEFAULT 0" +
+                        ")";
+                try (PreparedStatement ps = cn.prepareStatement(createDetails)) { ps.executeUpdate(); }
+            }
+
+            String check3 = "SELECT COUNT(*) FROM sys.tables WHERE name = 'ExportStatusHistory'";
+            boolean hasHistory = false;
+            try (PreparedStatement ps = cn.prepareStatement(check3); ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) hasHistory = true;
+            }
+            if (!hasHistory) {
+                String createHistory = "CREATE TABLE ExportStatusHistory (" +
+                        "HistoryID INT IDENTITY(1,1) PRIMARY KEY," +
+                        "ExportID INT NOT NULL," +
+                        "Status VARCHAR(20) NOT NULL," +
+                        "AccountID INT NULL," +
+                        "Notes NVARCHAR(500) NULL," +
+                        "CreatedAt DATETIME NOT NULL DEFAULT GETDATE()" +
+                        ")";
+                try (PreparedStatement ps = cn.prepareStatement(createHistory)) { ps.executeUpdate(); }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void seedReasonsIfEmpty() {
+        String checkSql = "SELECT COUNT(*) FROM sys.tables WHERE name = 'ExportReasons'";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(checkSql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next() && rs.getInt(1) == 0) {
+                String createSql = "CREATE TABLE ExportReasons (" +
+                        "ReasonID INT IDENTITY(1,1) PRIMARY KEY," +
+                        "ReasonCode VARCHAR(30) NOT NULL," +
+                        "ReasonName NVARCHAR(100) NOT NULL," +
+                        "Description NVARCHAR(255) NULL," +
+                        "RequiresReceiver BIT NOT NULL DEFAULT 0," +
+                        "IsActive BIT NOT NULL DEFAULT 1" +
+                        ")";
+                try (PreparedStatement cps = cn.prepareStatement(createSql)) { cps.executeUpdate(); }
+            }
+        } catch (Exception ignored) {}
+
+        String insertSql = "INSERT INTO ExportReasons (ReasonCode, ReasonName, Description, RequiresReceiver, IsActive) VALUES " +
+                "('RETAIL_SALE', N'Bán lẻ (POS)', N'Xuất thuốc phục vụ bán hàng trực tiếp tại quầy POS', 0, 1)," +
+                "('CUSTOMER_ORDER', N'Đơn hàng khách (Portal)', N'Xuất thuốc cho đơn hàng đặt qua Cổng khách hàng', 1, 1)," +
+                "('TRANSFER', N'Chuyển kho / Điều chuyển', N'Xuất chuyển thuốc sang kho chi nhánh, tủ trực hoặc khoa phòng khác', 1, 1)," +
+                "('RETURN_SUPPLIER', N'Trả nhà cung cấp', N'Xuất trả lại thuốc kém chất lượng, lỗi sản xuất hoặc cận hạn cho NCC', 1, 1)," +
+                "('EXPIRED_DISPOSAL', N'Tiêu huỷ hết hạn', N'Xuất tiêu huỷ thuốc quá hạn sử dụng, biến chất hoặc nứt vỡ', 0, 1)," +
+                "('INTERNAL_USAGE', N'Sử dụng nội bộ', N'Xuất dùng cho đào tạo, kiểm nghiệm, mẫu thử hoặc nghiên cứu nội bộ', 0, 1)," +
+                "('ADJUSTMENT', N'Điều chỉnh tồn kho', N'Xuất cân bằng số lượng sau kỳ kiểm kê kho phát hiện chênh lệch', 0, 1)";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(insertSql)) {
+            ps.executeUpdate();
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    private List<ExportReason> getDefaultFallbackReasons() {
+        List<ExportReason> list = new ArrayList<>();
+        list.add(createReason(1, "RETAIL_SALE", "Bán lẻ (POS)", "Xuất thuốc phục vụ bán hàng trực tiếp tại quầy POS", false));
+        list.add(createReason(2, "CUSTOMER_ORDER", "Đơn hàng khách (Portal)", "Xuất thuốc cho đơn hàng đặt qua Cổng khách hàng", true));
+        list.add(createReason(3, "TRANSFER", "Chuyển kho / Điều chuyển", "Xuất chuyển thuốc sang kho chi nhánh, tủ trực hoặc khoa phòng khác", true));
+        list.add(createReason(4, "RETURN_SUPPLIER", "Trả nhà cung cấp", "Xuất trả lại thuốc kém chất lượng, lỗi sản xuất hoặc cận hạn cho NCC", true));
+        list.add(createReason(5, "EXPIRED_DISPOSAL", "Tiêu huỷ hết hạn", "Xuất tiêu huỷ thuốc quá hạn sử dụng, biến chất hoặc nứt vỡ", false));
+        list.add(createReason(6, "INTERNAL_USAGE", "Sử dụng nội bộ", "Xuất dùng cho đào tạo, kiểm nghiệm, mẫu thử hoặc nghiên cứu nội bộ", false));
+        list.add(createReason(7, "ADJUSTMENT", "Điều chỉnh tồn kho", "Xuất cân bằng số lượng sau kỳ kiểm kê kho phát hiện chênh lệch", false));
+        return list;
+    }
+
+    private ExportReason createReason(int id, String code, String name, String desc, boolean reqRec) {
+        ExportReason r = new ExportReason();
+        r.setReasonId(id);
+        r.setReasonCode(code);
+        r.setReasonName(name);
+        r.setDescription(desc);
+        r.setRequiresReceiver(reqRec);
+        r.setActive(true);
+        return r;
     }
 
     @Override
@@ -135,15 +273,16 @@ public class WarehouseExportDAO implements IWarehouseExportDAO {
                 if (rs.next()) return mapReason(rs);
             }
         } catch (Exception e) { e.printStackTrace(); }
+
+        for (ExportReason r : getDefaultFallbackReasons()) {
+            if (r.getReasonId() == reasonId) return r;
+        }
         return null;
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    //  Confirm — điểm ghi transaction duy nhất chạm tồn kho theo chiều XUẤT
-    // ══════════════════════════════════════════════════════════════════════
-
     @Override
     public int confirmExport(WarehouseExport header, List<WarehouseExportDetail> lines, int accountId) {
+        ensureExportTablesExist();
         lastConfirmError.remove();
         if (lines == null || lines.isEmpty()) {
             lastConfirmError.set("Phiếu xuất kho không có dòng thuốc nào.");
@@ -508,18 +647,38 @@ public class WarehouseExportDAO implements IWarehouseExportDAO {
     @Override
     public List<Medicines> findRecentMedicines(int limit) {
         List<Medicines> list = new ArrayList<>();
-        String sql = "SELECT m.MedicineID, m.MedicineCode, m.MedicineName, m.Barcode, m.Unit, m.SellingPrice " +
+        String sql = "WITH bs AS (" +
+                "  SELECT MedicineID, SUM(CurrentQuantity) AS TotalStock" +
+                "  FROM Batches WHERE ExpiryDate > CAST(GETDATE() AS DATE) AND Status = 'ACTIVE'" +
+                "  GROUP BY MedicineID" +
+                ")," +
+                "nb AS (" +
+                "  SELECT MedicineID, ExpiryDate AS NearestExpiry, BatchNumber AS NearestBatchNo," +
+                "         ROW_NUMBER() OVER (PARTITION BY MedicineID ORDER BY ExpiryDate ASC) AS rn" +
+                "  FROM Batches" +
+                "  WHERE CurrentQuantity > 0 AND ExpiryDate > CAST(GETDATE() AS DATE) AND Status = 'ACTIVE'" +
+                ") " +
+                "SELECT m.*, ISNULL(bs.TotalStock,0) AS TotalStock," +
+                "  CONVERT(VARCHAR(10), nb.NearestExpiry, 120) AS NearestExpiry," +
+                "  nb.NearestBatchNo," +
+                "  c.CategoryName, mf.Name AS ManufacturerName, s.ShelfName " +
                 "FROM Medicines m JOIN (" +
                 "  SELECT TOP (?) d.MedicineID, MAX(e.CreatedAt) AS LastAt " +
                 "  FROM WarehouseExportDetails d JOIN WarehouseExports e ON e.ExportID = d.ExportID " +
                 "  GROUP BY d.MedicineID ORDER BY MAX(e.CreatedAt) DESC" +
                 ") recent ON recent.MedicineID = m.MedicineID " +
+                "LEFT JOIN bs ON bs.MedicineID = m.MedicineID " +
+                "LEFT JOIN nb ON nb.MedicineID = m.MedicineID AND nb.rn = 1 " +
+                "LEFT JOIN Categories c ON c.CategoryID = m.CategoryID " +
+                "LEFT JOIN Manufacturers mf ON mf.ManufacturerID = m.ManufacturerID " +
+                "LEFT JOIN Shelves s ON s.ShelfID = m.ShelfID " +
                 "ORDER BY recent.LastAt DESC";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, limit);
+            MedicineDAO mDao = new MedicineDAO();
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) list.add(mapMedicineLite(rs));
+                while (rs.next()) list.add(mDao.mapRowWithStock(rs));
             }
         } catch (Exception e) { e.printStackTrace(); }
         return list;

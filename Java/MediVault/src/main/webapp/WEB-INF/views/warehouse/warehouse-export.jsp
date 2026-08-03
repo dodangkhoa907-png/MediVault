@@ -33,6 +33,11 @@
 <link rel="stylesheet" href="<%= ctx %>/css/staff-portal.css">
 <link rel="stylesheet" href="<%= ctx %>/css/warehouse-portal.css?v=11">
 <style>
+/* ── Universal Font Enforcement (Nâng cấp toàn bộ phông chữ sang Plus Jakarta Sans) ── */
+*, *::before, *::after, body, input, select, button, textarea, .wh-card, .wh-step, .exp-reason-card, .exp-line-card, .wh-btn, .wh-badge {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+}
+
 a{text-decoration:none;color:inherit}
 .wh-shell{max-width:1180px}
 .pane{display:none}
@@ -44,52 +49,92 @@ a{text-decoration:none;color:inherit}
 .err.on{display:block}
 
 /* ── Bước 1: thẻ lý do xuất kho ─────────────────────────────────────────── */
-.exp-reason-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
-.exp-reason-card{position:relative;text-align:left;cursor:pointer;border:1.5px solid var(--wh-line);
-  border-radius:16px;padding:16px;background:var(--wh-surf);transition:all .15s;display:flex;flex-direction:column;gap:8px}
-.exp-reason-card:hover{border-color:#CBD5D1;transform:translateY(-2px)}
-.exp-reason-card.picked{border-color:var(--main);background:#F0FDFA;box-shadow:0 0 0 3px rgba(15,118,110,.12)}
-.exp-reason-card .ic{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(160deg,#CCFBF1,#A7F3E4);color:var(--deep)}
-.exp-reason-card .ic svg{width:18px;height:18px}
-.exp-reason-card .nm{font-size:14.5px;font-weight:800;color:var(--ink)}
-.exp-reason-card .ds{font-size:12px;color:var(--muted);line-height:1.4}
-.exp-reason-card .req-badge{position:absolute;top:12px;right:12px;font-size:10px;font-weight:800;color:#B45309}
+.exp-reason-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.exp-reason-card{position:relative;text-align:left;cursor:pointer;border:1px solid var(--border,#E2E7E5);
+  border-radius:var(--wh-r-card,18px);padding:20px;background:var(--white,#fff);transition:all var(--wh-t,180ms cubic-bezier(.4,0,.2,1));
+  display:flex;flex-direction:column;gap:12px;outline:none;box-shadow:var(--wh-sh-sm,0 1px 3px rgba(0,0,0,0.03))}
+.exp-reason-card:hover{border-color:#CBD5D1;transform:translateY(-2px);box-shadow:var(--wh-sh-md,0 4px 12px rgba(0,0,0,0.06))}
+.exp-reason-card.picked{border-color:var(--main,#0F766E);background:#F0FDFA;box-shadow:0 0 0 3px rgba(15,118,110,.14),var(--wh-sh-md)}
+.exp-reason-card .reason-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.exp-reason-card .nm{font-size:15px;font-weight:800;color:var(--ink);line-height:1.3;letter-spacing:-.2px}
+.exp-reason-card .ds{font-size:13px;color:var(--muted);line-height:1.5;flex:1}
+.exp-reason-card .code-tag{font-size:11.5px;font-weight:700;font-family:ui-monospace,"SF Mono",Consolas,monospace;color:var(--muted);letter-spacing:-.2px;margin-top:auto}
 
-/* ── Bước 2: tìm/quét/chọn thuốc ─────────────────────────────────────────── */
+/* ── Bước 2: Tìm kiếm gợi ý thông minh (Smart Auto-Suggest & Autocomplete) ── */
 .exp-search-wrap{position:relative}
-.exp-search-results{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:60;background:#fff;
-  border:1px solid var(--wh-line);border-radius:16px;box-shadow:var(--wh-sh-pop);max-height:320px;overflow-y:auto;display:none}
+.exp-search-wrap .wh-field{position:relative;display:flex;align-items:center}
+.exp-search-wrap .wh-field svg.wh-field-ic{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted);pointer-events:none}
+.exp-search-wrap input.wh-in{padding-left:42px;padding-right:38px;height:46px;font-size:14px;border-radius:12px;border:1.5px solid var(--border);transition:all .2s}
+.exp-search-wrap input.wh-in:focus{border-color:var(--main);box-shadow:0 0 0 3px rgba(15,118,110,.14)}
+.exp-clear-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;background:var(--surface);border:none;color:var(--muted);display:none;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.exp-clear-btn svg{width:14px;height:14px}
+.exp-clear-btn:hover{background:#E2E8F0;color:var(--ink)}
+
+.exp-search-filters{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+.exp-filter-chip{padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--white);font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .15s}
+.exp-filter-chip:hover{border-color:#CBD5D1;color:var(--ink);background:var(--surface)}
+.exp-filter-chip.active{border-color:var(--main);background:#F0FDFA;color:var(--main);font-weight:800}
+
+/* Bảng gợi ý nổi (Autocomplete Dropdown Box) */
+.exp-search-results{display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:100;
+  background:#fff;border:1px solid var(--border);border-radius:16px;
+  box-shadow:0 12px 36px rgba(15,23,42,.15);max-height:420px;overflow-y:auto;
+  animation:suggestIn 180ms cubic-bezier(.4,0,.2,1)}
+@keyframes suggestIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 .exp-search-results.on{display:block}
-.exp-sr-item{padding:10px 14px;cursor:pointer;display:flex;justify-content:space-between;gap:10px;align-items:center}
-.exp-sr-item:hover{background:var(--surface)}
-.exp-sr-item .nm{font-size:13.5px;font-weight:700;color:var(--ink)}
-.exp-sr-item .mt{font-size:11.5px;color:var(--muted)}
-.exp-sr-empty{padding:16px;text-align:center;font-size:12.5px;color:var(--muted)}
+
+.exp-sr-head{padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--line);font-size:12px;font-weight:800;color:var(--deep);display:flex;align-items:center;justify-content:space-between}
+.exp-sr-item{padding:12px 16px;border-bottom:1px solid var(--line);cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.exp-sr-item:last-child{border-bottom:none}
+.exp-sr-item:hover,.exp-sr-item.focused{background:#F0FDFA}
+.exp-sr-item .sr-left{flex:1;min-width:0}
+.exp-sr-item .nm{font-size:14.5px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:8px;line-height:1.3}
+.exp-sr-item .nm mark{background:#FEF08A;color:#854D0E;padding:0 2px;border-radius:3px}
+.exp-sr-item .sr-details{display:flex;gap:8px;flex-wrap:wrap;margin-top:5px}
+.exp-sr-item .sr-tag{font-size:11.5px;color:var(--muted);background:var(--surface);padding:2px 7px;border-radius:6px}
+.exp-sr-item .sr-add-btn{padding:6px 12px;border-radius:8px;background:var(--soft);color:var(--deep);font-size:12px;font-weight:800;border:none;cursor:pointer;transition:all .15s;white-space:nowrap;flex:none}
+.exp-sr-item:hover .sr-add-btn,.exp-sr-item.focused .sr-add-btn{background:var(--main);color:#fff}
+.exp-sr-foot{padding:8px 16px;background:var(--surface);border-top:1px solid var(--line);font-size:11px;font-weight:700;color:var(--muted);text-align:right}
+.exp-sr-empty{padding:24px;text-align:center;color:var(--muted);font-size:13px;font-weight:600}
+
 .exp-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .exp-chip{padding:7px 13px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:12.5px;
-  font-weight:700;color:var(--deep);cursor:pointer}
-.exp-chip:hover{border-color:var(--main);color:var(--main)}
+  font-weight:700;color:var(--deep);cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .12s}
+.exp-chip:hover{border-color:var(--main);color:var(--main);background:#F0FDFA}
+.exp-chip .stk{font-size:11px;font-weight:800;padding:2px 6px;border-radius:10px;background:var(--wh-surf);color:var(--muted)}
+
 .exp-lines{margin-top:18px}
-.exp-line-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);
-  border-radius:14px;margin-bottom:8px;background:var(--wh-surf)}
-.exp-line-row .bd{flex:1;min-width:0}
-.exp-line-row .nm{font-size:13.5px;font-weight:800;color:var(--ink)}
-.exp-line-row .mt{font-size:11.5px;color:var(--muted);margin-top:2px}
-.exp-line-row .qty{width:100px;height:38px;border:1.5px solid var(--border);border-radius:10px;text-align:center;
-  font-weight:800;font-family:inherit}
-.exp-line-row .rm{background:none;border:none;color:var(--danger);cursor:pointer;padding:6px}
-.exp-line-row .rm svg{width:16px;height:16px}
+.exp-line-card{padding:16px;border:1.5px solid var(--line);border-radius:16px;margin-bottom:12px;background:var(--wh-surf);transition:all .15s;box-shadow:0 1px 3px rgba(0,0,0,0.02)}
+.exp-line-card:hover{border-color:#CBD5D1;box-shadow:0 3px 8px rgba(0,0,0,0.04)}
+.exp-line-card.has-warn{border-color:#FCA5A5;background:#FEF2F2}
+.exp-line-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.exp-line-title{font-size:15px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:8px}
+.exp-line-badges{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.exp-line-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px 16px;margin-top:12px;padding:10px 14px;background:#fff;border:1px solid var(--line);border-radius:12px;font-size:12.5px;color:var(--muted)}
+.exp-line-grid div b{color:var(--ink);font-weight:700}
+.exp-line-qtyrow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);flex-wrap:wrap}
+.exp-qty-presets{display:flex;align-items:center;gap:6px}
+.exp-qty-btn{height:32px;padding:0 10px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:700;color:var(--deep);cursor:pointer;font-family:inherit;transition:all .12s}
+.exp-qty-btn:hover{border-color:var(--main);color:var(--main);background:#F0FDFA}
+.exp-qty-btn.max-btn{border-color:#0D9488;color:#0D9488;background:#CCFBF1}
+.exp-qty-btn.max-btn:hover{background:#99F6E4}
+.exp-line-inputwrap{display:flex;align-items:center;gap:8px}
+.exp-line-card .qty{width:110px;height:40px;border:1.5px solid var(--border);border-radius:10px;text-align:center;font-weight:800;font-size:15px;font-family:inherit;outline:none}
+.exp-line-card .qty:focus{border-color:var(--main);box-shadow:0 0 0 3px rgba(15,118,110,.12)}
+.exp-line-card .unit-label{font-size:13px;font-weight:700;color:var(--ink)}
+.exp-line-card .rm{background:none;border:none;color:var(--danger);cursor:pointer;padding:8px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:background .12s}
+.exp-line-card .rm:hover{background:#FEE2E2}
+.exp-line-card .rm svg{width:18px;height:18px}
 .exp-empty-lines{padding:26px;text-align:center;color:var(--muted);font-size:13px;border:1.5px dashed var(--border);border-radius:14px}
 
 /* ── Bước 3: khối phân bổ FEFO ─────────────────────────────────────────── */
-.exp-alloc-block{border:1px solid var(--line);border-radius:16px;margin-bottom:14px;overflow:hidden}
-.exp-alloc-head{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--wh-surf);flex-wrap:wrap}
-.exp-alloc-head .nm{font-size:14px;font-weight:800;color:var(--ink)}
-.exp-alloc-head .mt{font-size:12px;color:var(--muted)}
+.exp-alloc-block{border:1px solid var(--line);border-radius:16px;margin-bottom:14px;overflow:hidden;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.03)}
+.exp-alloc-head{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--wh-surf);flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.exp-alloc-head .nm{font-size:14.5px;font-weight:800;color:var(--ink)}
+.exp-alloc-head .mt{font-size:12.5px;color:var(--muted)}
 .exp-alloc-head .grow{margin-left:auto}
-.exp-alloc-body{padding:0 16px 16px}
-.exp-override-box{margin-top:10px;padding:12px 14px;border-radius:12px;background:#FFFBEB;border:1px solid #FDE68A}
+.exp-alloc-body{padding:14px 16px 16px}
+.exp-override-box{margin-top:12px;padding:12px 14px;border-radius:12px;background:#FFFBEB;border:1px solid #FDE68A}
 .exp-override-box select,.exp-override-box textarea{width:100%;margin-top:6px;padding:8px 10px;border:1.5px solid var(--border);
   border-radius:10px;font-family:inherit;font-size:13px}
 .exp-shortfall{margin-top:10px}
@@ -97,6 +142,33 @@ a{text-decoration:none;color:inherit}
 .exp-shortfall .cell{text-align:center;padding:10px;border-radius:10px;background:#fff}
 .exp-shortfall .cell .n{font-size:18px;font-weight:800}
 .exp-shortfall .cell .l{font-size:11px;color:var(--muted)}
+
+/* ── Sửa lỗi hiển thị Bảng Phân bổ FEFO & Xem lại (Bù trừ offset sticky header) ── */
+.exp-alloc-block table.wh-table, #p3 table.wh-table, #p4 table.wh-table, #reviewTable, #detailDrawer table.wh-table {
+  table-layout: auto !important;
+  width: 100% !important;
+}
+.exp-alloc-block table.wh-table thead th, #p3 table.wh-table thead th, #p4 table.wh-table thead th, #reviewTable thead th, #detailDrawer table.wh-table thead th {
+  position: static !important;
+  top: auto !important;
+  z-index: 1 !important;
+  background: var(--surface, #F1F4F3) !important;
+  padding: 10px 14px !important;
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: .03em !important;
+}
+.exp-alloc-block table.wh-table td, #p3 table.wh-table td, #p4 table.wh-table td, #reviewTable td, #detailDrawer table.wh-table td {
+  padding: 12px 14px !important;
+  font-size: 13px !important;
+  vertical-align: middle !important;
+}
+.exp-alloc-block .wh-tablecard, #p3 .wh-tablecard, #p4 .wh-tablecard, #detailDrawer .wh-tablecard {
+  overflow: visible !important;
+  border-radius: 14px !important;
+  margin-top: 10px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
+}
 
 /* ── Bước 4: review ─────────────────────────────────────────────────────── */
 .exp-review-warn{margin-top:10px}
@@ -242,10 +314,25 @@ a{text-decoration:none;color:inherit}
             <button type="button" class="exp-reason-card" data-id="${r.reasonId}"
                     data-code="${r.reasonCode}" data-name="${fn:escapeXml(r.reasonName)}"
                     data-requires-receiver="${r.requiresReceiver}" onclick="pickReason(this)">
-              <span class="ic"><svg><use href="#ic-out"/></svg></span>
-              <span class="nm">${r.reasonName}</span>
-              <span class="ds">${r.description}</span>
-              <c:if test="${r.requiresReceiver}"><span class="req-badge">Cần người nhận</span></c:if>
+              <div class="reason-top">
+                <c:choose>
+                  <c:when test="${r.reasonCode == 'RETAIL_SALE'}"><span class="wh-ic"><svg><use href="#ic-cart"/></svg></span></c:when>
+                  <c:when test="${r.reasonCode == 'CUSTOMER_ORDER'}"><span class="wh-ic info"><svg><use href="#ic-user"/></svg></span></c:when>
+                  <c:when test="${r.reasonCode == 'TRANSFER'}"><span class="wh-ic violet"><svg><use href="#ic-out"/></svg></span></c:when>
+                  <c:when test="${r.reasonCode == 'RETURN_SUPPLIER'}"><span class="wh-ic warn"><svg><use href="#ic-history"/></svg></span></c:when>
+                  <c:when test="${r.reasonCode == 'EXPIRED_DISPOSAL'}"><span class="wh-ic danger"><svg><use href="#ic-trash"/></svg></span></c:when>
+                  <c:when test="${r.reasonCode == 'INTERNAL_USAGE'}"><span class="wh-ic ok"><svg><use href="#ic-package"/></svg></span></c:when>
+                  <c:when test="${r.reasonCode == 'ADJUSTMENT'}"><span class="wh-ic jade"><svg><use href="#ic-clipboard"/></svg></span></c:when>
+                  <c:otherwise><span class="wh-ic"><svg><use href="#ic-out"/></svg></span></c:otherwise>
+                </c:choose>
+                <c:choose>
+                  <c:when test="${r.requiresReceiver}"><span class="wh-badge low">Cần người/nơi nhận</span></c:when>
+                  <c:otherwise><span class="wh-badge mute">Không cần người nhận</span></c:otherwise>
+                </c:choose>
+              </div>
+              <div class="nm">${r.reasonName}</div>
+              <div class="ds">${r.description}</div>
+              <div class="code-tag">Mã: ${r.reasonCode}</div>
             </button>
           </c:forEach>
         </div>
@@ -271,8 +358,20 @@ a{text-decoration:none;color:inherit}
       <div class="wh-card-body">
         <div class="wh-row2">
           <div class="wh-fg exp-search-wrap">
-            <label for="expSearch">Tìm thuốc</label>
-            <input class="wh-in" type="text" id="expSearch" placeholder="Tên, tên gốc, mã vạch, mã nội bộ, danh mục, NSX…" autocomplete="off">
+            <label for="expSearch">TÌM THUỐC (GỢI Ý THÔNG MINH)</label>
+            <div class="wh-field">
+              <svg class="wh-field-ic"><use href="#ic-search"/></svg>
+              <input class="wh-in" type="text" id="expSearch" placeholder="Gõ tên thuốc, hoạt chất, mã vạch hoặc mã SP..." autocomplete="off">
+              <button type="button" class="exp-clear-btn" id="btnClearSearch" onclick="clearSearch()" title="Xoá tìm kiếm">
+                <svg><use href="#ic-x"/></svg>
+              </button>
+            </div>
+            <div class="exp-search-filters" id="searchFilters">
+              <button type="button" class="exp-filter-chip active" onclick="setSearchFilter('ALL')">Tất cả</button>
+              <button type="button" class="exp-filter-chip" onclick="setSearchFilter('STOCK')">Còn tồn kho</button>
+              <button type="button" class="exp-filter-chip" onclick="setSearchFilter('RX')">Kê đơn (Rx)</button>
+              <button type="button" class="exp-filter-chip" onclick="setSearchFilter('NEAR_EXPIRY')">Cận hạn</button>
+            </div>
             <div class="exp-search-results" id="expSearchResults"></div>
           </div>
           <div class="wh-fg">
@@ -358,7 +457,7 @@ a{text-decoration:none;color:inherit}
           <div class="wh-tablescroll needs-x">
             <table class="wh-table" id="reviewTable">
               <thead><tr>
-                <th>Thuốc</th><th>Mã vạch</th><th>SL yêu cầu</th><th>Lô đã phân bổ</th><th></th>
+                <th>Thuốc &amp; Hoạt chất</th><th>Mã vạch / SP</th><th>Vị trí kệ</th><th>Tồn khả dụng</th><th>SL xuất</th><th>Lô &amp; HSD đã chọn</th><th></th>
               </tr></thead>
               <tbody></tbody>
             </table>
@@ -597,14 +696,35 @@ a{text-decoration:none;color:inherit}
   function addLine(med) {
     var existing = lines.find(function (l) { return l.medicineId === med.id; });
     if (existing) { renderLines(); focusQty(med.id); return; }
-    lines.push({ medicineId: med.id, name: med.name, unit: med.unit, barcode: med.barcode, qty: 1, allocation: null, overridden: false, overrideBatchId: null });
+    lines.push({
+      medicineId: med.id,
+      name: med.name,
+      genericName: med.genericName || '',
+      code: med.code || '',
+      barcode: med.barcode || '',
+      unit: med.unit || '',
+      price: med.price || 0,
+      totalStock: med.totalStock != null ? med.totalStock : 0,
+      nearestBatchNo: med.nearestBatchNo || '',
+      nearestExpiry: med.nearestExpiry || '',
+      shelfId: med.shelfId,
+      shelfName: med.shelfName || '',
+      categoryName: med.categoryName || '',
+      manufacturerName: med.manufacturerName || '',
+      rx: med.rx || false,
+      storageConditions: med.storageConditions || '',
+      qty: 1,
+      allocation: null,
+      overridden: false,
+      overrideBatchId: null
+    });
     renderLines();
     focusQty(med.id);
   }
 
   function focusQty(medicineId) {
     setTimeout(function () {
-      var el = document.querySelector('.exp-line-row[data-mid="' + medicineId + '"] .qty');
+      var el = document.querySelector('.exp-line-card[data-mid="' + medicineId + '"] .qty');
       if (el) { el.focus(); el.select(); }
     }, 30);
   }
@@ -614,14 +734,62 @@ a{text-decoration:none;color:inherit}
     var empty = document.getElementById('linesEmpty');
     empty.style.display = lines.length === 0 ? 'block' : 'none';
     wrap.innerHTML = lines.map(function (l) {
-      return '<div class="exp-line-row" data-mid="' + l.medicineId + '">' +
-        '<div class="bd"><div class="nm">' + escapeHtml(l.name) + '</div>' +
-        '<div class="mt">' + (l.barcode ? escapeHtml(l.barcode) + ' · ' : '') + escapeHtml(l.unit || '') + '</div></div>' +
-        '<input type="number" class="qty" min="1" value="' + l.qty + '" onchange="updateQty(' + l.medicineId + ', this.value)">' +
-        '<button type="button" class="rm" onclick="removeLine(' + l.medicineId + ')"><svg><use href="#ic-trash"/></svg></button>' +
+      var isStockWarn = l.totalStock <= 0 || l.qty > l.totalStock;
+      var stockBadge = l.totalStock > 0
+        ? '<span class="wh-badge ok">Tồn kho khả dụng: <b>' + l.totalStock + ' ' + escapeHtml(l.unit) + '</b></span>'
+        : '<span class="wh-badge out">HẾT HÀNG TRONG KHO</span>';
+      var rxBadge = l.rx ? '<span class="wh-badge low">Kê đơn (Rx)</span>' : '';
+      var warnNotice = (l.qty > l.totalStock && l.totalStock > 0)
+        ? '<span class="wh-badge out" style="margin-left:6px">Vượt quá tồn kho (Tồn: ' + l.totalStock + ')</span>' : '';
+
+      return '<div class="exp-line-card' + (isStockWarn ? ' has-warn' : '') + '" data-mid="' + l.medicineId + '">' +
+        '<div class="exp-line-head">' +
+          '<div class="exp-line-title">' + escapeHtml(l.name) + rxBadge + warnNotice + '</div>' +
+          '<div class="exp-line-badges">' + stockBadge + '</div>' +
+        '</div>' +
+        '<div class="exp-line-grid">' +
+          '<div><b>Hoạt chất:</b> ' + escapeHtml(l.genericName || '—') + '</div>' +
+          '<div><b>Mã vạch / SP:</b> ' + escapeHtml(l.barcode || l.code || '—') + '</div>' +
+          '<div><b>Vị trí kệ:</b> ' + escapeHtml(l.shelfName || (l.shelfId ? ('Kệ #' + l.shelfId) : 'Chưa xếp kệ')) + '</div>' +
+          '<div><b>Lô cận hạn nhất:</b> ' + escapeHtml(l.nearestExpiry ? (l.nearestExpiry + (l.nearestBatchNo ? ' (' + l.nearestBatchNo + ')' : '')) : '—') + '</div>' +
+          '<div><b>Bảo quản:</b> ' + escapeHtml(l.storageConditions || 'Thường') + '</div>' +
+          '<div><b>Giá bán:</b> ' + (l.price ? (Number(l.price).toLocaleString('vi-VN') + ' đ / ' + escapeHtml(l.unit)) : '—') + '</div>' +
+        '</div>' +
+        '<div class="exp-line-qtyrow">' +
+          '<div class="exp-qty-presets">' +
+            '<span style="font-size:12px;font-weight:700;color:var(--muted)">Nhập nhanh:</span>' +
+            '<button type="button" class="exp-qty-btn" onclick="addQty(' + l.medicineId + ', 1)">+1</button>' +
+            '<button type="button" class="exp-qty-btn" onclick="addQty(' + l.medicineId + ', 5)">+5</button>' +
+            '<button type="button" class="exp-qty-btn" onclick="addQty(' + l.medicineId + ', 10)">+10</button>' +
+            (l.totalStock > 0 ? '<button type="button" class="exp-qty-btn max-btn" onclick="setMaxQty(' + l.medicineId + ')">Xuất tất cả (' + l.totalStock + ')</button>' : '') +
+          '</div>' +
+          '<div class="exp-line-inputwrap">' +
+            '<span style="font-size:12px;font-weight:700;color:var(--ink)">SL xuất:</span>' +
+            '<input type="number" class="qty" min="1" max="' + (l.totalStock > 0 ? l.totalStock : '') + '" value="' + l.qty + '" onchange="updateQty(' + l.medicineId + ', this.value)" oninput="updateQty(' + l.medicineId + ', this.value)">' +
+            '<span class="unit-label">' + escapeHtml(l.unit || '') + '</span>' +
+            '<button type="button" class="rm" onclick="removeLine(' + l.medicineId + ')" title="Xoá thuốc này"><svg><use href="#ic-trash"/></svg></button>' +
+          '</div>' +
+        '</div>' +
         '</div>';
     }).join('');
   }
+
+  window.addQty = function (medicineId, delta) {
+    var l = lines.find(function (x) { return x.medicineId === medicineId; });
+    if (!l) return;
+    l.qty = Math.max(1, (l.qty || 0) + delta);
+    l.allocation = null; l.overridden = false; l.overrideBatchId = null;
+    renderLines();
+  };
+  window.setMaxQty = function (medicineId) {
+    var l = lines.find(function (x) { return x.medicineId === medicineId; });
+    if (!l) return;
+    if (l.totalStock > 0) {
+      l.qty = l.totalStock;
+      l.allocation = null; l.overridden = false; l.overrideBatchId = null;
+      renderLines();
+    }
+  };
 
   window.updateQty = function (medicineId, val) {
     var l = lines.find(function (x) { return x.medicineId === medicineId; });
@@ -634,31 +802,146 @@ a{text-decoration:none;color:inherit}
     renderLines();
   };
 
+  // ── Tìm kiếm gợi ý thông minh (Smart Auto-Suggest & Autocomplete) ──────
   var searchTimer = null;
-  document.getElementById('expSearch').addEventListener('input', function () {
-    var kw = this.value.trim();
+  var currentSearchFilter = 'ALL';
+  var searchFocusIndex = -1;
+  var expSearchInput = document.getElementById('expSearch');
+  var expClearBtn = document.getElementById('btnClearSearch');
+
+  window.setSearchFilter = function (filter) {
+    currentSearchFilter = filter;
+    document.querySelectorAll('.exp-filter-chip').forEach(function (c) {
+      c.classList.toggle('active', c.getAttribute('onclick').indexOf("'" + filter + "'") !== -1);
+    });
+    triggerSearch();
+  };
+
+  expSearchInput.addEventListener('focus', function () {
+    triggerSearch();
+  });
+
+  expSearchInput.addEventListener('input', function () {
+    expClearBtn.style.display = this.value.length > 0 ? 'flex' : 'none';
+    triggerSearch();
+  });
+
+  expSearchInput.addEventListener('keydown', function (e) {
     var box = document.getElementById('expSearchResults');
+    var items = box.querySelectorAll('.exp-sr-item');
+    if (!box.classList.contains('on') || items.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      searchFocusIndex = (searchFocusIndex + 1) % items.length;
+      updateFocusedSearchItem(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      searchFocusIndex = (searchFocusIndex - 1 + items.length) % items.length;
+      updateFocusedSearchItem(items);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (searchFocusIndex >= 0 && items[searchFocusIndex]) {
+        items[searchFocusIndex].click();
+      }
+    } else if (e.key === 'Escape') {
+      box.classList.remove('on');
+    }
+  });
+
+  function updateFocusedSearchItem(items) {
+    items.forEach(function (el, idx) {
+      el.classList.toggle('focused', idx === searchFocusIndex);
+      if (idx === searchFocusIndex) el.scrollIntoView({ block: 'nearest' });
+    });
+  }
+
+  window.clearSearch = function () {
+    expSearchInput.value = '';
+    expClearBtn.style.display = 'none';
+    expSearchInput.focus();
+    triggerSearch();
+  };
+
+  function triggerSearch() {
     clearTimeout(searchTimer);
-    if (kw.length < 2) { box.classList.remove('on'); return; }
+    var kw = expSearchInput.value.trim();
+    var box = document.getElementById('expSearchResults');
+
     searchTimer = setTimeout(function () {
-      fetch(ctx + '/warehouse-export?action=search-medicine&kw=' + encodeURIComponent(kw))
+      var url = ctx + '/warehouse-export?action=search-medicine&kw=' + encodeURIComponent(kw);
+      fetch(url)
         .then(function (r) { return r.json(); })
         .then(function (data) {
-          var meds = (data.medicines || []);
-          box.innerHTML = meds.length === 0
-            ? '<div class="exp-sr-empty">Không tìm thấy thuốc phù hợp.</div>'
-            : meds.map(function (m) {
-                return '<div class="exp-sr-item" onclick=\'pickSearchResult(' + JSON.stringify(m).replace(/'/g, "&#39;") + ')\'>' +
-                  '<span class="nm">' + escapeHtml(m.name) + '</span><span class="mt">' + escapeHtml(m.barcode || m.code || '') + '</span></div>';
-              }).join('');
+          var meds = data.medicines || [];
+          searchFocusIndex = -1;
+
+          if (currentSearchFilter === 'STOCK') {
+            meds = meds.filter(function (m) { return (m.totalStock || 0) > 0; });
+          } else if (currentSearchFilter === 'RX') {
+            meds = meds.filter(function (m) { return m.rx; });
+          } else if (currentSearchFilter === 'NEAR_EXPIRY') {
+            meds = meds.filter(function (m) { return m.nearestExpiry != null && m.nearestExpiry !== ''; });
+          }
+
+          if (meds.length === 0) {
+            box.innerHTML = '<div class="exp-sr-empty">Không tìm thấy thuốc nào phù hợp.</div>';
+          } else {
+            var headTitle = kw.length > 0
+              ? ('Gợi ý cho từ khoá "' + escapeHtml(kw) + '" (' + meds.length + ')')
+              : ('Gợi ý thuốc phổ biến (' + meds.length + ')');
+
+            var itemsHtml = meds.map(function (m) {
+              var stockBadge = (m.totalStock != null)
+                ? (m.totalStock > 0
+                    ? '<span class="wh-badge ok">Tồn: ' + m.totalStock + ' ' + escapeHtml(m.unit || '') + '</span>'
+                    : '<span class="wh-badge out">HẾT HÀNG</span>')
+                : '';
+              var rxBadge = m.rx ? '<span class="wh-badge low">Rx</span>' : '';
+              var highlightedName = highlightKeyword(escapeHtml(m.name), kw);
+
+              return '<div class="exp-sr-item" onclick=\'pickSearchResult(' + JSON.stringify(m).replace(/'/g, "&#39;") + ')\'>' +
+                '<div class="sr-left">' +
+                  '<div class="nm"><span>' + highlightedName + '</span>' + rxBadge + stockBadge + '</div>' +
+                  '<div class="sr-details">' +
+                    (m.genericName ? '<span class="sr-tag">Hoạt chất: ' + escapeHtml(m.genericName) + '</span>' : '') +
+                    '<span class="sr-tag">Mã: ' + escapeHtml(m.barcode || m.code || '—') + '</span>' +
+                    '<span class="sr-tag">Kệ: ' + escapeHtml(m.shelfName || (m.shelfId ? ('Kệ #' + m.shelfId) : 'Chưa gán')) + '</span>' +
+                    (m.nearestExpiry ? '<span class="sr-tag">HSD gần nhất: ' + escapeHtml(m.nearestExpiry) + '</span>' : '') +
+                  '</div>' +
+                '</div>' +
+                '<button type="button" class="sr-add-btn">+ Thêm xuất</button>' +
+              '</div>';
+            }).join('');
+
+            box.innerHTML = '<div class="exp-sr-head"><span>' + headTitle + '</span><span class="wh-badge mute">Ấn [Enter] để chọn nhanh</span></div>' +
+              itemsHtml +
+              '<div class="exp-sr-foot">[↑↓] Di chuyển · [Enter] Chọn thuốc · [Esc] Đóng gợi ý</div>';
+          }
           box.classList.add('on');
         });
-    }, 250);
-  });
+    }, kw.length === 0 ? 0 : 150);
+  }
+
+  function highlightKeyword(text, kw) {
+    if (!kw) return text;
+    var re = new RegExp('(' + escapeRegExp(kw) + ')', 'gi');
+    return text.replace(re, '<mark>$1</mark>');
+  }
+  function escapeRegExp(string) {
+    return string.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+  }
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
   window.pickSearchResult = function (m) {
     addLine(m);
     document.getElementById('expSearchResults').classList.remove('on');
-    document.getElementById('expSearch').value = '';
+    expSearchInput.value = '';
+    if (expClearBtn) expClearBtn.style.display = 'none';
   };
   document.addEventListener('click', function (e) {
     if (!e.target.closest('.exp-search-wrap')) document.getElementById('expSearchResults').classList.remove('on');
@@ -672,7 +955,11 @@ a{text-decoration:none;color:inherit}
         var box = document.getElementById('recentChips');
         document.getElementById('recentWrap').style.display = recentMedicines.length ? 'block' : 'none';
         box.innerHTML = recentMedicines.map(function (m) {
-          return '<button type="button" class="exp-chip" onclick=\'pickSearchResult(' + JSON.stringify(m).replace(/'/g, "&#39;") + ')\'>' + escapeHtml(m.name) + '</button>';
+          var stk = (m.totalStock != null) ? ('Tồn: ' + m.totalStock + ' ' + (m.unit || '')) : '';
+          return '<button type="button" class="exp-chip" onclick=\'pickSearchResult(' + JSON.stringify(m).replace(/'/g, "&#39;") + ')\'>' +
+            '<span>' + escapeHtml(m.name) + '</span>' +
+            (stk ? '<span class="stk">' + escapeHtml(stk) + '</span>' : '') +
+          '</button>';
         }).join('');
       });
   }
@@ -805,17 +1092,23 @@ a{text-decoration:none;color:inherit}
     var badge = head.querySelector('.wh-badge');
     var body = block.querySelector('.exp-alloc-body');
 
+    head.innerHTML = '<span class="nm">' + escapeHtml(l.name) + '</span>' +
+      (l.genericName ? '<span style="font-size:12px;color:var(--muted)"> (' + escapeHtml(l.genericName) + ')</span>' : '') +
+      '<span class="mt"> · Yêu cầu xuất: <b>' + l.qty + ' ' + escapeHtml(l.unit || '') + '</b> (Tồn kho khả dụng: ' + l.totalStock + ' ' + escapeHtml(l.unit || '') + ')</span>' +
+      '<span class="grow"></span><span class="wh-badge mute">' + (badge ? badge.textContent : 'Đang tải…') + '</span>';
+    badge = head.querySelector('.wh-badge');
+
     if (a.shortfall > 0 && !l.overridden) {
-      badge.className = 'wh-badge out'; badge.textContent = 'THIẾU ' + a.shortfall;
+      badge.className = 'wh-badge out'; badge.textContent = 'THIẾU ' + a.shortfall + ' ' + escapeHtml(l.unit || '');
       body.innerHTML = '<div class="wh-note danger exp-shortfall"><svg><use href="#ic-alert"/></svg><div>' +
-        '<b>Không đủ tồn kho.</b>' +
+        '<b>Không đủ tồn kho khả dụng để xuất.</b>' +
         '<div class="grid"><div class="cell"><div class="n">' + l.qty + '</div><div class="l">Yêu cầu</div></div>' +
         '<div class="cell"><div class="n">' + (l.qty - a.shortfall) + '</div><div class="l">Còn khả dụng</div></div>' +
         '<div class="cell"><div class="n">' + a.shortfall + '</div><div class="l">Thiếu</div></div></div>' +
         '<button type="button" class="wh-btn wh-btn-primary" onclick="createPurchaseSuggestion(' + l.medicineId + ', ' + a.shortfall + ')">' +
         '<svg><use href="#ic-cart"/></svg> Tạo đề xuất mua hàng</button></div></div>' + lotTableHtml(a.lots, l);
     } else {
-      badge.className = 'wh-badge ok'; badge.textContent = l.overridden ? 'GHI ĐÈ' : 'AUTO FEFO';
+      badge.className = 'wh-badge ok'; badge.textContent = l.overridden ? 'GHI ĐÈ FEFO' : 'AUTO FEFO OK';
       body.innerHTML = lotTableHtml(a.lots, l) + overrideBoxHtml(l, a);
     }
   }
@@ -831,8 +1124,8 @@ a{text-decoration:none;color:inherit}
     }).join('');
     return '<div class="wh-tablecard" style="margin-top:10px"><div class="wh-tablescroll"><table class="wh-table">' +
       '<thead><tr><th>Số lô</th><th>HSD</th><th>Tồn khả dụng</th><th>Được lấy</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>' +
-      (l.allocation && l.allocation.shelfName ? '<div class="hint">Vị trí kệ: <b>' + escapeHtml(l.allocation.shelfName) +
-      '</b>' + (l.allocation.storageConditions ? ' · Bảo quản: ' + escapeHtml(l.allocation.storageConditions) : '') + '</div>' : '');
+      '<div class="hint">Vị trí kệ: <b>' + escapeHtml(l.shelfName || (l.allocation && l.allocation.shelfName) || 'Chưa xếp kệ') +
+      '</b>' + ((l.storageConditions || (l.allocation && l.allocation.storageConditions)) ? ' · Bảo quản: ' + escapeHtml(l.storageConditions || l.allocation.storageConditions) : '') + '</div>';
   }
 
   function overrideBoxHtml(l, a) {
@@ -884,10 +1177,16 @@ a{text-decoration:none;color:inherit}
         ? (a.lots.find(function (x) { return x.batchId === l.overrideBatchId; }) ?
             (function (lot) { return lot.batchNumber + ' (HSD ' + lot.expiryDate + ')'; })(a.lots.find(function (x) { return x.batchId === l.overrideBatchId; }))
             : '<span style="color:var(--danger)">Chưa chọn lô ghi đè</span>')
-        : (a.lots || []).map(function (lot) { return lot.batchNumber + ' ×' + lot.allocatedQuantity; }).join(', ');
-      return '<tr><td>' + escapeHtml(l.name) + '</td><td>' + escapeHtml(l.barcode || '—') + '</td>' +
-        '<td class="num">' + l.qty + '</td><td>' + lotsText + (l.overridden ? ' <span class="wh-badge low">Ghi đè</span>' : '') + '</td>' +
-        '<td><button type="button" class="wh-btn wh-btn-icon" onclick="goStepFromReview(2)"><svg><use href="#ic-edit"/></svg></button></td></tr>';
+        : (a.lots || []).map(function (lot) { return lot.batchNumber + ' ×' + lot.allocatedQuantity + ' (HSD ' + lot.expiryDate + ')'; }).join(', ');
+      return '<tr>' +
+        '<td><b>' + escapeHtml(l.name) + '</b>' + (l.genericName ? '<div style="font-size:11.5px;color:var(--muted)">Hoạt chất: ' + escapeHtml(l.genericName) + '</div>' : '') + '</td>' +
+        '<td>' + escapeHtml(l.barcode || l.code || '—') + '</td>' +
+        '<td>' + escapeHtml(l.shelfName || (l.shelfId ? ('Kệ #' + l.shelfId) : '—')) + '</td>' +
+        '<td class="num">' + l.totalStock + ' ' + escapeHtml(l.unit || '') + '</td>' +
+        '<td class="num"><b>' + l.qty + '</b> ' + escapeHtml(l.unit || '') + '</td>' +
+        '<td>' + lotsText + (l.overridden ? ' <span class="wh-badge low">Ghi đè</span>' : '') + '</td>' +
+        '<td><button type="button" class="wh-btn wh-btn-icon" onclick="goStepFromReview(2)" title="Chỉnh sửa"><svg><use href="#ic-edit"/></svg></button></td>' +
+        '</tr>';
     }).join('');
     document.getElementById('reviewErrors').style.display = 'none';
   }
@@ -993,8 +1292,13 @@ a{text-decoration:none;color:inherit}
       document.getElementById('detailSub').textContent = e.reasonName + ' · ' + (e.createdAt || '');
 
       var rows = data.details.map(function (d) {
-        return '<tr><td>' + escapeHtml(d.medicineName) + '</td><td>' + escapeHtml(d.batchNumber) + '</td>' +
-          '<td>' + escapeHtml(d.expiryDate) + '</td><td class="num">' + d.allocatedQuantity + '</td></tr>';
+        return '<tr>' +
+          '<td><b>' + escapeHtml(d.medicineName) + '</b>' + (d.medicineCode ? ' (' + escapeHtml(d.medicineCode) + ')' : '') + '</td>' +
+          '<td>' + escapeHtml(d.barcode || '—') + '</td>' +
+          '<td>' + escapeHtml(d.batchNumber) + '</td>' +
+          '<td>' + escapeHtml(d.expiryDate) + '</td>' +
+          '<td class="num"><b>' + d.allocatedQuantity + '</b></td>' +
+        '</tr>';
       }).join('');
       var hist = data.history.map(function (h) {
         return '<div class="mt">' + statusBadge(h.status) + ' ' + escapeHtml(h.accountName || '') + ' — ' + escapeHtml(h.createdAt || '') +
@@ -1004,7 +1308,7 @@ a{text-decoration:none;color:inherit}
       document.getElementById('detailBody').innerHTML =
         '<div>' + statusBadge(e.status) + (e.receiver ? ' · Nhận: ' + escapeHtml(e.receiver) : '') + '</div>' +
         '<div class="wh-tablecard" style="margin-top:12px"><div class="wh-tablescroll"><table class="wh-table">' +
-        '<thead><tr><th>Thuốc</th><th>Lô</th><th>HSD</th><th>SL</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>' +
+        '<thead><tr><th>Thuốc</th><th>Mã vạch</th><th>Lô xuất</th><th>HSD</th><th>SL</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>' +
         '<div style="margin-top:16px"><div class="hint" style="font-weight:700;color:var(--ink)">Lịch sử</div>' + hist + '</div>';
 
       var foot = '<a class="wh-btn" href="' + ctx + '/warehouse-export?action=print&exportId=' + e.exportId + '" target="_blank"><svg><use href="#ic-printer"/></svg> In</a>';
@@ -1048,12 +1352,35 @@ a{text-decoration:none;color:inherit}
     m.addEventListener('click', function (e) { if (e.target === m) m.classList.remove('open'); });
   });
 
-  function escapeHtml(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
+  function ensureReasonsRendered() {
+    var grid = document.getElementById('reasonGrid');
+    if (grid && grid.children.length === 0) {
+      var defaultReasons = [
+        { id: 1, code: 'RETAIL_SALE', name: 'Bán lẻ (POS)', desc: 'Xuất thuốc phục vụ bán hàng trực tiếp tại quầy POS', reqRec: false, icClass: 'wh-ic', ic: '#ic-cart' },
+        { id: 2, code: 'CUSTOMER_ORDER', name: 'Đơn hàng khách (Portal)', desc: 'Xuất thuốc cho đơn hàng đặt qua Cổng khách hàng', reqRec: true, icClass: 'wh-ic info', ic: '#ic-user' },
+        { id: 3, code: 'TRANSFER', name: 'Chuyển kho / Điều chuyển', desc: 'Xuất chuyển thuốc sang kho chi nhánh, tủ trực hoặc khoa phòng khác', reqRec: true, icClass: 'wh-ic violet', ic: '#ic-out' },
+        { id: 4, code: 'RETURN_SUPPLIER', name: 'Trả nhà cung cấp', desc: 'Xuất trả lại thuốc kém chất lượng, lỗi sản xuất hoặc cận hạn cho NCC', reqRec: true, icClass: 'wh-ic warn', ic: '#ic-history' },
+        { id: 5, code: 'EXPIRED_DISPOSAL', name: 'Tiêu huỷ hết hạn', desc: 'Xuất tiêu huỷ thuốc quá hạn sử dụng, biến chất hoặc nứt vỡ', reqRec: false, icClass: 'wh-ic danger', ic: '#ic-trash' },
+        { id: 6, code: 'INTERNAL_USAGE', name: 'Sử dụng nội bộ', desc: 'Xuất dùng cho đào tạo, kiểm nghiệm, mẫu thử hoặc nghiên cứu nội bộ', reqRec: false, icClass: 'wh-ic ok', ic: '#ic-package' },
+        { id: 7, code: 'ADJUSTMENT', name: 'Điều chỉnh tồn kho', desc: 'Xuất cân bằng số lượng sau kỳ kiểm kê kho phát hiện chênh lệch', reqRec: false, icClass: 'wh-ic jade', ic: '#ic-clipboard' }
+      ];
+      grid.innerHTML = defaultReasons.map(function(r) {
+        var badge = r.reqRec
+          ? '<span class="wh-badge low">Cần người/nơi nhận</span>'
+          : '<span class="wh-badge mute">Không cần người nhận</span>';
+        return '<button type="button" class="exp-reason-card" data-id="' + r.id + '" ' +
+          'data-code="' + r.code + '" data-name="' + escapeHtml(r.name) + '" ' +
+          'data-requires-receiver="' + r.reqRec + '" onclick="pickReason(this)">' +
+          '<div class="reason-top"><span class="' + r.icClass + '"><svg><use href="' + r.ic + '"/></svg></span>' + badge + '</div>' +
+          '<div class="nm">' + escapeHtml(r.name) + '</div>' +
+          '<div class="ds">' + escapeHtml(r.desc) + '</div>' +
+          '<div class="code-tag">Mã: ' + r.code + '</div>' +
+          '</button>';
+      }).join('');
+    }
   }
 
+  ensureReasonsRendered();
   loadRecent();
 })();
 </script>
