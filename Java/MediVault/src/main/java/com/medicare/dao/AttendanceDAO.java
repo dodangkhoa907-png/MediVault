@@ -282,7 +282,7 @@ public class AttendanceDAO implements IAttendanceDAO {
     @Override
     public int checkInWithPenalty(int accountId, int scheduleId, String method,
                                   BigDecimal openingCash, BigDecimal penaltyAmount,
-                                  int lateMinutes, String status) {
+                                  int lateMinutes, String status, Integer posStation) {
         // Tìm ShiftID đang mở của nhân viên để gán vào Attendance
         // → SP_AutoCloseOverdueShifts cần ShiftID để đóng bảng Shifts
         Integer shiftId = findCurrentShiftId(accountId);
@@ -300,11 +300,11 @@ public class AttendanceDAO implements IAttendanceDAO {
 
         String sql = shiftId != null
                 ? "INSERT INTO Attendance (AccountID, ScheduleID, ShiftID, CheckInTime, CheckInMethod, "
-                  + "LateMinutes, PenaltyAmount, AttendanceStatus) "
-                  + "VALUES (?,?,?,CAST(? AS DATETIME),?,?,?,?); SELECT SCOPE_IDENTITY();"
+                  + "LateMinutes, PenaltyAmount, AttendanceStatus, PosStation) "
+                  + "VALUES (?,?,?,CAST(? AS DATETIME),?,?,?,?,?); SELECT SCOPE_IDENTITY();"
                 : "INSERT INTO Attendance (AccountID, ScheduleID, CheckInTime, CheckInMethod, "
-                  + "LateMinutes, PenaltyAmount, AttendanceStatus) "
-                  + "VALUES (?,?,CAST(? AS DATETIME),?,?,?,?); SELECT SCOPE_IDENTITY();";
+                  + "LateMinutes, PenaltyAmount, AttendanceStatus, PosStation) "
+                  + "VALUES (?,?,CAST(? AS DATETIME),?,?,?,?,?); SELECT SCOPE_IDENTITY();";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, accountId);
@@ -315,7 +315,9 @@ public class AttendanceDAO implements IAttendanceDAO {
             ps.setString(p++, method != null ? method : "WEB_BUTTON");
             ps.setInt(p++, lateMinutes);
             ps.setBigDecimal(p++, penaltyAmount != null ? penaltyAmount : BigDecimal.ZERO);
-            ps.setString(p, status != null ? status : "CONFIRMED");
+            ps.setString(p++, status != null ? status : "CONFIRMED");
+            if (posStation != null && posStation > 0) ps.setInt(p, posStation);
+            else ps.setNull(p, Types.TINYINT);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);
             }
@@ -348,6 +350,17 @@ public class AttendanceDAO implements IAttendanceDAO {
             ps.setBoolean(3, isAutoClose);
             ps.setNString(4, notes);
             ps.setInt(5, accountId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    @Override
+    public boolean updatePosStation(int attendanceId, int posStation) {
+        String sql = "UPDATE Attendance SET PosStation = ? WHERE AttendanceID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, posStation);
+            ps.setInt(2, attendanceId);
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }

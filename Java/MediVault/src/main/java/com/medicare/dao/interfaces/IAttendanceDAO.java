@@ -54,9 +54,12 @@ public interface IAttendanceDAO {
     List<Attendance> findByStatusAndMonth(String status, int month, int year);
     int checkInWithPenalty(int accountId, int scheduleId, String method,
                            BigDecimal openingCash, BigDecimal penaltyAmount,
-                           int lateMinutes, String status);
+                           int lateMinutes, String status, Integer posStation);
 
     boolean checkOutWithPenalty(int accountId, BigDecimal penaltyAmount,
                                 String notes, boolean isAutoClose);
+
+    /** Cập nhật quầy POS thực tế cho 1 bản ghi Attendance đang mở (chưa checkout). */
+    boolean updatePosStation(int attendanceId, int posStation);
 
 }

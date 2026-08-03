@@ -33,13 +33,17 @@ public class PosServlet extends HttpServlet {
     private final IAccountDAO    accountDAO    = new AccountDAO();
     private final IAttendanceDAO attendanceDAO = new AttendanceDAO();
     private final IShiftScheduleDAO scheduleDAO = new ShiftScheduleDAO();
+    private final IInvoiceDAO       invoiceDAO       = new InvoiceDAO();
+    private final IInvoiceDetailDAO invoiceDetailDAO = new InvoiceDetailDAO();
+    private final IReturnsDAO       returnsDAO       = new ReturnsDAO();
 
     private static final int POS_ACCOUNT_ID = 1;
 
     // ── Action GET yêu cầu đã có nhân viên xác thực (đọc PII khách hàng) ──
     private static final java.util.Set<String> NEEDS_STAFF_GET = java.util.Set.of(
             "find-customer", "nfc-lookup", "search-customers", "pos-customer-detail",
-            "list-customers", "customer-detail", "shift-summary", "my-invoices");
+            "list-customers", "customer-detail", "shift-summary", "my-invoices",
+            "invoice-history", "invoice-detail-pos");
 
     // ── Action POST được phép chạy TRƯỚC khi có nhân viên xác thực (chọn quầy,
     // check-in khuôn mặt, thanh toán QR đang chờ...) — mọi action POST khác đều
@@ -222,6 +226,23 @@ public class PosServlet extends HttpServlet {
             return;
         }
 
+        // Lịch sử hóa đơn cho modal Trả hàng — không lọc theo nhân viên (bất kỳ ai đứng
+        // quầy cũng cần tra được hóa đơn của khách để xử lý trả hàng), q rỗng = tất cả gần đây.
+        if ("invoice-history".equals(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            PrintWriter out = resp.getWriter();
+            handleInvoiceHistory(req, out);
+            return;
+        }
+
+        // Chi tiết 1 hóa đơn + số lượng còn có thể trả từng dòng — cho màn Trả hàng trong POS
+        if ("invoice-detail-pos".equals(action)) {
+            resp.setContentType("application/json;charset=UTF-8");
+            PrintWriter out = resp.getWriter();
+            handleInvoiceDetailPos(req, out);
+            return;
+        }
+
         // Ai đang đứng quầy nào (chưa check-out hôm nay) — hiện trong modal chọn quầy, để
         // biết trước quầy nào đang có người trước khi chọn (tránh chọn nhầm quầy người khác).
         if ("station-staff".equals(action)) {
@@ -371,6 +392,7 @@ public class PosServlet extends HttpServlet {
 
         if ("quick-create-customer".equals(action)) { handleQuickCreateCustomer(req, out); return; }
         if ("link-nfc".equals(action))              { handleLinkNfc(req, out); return; }
+        if ("pos-return-save".equals(action))        { handlePosReturnSave(req, out); return; }
 
         if ("open-shift".equals(action))  { handleOpenShift(req, out); return; }
         if ("pos-pause".equals(action))   { req.getSession(true).setAttribute("posState","PAUSED");  out.print("{\"ok\":true}"); return; }
@@ -906,11 +928,19 @@ public class PosServlet extends HttpServlet {
         session.setAttribute("staffUid", String.valueOf(accountId));
 
         // Lưu station vào session
+        Integer actualStation = null;
         if (stationStr != null && !stationStr.isEmpty()) {
             try {
                 int st = Integer.parseInt(stationStr);
-                if (st >= 1) session.setAttribute("posStation", st);
+                if (st >= 1) {
+                    session.setAttribute("posStation", st);
+                    actualStation = st;
+                }
             } catch (NumberFormatException ignored) {}
+        }
+        if (actualStation == null) {
+            Integer sessStation = (Integer) session.getAttribute("posStation");
+            if (sessStation != null && sessStation >= 1) actualStation = sessStation;
         }
 
         accountDAO.updateLastActive(accountId);
@@ -920,6 +950,14 @@ public class PosServlet extends HttpServlet {
         String posState  = (String) session.getAttribute("posState");
         Attendance activeAtt = attendanceDAO.findActiveByAccount(accountId);
         if (activeAtt != null) {
+            // Ca đang mở từ trước (checkInWithPenalty cũ chưa từng ghi PosStation, hoặc
+            // nhân viên đổi quầy mà chưa checkout) → đồng bộ lại quầy thực tế ngay tại đây,
+            // nếu không thì board "Chọn quầy POS" sẽ mãi hiện "Đang trống" cho tới khi
+            // nhân viên checkout/checkin lại — điều không phải lúc nào cũng xảy ra.
+            if (actualStation != null
+                    && (activeAtt.getPosStation() == null || !activeAtt.getPosStation().equals(actualStation))) {
+                attendanceDAO.updatePosStation(activeAtt.getAttendanceId(), actualStation);
+            }
             String name = staff.getFullName() != null ? staff.getFullName() : staff.getUsername();
             if ("ACTIVE".equals(posState)) {
                 // Đã active → client chỉ cần reload
@@ -950,7 +988,7 @@ public class PosServlet extends HttpServlet {
                             .multiply(BigDecimal.valueOf(Math.max(0, lateMinutes - 5)));
                 }
                 attendanceDAO.checkInWithPenalty(accountId, schedule.getScheduleId(),
-                        "FACE_ID", BigDecimal.ZERO, penalty, (int) lateMinutes, attStatus);
+                        "FACE_ID", BigDecimal.ZERO, penalty, (int) lateMinutes, attStatus, actualStation);
                 checkInStatus = "checked-in";
             } else {
                 checkInStatus = "out-of-schedule";
@@ -1200,6 +1238,214 @@ public class PosServlet extends HttpServlet {
                 cashTotal.toPlainString(), qrTotal.toPlainString(), cardTotal.toPlainString(),
                 opening.toPlainString(), expectedCash.toPlainString(),
                 posStation != null ? posStation : 0, checkInTime);
+    }
+
+    /**
+     * Lịch sử hóa đơn cho modal "Lịch sử hóa đơn / Trả hàng" — tìm theo SĐT khách, mã hóa
+     * đơn hoặc quét mã vạch trên bill (barcode = mã hóa đơn). q rỗng → 50 hóa đơn gần nhất.
+     * Chỉ hóa đơn COMPLETED mới cho trả hàng nên lọc luôn ở đây.
+     */
+    private void handleInvoiceHistory(HttpServletRequest req, PrintWriter out) {
+        HttpSession session = req.getSession(false);
+        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
+        if (staff == null) { out.print("{\"reason\":\"not_checked_in\"}"); return; }
+
+        String q  = req.getParameter("q");
+        String kw = q != null ? q.trim() : "";
+
+        StringBuilder sb = new StringBuilder("[");
+        String sql = "SELECT TOP 50 i.InvoiceID, i.InvoiceCode, i.FinalAmount, i.PaymentMethod, " +
+                "CONVERT(VARCHAR(16), i.CreatedAt, 120) AS CreatedAt, c.CustomerName, c.Phone " +
+                "FROM Invoices i LEFT JOIN Customers c ON c.CustomerID = i.CustomerID " +
+                "WHERE i.Status = 'COMPLETED' " +
+                (kw.isEmpty() ? "" : "AND (i.InvoiceCode LIKE ? OR c.Phone LIKE ?) ") +
+                "ORDER BY i.CreatedAt DESC";
+        try (java.sql.Connection cn = com.medicare.config.DBContext.getConnection();
+             java.sql.PreparedStatement ps = cn.prepareStatement(sql)) {
+            if (!kw.isEmpty()) {
+                ps.setString(1, "%" + kw + "%");
+                ps.setString(2, "%" + kw + "%");
+            }
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                boolean first = true;
+                while (rs.next()) {
+                    if (!first) sb.append(",");
+                    BigDecimal amt = rs.getBigDecimal("FinalAmount");
+                    if (amt == null) amt = BigDecimal.ZERO;
+                    String custName  = rs.getString("CustomerName");
+                    String custPhone = rs.getString("Phone");
+                    sb.append("{\"id\":").append(rs.getInt("InvoiceID"))
+                      .append(",\"code\":\"").append(esc(rs.getString("InvoiceCode"))).append("\"")
+                      .append(",\"time\":\"").append(rs.getString("CreatedAt")).append("\"")
+                      .append(",\"amount\":").append(amt.toPlainString())
+                      .append(",\"method\":\"").append(esc(rs.getString("PaymentMethod"))).append("\"")
+                      .append(",\"custName\":\"").append(esc(custName != null ? custName : "")).append("\"")
+                      .append(",\"custPhone\":\"").append(esc(custPhone != null ? custPhone : "")).append("\"")
+                      .append("}");
+                    first = false;
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        sb.append("]");
+        out.print("{\"invoices\":" + sb + "}");
+    }
+
+    /** Chi tiết 1 hóa đơn + số lượng còn có thể trả từng dòng — cho màn Trả hàng trong POS. */
+    private void handleInvoiceDetailPos(HttpServletRequest req, PrintWriter out) {
+        HttpSession session = req.getSession(false);
+        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
+        if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_checked_in\"}"); return; }
+
+        Integer invoiceId = parseIntOrNull(req.getParameter("invoiceId"));
+        Invoice inv = invoiceId != null ? invoiceDAO.findById(invoiceId) : null;
+        if (inv == null || !"COMPLETED".equals(inv.getStatus())) {
+            out.print("{\"ok\":false}");
+            return;
+        }
+
+        String custName = "", custPhone = "";
+        int custPoints = 0;
+        if (inv.getCustomerId() != null && inv.getCustomerId() > 0) {
+            Customer c = customerDAO.findById(inv.getCustomerId());
+            if (c != null) {
+                custName  = c.getCustomerName() != null ? c.getCustomerName() : "";
+                custPhone = c.getPhone() != null ? c.getPhone() : "";
+                LoyaltyCard card = new LoyaltyDAO().findByCustomer(c.getCustomerId());
+                custPoints = card != null ? card.getAvailablePoints() : 0;
+            }
+        }
+
+        List<InvoiceDetail> details = invoiceDetailDAO.findByInvoice(invoiceId);
+        StringBuilder items = new StringBuilder("[");
+        boolean first = true;
+        for (InvoiceDetail d : details) {
+            int already    = returnsDAO.sumReturnedQty(invoiceId, d.getBatchId());
+            int returnable = Math.max(0, d.getQuantity() - already);
+            if (!first) items.append(",");
+            items.append("{\"batchId\":").append(d.getBatchId())
+                 .append(",\"medicineName\":\"").append(esc(d.getMedicineName())).append("\"")
+                 .append(",\"batchNumber\":\"").append(esc(d.getBatchNumber() != null ? d.getBatchNumber() : "")).append("\"")
+                 .append(",\"unit\":\"").append(esc(d.getUnit() != null ? d.getUnit() : "")).append("\"")
+                 .append(",\"quantity\":").append(d.getQuantity())
+                 .append(",\"already\":").append(already)
+                 .append(",\"returnable\":").append(returnable)
+                 .append(",\"unitPrice\":").append(d.getUnitPrice() != null ? d.getUnitPrice().toPlainString() : "0")
+                 .append("}");
+            first = false;
+        }
+        items.append("]");
+
+        String time = inv.getCreatedAt() != null
+                ? inv.getCreatedAt().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+                : "";
+        out.print("{\"ok\":true"
+                + ",\"invoiceId\":" + inv.getInvoiceId()
+                + ",\"code\":\"" + esc(inv.getInvoiceCode()) + "\""
+                + ",\"time\":\"" + time + "\""
+                + ",\"custName\":\"" + esc(custName) + "\""
+                + ",\"custPhone\":\"" + esc(custPhone) + "\""
+                + ",\"custPoints\":" + custPoints
+                + ",\"items\":" + items + "}");
+    }
+
+    /**
+     * Lưu phiếu trả hàng cho nhiều dòng cùng lúc (1 hóa đơn, nhiều batch) — trực tiếp từ
+     * POS. Mỗi dòng insert 1 bản ghi Returns (trigger DB tự cộng lại kho nếu restoreStock),
+     * sau đó xử lý lại điểm tích lũy 1 lần cho toàn bộ giá trị trả (giống ReturnsServlet
+     * phía admin, nhưng gộp nhiều dòng/lần thay vì chỉ 1 dòng mỗi lần lưu).
+     */
+    private void handlePosReturnSave(HttpServletRequest req, PrintWriter out) {
+        HttpSession session = req.getSession(false);
+        Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
+        if (staff == null) { out.print("{\"ok\":false,\"msg\":\"Chưa điểm danh tại quầy\"}"); return; }
+
+        Integer invoiceId = parseIntOrNull(req.getParameter("invoiceId"));
+        String  reason    = req.getParameter("reason");
+        boolean restoreStock = "on".equals(req.getParameter("restoreStock"));
+        String[] batchIdStrs = req.getParameterValues("batchId[]");
+        String[] qtyStrs     = req.getParameterValues("qty[]");
+
+        if (invoiceId == null || reason == null || reason.trim().length() < 3
+                || batchIdStrs == null || qtyStrs == null
+                || batchIdStrs.length == 0 || batchIdStrs.length != qtyStrs.length) {
+            out.print("{\"ok\":false,\"msg\":\"Dữ liệu trả hàng không hợp lệ\"}");
+            return;
+        }
+
+        Invoice inv = invoiceDAO.findById(invoiceId);
+        if (inv == null || !"COMPLETED".equals(inv.getStatus())) {
+            out.print("{\"ok\":false,\"msg\":\"Hóa đơn không hợp lệ hoặc chưa hoàn tất\"}");
+            return;
+        }
+
+        List<InvoiceDetail> details = invoiceDetailDAO.findByInvoice(invoiceId);
+        BigDecimal refundTotal = BigDecimal.ZERO;
+        List<int[]> validLines = new java.util.ArrayList<>(); // {batchId, qty}
+
+        for (int i = 0; i < batchIdStrs.length; i++) {
+            int batchId, qty;
+            try {
+                batchId = Integer.parseInt(batchIdStrs[i]);
+                qty     = Integer.parseInt(qtyStrs[i]);
+            } catch (NumberFormatException e) { continue; }
+            if (qty <= 0) continue;
+
+            InvoiceDetail matched = details.stream()
+                    .filter(d -> d.getBatchId() == batchId).findFirst().orElse(null);
+            if (matched == null) {
+                out.print("{\"ok\":false,\"msg\":\"Lô hàng không thuộc hóa đơn này\"}");
+                return;
+            }
+            int already       = returnsDAO.sumReturnedQty(invoiceId, batchId);
+            int maxReturnable = matched.getQuantity() - already;
+            if (qty > maxReturnable) {
+                out.printf("{\"ok\":false,\"msg\":\"Số lượng trả (%d) vượt quá số có thể trả (%d) cho %s\"}",
+                        qty, maxReturnable, esc(matched.getMedicineName()));
+                return;
+            }
+            refundTotal = refundTotal.add(matched.getUnitPrice().multiply(BigDecimal.valueOf(qty)));
+            validLines.add(new int[]{batchId, qty});
+        }
+
+        if (validLines.isEmpty()) {
+            out.print("{\"ok\":false,\"msg\":\"Vui lòng nhập số lượng cần trả\"}");
+            return;
+        }
+
+        Integer custId = inv.getCustomerId();
+        int pointsBefore = 0;
+        if (custId != null && custId > 0) {
+            LoyaltyCard cardBefore = new LoyaltyDAO().findByCustomer(custId);
+            pointsBefore = cardBefore != null ? cardBefore.getAvailablePoints() : 0;
+        }
+
+        for (int[] line : validLines) {
+            Returns r = new Returns();
+            r.setReturnType("CUSTOMER_RETURN");
+            r.setBatchId(line[0]);
+            r.setInvoiceId(invoiceId);
+            r.setQuantity(line[1]);
+            r.setReason(reason.trim());
+            r.setAccountId(staff.getAccountId());
+            r.setRestoreStock(restoreStock);
+            int newId = returnsDAO.insert(r);
+            if (newId > 0) {
+                com.medicare.util.AuditHelper.log(req, "Trả hàng (POS)", "Returns", newId,
+                        "HD " + inv.getInvoiceCode() + " — lô #" + line[0] + " — SL " + line[1]
+                                + " — " + reason.trim());
+            }
+        }
+
+        int pointsAdjusted = 0;
+        if (custId != null && custId > 0) {
+            new LoyaltyDAO().adjustForReturn(custId, invoiceId, refundTotal, staff.getAccountId());
+            LoyaltyCard cardAfter = new LoyaltyDAO().findByCustomer(custId);
+            int pointsAfter = cardAfter != null ? cardAfter.getAvailablePoints() : 0;
+            pointsAdjusted = Math.max(0, pointsBefore - pointsAfter);
+        }
+
+        out.printf("{\"ok\":true,\"refundAmount\":%s,\"pointsAdjusted\":%d}",
+                refundTotal.toPlainString(), pointsAdjusted);
     }
 
     // ── Helpers ──────────────────────────────────────────────
