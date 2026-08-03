@@ -491,6 +491,16 @@ select,option{font-family:inherit;font-size:inherit}
                                 </div>
                             </div>
                         </div>
+                        <div class="field">
+                            <label class="field-label" for="isWarehouseManager">Quản lý kho
+                                <span style="font-size:11px;color:#94a3b8;font-weight:400">(chỉ áp dụng khi Phân quyền = Thủ kho)</span>
+                            </label>
+                            <label style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer">
+                                <input type="checkbox" id="isWarehouseManager" name="isWarehouseManager" value="1"
+                                       <%= (form != null && form.isWarehouseManager()) ? "checked" : "" %>>
+                                <span style="font-size:13px;color:#334155">Cho phép ghi đè phân bổ FEFO ở module Xuất kho</span>
+                            </label>
+                        </div>
                         <% if (isNew) { %>
                         <%-- TẠO MỚI: MK + rules checklist + xác nhận --%>
                         <div class="field">

@@ -302,6 +302,31 @@ body{display:flex}
 .toast-ok{background:#064e3b;color:#fff}
 .toast-err{background:#7f1d1d;color:#fff}
 
+/* BARCODE REDESIGN (Phần 2) — flash xanh khi quét trúng + panel "Unknown Product" */
+.med-card.scan-flash{animation:scanFlash .6s ease}
+@keyframes scanFlash{0%{box-shadow:0 0 0 0 rgba(5,150,105,0)}30%{box-shadow:0 0 0 4px rgba(5,150,105,.55)}100%{box-shadow:0 0 0 0 rgba(5,150,105,0)}}
+.unk-modal{display:none;position:fixed;inset:0;z-index:9800;background:rgba(11,22,40,.7);align-items:center;justify-content:center;padding:20px}
+.unk-modal.show{display:flex}
+.unk-box{background:#fff;border-radius:18px;max-width:380px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden}
+.unk-head{padding:16px 20px;background:linear-gradient(135deg,#7c2d12,#c2410c);color:#fff}
+.unk-head h3{margin:0;font-size:15px;font-weight:800}
+.unk-code{font-family:'Courier New',monospace;font-size:17px;font-weight:800;margin-top:6px;opacity:.95}
+.unk-body{padding:16px 20px}
+.unk-opt{display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;border-radius:12px;
+  border:1.5px solid var(--border);background:#fff;color:var(--navy);font-size:13px;font-weight:750;
+  cursor:pointer;font-family:inherit;text-align:left;margin-bottom:8px;transition:all .15s}
+.unk-opt:hover{border-color:var(--blue);background:#eff6ff}
+.unk-opt .ic{font-size:17px;flex-shrink:0}
+.unk-opt.cancel{color:var(--muted);border-style:dashed}
+.unk-form .wh-fg{margin-bottom:10px}
+.unk-form label{display:block;font-size:12px;font-weight:750;color:var(--navy);margin-bottom:4px}
+.unk-form input,.unk-form select{width:100%;height:38px;padding:0 11px;border:1.5px solid var(--border);
+  border-radius:9px;font-family:inherit;font-size:13px;outline:none}
+.unk-form input:focus,.unk-form select:focus{border-color:var(--blue)}
+.unk-form .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.unk-err{display:none;color:#dc2626;font-size:12px;font-weight:700;margin-top:6px}
+.unk-err.show{display:block}
+
 /* CHECKIN */
 .sb-checkin-wrap{position:relative}
 
@@ -1142,6 +1167,51 @@ body{display:flex}
   </div>
 </div>
 
+<%-- ══ BARCODE REDESIGN (Phần 2) — "Unknown Product": quét trúng mã vạch lạ KHÔNG BAO GIỜ báo
+     lỗi rồi dừng lại — mở panel 4 lựa chọn (tìm tay / báo Thủ kho / tạo thuốc [Admin] / hủy),
+     giỏ hàng vẫn nguyên, không mất thao tác đang làm. ══ --%>
+<div class="unk-modal" id="unkModal" onclick="if(event.target===this)closeUnkModal()">
+  <div class="unk-box">
+    <div class="unk-head">
+      <h3>⚠️ Sản phẩm chưa xác định</h3>
+      <div class="unk-code" id="unkCode">—</div>
+    </div>
+    <div class="unk-body">
+      <div id="unkOptions">
+        <button type="button" class="unk-opt" onclick="unkSearchManually()"><span class="ic">🔍</span> Tìm thủ công</button>
+        <button type="button" class="unk-opt" onclick="unkRequestWarehouse()"><span class="ic">📦</span> Yêu cầu Thủ kho bổ sung</button>
+        <button type="button" class="unk-opt" onclick="unkShowCreateForm()"><span class="ic">➕</span> Tạo thuốc mới (chỉ Admin)</button>
+        <button type="button" class="unk-opt cancel" onclick="closeUnkModal()"><span class="ic">✕</span> Hủy</button>
+      </div>
+      <form class="unk-form" id="unkCreateForm" style="display:none" onsubmit="return false">
+        <div class="wh-fg"><label>Tên thuốc *</label><input type="text" id="unkName" placeholder="VD: Paracetamol 500mg"></div>
+        <div class="row2">
+          <div class="wh-fg"><label>Danh mục *</label>
+            <select id="unkCat"><option value="">— Chọn —</option>
+              <c:forEach var="cat" items="${categories}"><option value="${cat.categoryId}">${cat.categoryName}</option></c:forEach>
+            </select>
+          </div>
+          <div class="wh-fg"><label>Nhà sản xuất *</label>
+            <select id="unkMan"><option value="">— Chọn —</option>
+              <c:forEach var="mf" items="${posManufacturers}"><option value="${mf.manufacturerId}">${mf.name}</option></c:forEach>
+            </select>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="wh-fg"><label>Đơn vị *</label><input type="text" id="unkUnit" placeholder="Hộp / Vỉ…"></div>
+          <div class="wh-fg"><label>Giá bán</label><input type="number" id="unkPrice" min="0" step="1000" placeholder="0"></div>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Thuốc mới tạo chưa có tồn kho — cần Thủ kho nhập lô trước khi bán được.</div>
+        <div class="unk-err" id="unkErr"></div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button type="button" class="unk-opt" style="margin:0;flex:none;width:44px;justify-content:center" onclick="unkBackToOptions()">←</button>
+          <button type="button" class="btn-checkout" style="height:44px;flex:1;border-radius:10px" onclick="unkSubmitCreate()">Tạo thuốc mới</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <%-- defer: cả 3 lib này chỉ dùng bên trong hàm gọi lúc người dùng thao tác (quét mã vạch,
      thanh toán QR, check-in khuôn mặt) — không cái nào cần ngay lúc trang vừa load. Để mặc
      định (blocking) thì HTML parser phải dừng lại chờ tải xong CẢ 3 lib từ CDN ngoài trước
@@ -1220,7 +1290,7 @@ document.getElementById('searchInput').addEventListener('input', function() {
     checkEmpty();
   }, 200);
 });
-// Máy quét mã vạch (kiểu bàn phím) gõ mã rồi gửi Enter — nếu khớp đúng 1 thuốc, tự thêm vào giỏ.
+// Máy quét mã vạch (kiểu bàn phím) gõ mã rồi gửi Enter trong chính ô tìm kiếm — đi qua lõi dùng chung.
 document.getElementById('searchInput').addEventListener('keydown', function(e) {
   if (e.key !== 'Enter') return;
   const q = this.value.trim();
@@ -1228,7 +1298,7 @@ document.getElementById('searchInput').addEventListener('keydown', function(e) {
   const med = allMedicines.find(m => m.barcode && m.barcode === q);
   if (med) {
     e.preventDefault();
-    addToCart(med.el);
+    posHandleBarcodeScanned(q, 'usb', null);
     this.value = '';
     this.dispatchEvent(new Event('input'));
   }
@@ -1263,7 +1333,7 @@ function openBarcodeScan() {
       const now = Date.now();
       if (decodedText === lastCode && now - lastTime < 1500) return; // tránh cộng trùng khi camera lặp khung hình cũ
       lastCode = decodedText; lastTime = now;
-      handleBarcodeScanned(decodedText, status);
+      posHandleBarcodeScanned(decodedText, 'camera', status);
     },
     () => {} // lỗi giải mã từng khung hình — bỏ qua, camera vẫn tiếp tục quét
   ).catch(err => {
@@ -1278,20 +1348,181 @@ function closeBarcodeScan() {
     s.stop().then(() => s.clear()).catch(() => {});
   }
 }
-function handleBarcodeScanned(code, status) {
-  const med = allMedicines.find(m => m.barcode && m.barcode === code);
-  if (!med) {
-    status.textContent = '⚠️ Không tìm thấy thuốc với mã vạch: ' + code;
-    return;
-  }
-  if (med.stock <= 0) {
-    status.textContent = '❌ ' + med.name + ' đã hết hàng!';
-    return;
-  }
-  addToCart(med.el);
-  status.textContent = '✅ Đã thêm vào giỏ: ' + med.name;
-}
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBarcodeScan(); });
+
+/* ══════════════════════════════════════════════════════════════════════════════════════
+   BARCODE REDESIGN (Phần 2) — LÕI DÙNG CHUNG cho cả 3 đường quét (ô tìm kiếm+Enter, camera,
+   máy quét USB toàn cục bên dưới). Quét trúng: tự thêm giỏ + rung/beep/flash xanh, KHÔNG
+   popup (đúng "Fast Mode" — thu ngân quét liên tục không cần chạm chuột). Quét KHÔNG trúng
+   local thì hỏi server (thuốc mới tạo sau khi tải trang / mã vạch phụ) trước khi kết luận
+   "Unknown Product" — không báo lỗi cộc lốc như trước. ══════════════════════════════════ */
+function posBeep() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ac = new Ctx(), o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sine'; o.frequency.value = 1046;
+    g.gain.setValueAtTime(0.13, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.15);
+    o.connect(g); g.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime + 0.15);
+  } catch (e) {}
+}
+function posVibrate() { try { if (navigator.vibrate) navigator.vibrate(50); } catch (e) {} }
+
+function posHandleBarcodeScanned(code, source, statusEl) {
+  code = (code || '').trim();
+  if (!code) return;
+  const med = allMedicines.find(m => m.barcode && m.barcode === code);
+  if (med) {
+    if (med.stock <= 0) {
+      const msg = '❌ ' + med.name + ' đã hết hàng!';
+      if (statusEl) statusEl.textContent = msg; else showToast(msg, 'err');
+      return;
+    }
+    addToCart(med.el);
+    med.el.classList.remove('scan-flash'); void med.el.offsetWidth; med.el.classList.add('scan-flash');
+    posBeep(); posVibrate();
+    const okMsg = '✓ ' + med.name + ' — Đã thêm vào giỏ';
+    if (statusEl) statusEl.textContent = '✅ ' + okMsg; else showToast(okMsg, 'ok');
+    fetch(ctx + '/pos?action=lookup-barcode&barcode=' + encodeURIComponent(code) + '&source=' + source).catch(() => {});
+    return;
+  }
+
+  if (statusEl) statusEl.textContent = 'Đang kiểm tra mã vạch…';
+  fetch(ctx + '/pos?action=lookup-barcode&barcode=' + encodeURIComponent(code) + '&source=' + source)
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok && data.found) {
+        const m = data.medicine;
+        // Thuốc vừa được tạo/gán mã vạch nơi khác sau khi trang này đã tải — nạp vào allMedicines
+        // để lần quét sau tức thời (offline-safe), nhưng KHÔNG có el/stock thật nên chưa bán được
+        // ngay (đúng — thuốc mới chưa chắc đã có lô/tồn), báo rõ cho thu ngân thay vì im lặng.
+        if (!allMedicines.some(x => x.id === m.id)) {
+          allMedicines.push({ id: m.id, name: m.name, price: m.price, unit: m.unit, catId: m.categoryId || 0,
+            rx: !!m.rx, stock: 0, batchNo: '', expiry: '', dosage: '', code: m.code || '', barcode: m.barcode || code,
+            generic: '', contra: '', warning: '', storage: m.storageConditions || '', el: null });
+        }
+        const msg = '⚠️ ' + m.name + ' — có trong danh mục nhưng chưa có tồn kho tại quầy này.';
+        if (statusEl) statusEl.textContent = msg; else showToast(msg, 'err');
+      } else {
+        openUnkModal(code, false);
+      }
+    })
+    .catch(() => {
+      posQueueOfflineScan(code, source);
+      openUnkModal(code, true);
+    });
+}
+
+// ── Offline queue nhẹ — cùng ý tưởng với trang Nhập kho: mất mạng KHÔNG chặn thao tác, chỉ
+// lưu lại để tự kiểm tra khi có mạng trở lại. ──
+function posQueueOfflineScan(code, source) {
+  try {
+    const q = JSON.parse(localStorage.getItem('posPendingBarcodeScans') || '[]');
+    if (!q.some(x => x.code === code)) q.push({ code, source, ts: Date.now() });
+    localStorage.setItem('posPendingBarcodeScans', JSON.stringify(q));
+  } catch (e) {}
+}
+function posSyncOfflineScans() {
+  let q; try { q = JSON.parse(localStorage.getItem('posPendingBarcodeScans') || '[]'); } catch (e) { q = []; }
+  if (!q.length) return;
+  localStorage.setItem('posPendingBarcodeScans', '[]');
+  q.forEach(item => {
+    fetch(ctx + '/pos?action=lookup-barcode&barcode=' + encodeURIComponent(item.code) + '&source=' + item.source)
+      .then(r => r.json())
+      .then(data => { if (data.ok && data.found) showToast('🔄 Đã đồng bộ mã ' + item.code + ' → ' + data.medicine.name, 'ok'); })
+      .catch(() => posQueueOfflineScan(item.code, item.source));
+  });
+}
+window.addEventListener('online', posSyncOfflineScans);
+document.addEventListener('DOMContentLoaded', posSyncOfflineScans);
+
+/* ══ "Unknown Product" panel — 4 lựa chọn, không chặn/không mất thao tác đang làm ══ */
+let unkPendingCode = null;
+let unkPendingOffline = false;
+function openUnkModal(code, offline) {
+  closeBarcodeScan();
+  unkPendingCode = code;
+  unkPendingOffline = !!offline;
+  document.getElementById('unkCode').textContent = code + (offline ? ' (chưa kiểm tra — mất mạng)' : '');
+  unkBackToOptions();
+  document.getElementById('unkModal').classList.add('show');
+}
+function closeUnkModal() {
+  document.getElementById('unkModal').classList.remove('show');
+  unkPendingCode = null;
+}
+function unkSearchManually() {
+  closeUnkModal();
+  const inp = document.getElementById('searchInput');
+  inp.value = unkPendingCode || '';
+  inp.focus();
+  inp.dispatchEvent(new Event('input'));
+}
+function unkRequestWarehouse() {
+  if (!unkPendingCode) return;
+  const fd = new URLSearchParams();
+  fd.set('action', 'request-warehouse-barcode');
+  fd.set('barcode', unkPendingCode);
+  fetch(ctx + '/pos', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: fd.toString() })
+    .then(r => r.json())
+    .then(data => {
+      showToast(data.ok ? '📦 Đã gửi yêu cầu tới Thủ kho' : '⚠️ Gửi yêu cầu thất bại, thử lại', data.ok ? 'ok' : 'err');
+      if (data.ok) closeUnkModal();
+    })
+    .catch(() => showToast('⚠️ Mất kết nối, thử lại khi có mạng', 'err'));
+}
+function unkShowCreateForm() {
+  document.getElementById('unkOptions').style.display = 'none';
+  document.getElementById('unkCreateForm').style.display = 'block';
+  document.getElementById('unkErr').classList.remove('show');
+}
+function unkBackToOptions() {
+  document.getElementById('unkOptions').style.display = 'block';
+  document.getElementById('unkCreateForm').style.display = 'none';
+}
+function unkSubmitCreate() {
+  const errEl = document.getElementById('unkErr');
+  errEl.classList.remove('show');
+  const name = document.getElementById('unkName').value.trim();
+  const cat = document.getElementById('unkCat').value;
+  const man = document.getElementById('unkMan').value;
+  const unit = document.getElementById('unkUnit').value.trim();
+  if (name.length < 2) { errEl.textContent = 'Nhập tên thuốc.'; errEl.classList.add('show'); return; }
+  if (!cat) { errEl.textContent = 'Chọn danh mục.'; errEl.classList.add('show'); return; }
+  if (!man) { errEl.textContent = 'Chọn nhà sản xuất.'; errEl.classList.add('show'); return; }
+  if (!unit) { errEl.textContent = 'Nhập đơn vị tính.'; errEl.classList.add('show'); return; }
+
+  const fd = new URLSearchParams();
+  fd.set('action', 'quick-create-medicine');
+  fd.set('barcode', unkPendingCode || '');
+  fd.set('name', name);
+  fd.set('categoryId', cat);
+  fd.set('manufacturerId', man);
+  fd.set('unit', unit);
+  fd.set('sellingPrice', document.getElementById('unkPrice').value || '0');
+  fd.set('source', 'manual');
+  fetch(ctx + '/pos', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: fd.toString() })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        const m = data.medicine;
+        allMedicines.push({ id: m.id, name: m.name, price: m.price, unit: m.unit, catId: m.categoryId || 0,
+          rx: !!m.rx, stock: 0, batchNo: '', expiry: '', dosage: '', code: m.code || '', barcode: m.barcode || unkPendingCode,
+          generic: '', contra: '', warning: '', storage: m.storageConditions || '', el: null });
+        showToast('✅ Đã tạo thuốc mới: ' + m.name, 'ok');
+        closeUnkModal();
+      } else if (data.reason === 'admin_only') {
+        errEl.textContent = 'Chỉ Admin được tạo thuốc mới tại quầy — dùng "Yêu cầu Thủ kho" thay thế.';
+        errEl.classList.add('show');
+      } else {
+        errEl.textContent = 'Có lỗi xảy ra (' + (data.reason || 'unknown') + '), thử lại.';
+        errEl.classList.add('show');
+      }
+    })
+    .catch(() => { errEl.textContent = 'Mất kết nối, thử lại khi có mạng.'; errEl.classList.add('show'); });
+}
 
 // ── Category filter ──
 let activeCat = 0;
@@ -2623,17 +2854,7 @@ let globalBarcodeBuffer = '';
 let globalLastKeyTime = 0;
 
 function handleGlobalBarcodeScanned(code) {
-  const med = allMedicines.find(m => m.barcode && m.barcode === code);
-  if (!med) {
-    showToast('⚠️ Không tìm thấy thuốc với mã vạch: ' + code, 'err');
-    return;
-  }
-  if (med.stock <= 0) {
-    showToast('❌ ' + med.name + ' đã hết hàng!', 'err');
-    return;
-  }
-  addToCart(med.el);
-  showToast('✅ Đã thêm vào giỏ: ' + med.name, 'ok');
+  posHandleBarcodeScanned(code, 'usb', null);
 }
 
 document.addEventListener('keydown', e => {

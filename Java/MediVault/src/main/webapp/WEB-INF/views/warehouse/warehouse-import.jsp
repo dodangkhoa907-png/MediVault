@@ -139,6 +139,49 @@ a{text-decoration:none;color:inherit}
 .imp-med{width:auto;min-width:180px} .imp-sup{width:170px} .imp-by{width:150px}
 .imp-when{width:150px} .imp-st{width:120px} .imp-lots{width:90px} .imp-val{width:130px}
 #tblRecent{min-width:940px}
+
+/* ══ Barcode redesign — camera modal nâng cấp (khung to hơn, torch/đổi camera/nhập tay/lịch sử) ══ */
+.bc-reader-tools{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.bc-tool-btn{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:10px;
+  border:1.5px solid var(--border);background:#fff;color:var(--deep);font-size:12.5px;font-weight:700;
+  cursor:pointer;font-family:inherit;transition:all .15s}
+.bc-tool-btn svg{width:15px;height:15px}
+.bc-tool-btn:hover{border-color:var(--main);color:var(--main)}
+.bc-tool-btn.active{background:var(--main);border-color:var(--main);color:#fff}
+.bc-tool-btn:disabled{opacity:.4;cursor:default}
+.bc-manual-row{display:flex;gap:8px;margin-top:12px}
+.bc-manual-row input{flex:1;height:38px;padding:0 12px;border:1.5px solid var(--border);border-radius:10px;
+  font-family:inherit;font-size:13.5px;outline:none}
+.bc-manual-row input:focus{border-color:var(--main)}
+.bc-history{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+.bc-history-title{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.bc-history-item{display:flex;align-items:center;gap:8px;padding:6px 4px;font-size:12.5px;color:var(--ink);
+  cursor:pointer;border-radius:8px}
+.bc-history-item:hover{background:var(--surface)}
+.bc-history-item .ok{color:#0F766E}
+.bc-history-item .miss{color:var(--danger)}
+.bc-history-empty{font-size:12px;color:var(--muted)}
+#medBarcodeReaderBox.flash-ok{animation:bcFlashOk .55s ease}
+@keyframes bcFlashOk{0%{box-shadow:inset 0 0 0 0 rgba(16,185,129,0)}30%{box-shadow:inset 0 0 0 6px rgba(16,185,129,.85)}100%{box-shadow:inset 0 0 0 0 rgba(16,185,129,0)}}
+
+/* ══ Wizard "Phát hiện mã vạch mới" ══ */
+.bc-wiz-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;
+  background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;font-size:11.5px;font-weight:800}
+.bc-wiz-code{font-family:'Courier New',monospace;font-size:20px;font-weight:800;color:var(--deep);
+  letter-spacing:.5px;margin:10px 0 4px}
+.bc-wiz-offline{display:none;align-items:center;gap:8px;padding:9px 13px;border-radius:11px;margin:12px 0;
+  background:#FEF2F2;border:1px solid #FECACA;font-size:12px;color:#991B1B}
+.bc-wiz-offline.on{display:flex}
+.bc-wiz-tabs{display:flex;gap:8px;margin:16px 0 14px;border-bottom:1px solid var(--line)}
+.bc-wiz-tab{padding:9px 4px;font-size:13px;font-weight:750;color:var(--muted);background:none;border:none;
+  border-bottom:2.5px solid transparent;cursor:pointer;font-family:inherit;margin-bottom:-1px}
+.bc-wiz-tab.active{color:var(--main);border-bottom-color:var(--main)}
+.bc-wiz-pane{display:none}
+.bc-wiz-pane.on{display:block}
+.bc-wiz-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:560px){.bc-wiz-grid{grid-template-columns:1fr}}
+.bc-wiz-err{display:none;color:var(--danger);font-size:12px;font-weight:700;margin-top:8px}
+.bc-wiz-err.on{display:block}
 </style>
 <meta name="csrf-token" content="${csrfToken}">
 <script src="<%= ctx %>/js/csrf.js"></script>
@@ -691,6 +734,10 @@ a{text-decoration:none;color:inherit}
     // khác ngoài click chuột (bàn phím, hoặc set từ JS khác như re-select khi validate lỗi).
     select.addEventListener('change', renderLabel);
     renderLabel();
+    // Barcode redesign: sau khi JS chèn 1 <option> MỚI vào select gốc (thuốc vừa tạo nhanh/vừa
+    // gán mã vạch từ wizard "Phát hiện mã vạch mới"), combo cần biết để hiện được lựa chọn đó —
+    // opts là snapshot chụp 1 lần lúc enhance, không tự thấy option mới nếu không refresh lại.
+    wrap.__whComboRefresh = function () { opts = Array.prototype.slice.call(select.options); renderLabel(); };
   }
   document.querySelectorAll('select.wh-combo-src').forEach(enhanceCombo);
 
@@ -992,10 +1039,12 @@ a{text-decoration:none;color:inherit}
 })();
 </script>
 
-<!-- ══ Modal quét mã vạch THUỐC ở Bước 1 — cùng thư viện Html5Qrcode đã dùng ở trang Điều
-     chỉnh (quét SỐ LÔ). Ở đây quét mã vạch IN TRÊN HỘP THUỐC để nhận diện ĐÚNG THUỐC nào,
-     tương tự cách quầy thu ngân quét sản phẩm — hữu ích nhất khi 1 lần giao hàng có nhiều
-     loại thuốc khác nhau, khỏi phải gõ tìm tên tay từng loại. ══ -->
+<!-- ══ BARCODE REDESIGN (Phần 1) ═══════════════════════════════════════════════════════════
+     Mã vạch là danh tính trung tâm của Bước 1, không phải "tìm kiếm hộ" — quét trúng thì tự
+     điền toàn bộ (NCC lần trước, đơn vị, giá gần nhất — qua selectMedicineById() có sẵn); quét
+     KHÔNG trúng KHÔNG BAO GIỜ báo lỗi/dừng luồng — mở thẳng wizard "Phát hiện mã vạch mới"
+     (Option A: gán vào thuốc đã có · Option B: tạo thuốc mới), không rời trang, không mất dữ
+     liệu 3 bước đã nhập. Cùng logic dùng chung cho camera VÀ máy quét USB (bàn phím). ══ -->
 <div class="wh-modal" id="medBarcodeModal" onclick="if(event.target===this)closeMedBarcodeScan()">
   <div class="wh-modal-box" role="dialog" aria-modal="true" aria-labelledby="medBcTitle">
     <div class="wh-modal-head">
@@ -1006,58 +1055,533 @@ a{text-decoration:none;color:inherit}
       </button>
     </div>
     <div class="wh-modal-body">
-      <div id="medBarcodeReaderBox" style="width:100%;min-height:250px;border-radius:14px;overflow:hidden;background:#06201E"></div>
+      <div id="medBarcodeReaderBox" style="width:100%;min-height:320px;border-radius:14px;overflow:hidden;background:#06201E"></div>
       <div id="medBarcodeScanStatus" style="margin-top:12px;font-size:12.5px;color:var(--muted);text-align:center">
         Đưa mã vạch trên hộp thuốc vào giữa khung hình.
+      </div>
+      <div class="bc-reader-tools">
+        <button type="button" class="bc-tool-btn" id="bcTorchBtn" onclick="bcToggleTorch()" style="display:none">
+          <svg><use href="#ic-zap"/></svg> Đèn flash
+        </button>
+        <button type="button" class="bc-tool-btn" id="bcSwitchCamBtn" onclick="bcSwitchCamera()" style="display:none">
+          <svg><use href="#ic-refresh"/></svg> Đổi camera
+        </button>
+        <button type="button" class="bc-tool-btn" onclick="document.getElementById('bcManualInput').focus()">
+          <svg><use href="#ic-edit"/></svg> Nhập tay
+        </button>
+      </div>
+      <div class="bc-manual-row">
+        <input type="text" id="bcManualInput" placeholder="…hoặc gõ/dán mã vạch rồi Enter" autocomplete="off">
+        <button type="button" class="wh-btn wh-btn-secondary" onclick="bcManualSubmit()">Tra cứu</button>
+      </div>
+      <div class="bc-history">
+        <div class="bc-history-title"><svg style="width:12px;height:12px;vertical-align:-1px"><use href="#ic-history"/></svg> Đã quét gần đây</div>
+        <div id="bcHistoryList"><div class="bc-history-empty">Chưa quét mã nào trong phiên này.</div></div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- ══ Wizard "Phát hiện mã vạch mới" — Option A (gán vào thuốc đã có) / Option B (tạo thuốc mới) ══ -->
+<div class="wh-modal" id="bcWizardModal" onclick="if(event.target===this)closeBcWizard()">
+  <div class="wh-modal-box" role="dialog" aria-modal="true" aria-labelledby="bcWizTitle" style="max-width:560px">
+    <div class="wh-modal-head">
+      <div class="wh-ic"><svg><use href="#ic-bot"/></svg></div>
+      <h3 id="bcWizTitle">Phát hiện mã vạch mới</h3>
+      <button type="button" class="wh-btn wh-btn-icon wh-btn-ghost" onclick="closeBcWizard()" aria-label="Đóng">
+        <svg><use href="#ic-x"/></svg>
+      </button>
+    </div>
+    <div class="wh-modal-body">
+      <span class="bc-wiz-badge"><svg style="width:12px;height:12px"><use href="#ic-alert"/></svg> Mã vạch chưa từng có trong hệ thống</span>
+      <div class="bc-wiz-code" id="bcWizCode">—</div>
+      <div class="hint">Mã vạch này thuộc về thuốc nào? Chọn 1 trong 2 cách bên dưới — không cần rời trang, dữ liệu Bước 1-3 bạn đã nhập vẫn được giữ nguyên.</div>
+      <div class="bc-wiz-offline" id="bcWizOffline">
+        <svg style="width:14px;height:14px;flex:none"><use href="#ic-alert"/></svg>
+        Không có mạng — đã lưu mã vạch này, hệ thống sẽ tự kiểm tra lại khi có kết nối.
+      </div>
+
+      <div class="bc-wiz-tabs">
+        <button type="button" class="bc-wiz-tab active" id="bcTabA" onclick="bcSwitchWizTab('a')">Thuốc đã có</button>
+        <button type="button" class="bc-wiz-tab" id="bcTabB" onclick="bcSwitchWizTab('b')">Thuốc hoàn toàn mới</button>
+      </div>
+
+      <!-- Option A -->
+      <div class="bc-wiz-pane on" id="bcPaneA">
+        <div class="wh-fg">
+          <label for="bcBindSearch">Tìm thuốc đã có trong danh mục</label>
+          <input type="text" class="wh-in" id="bcBindSearch" placeholder="Gõ tên thuốc…" autocomplete="off">
+        </div>
+        <div id="bcBindResults" style="max-height:220px;overflow-y:auto;margin-top:8px"></div>
+        <div class="bc-wiz-err" id="bcBindErr"></div>
+        <div class="nav-row" style="margin-top:14px;border-top:none;padding-top:0">
+          <button type="button" class="wh-btn wh-btn-primary grow" id="bcBindSubmit" onclick="bcSubmitBind()" disabled>
+            <svg><use href="#ic-check"/></svg> Gán mã vạch vào thuốc đã chọn
+          </button>
+        </div>
+      </div>
+
+      <!-- Option B -->
+      <div class="bc-wiz-pane" id="bcPaneB">
+        <div class="wh-fg">
+          <label for="bcNewName">Tên thuốc <span aria-hidden="true">*</span></label>
+          <input type="text" class="wh-in" id="bcNewName" placeholder="VD: Paracetamol 500mg">
+        </div>
+        <div class="bc-wiz-grid">
+          <div class="wh-fg">
+            <label for="bcNewCat">Danh mục <span aria-hidden="true">*</span></label>
+            <select class="wh-in" id="bcNewCat">
+              <option value="">— Chọn —</option>
+              <c:forEach var="c" items="${bcCategories}"><option value="${c.categoryId}">${c.categoryName}</option></c:forEach>
+            </select>
+          </div>
+          <div class="wh-fg">
+            <label for="bcNewMan">Nhà sản xuất <span aria-hidden="true">*</span></label>
+            <select class="wh-in" id="bcNewMan">
+              <option value="">— Chọn —</option>
+              <c:forEach var="mf" items="${bcManufacturers}"><option value="${mf.manufacturerId}">${mf.name}</option></c:forEach>
+            </select>
+          </div>
+        </div>
+        <div class="bc-wiz-grid">
+          <div class="wh-fg">
+            <label for="bcNewUnit">Đơn vị <span aria-hidden="true">*</span></label>
+            <input type="text" class="wh-in" id="bcNewUnit" placeholder="Hộp / Vỉ / Chai…">
+          </div>
+          <div class="wh-fg">
+            <label for="bcNewPrice">Giá bán</label>
+            <input type="number" class="wh-in" id="bcNewPrice" placeholder="0" min="0" step="1000">
+          </div>
+        </div>
+        <div class="wh-fg">
+          <label for="bcNewStorage">Điều kiện bảo quản</label>
+          <input type="text" class="wh-in" id="bcNewStorage" placeholder="VD: Nơi khô mát, dưới 30°C">
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);margin-top:4px;cursor:pointer">
+          <input type="checkbox" id="bcNewRx"> Thuốc kê đơn (không bán tự do)
+        </label>
+        <div class="bc-wiz-err" id="bcNewErr"></div>
+        <div class="nav-row" style="margin-top:14px;border-top:none;padding-top:0">
+          <button type="button" class="wh-btn wh-btn-primary grow" id="bcNewSubmit" onclick="bcSubmitQuickCreate()">
+            <svg><use href="#ic-plus"/></svg> Tạo thuốc &amp; tiếp tục nhập kho
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
-var medBarcodeScanner = null;
-function openMedBarcodeScan() {
-  var modal = document.getElementById('medBarcodeModal');
-  modal.classList.add('open');
-  var status = document.getElementById('medBarcodeScanStatus');
-  status.textContent = 'Đưa mã vạch trên hộp thuốc vào giữa khung hình…';
-  if (typeof Html5Qrcode === 'undefined') {
-    status.textContent = 'Không tải được thư viện quét mã vạch. Kiểm tra kết nối mạng rồi thử lại.';
-    return;
+(function () {
+  'use strict';
+  var CTX = '<%= ctx %>';
+
+  /* ══════════════════════════════════════════════════════════════════════════════════════
+     LÕI DÙNG CHUNG — camera (Html5Qrcode), máy quét USB (bàn phím) và nhập tay đều đi qua
+     CÙNG 1 hàm xử lý, đúng tinh thần "1 luồng barcode duy nhất" thay vì 3 luồng rời rạc.
+     ══════════════════════════════════════════════════════════════════════════════════════ */
+  var bcHistory = []; // {code, ok, name, ts} — chỉ trong phiên này (session-only, cố ý không lưu DB)
+  var bcPendingBarcode = null; // mã đang chờ xử lý ở wizard
+  var bcOfflineKey = 'whPendingBarcodeScans';
+
+  function beep() {
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      var ctx = new Ctx();
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = 880;
+      g.gain.setValueAtTime(0.14, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(); o.stop(ctx.currentTime + 0.18);
+    } catch (e) {}
   }
-  medBarcodeScanner = new Html5Qrcode('medBarcodeReaderBox');
-  medBarcodeScanner.start(
-    { facingMode: 'environment' },
-    { fps: 10, qrbox: { width: 260, height: 140 },
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.QR_CODE
-      ] },
-    function (decodedText) {
-      var opt = document.querySelector('#imMed option[data-barcode="' + decodedText.replace(/"/g, '') + '"]');
-      if (opt && opt.value && selectMedicineById(opt.value)) {
-        closeMedBarcodeScan();
-      } else {
-        status.textContent = 'Không tìm thấy thuốc nào có mã vạch "' + decodedText + '" trong kho. Thử quét lại hoặc chọn tay bên dưới.';
+  function vibrate() { try { if (navigator.vibrate) navigator.vibrate(60); } catch (e) {} }
+  function flashOk() {
+    var box = document.getElementById('medBarcodeReaderBox');
+    box.classList.remove('flash-ok'); void box.offsetWidth; box.classList.add('flash-ok');
+  }
+  function pushHistory(code, ok, name) {
+    bcHistory.unshift({ code: code, ok: ok, name: name || '', ts: Date.now() });
+    if (bcHistory.length > 8) bcHistory.length = 8;
+    renderHistory();
+  }
+  function renderHistory() {
+    var box = document.getElementById('bcHistoryList');
+    if (!bcHistory.length) { box.innerHTML = '<div class="bc-history-empty">Chưa quét mã nào trong phiên này.</div>'; return; }
+    box.innerHTML = bcHistory.map(function (h) {
+      return '<div class="bc-history-item" onclick="window.__bcRescan(\'' + h.code.replace(/'/g, "\\'") + '\')">'
+        + '<span class="' + (h.ok ? 'ok' : 'miss') + '">' + (h.ok ? '✓' : '✕') + '</span>'
+        + '<span style="flex:1">' + (h.ok ? (h.name || h.code) : h.code) + '</span>'
+        + '</div>';
+    }).join('');
+  }
+  window.__bcRescan = function (code) { handleWarehouseBarcodeScanned(code, 'manual'); };
+
+  /** Tra cứu 1 mã vạch — LOCAL trước (option đã render sẵn trong #imMed, tức thời, không cần
+   *  mạng — đây chính là "Offline Mode": vẫn quét tiếp được khi mất mạng nếu thuốc đã tải sẵn),
+   *  rồi mới hỏi server (thuốc mới tạo sau khi tải trang / mã vạch phụ bind qua nơi khác). */
+  window.handleWarehouseBarcodeScanned = function handleWarehouseBarcodeScanned(code, source) {
+    code = (code || '').trim();
+    if (!code) return;
+    var status = document.getElementById('medBarcodeScanStatus');
+
+    var opt = document.querySelector('#imMed option[data-barcode="' + code.replace(/"/g, '') + '"]');
+    if (opt && opt.value) {
+      selectMedicineById(opt.value);
+      flashOk(); beep(); vibrate();
+      status.textContent = '✅ Đã chọn: ' + opt.dataset.name;
+      pushHistory(code, true, opt.dataset.name);
+      closeMedBarcodeScan();
+      // Vẫn báo server để cộng ScanCount/lịch sử — không chặn UI chờ kết quả này.
+      fetch(CTX + '/warehouse-import?action=lookup-barcode&barcode=' + encodeURIComponent(code) + '&source=' + source).catch(function () {});
+      return;
+    }
+
+    status.textContent = 'Đang kiểm tra mã vạch…';
+    fetch(CTX + '/warehouse-import?action=lookup-barcode&barcode=' + encodeURIComponent(code) + '&source=' + source)
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.ok && data.found) {
+          bcInjectAndSelect(data.medicine);
+          flashOk(); beep(); vibrate();
+          status.textContent = '✅ Đã chọn: ' + data.medicine.name;
+          pushHistory(code, true, data.medicine.name);
+          closeMedBarcodeScan();
+        } else {
+          // KHÔNG BAO GIỜ là lỗi — mã vạch mới, mở wizard, không chặn luồng.
+          pushHistory(code, false, null);
+          openBcWizard(code, false);
+        }
+      })
+      .catch(function () {
+        // Mất mạng: KHÔNG chặn — lưu lại để đồng bộ khi có mạng, vẫn cho thao tác Option A/B ở
+        // chế độ hạn chế (Option B tự thử submit, nếu vẫn mất mạng sẽ báo lỗi rõ khi bấm Tạo).
+        queueOfflineScan(code, source);
+        pushHistory(code, false, null);
+        openBcWizard(code, true);
+      });
+  };
+
+  function queueOfflineScan(code, source) {
+    try {
+      var q = JSON.parse(localStorage.getItem(bcOfflineKey) || '[]');
+      if (!q.some(function (x) { return x.code === code; })) q.push({ code: code, source: source, ts: Date.now() });
+      localStorage.setItem(bcOfflineKey, JSON.stringify(q));
+    } catch (e) {}
+  }
+  function syncOfflineScans() {
+    var q;
+    try { q = JSON.parse(localStorage.getItem(bcOfflineKey) || '[]'); } catch (e) { q = []; }
+    if (!q.length) return;
+    var remaining = [];
+    var done = 0;
+    q.forEach(function (item) {
+      fetch(CTX + '/warehouse-import?action=lookup-barcode&barcode=' + encodeURIComponent(item.code) + '&source=' + item.source)
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.ok && data.found) {
+            showToastLike('🔄 Đã đồng bộ mã ' + item.code + ' → ' + data.medicine.name);
+          }
+        })
+        .catch(function () { remaining.push(item); })
+        .finally(function () {
+          done++;
+          if (done === q.length) { try { localStorage.setItem(bcOfflineKey, JSON.stringify(remaining)); } catch (e) {} }
+        });
+    });
+  }
+  function showToastLike(text) {
+    var el = document.createElement('div');
+    el.textContent = text;
+    el.style.cssText = 'position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--deep);'
+      + 'color:#fff;padding:10px 18px;border-radius:12px;font-size:12.5px;font-weight:700;z-index:999;'
+      + 'box-shadow:0 8px 24px rgba(0,0,0,.2)';
+    document.body.appendChild(el);
+    setTimeout(function () { el.remove(); }, 3200);
+  }
+  window.addEventListener('online', syncOfflineScans);
+  document.addEventListener('DOMContentLoaded', syncOfflineScans);
+
+  /** Chèn 1 <option> MỚI vào #imMed (thuốc trả về từ server chưa có sẵn trong danh sách đã tải
+   *  lúc mở trang — vừa tạo nhanh / vừa bind mã vạch) rồi chọn luôn — không reload trang. */
+  function bcInjectAndSelect(m) {
+    var sel = document.getElementById('imMed');
+    var existing = sel.querySelector('option[value="' + m.id + '"]');
+    if (!existing) {
+      existing = document.createElement('option');
+      existing.value = m.id;
+      sel.appendChild(existing);
+    }
+    existing.dataset.name = m.name;
+    existing.dataset.unit = m.unit;
+    existing.dataset.barcode = m.barcode || '';
+    existing.dataset.stock = existing.dataset.stock || '0';
+    existing.dataset.min = existing.dataset.min || '0';
+    existing.dataset.generic = '';
+    existing.dataset.packaging = '';
+    existing.textContent = m.name + ' (' + m.unit + ')';
+    var wrap = sel.closest('.wh-combo');
+    if (wrap && wrap.__whComboRefresh) wrap.__whComboRefresh();
+    selectMedicineById(m.id);
+  }
+
+  /* ══ USB / Bluetooth keyboard-wedge scanner — không cần camera. Cùng kiểu đệm theo thời gian
+     gõ phím đã dùng ở POS (pos.jsp): gõ rất nhanh + Enter = máy quét, gõ tay bình thường sẽ có
+     khoảng nghỉ > 50ms giữa các phím nên KHÔNG bị hiểu nhầm thành 1 lượt quét. ══ */
+  var usbBuffer = '', usbLastTime = 0;
+  document.addEventListener('keydown', function (e) {
+    var tag = e.target.tagName;
+    // Đang gõ tay vào 1 ô nhập thật (không phải chính là ô "Nhập tay" của modal quét) thì bỏ
+    // qua — tránh máy quét "nuốt" mất phím người dùng đang gõ ở nơi khác trên trang.
+    if ((tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') && e.target.id !== 'bcManualInput') {
+      usbBuffer = ''; return;
+    }
+    var now = Date.now();
+    if (now - usbLastTime > 50) usbBuffer = '';
+    usbLastTime = now;
+    if (e.key === 'Enter') {
+      if (usbBuffer.length >= 4) {
+        e.preventDefault();
+        var code = usbBuffer; usbBuffer = '';
+        handleWarehouseBarcodeScanned(code, 'usb');
       }
-    },
-    function () {}   // lỗi giải mã từng khung hình — bỏ qua
-  ).catch(function (err) {
-    status.textContent = 'Không mở được camera: ' + (err.message || err);
+    } else if (e.key.length === 1) {
+      usbBuffer += e.key;
+    }
   });
-}
-function closeMedBarcodeScan() {
-  document.getElementById('medBarcodeModal').classList.remove('open');
-  if (medBarcodeScanner) {
-    var s = medBarcodeScanner;
-    medBarcodeScanner = null;
-    s.stop().then(function () { s.clear(); }).catch(function () {});
+
+  /* ══ Modal camera — Html5Qrcode, khung to hơn + torch + đổi camera + nhập tay + lịch sử ══ */
+  var medBarcodeScanner = null;
+  var bcCameras = [];
+  var bcCameraIdx = 0;
+  var bcTorchOn = false;
+
+  window.openMedBarcodeScan = function openMedBarcodeScan() {
+    var modal = document.getElementById('medBarcodeModal');
+    modal.classList.add('open');
+    var status = document.getElementById('medBarcodeScanStatus');
+    status.textContent = 'Đưa mã vạch trên hộp thuốc vào giữa khung hình…';
+    document.getElementById('bcTorchBtn').style.display = 'none';
+    document.getElementById('bcSwitchCamBtn').style.display = 'none';
+    renderHistory();
+    if (typeof Html5Qrcode === 'undefined') {
+      status.textContent = 'Không tải được thư viện quét mã vạch. Kiểm tra kết nối mạng rồi thử lại — vẫn dùng được "Nhập tay" bên dưới.';
+      return;
+    }
+    Html5Qrcode.getCameras().then(function (cams) {
+      bcCameras = cams || [];
+      if (bcCameras.length > 1) document.getElementById('bcSwitchCamBtn').style.display = '';
+      startCamera(bcCameras.length ? bcCameras[bcCameraIdx].id : { facingMode: 'environment' });
+    }).catch(function () {
+      startCamera({ facingMode: 'environment' });
+    });
+  };
+
+  function startCamera(cameraIdOrConstraint) {
+    var status = document.getElementById('medBarcodeScanStatus');
+    medBarcodeScanner = new Html5Qrcode('medBarcodeReaderBox');
+    medBarcodeScanner.start(
+      cameraIdOrConstraint,
+      { fps: 10, qrbox: { width: 300, height: 170 },
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.QR_CODE
+        ] },
+      function (decodedText) { handleWarehouseBarcodeScanned(decodedText, 'camera'); },
+      function () {}   // lỗi giải mã từng khung hình — bỏ qua
+    ).then(function () {
+      try {
+        var caps = medBarcodeScanner.getRunningTrackCapabilities();
+        if (caps && caps.torch) document.getElementById('bcTorchBtn').style.display = '';
+      } catch (e) {}
+    }).catch(function (err) {
+      status.textContent = 'Không mở được camera: ' + (err.message || err) + ' — vẫn dùng được "Nhập tay" bên dưới.';
+    });
   }
-}
-document.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape' && document.getElementById('medBarcodeModal').classList.contains('open')) closeMedBarcodeScan();
-});
+
+  window.bcSwitchCamera = function bcSwitchCamera() {
+    if (bcCameras.length < 2) return;
+    bcCameraIdx = (bcCameraIdx + 1) % bcCameras.length;
+    bcTorchOn = false;
+    document.getElementById('bcTorchBtn').classList.remove('active');
+    if (medBarcodeScanner) {
+      medBarcodeScanner.stop().then(function () { medBarcodeScanner.clear(); startCamera(bcCameras[bcCameraIdx].id); }).catch(function () {});
+    }
+  };
+
+  window.bcToggleTorch = function bcToggleTorch() {
+    if (!medBarcodeScanner) return;
+    bcTorchOn = !bcTorchOn;
+    medBarcodeScanner.applyVideoConstraints({ advanced: [{ torch: bcTorchOn }] }).then(function () {
+      document.getElementById('bcTorchBtn').classList.toggle('active', bcTorchOn);
+    }).catch(function () {});
+  };
+
+  window.bcManualSubmit = function bcManualSubmit() {
+    var input = document.getElementById('bcManualInput');
+    var v = input.value.trim();
+    if (!v) return;
+    input.value = '';
+    handleWarehouseBarcodeScanned(v, 'manual');
+  };
+  document.getElementById('bcManualInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); bcManualSubmit(); }
+  });
+
+  window.closeMedBarcodeScan = function closeMedBarcodeScan() {
+    document.getElementById('medBarcodeModal').classList.remove('open');
+    if (medBarcodeScanner) {
+      var s = medBarcodeScanner;
+      medBarcodeScanner = null;
+      s.stop().then(function () { s.clear(); }).catch(function () {});
+    }
+  };
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && document.getElementById('medBarcodeModal').classList.contains('open')) closeMedBarcodeScan();
+  });
+
+  /* ══════════════════════════════════════════════════════════════════════════════════════
+     WIZARD "Phát hiện mã vạch mới" — Option A (bind vào thuốc đã có) / Option B (tạo mới)
+     ══════════════════════════════════════════════════════════════════════════════════════ */
+  var bcBindSelectedId = null;
+
+  window.openBcWizard = function openBcWizard(code, offline) {
+    closeMedBarcodeScan();
+    bcPendingBarcode = code;
+    bcBindSelectedId = null;
+    document.getElementById('bcWizCode').textContent = code;
+    document.getElementById('bcWizOffline').classList.toggle('on', !!offline);
+    document.getElementById('bcNewErr').classList.remove('on');
+    document.getElementById('bcBindErr').classList.remove('on');
+    document.getElementById('bcBindSearch').value = '';
+    document.getElementById('bcBindResults').innerHTML = '';
+    document.getElementById('bcBindSubmit').disabled = true;
+    bcSwitchWizTab('a');
+    document.getElementById('bcWizardModal').classList.add('open');
+    setTimeout(function () { document.getElementById('bcBindSearch').focus(); }, 60);
+  };
+  window.closeBcWizard = function closeBcWizard() {
+    document.getElementById('bcWizardModal').classList.remove('open');
+    bcPendingBarcode = null;
+  };
+  window.bcSwitchWizTab = function bcSwitchWizTab(tab) {
+    document.getElementById('bcTabA').classList.toggle('active', tab === 'a');
+    document.getElementById('bcTabB').classList.toggle('active', tab === 'b');
+    document.getElementById('bcPaneA').classList.toggle('on', tab === 'a');
+    document.getElementById('bcPaneB').classList.toggle('on', tab === 'b');
+  };
+
+  function norm(s) {
+    return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\u0111/g, 'd');
+  }
+  document.getElementById('bcBindSearch').addEventListener('input', function () {
+    var k = norm(this.value);
+    var box = document.getElementById('bcBindResults');
+    bcBindSelectedId = null;
+    document.getElementById('bcBindSubmit').disabled = true;
+    if (k.length < 2) { box.innerHTML = ''; return; }
+    var opts = Array.prototype.slice.call(document.getElementById('imMed').options)
+      .filter(function (o) { return o.value && norm(o.dataset.name).indexOf(k) !== -1; })
+      .slice(0, 8);
+    box.innerHTML = opts.length ? '' : '<div class="bc-history-empty">Không tìm thấy thuốc nào.</div>';
+    opts.forEach(function (o) {
+      var row = document.createElement('div');
+      row.className = 'wh-combo-opt';
+      row.style.cursor = 'pointer';
+      row.innerHTML = '<span>' + o.dataset.name + '</span><span class="om">' + (o.dataset.unit || '') + '</span>';
+      row.addEventListener('click', function () {
+        bcBindSelectedId = o.value;
+        document.getElementById('bcBindSearch').value = o.dataset.name;
+        box.innerHTML = '';
+        document.getElementById('bcBindSubmit').disabled = false;
+      });
+      box.appendChild(row);
+    });
+  });
+
+  window.bcSubmitBind = function bcSubmitBind() {
+    if (!bcBindSelectedId || !bcPendingBarcode) return;
+    var errEl = document.getElementById('bcBindErr');
+    errEl.classList.remove('on');
+    var btn = document.getElementById('bcBindSubmit');
+    btn.disabled = true;
+    var fd = new URLSearchParams();
+    fd.set('action', 'bind-barcode');
+    fd.set('medicineId', bcBindSelectedId);
+    fd.set('barcode', bcPendingBarcode);
+    fd.set('source', 'manual');
+    fetch(CTX + '/warehouse-import', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: fd.toString() })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.ok) {
+          bcInjectAndSelect(data.medicine);
+          closeBcWizard();
+        } else {
+          errEl.textContent = bcReasonText(data.reason);
+          errEl.classList.add('on');
+          btn.disabled = false;
+        }
+      })
+      .catch(function () { errEl.textContent = 'Mất kết nối — thử lại khi có mạng.'; errEl.classList.add('on'); btn.disabled = false; });
+  };
+
+  window.bcSubmitQuickCreate = function bcSubmitQuickCreate() {
+    var errEl = document.getElementById('bcNewErr');
+    errEl.classList.remove('on');
+    var name = document.getElementById('bcNewName').value.trim();
+    var cat = document.getElementById('bcNewCat').value;
+    var man = document.getElementById('bcNewMan').value;
+    var unit = document.getElementById('bcNewUnit').value.trim();
+    if (name.length < 2) { errEl.textContent = 'Nhập tên thuốc (tối thiểu 2 ký tự).'; errEl.classList.add('on'); return; }
+    if (!cat) { errEl.textContent = 'Chọn danh mục.'; errEl.classList.add('on'); return; }
+    if (!man) { errEl.textContent = 'Chọn nhà sản xuất.'; errEl.classList.add('on'); return; }
+    if (!unit) { errEl.textContent = 'Nhập đơn vị tính.'; errEl.classList.add('on'); return; }
+
+    var btn = document.getElementById('bcNewSubmit');
+    btn.disabled = true;
+    var fd = new URLSearchParams();
+    fd.set('action', 'quick-create-medicine');
+    fd.set('barcode', bcPendingBarcode || '');
+    fd.set('name', name);
+    fd.set('categoryId', cat);
+    fd.set('manufacturerId', man);
+    fd.set('unit', unit);
+    fd.set('sellingPrice', document.getElementById('bcNewPrice').value || '0');
+    fd.set('storageConditions', document.getElementById('bcNewStorage').value || '');
+    fd.set('prescriptionRequired', document.getElementById('bcNewRx').checked ? 'true' : 'false');
+    fd.set('source', 'manual');
+    fetch(CTX + '/warehouse-import', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: fd.toString() })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.ok) {
+          bcInjectAndSelect(data.medicine);
+          closeBcWizard();
+        } else {
+          errEl.textContent = bcReasonText(data.reason);
+          errEl.classList.add('on');
+          btn.disabled = false;
+        }
+      })
+      .catch(function () { errEl.textContent = 'Mất kết nối — thử lại khi có mạng.'; errEl.classList.add('on'); btn.disabled = false; });
+  };
+
+  function bcReasonText(reason) {
+    switch (reason) {
+      case 'conflict_or_db_error': return 'Mã vạch này đã thuộc về 1 thuốc khác, hoặc có lỗi khi ghi dữ liệu.';
+      case 'invalid_name': return 'Tên thuốc không hợp lệ.';
+      case 'invalid_barcode': return 'Mã vạch không hợp lệ.';
+      case 'invalid_unit': return 'Chưa nhập đơn vị tính.';
+      case 'invalid_category': return 'Chưa chọn danh mục.';
+      case 'invalid_manufacturer': return 'Chưa chọn nhà sản xuất.';
+      case 'invalid_medicine': return 'Chưa chọn thuốc để gán.';
+      default: return 'Có lỗi xảy ra, thử lại.';
+    }
+  }
+})();
 </script>
 </body>
 </html>

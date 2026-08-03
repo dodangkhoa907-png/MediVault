@@ -142,9 +142,12 @@ public class ReportServlet extends HttpServlet {
         BigDecimal prevCogs         = prevKpi.cogs;
         BigDecimal prevNetRevenue   = prevGrossRevenue.subtract(prevDiscount).subtract(prevRefund);
         BigDecimal prevGrossProfit  = prevNetRevenue.subtract(prevCogs);
-        req.setAttribute("netRevenuePct",  percentChange(prevNetRevenue, netRevenue));
-        req.setAttribute("grossProfitPct", percentChange(prevGrossProfit, grossProfit));
-        req.setAttribute("cogsPct",        percentChange(prevCogs, cogs));
+        Double netRevenuePct  = percentChange(prevNetRevenue, netRevenue);
+        Double grossProfitPct = percentChange(prevGrossProfit, grossProfit);
+        Double cogsPct        = percentChange(prevCogs, cogs);
+        req.setAttribute("netRevenuePct",  netRevenuePct);
+        req.setAttribute("grossProfitPct", grossProfitPct);
+        req.setAttribute("cogsPct",        cogsPct);
 
         // % giảm trừ trên doanh thu gộp — tính sẵn ở Java để tránh chia BigDecimal trong EL
         BigDecimal deductSum = discount.add(refund);
@@ -168,6 +171,14 @@ public class ReportServlet extends HttpServlet {
 
         req.setAttribute("repMonth", month);
         req.setAttribute("repYear",  year);
+
+        // ── Insight Panel — CHỈ diễn giải lại số liệu đã tính ở trên thành câu, không tính
+        // toán gì mới, không thêm business logic. loadRevenueByCategory/loadRevenueByHour dùng
+        // CHUNG cache 15 phút với handleChartData (cùng kỳ from-to) nên không phát sinh query mới.
+        LinkedHashMap<String, BigDecimal> catRevenue    = loadRevenueByCategory(from, to);
+        TreeMap<Integer, BigDecimal>      hourlyRevenue = loadRevenueByHour(from, to);
+        req.setAttribute("insights", buildInsights(
+                netRevenuePct, grossProfitPct, cogsPct, catRevenue, netRevenue, hourlyRevenue, invoiceCount));
 
         SidebarHelper.load(req);
 
@@ -329,6 +340,57 @@ public class ReportServlet extends HttpServlet {
                 .divide(prev, 4, java.math.RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100))
                 .doubleValue();
+    }
+
+    /**
+     * Insight Panel — DIỄN GIẢI lại các số liệu ĐÃ TÍNH ở trên thành câu tiếng Việt ngắn gọn.
+     * Không tính toán mới, không truy vấn mới (catRevenue/hourlyRevenue lấy qua loader có cache
+     * chung với handleChartData). Mỗi phần tử: {loại, nội dung} — loại là "good" (xanh),
+     * "warn" (cam), hoặc "info" (xanh dương) để JSP tô màu.
+     */
+    private List<String[]> buildInsights(Double netRevenuePct, Double grossProfitPct, Double cogsPct,
+            LinkedHashMap<String, BigDecimal> catRevenue, BigDecimal netRevenue,
+            TreeMap<Integer, BigDecimal> hourlyRevenue, int invoiceCount) {
+        List<String[]> list = new ArrayList<>();
+        java.text.NumberFormat nf = java.text.NumberFormat.getInstance(new Locale("vi", "VN"));
+
+        if (netRevenuePct != null) {
+            if (netRevenuePct >= 0)
+                list.add(new String[]{"good", String.format("Doanh thu thuần tăng %.1f%% so với tháng trước.", netRevenuePct)});
+            else
+                list.add(new String[]{"warn", String.format("Doanh thu thuần giảm %.1f%% so với tháng trước.", Math.abs(netRevenuePct))});
+        }
+        if (grossProfitPct != null) {
+            if (grossProfitPct < 0 && cogsPct != null && cogsPct > 0)
+                list.add(new String[]{"warn", String.format("Lợi nhuận gộp giảm dù giá vốn tăng %.1f%% — biên lợi nhuận đang bị thu hẹp.", cogsPct)});
+            else if (grossProfitPct >= 0)
+                list.add(new String[]{"good", String.format("Lợi nhuận gộp tăng %.1f%% so với tháng trước.", grossProfitPct)});
+        }
+        if (hourlyRevenue != null && !hourlyRevenue.isEmpty()) {
+            Map.Entry<Integer, BigDecimal> peak = null;
+            for (Map.Entry<Integer, BigDecimal> e : hourlyRevenue.entrySet()) {
+                if (peak == null || e.getValue().compareTo(peak.getValue()) > 0) peak = e;
+            }
+            if (peak != null && peak.getValue().compareTo(BigDecimal.ZERO) > 0) {
+                list.add(new String[]{"info", String.format("Khung giờ bán chạy nhất: %02d:00–%02d:00.", peak.getKey(), (peak.getKey() + 1) % 24)});
+            }
+        }
+        if (catRevenue != null && !catRevenue.isEmpty() && netRevenue != null && netRevenue.compareTo(BigDecimal.ZERO) > 0) {
+            Map.Entry<String, BigDecimal> top = null;
+            for (Map.Entry<String, BigDecimal> e : catRevenue.entrySet()) {
+                if (top == null || e.getValue().compareTo(top.getValue()) > 0) top = e;
+            }
+            if (top != null) {
+                double pct = top.getValue().divide(netRevenue, 4, java.math.RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(100)).doubleValue();
+                list.add(new String[]{"info", String.format("Nhóm thuốc \"%s\" đóng góp %.0f%% doanh thu thuần.", top.getKey(), pct)});
+            }
+        }
+        if (invoiceCount > 0 && netRevenue != null) {
+            long avg = netRevenue.longValue() / invoiceCount;
+            list.add(new String[]{"info", "Giá trị đơn hàng trung bình: " + nf.format(avg) + "đ trên " + invoiceCount + " hóa đơn."});
+        }
+        return list;
     }
 
     private int parseIntOr(String s, int def) {

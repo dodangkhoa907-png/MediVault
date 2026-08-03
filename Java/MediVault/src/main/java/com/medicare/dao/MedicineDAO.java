@@ -197,6 +197,20 @@ public class MedicineDAO implements IMedicineDAO {
         else ps.setInt(idx, val);
     }
 
+    @Override
+    public boolean updateBarcode(int medicineId, String barcode) {
+        String sql = "UPDATE Medicines SET Barcode = ? WHERE MedicineID = ?";
+        try (Connection cn = DBContext.getConnection();
+                PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, barcode);
+            ps.setInt(2, medicineId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public boolean insert(Medicines m) {
         String sql = "INSERT INTO Medicines (MedicineName, GenericName, Barcode, RegistrationNumber, " +
                 "CategoryID, ManufacturerID, Unit, ShelfID, Dosage, Contraindications, " +
@@ -427,6 +441,45 @@ public class MedicineDAO implements IMedicineDAO {
     }
 
     /**
+     * Tìm kiếm cho module Xuất kho — thêm khớp theo tên danh mục/nhà sản xuất ngoài các trường
+     * đã có ở searchWithStock() (tên/tên gốc/mã vạch/mã nội bộ). Method RIÊNG, không sửa
+     * searchWithStock() vì warehouse-stock-movement đã phụ thuộc vào hành vi hiện tại của nó.
+     */
+    public List<Medicines> searchForExport(String keyword) {
+        List<Medicines> list = new ArrayList<>();
+        String sql = STOCK_CTE +
+                "SELECT m.*, ISNULL(bs.TotalStock,0) AS TotalStock," +
+                "  CONVERT(VARCHAR(10), nb.NearestExpiry, 120) AS NearestExpiry," +
+                "  nb.NearestBatchNo" +
+                " FROM Medicines m" +
+                " LEFT JOIN bs ON bs.MedicineID = m.MedicineID" +
+                " LEFT JOIN nb ON nb.MedicineID = m.MedicineID AND nb.rn = 1" +
+                " LEFT JOIN Categories c ON c.CategoryID = m.CategoryID" +
+                " LEFT JOIN Manufacturers mf ON mf.ManufacturerID = m.ManufacturerID" +
+                " WHERE m.Status = 1" +
+                "  AND (m.MedicineName LIKE ? OR m.GenericName LIKE ? OR m.Barcode LIKE ? OR m.MedicineCode LIKE ?" +
+                "       OR c.CategoryName LIKE ? OR mf.Name LIKE ?)" +
+                " ORDER BY m.MedicineName";
+        try (Connection cn = DBContext.getConnection();
+                PreparedStatement ps = cn.prepareStatement(sql)) {
+            String kw = "%" + keyword + "%";
+            ps.setNString(1, kw);
+            ps.setNString(2, kw);
+            ps.setString(3, kw);
+            ps.setString(4, kw);
+            ps.setNString(5, kw);
+            ps.setNString(6, kw);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next())
+                    list.add(mapRowWithStock(rs));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    /**
      * Phân trang danh sách thuốc cho trang quản lý kho.
      * Hỗ trợ lọc theo keyword (tên/code/barcode) và danh mục.
      * Dùng OFFSET...FETCH NEXT của SQL Server — không load toàn bộ bảng.
@@ -437,6 +490,22 @@ public class MedicineDAO implements IMedicineDAO {
      * @param pageSize số bản ghi mỗi trang
      */
     public List<Medicines> findPaged(String keyword, Integer catId, int page, int pageSize) {
+        return findPaged(keyword, catId, page, pageSize, null, null);
+    }
+
+    /** Whitelist CỐ ĐỊNH cột được phép sắp xếp — sortBy không khớp key nào ở đây thì bỏ qua
+     *  hoàn toàn (không nhúng thẳng vào SQL), chặn injection qua tham số sort trên URL. */
+    private String buildOrderBy(String sortBy, String sortDir) {
+        String col;
+        if ("name".equals(sortBy))       col = "MedicineName";
+        else if ("price".equals(sortBy)) col = "SellingPrice";
+        else return "Status DESC, MedicineName";
+        String dir = "desc".equalsIgnoreCase(sortDir) ? "DESC" : "ASC";
+        return "name".equals(sortBy) ? (col + " " + dir) : (col + " " + dir + ", MedicineName ASC");
+    }
+
+    @Override
+    public List<Medicines> findPaged(String keyword, Integer catId, int page, int pageSize, String sortBy, String sortDir) {
         List<Medicines> list = new ArrayList<>();
         boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
         boolean hasCat = catId != null;
@@ -448,7 +517,7 @@ public class MedicineDAO implements IMedicineDAO {
                     " AND (MedicineName LIKE ? OR GenericName LIKE ? OR MedicineCode LIKE ? OR Barcode LIKE ?)");
         if (hasCat)
             sql.append(" AND CategoryID = ?");
-        sql.append(" ORDER BY Status DESC, MedicineName");
+        sql.append(" ORDER BY ").append(buildOrderBy(sortBy, sortDir));
         sql.append(" OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
 
         try (Connection cn = DBContext.getConnection();

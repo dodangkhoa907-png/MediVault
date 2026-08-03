@@ -33,6 +33,8 @@ public class Account {
     private LocalDateTime lastLoginAt;
     private boolean deleted;
     private java.time.LocalDateTime deletedAt;
+    // Chỉ có ý nghĩa với roleId==3 (Thủ kho) — cho phép ghi đè phân bổ FEFO ở module Xuất kho.
+    private boolean warehouseManager;
 
     public Account() {
     }
@@ -249,6 +251,14 @@ public class Account {
 
     public void setDeletedAt(LocalDateTime deletedAt) {
         this.deletedAt = deletedAt;
+    }
+
+    public boolean isWarehouseManager() {
+        return warehouseManager;
+    }
+
+    public void setWarehouseManager(boolean warehouseManager) {
+        this.warehouseManager = warehouseManager;
     }
 
     @Override
