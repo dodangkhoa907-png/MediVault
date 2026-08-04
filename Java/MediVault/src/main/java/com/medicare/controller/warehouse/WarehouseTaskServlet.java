@@ -7,12 +7,15 @@ import com.medicare.dao.interfaces.IAccountDAO;
 import com.medicare.dao.interfaces.ITaskDAO;
 import com.medicare.entity.Account;
 import com.medicare.entity.Task;
+import com.medicare.util.AuditHelper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +42,12 @@ public class WarehouseTaskServlet extends HttpServlet {
 
         Account acc = com.medicare.util.WarehouseAuth.require(req, resp);
         if (acc == null) return;
+
+        // ── Kanban redesign — Task Detail panel (AJAX JSON) ──
+        if ("task-detail".equals(req.getParameter("action"))) {
+            apiTaskDetail(req, resp);
+            return;
+        }
 
         String statusFilter   = req.getParameter("status");
         String priorityFilter = req.getParameter("priority");
@@ -79,6 +88,13 @@ public class WarehouseTaskServlet extends HttpServlet {
         if (acc == null) return;
 
         String action = req.getParameter("action");
+
+        // ── Kanban redesign — action AJAX JSON (kéo-thả, checklist, comment) ──
+        if (WH_AJAX_ACTIONS.contains(action)) {
+            handleWhAjaxAction(req, resp, acc, action);
+            return;
+        }
+
         boolean ok = false;
         String msg;
 
@@ -93,16 +109,19 @@ public class WarehouseTaskServlet extends HttpServlet {
                     int taskId = Integer.parseInt(req.getParameter("taskId"));
                     ok = taskDAO.claim(taskId, acc.getAccountId());
                     msg = ok ? "Đã nhận việc thành công!" : "Task này đã có người nhận rồi.";
+                    if (ok) AuditHelper.log(req, "Nhận task", "Tasks", "TaskID=" + taskId, acc.getAccountId());
                 }
                 case "complete" -> {
                     int taskId = Integer.parseInt(req.getParameter("taskId"));
                     ok = taskDAO.markComplete(taskId, acc.getAccountId());
                     msg = ok ? "Đã đánh dấu hoàn thành!" : "Task không tồn tại hoặc đã đóng.";
+                    if (ok) AuditHelper.log(req, "Báo hoàn thành task", "Tasks", "TaskID=" + taskId, acc.getAccountId());
                 }
                 case "cancel" -> {
                     int taskId = Integer.parseInt(req.getParameter("taskId"));
                     ok = taskDAO.cancel(taskId);
                     msg = ok ? "Đã huỷ task." : "Task không tồn tại hoặc đã đóng.";
+                    if (ok) AuditHelper.log(req, "Huỷ task (Thủ kho)", "Tasks", "TaskID=" + taskId, acc.getAccountId());
                 }
                 default -> msg = "Thao tác không hợp lệ.";
             }
@@ -150,6 +169,130 @@ public class WarehouseTaskServlet extends HttpServlet {
         }
 
         int taskId = taskDAO.insertManualTask(title, description, priority, assignedTo, acc.getAccountId(), dueDate);
-        return taskId > 0 ? null : "Không thể tạo công việc, vui lòng thử lại.";
+        if (taskId <= 0) return "Không thể tạo công việc, vui lòng thử lại.";
+        AuditHelper.log(req, "Tạo công việc (Thủ kho)", "Tasks", "TaskID=" + taskId + ": " + title, acc.getAccountId());
+        return null;
+    }
+
+    private static final java.util.Set<String> WH_AJAX_ACTIONS = java.util.Set.of(
+            "move-status", "checklist-add", "checklist-toggle", "checklist-delete", "comment-add");
+
+    /** Kéo-thả Kanban ("Nhiệm vụ của tôi" cũng dùng chung) + checklist + comment. */
+    private void handleWhAjaxAction(HttpServletRequest req, HttpServletResponse resp, Account acc, String action)
+            throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        PrintWriter out = resp.getWriter();
+        try {
+            switch (action) {
+                case "move-status" -> {
+                    int taskId = Integer.parseInt(req.getParameter("taskId"));
+                    String newStatus = req.getParameter("status");
+                    boolean ok = taskDAO.moveStatus(taskId, newStatus);
+                    if (ok) AuditHelper.log(req, "Đổi trạng thái task", "Tasks",
+                            "TaskID=" + taskId + " → " + newStatus, acc.getAccountId());
+                    out.print(ok ? "{\"ok\":true}" : "{\"ok\":false}");
+                }
+                case "checklist-add" -> {
+                    int taskId = Integer.parseInt(req.getParameter("taskId"));
+                    String text = req.getParameter("text");
+                    if (text == null || text.isBlank()) { out.print("{\"ok\":false}"); return; }
+                    int id = taskDAO.addChecklistItem(taskId, text.trim());
+                    out.print(id > 0 ? "{\"ok\":true,\"id\":" + id + "}" : "{\"ok\":false}");
+                }
+                case "checklist-toggle" -> {
+                    int itemId = Integer.parseInt(req.getParameter("itemId"));
+                    boolean done = "true".equals(req.getParameter("done"));
+                    out.print(taskDAO.toggleChecklistItem(itemId, done) ? "{\"ok\":true}" : "{\"ok\":false}");
+                }
+                case "checklist-delete" -> {
+                    int itemId = Integer.parseInt(req.getParameter("itemId"));
+                    out.print(taskDAO.deleteChecklistItem(itemId) ? "{\"ok\":true}" : "{\"ok\":false}");
+                }
+                case "comment-add" -> {
+                    int taskId = Integer.parseInt(req.getParameter("taskId"));
+                    String body = req.getParameter("body");
+                    if (body == null || body.isBlank()) { out.print("{\"ok\":false}"); return; }
+                    int id = taskDAO.addComment(taskId, acc.getAccountId(), body.trim());
+                    out.print(id > 0 ? "{\"ok\":true,\"id\":" + id + "}" : "{\"ok\":false}");
+                }
+                default -> out.print("{\"ok\":false}");
+            }
+        } catch (Exception e) {
+            out.print("{\"ok\":false}");
+        }
+    }
+
+    /** action=task-detail&id= — JSON đầy đủ cho Task Detail panel (Nhiệm vụ của tôi + Board). */
+    private void apiTaskDetail(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        resp.setHeader("Cache-Control", "no-store");
+        PrintWriter out = resp.getWriter();
+        try {
+            int id = Integer.parseInt(req.getParameter("id"));
+            Task t = taskDAO.findById(id);
+            if (t == null) { out.print("{\"ok\":false}"); return; }
+
+            com.medicare.util.TaskRefResolver.RefInfo ref =
+                    com.medicare.util.TaskRefResolver.resolve(t.getRefTable(), t.getRefId());
+
+            StringBuilder sb = new StringBuilder("{\"ok\":true,\"task\":").append(taskJson(t)).append(",\"checklist\":[");
+            List<com.medicare.entity.TaskChecklistItem> items = taskDAO.findChecklist(id);
+            for (int i = 0; i < items.size(); i++) {
+                if (i > 0) sb.append(',');
+                var it = items.get(i);
+                sb.append("{\"id\":").append(it.getChecklistItemId())
+                  .append(",\"text\":").append(jstr(it.getItemText()))
+                  .append(",\"done\":").append(it.isDone()).append('}');
+            }
+            sb.append("],\"comments\":[");
+            List<com.medicare.entity.TaskComment> comments = taskDAO.findComments(id);
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+            for (int i = 0; i < comments.size(); i++) {
+                if (i > 0) sb.append(',');
+                var c = comments.get(i);
+                sb.append("{\"id\":").append(c.getTaskCommentId())
+                  .append(",\"name\":").append(jstr(c.getAccountName()))
+                  .append(",\"body\":").append(jstr(c.getBody()))
+                  .append(",\"time\":").append(jstr(c.getCreatedAt() != null ? c.getCreatedAt().format(dtf) : ""))
+                  .append('}');
+            }
+            sb.append("],\"ref\":{\"found\":").append(ref.found)
+              .append(",\"module\":").append(jstr(ref.moduleLabel))
+              .append(",\"title\":").append(jstr(ref.title))
+              .append(",\"rows\":[");
+            for (int i = 0; i < ref.rows.size(); i++) {
+                if (i > 0) sb.append(',');
+                sb.append("[").append(jstr(ref.rows.get(i)[0])).append(',').append(jstr(ref.rows.get(i)[1])).append(']');
+            }
+            sb.append("]}}");
+            out.print(sb);
+        } catch (Exception e) {
+            out.print("{\"ok\":false}");
+        }
+    }
+
+    private String taskJson(Task t) {
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        return "{\"id\":" + t.getTaskId()
+                + ",\"title\":" + jstr(t.getTitle())
+                + ",\"description\":" + jstr(t.getDescription())
+                + ",\"status\":" + jstr(t.getStatus())
+                + ",\"statusLabel\":" + jstr(t.getStatusLabel())
+                + ",\"column\":" + jstr(t.getKanbanColumn())
+                + ",\"priority\":" + jstr(t.getPriority())
+                + ",\"priorityLabel\":" + jstr(t.getPriorityLabel())
+                + ",\"assignedToName\":" + jstr(t.getAssignedToName())
+                + ",\"createdByName\":" + jstr(t.getCreatedByName())
+                + ",\"dueDate\":" + jstr(t.getDueDate() != null ? t.getDueDate().format(dtf) : "")
+                + ",\"createdAt\":" + jstr(t.getCreatedAt() != null ? t.getCreatedAt().format(dtf) : "")
+                + ",\"zone\":" + jstr(t.getZone())
+                + ",\"estimatedHours\":" + (t.getEstimatedHours() != null ? t.getEstimatedHours().toPlainString() : "null")
+                + "}";
+    }
+
+    private String jstr(String s) {
+        if (s == null) return "\"\"";
+        return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"")
+                .replace("\n", "\\n").replace("\r", "\\r") + "\"";
     }
 }

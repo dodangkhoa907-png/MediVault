@@ -29,6 +29,9 @@ public class Task {
     private int progressPercentage;
     private String lastNudgeZone;
 
+    // ── Kanban redesign (database/tasks_kanban_migration.sql) ──
+    private java.math.BigDecimal estimatedHours; // tham khảo, KHÔNG có timer/giờ-thực-tế-đã-log
+
     public String getPriorityLabel() {
         if (priority == null) return "—";
         return switch (priority) {
@@ -44,6 +47,8 @@ public class Task {
         return switch (status) {
             case "PENDING"           -> "Chờ xử lý";
             case "IN_PROGRESS"       -> "Đang làm";
+            case "REVIEW"            -> "Đang duyệt";
+            case "BLOCKED"           -> "Bị chặn";
             case "COMPLETED_ON_TIME" -> "Hoàn thành đúng hạn";
             case "COMPLETED_LATE"    -> "Hoàn thành trễ hạn";
             case "CANCELLED"         -> "Đã huỷ";
@@ -54,6 +59,21 @@ public class Task {
     public boolean isDone() {
         return "COMPLETED_ON_TIME".equals(status) || "COMPLETED_LATE".equals(status)
                 || "CANCELLED".equals(status);
+    }
+
+    /** Cột Kanban thật (7 cột — 5 lưu Status thật + 2 suy ra từ AssignedTo/gộp Done):
+     *  todo · assigned · in_progress · review · blocked · done · cancelled. */
+    public String getKanbanColumn() {
+        if (status == null) return "todo";
+        return switch (status) {
+            case "PENDING"     -> assignedTo != null ? "assigned" : "todo";
+            case "IN_PROGRESS" -> "in_progress";
+            case "REVIEW"      -> "review";
+            case "BLOCKED"     -> "blocked";
+            case "COMPLETED_ON_TIME", "COMPLETED_LATE" -> "done";
+            case "CANCELLED"   -> "cancelled";
+            default             -> "todo";
+        };
     }
 
     /**
@@ -145,4 +165,7 @@ public class Task {
     public void setProgressPercentage(int v)      { this.progressPercentage = v; }
     public String getLastNudgeZone()               { return lastNudgeZone; }
     public void setLastNudgeZone(String v)        { this.lastNudgeZone = v; }
+
+    public java.math.BigDecimal getEstimatedHours()      { return estimatedHours; }
+    public void setEstimatedHours(java.math.BigDecimal v){ this.estimatedHours = v; }
 }

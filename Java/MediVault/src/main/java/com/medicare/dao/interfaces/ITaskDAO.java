@@ -1,10 +1,45 @@
 package com.medicare.dao.interfaces;
 
 import com.medicare.entity.Task;
+import com.medicare.entity.TaskChecklistItem;
+import com.medicare.entity.TaskComment;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public interface ITaskDAO {
+
+    Task findById(int taskId);
+
+    /** Cập nhật EstimatedHours/RefTable/RefID sau khi tạo (form tạo task giữ nguyên
+     *  insertManualTask() cũ, các trường mới chỉ update thêm nếu người dùng có điền). */
+    boolean updateExtras(int taskId, java.math.BigDecimal estimatedHours, String refTable, Integer refId);
+
+    // ── Kanban redesign — di chuyển cột (KHÔNG cho phép move thẳng sang Done, phải qua
+    // markComplete() để tính đúng ON_TIME/LATE) ──
+    boolean moveStatus(int taskId, String newStatus);
+    /** Gán/bỏ gán người phụ trách mà KHÔNG đổi Status (accountId=null để bỏ gán). */
+    boolean assign(int taskId, Integer accountId);
+
+    // ── Checklist (database/tasks_kanban_migration.sql — TaskChecklistItems) ──
+    List<TaskChecklistItem> findChecklist(int taskId);
+    int addChecklistItem(int taskId, String itemText);
+    boolean toggleChecklistItem(int checklistItemId, boolean done);
+    boolean deleteChecklistItem(int checklistItemId);
+
+    // ── Comments (TaskComments) ──
+    List<TaskComment> findComments(int taskId);
+    int addComment(int taskId, int accountId, String body);
+
+    // ── Analytics (bottom charts, Admin) ──
+    Map<String, Integer> countByStatusAll();
+    Map<String, Integer> countByAssignee();
+    /** "Module" suy từ RefTable (SYSTEM_AUTO task) — task MANUAL không có RefTable rơi vào "Chung". */
+    Map<String, Integer> countByModule();
+    Map<String, Integer> countByPriority();
+    /** Giờ trung bình từ CreatedAt → CompletedAt của các task đã COMPLETED_*. */
+    double avgCompletionHours();
+    int countOverdue();
 
     /** Task tự động do hệ thống sinh — CreatedBy luôn NULL (ràng buộc CK_Task_Origin). */
     int insertSystemTask(String title, String description, String priority,

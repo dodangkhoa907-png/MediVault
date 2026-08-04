@@ -36,6 +36,9 @@ public class Medicines {
     private int totalStock;
     private String nearestBatchNo;
     private String nearestExpiry;
+    private String shelfName;
+    private String categoryName;
+    private String manufacturerName;
 
     public Medicines() {
     }
@@ -46,6 +49,12 @@ public class Medicines {
     public void setNearestBatchNo(String v){ this.nearestBatchNo = v; }
     public String getNearestExpiry()      { return nearestExpiry; }
     public void setNearestExpiry(String v){ this.nearestExpiry = v; }
+    public String getShelfName()             { return shelfName; }
+    public void setShelfName(String v)       { this.shelfName = v; }
+    public String getCategoryName()          { return categoryName; }
+    public void setCategoryName(String v)    { this.categoryName = v; }
+    public String getManufacturerName()      { return manufacturerName; }
+    public void setManufacturerName(String v){ this.manufacturerName = v; }
 
     public Medicines(int medicineId, String medicineCode, String medicineName, String genericName, String barcode, String registrationNumber, Integer categoryId, Integer manufacturerId, String unit, Integer shelfId, BigDecimal storageTempMin, BigDecimal storageTempMax, String storageConditions, String dosage, BigDecimal defaultDosageMin, BigDecimal defaultDosageMax, String dosageWarning, int expiryAlertDays, String contraindications, boolean isPrescriptionRequired, BigDecimal sellingPrice, int minInventory, boolean status, LocalDateTime createdAt) {
         this.medicineId = medicineId;
