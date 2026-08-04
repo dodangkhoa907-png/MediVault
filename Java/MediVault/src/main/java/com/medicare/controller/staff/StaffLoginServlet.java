@@ -33,13 +33,28 @@ public class StaffLoginServlet extends HttpServlet {
             // KHÔNG BAO GIỜ hiện ra để đăng nhập tài khoản staff khác (uid khác) được nữa.
             // Fix: chỉ tự-redirect khi tài khoản dưới staffUid THẬT SỰ là tài khoản staff
             // (roleId != 3) — nếu không, coi như "chưa đăng nhập staff" và hiện form login.
+            Account target = null;
             if (uid != null) {
                 Object acc = s.getAttribute("staffAccount_" + uid);
-                if (acc instanceof com.medicare.entity.Account
-                        && ((com.medicare.entity.Account) acc).getRoleId() != 3) {
-                    resp.sendRedirect(req.getContextPath() + "/staff-dashboard?uid=" + uid);
-                    return;
+                if (acc instanceof Account a && a.getRoleId() != 3) target = a;
+            }
+            // Con trỏ staffUid có thể đang trỏ sang tài khoản Thủ kho (tab Kho vừa dùng).
+            // Khi đó vẫn phải tìm xem trong session có tài khoản bán hàng nào còn đăng nhập
+            // không, thay vì bắt người ta gõ lại mật khẩu dù phiên vẫn sống.
+            if (target == null) {
+                java.util.Enumeration<String> names = s.getAttributeNames();
+                while (names.hasMoreElements()) {
+                    String n = names.nextElement();
+                    if (!n.startsWith("staffAccount_")) continue;
+                    if (s.getAttribute(n) instanceof Account a && a.getRoleId() != 3) {
+                        target = a; break;
+                    }
                 }
+            }
+            if (target != null) {
+                resp.sendRedirect(req.getContextPath()
+                        + "/staff-dashboard?uid=" + target.getAccountId());
+                return;
             }
         }
         req.getRequestDispatcher("/WEB-INF/views/staff/staff-login.jsp").forward(req, resp);
@@ -115,8 +130,16 @@ public class StaffLoginServlet extends HttpServlet {
                 staffId);
         // roleId 3 (Thủ kho = Quản lý kho) có portal riêng — dù đăng nhập qua trang staff
         // vẫn đưa về /warehouse-dashboard cho nhất quán.
-        String dest = account.getRoleId() == 3 ? "/warehouse-dashboard" : "/staff-dashboard";
+        if (account.getRoleId() == 3) {
+            // Ghi danh tính chuẩn của portal Kho ngay tại đây. Thiếu bước này thì cửa
+            // /staff-login chỉ đặt staffAccount_<id>, còn AuthFilter và WarehouseAuth phải
+            // đi đường vòng dò lại trong session — nguồn gốc cũ của cảnh nhảy loạn giữa
+            // hai portal. URL sạch, không mang uid/token.
+            com.medicare.util.WarehouseAuth.login(session, account);
+            resp.sendRedirect(req.getContextPath() + "/warehouse-dashboard");
+            return;
+        }
         resp.sendRedirect(req.getContextPath()
-                + dest + "?uid=" + staffId + "&token=" + token);
+                + "/staff-dashboard?uid=" + staffId + "&token=" + token);
     }
 }
