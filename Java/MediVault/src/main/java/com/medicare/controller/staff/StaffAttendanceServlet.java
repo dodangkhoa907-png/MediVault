@@ -176,7 +176,8 @@ public class StaffAttendanceServlet extends HttpServlet {
         int attId = attendanceDAO.checkInWithPenalty(
                 staff.getAccountId(), schedule.getScheduleId(),
                 method, openingCash, penaltyAmount,
-                (int) lateMinutes, attendanceStatus);
+                (int) lateMinutes, attendanceStatus,
+                schedule.getPosStation() > 0 ? schedule.getPosStation() : null);
 
         if (attId <= 0) return "error";
 

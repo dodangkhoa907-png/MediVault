@@ -14,7 +14,7 @@ import java.util.List;
  *
  * Flow bán hàng chuẩn:
  *   1. createPending()       → tạo hóa đơn PENDING
- *   2. addItemByFIFO()       → gọi SP_AddSaleByFEFO cho từng thuốc (trừ kho theo HSD gần nhất trước)
+ *   2. addItemByFEFO()       → gọi SP_AddSaleByFEFO cho từng thuốc (trừ kho theo HSD gần nhất trước)
  *   3. complete()            → chốt hóa đơn COMPLETED + tính tiền
  *   4. (nếu lỗi) cancel()   → hủy hóa đơn CANCELLED
  */
@@ -75,7 +75,7 @@ public class InvoiceDAO implements IInvoiceDAO {
      * Gọi Stored Procedure SP_AddSaleByFEFO trong DB.
      * SP tự chọn lô có HSD gần nhất trước (không phải lô nhập trước) → trừ kho → tạo InvoiceDetail.
      */
-    public boolean addItemByFIFO(int invoiceId, int medicineId, int quantity) {
+    public boolean addItemByFEFO(int invoiceId, int medicineId, int quantity) {
         try (Connection cn = DBContext.getConnection();
              CallableStatement cs = cn.prepareCall("{CALL SP_AddSaleByFEFO(?, ?, ?)}")) {
             cs.setInt(1, invoiceId);
@@ -85,7 +85,7 @@ public class InvoiceDAO implements IInvoiceDAO {
             return true;
         } catch (Exception e) {
             // SP sẽ ném lỗi "Khong du ton kho" nếu thiếu hàng
-            System.err.println("[InvoiceDAO] addItemByFIFO lỗi: " + e.getMessage());
+            System.err.println("[InvoiceDAO] addItemByFEFO lỗi: " + e.getMessage());
             return false;
         }
     }
@@ -225,7 +225,7 @@ public class InvoiceDAO implements IInvoiceDAO {
     }
     /**
      * Flow bán hàng trong 1 transaction duy nhất.
-     * createPending → addItemByFIFO × N → complete
+     * createPending → addItemByFEFO × N → complete
      * Nếu lỗi ở bất kỳ bước nào → rollback toàn bộ → không có dữ liệu lửng.
      *
      * @param shiftId  Ca làm việc hiện tại (null nếu không có ca đang mở)

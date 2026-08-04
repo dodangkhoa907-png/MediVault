@@ -1509,6 +1509,7 @@ const FACE_MODEL_URL = ctx + '/models';  // local — same as staff-checkin.jsp
 const FACE_THRESHOLD  = 0.45;          // chặt hơn chuẩn 0.6 — chống nhận nhầm người
 const FACE_MARGIN     = 0.08;          // người gần nhì phải xa hơn ít nhất chừng này
 const FACE_STABLE_FRAMES = 3;          // cần 3 khung hình liên tiếp khớp CÙNG một người
+const FACE_CONTINUITY_MAX = 0.5;       // khung mới lệch quá xa khung trước → khác người, phải quét lại từ đầu
 
 let faceModelsLoaded  = false;
 let faceVideoStream   = null;
@@ -1581,6 +1582,20 @@ function closeFaceModal() {
   if (cv) cv.getContext('2d').clearRect(0,0,cv.width,cv.height);
 }
 
+// Trong nhiều khuôn mặt bắt được cùng lúc (VD: người đứng phía sau lọt vào khung hình),
+// chọn khuôn mặt có diện tích bounding box LỚN NHẤT — tức người đang đứng gần camera nhất,
+// chính là người thao tác quét khuôn mặt, không phải người đi ngang/ngồi phía sau.
+function pickPrimaryFace(detections) {
+  if (!detections || detections.length === 0) return null;
+  let best = detections[0];
+  let bestArea = best.detection.box.width * best.detection.box.height;
+  for (let i = 1; i < detections.length; i++) {
+    const area = detections[i].detection.box.width * detections[i].detection.box.height;
+    if (area > bestArea) { best = detections[i]; bestArea = area; }
+  }
+  return best;
+}
+
 function startFaceDetection() {
   const video  = document.getElementById('faceVideo');
   const canvas = document.getElementById('faceCanvas');
@@ -1595,11 +1610,15 @@ function startFaceDetection() {
       canvas.height = video.videoHeight;
 
       busy = true;
-      const detection = await faceapi
-        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.3 }))
+      // Lấy TẤT CẢ khuôn mặt trong khung hình rồi chọn khuôn mặt LỚN NHẤT (gần camera nhất)
+      // — tránh nhận nhầm người đứng/ngồi phía sau (mặt nhỏ hơn, xa camera hơn) làm người đang điểm danh.
+      const detections = await faceapi
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 }))
         .withFaceLandmarks()        // full faceLandmark68Net (no arg = false = full)
-        .withFaceDescriptor();
+        .withFaceDescriptors();
       busy = false;
+
+      const detection = pickPrimaryFace(detections);
 
       const ctx2 = canvas.getContext('2d');
       ctx2.clearRect(0, 0, canvas.width, canvas.height);
@@ -1609,12 +1628,19 @@ function startFaceDetection() {
       if (!detection) {
         noFaceEl.style.display = 'block';
         ring.className = 'face-ring';
+        faceStreakSamples = [];
         faceDetectLoopId = requestAnimationFrame(loop);
         return;
       }
       noFaceEl.style.display = 'none';
       ring.className = 'face-ring scanning';
       faceapi.draw.drawDetections(canvas, [detection.detection]);
+
+      // Khung mới lệch quá xa khung trước đó → camera vừa bắt nhầm mặt khác → quét lại từ đầu
+      if (faceStreakSamples.length > 0 &&
+          faceapi.euclideanDistance(faceStreakSamples[faceStreakSamples.length - 1], Array.from(detection.descriptor)) > FACE_CONTINUITY_MAX) {
+        faceStreakSamples = [];
+      }
 
       // Thay thế so khớp client bằng cách gọi server-side identify endpoint (POST) để bảo mật
       if (faceStreakSamples.length < FACE_STABLE_FRAMES) {

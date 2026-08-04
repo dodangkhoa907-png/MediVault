@@ -651,7 +651,21 @@ function startFaceCiAutoDetect() {
     const video = document.getElementById('faceCheckinVideo');
     const canvas = document.getElementById('faceCheckinCanvas');
     const REQUIRED_SAMPLES = 3;   // thu 3 khung liên tiếp → descriptor trung bình ổn định hơn 1 khung đơn
+    const CONTINUITY_MAX = 0.5;   // khung mới lệch quá xa khung trước → khác người, quét lại từ đầu
     let samples = [];
+
+    // Nhiều khuôn mặt bắt được cùng lúc (VD: người đứng phía sau lọt vào khung hình) →
+    // chọn khuôn mặt có bounding box LỚN NHẤT (gần camera nhất), không phải người đi ngang phía sau.
+    function pickPrimaryFace(detections) {
+        if (!detections || detections.length === 0) return null;
+        let best = detections[0];
+        let bestArea = best.detection.box.width * best.detection.box.height;
+        for (let i = 1; i < detections.length; i++) {
+            const area = detections[i].detection.box.width * detections[i].detection.box.height;
+            if (area > bestArea) { best = detections[i]; bestArea = area; }
+        }
+        return best;
+    }
 
     async function loop() {
         if (!faceCiStream) return;
@@ -662,14 +676,19 @@ function startFaceCiAutoDetect() {
             canvas.height = video.videoHeight;
             const ctx = canvas.getContext('2d');
 
-            const result = await faceapi
-                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.3 }))
+            const allResults = await faceapi
+                .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 }))
                 .withFaceLandmarks()
-                .withFaceDescriptor();
+                .withFaceDescriptors();
+            const result = pickPrimaryFace(allResults);
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (result) {
                 faceapi.draw.drawDetections(canvas, [result.detection]);
+                if (samples.length > 0 &&
+                    faceapi.euclideanDistance(samples[samples.length - 1], Array.from(result.descriptor)) > CONTINUITY_MAX) {
+                    samples = []; // camera vừa bắt nhầm mặt khác giữa chừng → thu lại từ đầu
+                }
                 samples.push(Array.from(result.descriptor));
                 const statusEl = document.getElementById('faceCheckinStatus');
                 if (samples.length < REQUIRED_SAMPLES) {

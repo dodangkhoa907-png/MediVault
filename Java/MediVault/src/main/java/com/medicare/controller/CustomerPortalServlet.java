@@ -66,11 +66,13 @@ public class CustomerPortalServlet extends HttpServlet {
         LoyaltyCard card = loyaltyDAO.getOrCreateCard(fresh.getCustomerId());
         List<Invoice> invoices = invoiceDAO.findByCustomer(fresh.getCustomerId());
         List<String[]> pointHistory = loyaltyDAO.history(fresh.getCustomerId(), 20);
+        java.util.Map<Integer, Integer> invoicePoints = loyaltyDAO.earnedPointsByInvoice(fresh.getCustomerId());
 
         req.setAttribute("me",           fresh);
         req.setAttribute("card",         card);
         req.setAttribute("invoices",     invoices);
         req.setAttribute("pointHistory", pointHistory);
+        req.setAttribute("invoicePoints", invoicePoints);
         req.getRequestDispatcher("/WEB-INF/views/portal/customer-portal.jsp").forward(req, resp);
     }
 
@@ -191,9 +193,13 @@ public class CustomerPortalServlet extends HttpServlet {
 
         StringBuilder items = new StringBuilder();
         String header = null;
+        Integer prescriptionId = null;
         String sql = "SELECT inv.InvoiceCode, inv.FinalAmount, inv.DiscountAmount, inv.PaymentMethod, " +
+                "inv.PrescriptionID, inv.PosStation, " +
                 "CONVERT(VARCHAR(16), inv.CreatedAt, 120) AS CreatedAt, " +
-                "m.MedicineName, m.Unit, id.Quantity, id.UnitPrice, id.SubTotal " +
+                "m.MedicineName, m.Unit, b.BatchNumber, " +
+                "CONVERT(VARCHAR(10), b.ExpiryDate, 120) AS ExpiryDate, " +
+                "id.Quantity, id.UnitPrice, id.SubTotal " +
                 "FROM Invoices inv " +
                 "JOIN InvoiceDetails id ON id.InvoiceID = inv.InvoiceID " +
                 "JOIN Batches b ON b.BatchID = id.BatchID " +
@@ -207,17 +213,27 @@ public class CustomerPortalServlet extends HttpServlet {
                 boolean first = true;
                 while (rs.next()) {
                     if (header == null) {
+                        int pos = rs.getInt("PosStation");
+                        boolean posNull = rs.wasNull();
+                        Object presObj = rs.getObject("PrescriptionID");
+                        prescriptionId = presObj != null ? rs.getInt("PrescriptionID") : null;
                         header = "\"code\":\"" + esc(rs.getString("InvoiceCode")) + "\"" +
                                 ",\"time\":\"" + rs.getString("CreatedAt") + "\"" +
                                 ",\"total\":" + rs.getBigDecimal("FinalAmount").toPlainString() +
                                 ",\"discount\":" + (rs.getBigDecimal("DiscountAmount") != null
                                         ? rs.getBigDecimal("DiscountAmount").toPlainString() : "0") +
-                                ",\"method\":\"" + esc(rs.getString("PaymentMethod")) + "\"";
+                                ",\"method\":\"" + esc(rs.getString("PaymentMethod")) + "\"" +
+                                ",\"station\":" + (posNull ? "null" : pos) +
+                                ",\"prescription\":" + (prescriptionId != null) +
+                                ",\"points\":" + loyaltyDAO.sumEarnedForInvoice(invId);
                     }
                     if (!first) items.append(",");
+                    String exp = rs.getString("ExpiryDate");
                     items.append("{\"name\":\"").append(esc(rs.getString("MedicineName")))
                          .append("\",\"unit\":\"").append(esc(rs.getString("Unit")))
-                         .append("\",\"qty\":").append(rs.getInt("Quantity"))
+                         .append("\",\"batch\":\"").append(esc(rs.getString("BatchNumber")))
+                         .append("\",\"expiry\":").append(exp != null ? "\"" + exp + "\"" : "null")
+                         .append(",\"qty\":").append(rs.getInt("Quantity"))
                          .append(",\"price\":").append(rs.getBigDecimal("UnitPrice").toPlainString())
                          .append(",\"subtotal\":").append(rs.getBigDecimal("SubTotal").toPlainString())
                          .append("}");

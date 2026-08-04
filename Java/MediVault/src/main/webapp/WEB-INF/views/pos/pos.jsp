@@ -2463,20 +2463,20 @@ function printReceipt() {
     + '<title>Hóa đơn ' + escHtml(inv.code) + '</title>'
     + '<style>'
     + '* { margin:0; padding:0; box-sizing:border-box; }'
-    + 'body { font-family: "Courier New", monospace; font-weight: 700; font-size: 12px; color: #000; padding: 6px; max-width: 320px; margin: 0 auto; }'
+    + 'body { font-family: "Courier New", monospace; font-size: 12px; color: #000; padding: 6px; max-width: 320px; margin: 0 auto; }'
     + '.center { text-align: center; }'
-    + '.bold { font-weight: 900; }'
-    + '.title { font-size: 15px; font-weight:900; margin: 3px 0; }'
+    + '.bold { font-weight: bold; }'
+    + '.title { font-size: 15px; font-weight:800; margin: 3px 0; }'
     + '.divider { border-top: 1px dashed #000; margin: 4px 0; }'
     + '.divider2 { border-top: 2px solid #000; margin: 4px 0; }'
     + 'table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 11px; }'
-    + 'th { background: #eee; padding: 3px 4px; font-weight:900; border-bottom: 1px solid #000; }'
-    + 'td { vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; padding: 3px 4px; font-weight: 700; }'
+    + 'th { background: #eee; padding: 3px 4px; font-weight:750; border-bottom: 1px solid #000; }'
+    + 'td { vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; padding: 3px 4px; }'
     + '.totals { margin-top: 3px; }'
-    + '.totals-row { display: flex; justify-content: space-between; padding: 1px 0; font-size: 12px; font-weight: 700; }'
-    + '.totals-row.grand { font-size: 14px; font-weight:900; border-top: 2px solid #000; padding-top: 4px; margin-top: 2px; }'
-    + '.footer { text-align: center; margin-top: 6px; font-style: italic; font-size: 11.5px; font-weight: 700; }'
-    + '.kv { display: flex; justify-content: space-between; font-size: 11.5px; padding: 1px 0; font-weight: 700; }'
+    + '.totals-row { display: flex; justify-content: space-between; padding: 1px 0; font-size: 12px; }'
+    + '.totals-row.grand { font-size: 14px; font-weight:800; border-top: 2px solid #000; padding-top: 4px; margin-top: 2px; }'
+    + '.footer { text-align: center; margin-top: 6px; font-style: italic; font-size: 11.5px; }'
+    + '.kv { display: flex; justify-content: space-between; font-size: 11.5px; padding: 1px 0; }'
     // Khối chính sách cố định + khối ghi chú dược sĩ (động)
     + '.policy { font-size: 10.5px; line-height: 1.3; margin-top: 3px; }'
     + '.policy-title { font-weight: 800; text-align: center; margin-bottom: 2px; letter-spacing: .5px; }'
@@ -3026,6 +3026,21 @@ const FACE_MODEL_URL = ctx + '/models';  // local — same as staff-checkin.jsp
 const FACE_THRESHOLD  = 0.45;   // chặt hơn chuẩn 0.6 — chống nhận nhầm người
 const FACE_MARGIN     = 0.08;   // người gần nhì phải xa hơn ít nhất chừng này
 const FACE_STABLE_FRAMES = 3;   // cần 3 khung liên tiếp khớp cùng một người
+const FACE_CONTINUITY_MAX = 0.5; // khung mới lệch quá xa khung trước → khác người, phải quét lại từ đầu
+
+// Trong nhiều khuôn mặt bắt được cùng lúc (VD: người đứng phía sau lọt vào khung hình),
+// chọn khuôn mặt có diện tích bounding box LỚN NHẤT — tức người đang đứng gần camera nhất,
+// chính là người thao tác quét khuôn mặt, không phải người đi ngang/ngồi phía sau.
+function pickPrimaryFace(detections) {
+  if (!detections || detections.length === 0) return null;
+  let best = detections[0];
+  let bestArea = best.detection.box.width * best.detection.box.height;
+  for (let i = 1; i < detections.length; i++) {
+    const area = detections[i].detection.box.width * detections[i].detection.box.height;
+    if (area > bestArea) { best = detections[i]; bestArea = area; }
+  }
+  return best;
+}
 
 let faceModelsLoaded  = false;
 let faceVideoStream   = null;
@@ -3112,11 +3127,15 @@ function startFaceDetection() {
       canvas.height = video.videoHeight;
 
       busy = true;
-      const detection = await faceapi
-        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.3 }))
+      // Lấy TẤT CẢ khuôn mặt trong khung hình rồi chọn khuôn mặt LỚN NHẤT (gần camera nhất)
+      // — tránh nhận nhầm người đứng/ngồi phía sau (mặt nhỏ hơn, xa camera hơn) làm người đang điểm danh.
+      const detections = await faceapi
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 }))
         .withFaceLandmarks()        // full faceLandmark68Net (no arg = false = full)
-        .withFaceDescriptor();
+        .withFaceDescriptors();
       busy = false;
+
+      const detection = pickPrimaryFace(detections);
 
       const ctx2 = canvas.getContext('2d');
       ctx2.clearRect(0, 0, canvas.width, canvas.height);
@@ -3133,6 +3152,12 @@ function startFaceDetection() {
       noFaceEl.style.display = 'none';
       ring.className = 'face-ring scanning';
       faceapi.draw.drawDetections(canvas, [detection.detection]);
+
+      // Khung mới lệch quá xa khung trước đó → camera vừa bắt nhầm mặt khác → quét lại từ đầu
+      if (faceStreakSamples.length > 0 &&
+          faceapi.euclideanDistance(faceStreakSamples[faceStreakSamples.length - 1], Array.from(detection.descriptor)) > FACE_CONTINUITY_MAX) {
+        faceStreakSamples = [];
+      }
 
       // Thay thế so khớp client bằng cách gọi server-side identify endpoint (POST) để bảo mật
       // Để tránh spam request liên tục, chỉ gửi server-side identify sau mỗi 400ms (hoặc khi streak ổn định)
