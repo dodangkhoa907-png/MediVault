@@ -598,7 +598,7 @@ body{display:flex}
         <div class="station-staff" id="stationStaff"><%= isLoggedIn ? fullName : "Chưa điểm danh" %></div>
       </div>
     </div>
-    <button type="button" class="btn-leave-station" id="btnLeaveStation" onclick="event.stopPropagation();leaveStation()" title="Rời quầy hiện tại" style="display:<%= posStation > 0 ? "flex" : "none" %>">🚪 Rời quầy</button>
+    <button type="button" class="btn-leave-station" id="btnLeaveStation" onclick="event.stopPropagation();leaveStation()" title="Tan ca — kết thúc ca làm và rời quầy" style="display:<%= (posStation > 0 && isLoggedIn) ? "flex" : "none" %>">🚪 Tan ca</button>
     <span class="med-count-badge" id="medCountBadge">0 thuốc</span>
     <span class="topbar-date">📅 <span id="topDate"></span></span>
   </div>
@@ -1249,6 +1249,7 @@ let _saleInFlight = false;
 
 // ── Multi-POS state ──
 let currentStation = <%= posStation %>;  // 0 = belum pilih
+let isStaffLoggedIn = <%= isLoggedIn %>;  // có nhân viên đang điểm danh tại quầy hay chưa — nút "Tan ca" chỉ hiện khi true
 let nfcBridge = null;                    // EventSource cầu nối NFC (khai báo sớm, tránh TDZ)
 let currentStaffId = null;
 let currentStaffName = '<%= fullName %>';
@@ -3050,8 +3051,8 @@ function confirmStation() {
 }
 
 async function leaveStation() {
-  if (currentStation <= 0) return;
-  if (!confirm('Rời ' + stationLabelFor(currentStation) + '? Bạn sẽ cần chọn lại quầy để tiếp tục bán hàng.')) return;
+  if (currentStation <= 0 || !isStaffLoggedIn) return;
+  if (!confirm('Tan ca và rời ' + stationLabelFor(currentStation) + '? Ca làm việc của bạn sẽ được kết thúc, cần điểm danh lại để tiếp tục bán hàng.')) return;
   try {
     await fetch(ctx + '/pos', {
       method: 'POST',
@@ -3104,7 +3105,9 @@ function updateStationUI() {
   const lbl = document.getElementById('stationLabel');
   if (lbl) lbl.textContent = currentStation > 0 ? stationLabelFor(currentStation) : 'Chọn quầy';
   const leaveBtn = document.getElementById('btnLeaveStation');
-  if (leaveBtn) leaveBtn.style.display = currentStation > 0 ? 'flex' : 'none';
+  // Nút "Tan ca" chỉ áp dụng khi quầy hiện tại thật sự có nhân viên đang điểm danh —
+  // chọn 1 quầy trống (chưa điểm danh) thì chưa có gì để "tan ca" cả.
+  if (leaveBtn) leaveBtn.style.display = (currentStation > 0 && isStaffLoggedIn) ? 'flex' : 'none';
 }
 
 // ── FACE RECOGNITION CHECK-IN ─────────────────────────────────────────────────
@@ -3354,6 +3357,8 @@ async function confirmFaceCheckin() {
       // Sidebar button: đổi sang toggle panel (đã logged in)
       const cbtn = document.getElementById('checkinBtn');
       if (cbtn) cbtn.setAttribute('onclick', 'toggleCheckinPanel()');
+      isStaffLoggedIn = true;
+      updateStationUI(); // hiện nút "Tan ca" giờ quầy đã có người điểm danh
       closeFaceModal();
       const msg = data.status === 'checked-in'   ? '✅ Điểm danh thành công!' :
                   data.status === 'already-in' || data.status === 'already-active'
