@@ -20,43 +20,14 @@ public class StaffLoginServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        HttpSession s = req.getSession(false);
-        if (s != null) {
-            String uid = (String) s.getAttribute("staffUid");
-            // BUG THẬT (đã fix): staffAccount_<uid>/staffUid là session key DÙNG CHUNG với
-            // Warehouse (xem WarehouseLoginServlet — cố tình tái sử dụng để không phải sửa
-            // AuthFilter). "staffUid" chỉ là con trỏ "tab vừa chạm gần nhất", có thể đang trỏ
-            // tới 1 tài khoản Thủ kho (roleId 3) nếu người dùng vừa đăng nhập/thao tác bên
-            // Warehouse ở tab khác. Trước đây đoạn này KHÔNG kiểm tra role — cứ thấy staffUid
-            // có giá trị là tự redirect sang /staff-dashboard, rồi StaffDashboardServlet lại
-            // bắn tiếp sang /warehouse-dashboard vì thấy roleId=3 → vòng lặp, và trang login
-            // KHÔNG BAO GIỜ hiện ra để đăng nhập tài khoản staff khác (uid khác) được nữa.
-            // Fix: chỉ tự-redirect khi tài khoản dưới staffUid THẬT SỰ là tài khoản staff
-            // (roleId != 3) — nếu không, coi như "chưa đăng nhập staff" và hiện form login.
-            Account target = null;
-            if (uid != null) {
-                Object acc = s.getAttribute("staffAccount_" + uid);
-                if (acc instanceof Account a && a.getRoleId() != 3) target = a;
-            }
-            // Con trỏ staffUid có thể đang trỏ sang tài khoản Thủ kho (tab Kho vừa dùng).
-            // Khi đó vẫn phải tìm xem trong session có tài khoản bán hàng nào còn đăng nhập
-            // không, thay vì bắt người ta gõ lại mật khẩu dù phiên vẫn sống.
-            if (target == null) {
-                java.util.Enumeration<String> names = s.getAttributeNames();
-                while (names.hasMoreElements()) {
-                    String n = names.nextElement();
-                    if (!n.startsWith("staffAccount_")) continue;
-                    if (s.getAttribute(n) instanceof Account a && a.getRoleId() != 3) {
-                        target = a; break;
-                    }
-                }
-            }
-            if (target != null) {
-                resp.sendRedirect(req.getContextPath()
-                        + "/staff-dashboard?uid=" + target.getAccountId());
-                return;
-            }
-        }
+        // ĐÃ GỠ: auto-redirect vào /staff-dashboard khi session cũ còn sống ("đã đăng nhập
+        // rồi thì bỏ qua form"). Lý do: hệ thống có single-session enforcement thật sự
+        // (xem SessionTracker — mỗi tài khoản chỉ 1 tab, đăng nhập mới phải tạo token mới
+        // và KICK tab cũ). Auto-redirect ở đây đi vòng qua toàn bộ cơ chế đó — mở tab mới
+        // rồi vào thẳng /staff-login sẽ được âm thầm gắn vào session cũ mà KHÔNG tạo token
+        // mới, KHÔNG kick tab cũ → 2 tab cùng sống song song, người dùng cảm giác "tự nhiên
+        // đăng nhập được" dù chưa hề bấm nút nào. Nay luôn hiện form: chỉ có POST (submit
+        // đúng mật khẩu) mới thật sự tạo phiên/đá tab cũ, đúng như thiết kế SessionTracker.
         req.getRequestDispatcher("/WEB-INF/views/staff/staff-login.jsp").forward(req, resp);
     }
 
@@ -95,6 +66,17 @@ public class StaffLoginServlet extends HttpServlet {
             req.getRequestDispatcher("/WEB-INF/views/staff/staff-login.jsp").forward(req, resp);
             return;
         }
+        // BUG THẬT (đã fix): trước đây nhánh này KHÔNG tồn tại — tài khoản Thủ kho
+        // (roleId 3) gõ đúng mật khẩu ở trang staff-login vẫn được cho đăng nhập, chỉ
+        // lặng lẽ redirect sang /warehouse-dashboard, không hề báo "sai chỗ đăng nhập".
+        // Trong khi đó WarehouseLoginServlet lại chặn đúng chiều ngược lại (roleId 2 bị
+        // báo lỗi "vui lòng đăng nhập tại trang Nhân viên"). Hai trang phải đối xứng —
+        // nay chặn roleId 3 tại đây, không tạo session, không đăng nhập hộ.
+        if (account.getRoleId() == 3) {
+            req.setAttribute("error", "Tài khoản này là Thủ kho — vui lòng đăng nhập tại trang Quản lý kho.");
+            req.getRequestDispatcher("/WEB-INF/views/staff/staff-login.jsp").forward(req, resp);
+            return;
+        }
 
         // ── 5. MK đúng rồi → kiểm tra TK có bị khóa không ──
         if (!account.isActive()) {
@@ -128,17 +110,8 @@ public class StaffLoginServlet extends HttpServlet {
         AuditHelper.log(req, "Đăng nhập", "Auth",
                 "Staff @" + account.getUsername() + " đăng nhập thành công",
                 staffId);
-        // roleId 3 (Thủ kho = Quản lý kho) có portal riêng — dù đăng nhập qua trang staff
-        // vẫn đưa về /warehouse-dashboard cho nhất quán.
-        if (account.getRoleId() == 3) {
-            // Ghi danh tính chuẩn của portal Kho ngay tại đây. Thiếu bước này thì cửa
-            // /staff-login chỉ đặt staffAccount_<id>, còn AuthFilter và WarehouseAuth phải
-            // đi đường vòng dò lại trong session — nguồn gốc cũ của cảnh nhảy loạn giữa
-            // hai portal. URL sạch, không mang uid/token.
-            com.medicare.util.WarehouseAuth.login(session, account);
-            resp.sendRedirect(req.getContextPath() + "/warehouse-dashboard");
-            return;
-        }
+        // Tới đây chắc chắn account.getRoleId() == 2 (Dược sĩ bán hàng) — roleId 1 và 3
+        // đã bị chặn với thông báo lỗi ở trên, không còn nhánh "đăng nhập hộ" nữa.
         resp.sendRedirect(req.getContextPath()
                 + "/staff-dashboard?uid=" + staffId + "&token=" + token);
     }

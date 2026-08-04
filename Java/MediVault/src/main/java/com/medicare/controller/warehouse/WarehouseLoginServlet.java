@@ -39,17 +39,13 @@ public class WarehouseLoginServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        HttpSession s = req.getSession(false);
-        if (s != null) {
-            String uid = (String) s.getAttribute("staffUid");
-            if (uid != null) {
-                Account acc = (Account) s.getAttribute("staffAccount_" + uid);
-                if (acc != null && acc.getRoleId() == ROLE_WAREHOUSE) {
-                    resp.sendRedirect(req.getContextPath() + "/warehouse-dashboard");
-                    return;
-                }
-            }
-        }
+        // ĐÃ GỠ: auto-redirect vào /warehouse-dashboard khi session cũ còn sống — cùng lý do
+        // đã gỡ ở StaffLoginServlet. Hệ thống có single-session enforcement thật sự
+        // (SessionTracker: đăng nhập mới tạo token mới, KICK tab cũ). Auto-redirect ở đây
+        // đi vòng qua cơ chế đó: mở tab mới vào /warehouse-login được gắn thẳng vào session
+        // cũ, không tạo token mới, không kick tab cũ → 2 tab cùng sống, người dùng thấy như
+        // "tự động ghi nhớ đăng nhập" dù chưa hề bấm gì. Nay luôn hiện form; chỉ POST đúng
+        // mật khẩu mới thật sự tạo phiên.
         req.getRequestDispatcher("/WEB-INF/views/warehouse/warehouse-login.jsp").forward(req, resp);
     }
 
