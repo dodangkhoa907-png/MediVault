@@ -49,7 +49,7 @@ public class PosServlet extends HttpServlet {
     // check-in khuôn mặt, thanh toán QR đang chờ...) — mọi action POST khác đều
     // bắt buộc phải có identity trong session (chặn "bấm bill" không đăng nhập). ──
     private static final java.util.Set<String> BOOTSTRAP_ACTIONS = java.util.Set.of(
-            "set-station", "pos-face-checkin", "pos-face-identify",
+            "set-station", "leave-station", "pos-face-checkin", "pos-face-identify",
             "pos-pause", "pos-resume", "create-qr", "check-qr-status", "cancel-qr");
 
     /** Có BẤT KỲ tài khoản nào (admin/nhân viên) đã xác thực trên session này chưa. */
@@ -387,6 +387,25 @@ public class PosServlet extends HttpServlet {
             } else {
                 out.print("{\"ok\":false}");
             }
+            return;
+        }
+
+        if ("leave-station".equals(action)) {
+            HttpSession leaveSess = req.getSession(false);
+            if (leaveSess != null) {
+                // Đóng ca điểm danh (nếu đang có) — nếu không, quầy sẽ vẫn hiện tên NV
+                // là "đang bận" trong màn chọn quầy dù đã rời, do Attendance chưa checkout.
+                Account leaveStaff = (Account) leaveSess.getAttribute("staffAccount");
+                if (leaveStaff != null) {
+                    attendanceDAO.checkOut(leaveStaff.getAccountId(), BigDecimal.ZERO, "Rời quầy từ POS", false);
+                }
+                leaveSess.removeAttribute("posStation");
+                leaveSess.removeAttribute("posState");
+                leaveSess.removeAttribute("staffAccount");
+                leaveSess.removeAttribute("staffUid");
+                leaveSess.removeAttribute("posOpeningCash");
+            }
+            out.print("{\"ok\":true}");
             return;
         }
 
@@ -1342,6 +1361,7 @@ public class PosServlet extends HttpServlet {
                 + ",\"invoiceId\":" + inv.getInvoiceId()
                 + ",\"code\":\"" + esc(inv.getInvoiceCode()) + "\""
                 + ",\"time\":\"" + time + "\""
+                + ",\"paymentMethod\":\"" + esc(inv.getPaymentMethod() != null ? inv.getPaymentMethod() : "") + "\""
                 + ",\"custName\":\"" + esc(custName) + "\""
                 + ",\"custPhone\":\"" + esc(custPhone) + "\""
                 + ",\"custPoints\":" + custPoints
@@ -1362,6 +1382,8 @@ public class PosServlet extends HttpServlet {
         Integer invoiceId = parseIntOrNull(req.getParameter("invoiceId"));
         String  reason    = req.getParameter("reason");
         boolean restoreStock = "on".equals(req.getParameter("restoreStock"));
+        String  refundMethod = req.getParameter("refundMethod");
+        if (!"VOUCHER".equals(refundMethod)) refundMethod = "CASH";
         String[] batchIdStrs = req.getParameterValues("batchId[]");
         String[] qtyStrs     = req.getParameterValues("qty[]");
 
@@ -1428,6 +1450,7 @@ public class PosServlet extends HttpServlet {
             r.setReason(reason.trim());
             r.setAccountId(staff.getAccountId());
             r.setRestoreStock(restoreStock);
+            r.setRefundMethod(refundMethod);
             int newId = returnsDAO.insert(r);
             if (newId > 0) {
                 com.medicare.util.AuditHelper.log(req, "Trả hàng (POS)", "Returns", newId,
