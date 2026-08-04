@@ -42,9 +42,12 @@ public class StaffDashboardServlet extends HttpServlet {
         if (staffAcc.getRoleId() == 1) {
             resp.sendRedirect(req.getContextPath() + "/dashboard"); return;
         }
-        // roleId 3 (Thủ kho = Quản lý kho) có portal riêng
+        // roleId 3 (Thủ kho = Quản lý kho) có portal riêng. URL sạch, KHÔNG kèm ?uid= —
+        // portal Kho lấy danh tính từ session (WarehouseAuth), và id tài khoản không được
+        // để lộ trên thanh địa chỉ / lịch sử trình duyệt của máy dùng chung.
         if (staffAcc.getRoleId() == 3) {
-            resp.sendRedirect(req.getContextPath() + "/warehouse-dashboard?uid=" + uid); return;
+            com.medicare.util.WarehouseAuth.login(session, staffAcc);
+            resp.sendRedirect(req.getContextPath() + "/warehouse-dashboard"); return;
         }
 
         req.setAttribute("staffUid", uid);
