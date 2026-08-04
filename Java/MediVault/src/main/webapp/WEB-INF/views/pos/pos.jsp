@@ -3010,7 +3010,9 @@ function openStationModal() {
 // mới nhất, tránh chọn nhầm quầy người khác đang bán dở.
 async function loadStationOccupancy() {
   try {
-    const res = await fetch(ctx + '/pos?action=station-staff');
+    // cache:'no-store' — GET không có tham số đổi mỗi lần, nếu để browser tự cache theo
+    // heuristic thì mở lại modal sau khi vừa "Tan ca" có thể vẫn thấy occupant cũ.
+    const res = await fetch(ctx + '/pos?action=station-staff&_=' + Date.now(), { cache: 'no-store' });
     const map = await res.json();
     document.querySelectorAll('[data-station-occupant]').forEach(el => {
       const stId = el.dataset.stationOccupant;
