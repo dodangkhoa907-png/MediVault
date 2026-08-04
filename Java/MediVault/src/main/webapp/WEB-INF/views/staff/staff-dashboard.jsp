@@ -1036,22 +1036,14 @@ updateClock(); setInterval(updateClock,1000);
 
   sessionStorage.setItem('tabId', Math.random().toString(36).slice(2) + Date.now());
 
-  // Chỉ logout khi đóng tab thật sự — dùng pagehide (đáng tin hơn beforeunload)
-  let _navigating = false;
-  document.addEventListener('click', function(e) {
-    const a = e.target.closest('a[href]');
-    if (a && a.hostname === location.hostname) _navigating = true;
-  });
-  document.addEventListener('submit', function() { _navigating = true; });
-  window.addEventListener('pagehide', function(e) {
-    // e.persisted = true → BFCache (không đóng thật), _navigating = đang chuyển trang
-    if (e.persisted || _navigating) { _navigating = false; return; }
-    const uid = sessionStorage.getItem('staffUid');
-    const ctx = document.querySelector('meta[name="ctx"]')?.content || '';
-    if (uid) {
-      navigator.sendBeacon(ctx + '/logout?from=staff&uid=' + uid);
-    }
-  });
+  // ĐÃ GỠ: tự đăng xuất khi 'pagehide' (sendBeacon /logout).
+  // Lý do: pagehide bắn CẢ khi F5/tải lại trang, bấm Back/Forward, hay gõ URL trực tiếp —
+  // những thao tác này không phải click link cũng không phải submit form nên cờ _navigating
+  // vẫn là false, và e.persisted cũng false → beacon đăng xuất được gửi đi, nhân viên đang
+  // làm việc bị văng thẳng ra /staff-login chỉ vì lỡ nhấn F5. Trình duyệt KHÔNG cung cấp
+  // tín hiệu nào phân biệt được "đóng tab" với "tải lại", nên cơ chế này không thể vá cho
+  // đúng — chỉ có thể bỏ. Phiên vẫn được bảo vệ bằng: nút Đăng xuất, timeout session của
+  // Tomcat, và single-session token (đăng nhập nơi khác sẽ kick phiên cũ).
   const uid   = sessionStorage.getItem('staffUid');
   const token = sessionStorage.getItem('staffToken');
   const tabId = sessionStorage.getItem('tabId');

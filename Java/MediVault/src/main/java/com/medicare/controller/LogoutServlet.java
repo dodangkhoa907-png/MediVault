@@ -38,9 +38,18 @@ public class LogoutServlet extends HttpServlet {
                 // địa chỉ) nên link đăng xuất từ đó KHÔNG mang uid. Thiếu uid mà vẫn đi tiếp thì
                 // nhánh dưới bị bỏ qua: session KHÔNG được xoá — người dùng bấm "Đăng xuất" xong
                 // vẫn đang đăng nhập. Vì vậy suy ra danh tính từ chính session khi thiếu uid.
-                if ((staffUid == null || staffUid.isEmpty()) && "warehouse".equals(from)) {
-                    Account whAcc = com.medicare.util.WarehouseAuth.current(req);
-                    if (whAcc != null) staffUid = String.valueOf(whAcc.getAccountId());
+                if (staffUid == null || staffUid.isEmpty()) {
+                    if ("warehouse".equals(from)) {
+                        Account whAcc = com.medicare.util.WarehouseAuth.current(req);
+                        if (whAcc != null) staffUid = String.valueOf(whAcc.getAccountId());
+                    } else {
+                        // Cùng lỗi đó nhưng ở phía staff: staff-profile.jsp gọi
+                        // /logout?from=staff KHÔNG kèm uid → trước đây rơi hết vào nhánh
+                        // dưới, session không bị xoá, bấm "Đăng xuất" xong vẫn đang đăng
+                        // nhập. Suy ra danh tính từ con trỏ staffUid trong session.
+                        Object ptr = session.getAttribute("staffUid");
+                        if (ptr instanceof String s && !s.isEmpty()) staffUid = s;
+                    }
                 }
                 if (staffUid != null && !staffUid.isEmpty()) {
                     Account staffAcc = (Account) session.getAttribute("staffAccount_" + staffUid);
@@ -58,8 +67,14 @@ public class LogoutServlet extends HttpServlet {
                         }
                     }
                 }
-                // Không invalidate session, không xóa adminAccount
-                AuthFilter.clearAllCookies(resp);
+                // Con trỏ "tab vừa dùng" phải dọn theo, nếu không nó còn trỏ tới tài khoản
+                // vừa đăng xuất → trang login thấy con trỏ cũ lại tự redirect vào trong.
+                Object ptr = session.getAttribute("staffUid");
+                if (ptr instanceof String s && s.equals(staffUid)) {
+                    session.removeAttribute("staffUid");
+                }
+                // Không invalidate session, không xóa adminAccount, KHÔNG đụng cookie admin
+                AuthFilter.clearStaffCookies(resp);
                 resp.sendRedirect(req.getContextPath() + redirectUrl);
                 return;
             }
@@ -75,7 +90,9 @@ public class LogoutServlet extends HttpServlet {
             }
         }
 
-        AuthFilter.clearAllCookies(resp);
+        // Admin đăng xuất chỉ dọn cookie admin — staff đang đăng nhập ở tab khác trên
+        // cùng máy không bị văng ra theo.
+        AuthFilter.clearAdminCookies(resp);
         resp.sendRedirect(req.getContextPath() + redirectUrl);
     }
 }
