@@ -393,11 +393,16 @@ public class PosServlet extends HttpServlet {
         if ("leave-station".equals(action)) {
             HttpSession leaveSess = req.getSession(false);
             if (leaveSess != null) {
-                // Đóng ca điểm danh (nếu đang có) — nếu không, quầy sẽ vẫn hiện tên NV
-                // là "đang bận" trong màn chọn quầy dù đã rời, do Attendance chưa checkout.
-                Account leaveStaff = (Account) leaveSess.getAttribute("staffAccount");
-                if (leaveStaff != null) {
-                    attendanceDAO.checkOut(leaveStaff.getAccountId(), BigDecimal.ZERO, "Rời quầy từ POS", false);
+                // Đóng ca điểm danh của bất kỳ ai đang ACTIVE tại QUẦY này — không chỉ
+                // của session hiện tại, vì badge "đang bận" ở màn chọn quầy lấy theo
+                // Attendance.PosStation (findActiveStaffByStation), có thể là người đã
+                // check-in từ phiên/máy khác rồi bỏ đi mà chưa bấm kết ca.
+                Integer leaveStation = (Integer) leaveSess.getAttribute("posStation");
+                if (leaveStation != null && leaveStation > 0) {
+                    Attendance occupant = attendanceDAO.findActiveByStation(leaveStation);
+                    if (occupant != null) {
+                        attendanceDAO.checkOut(occupant.getAccountId(), BigDecimal.ZERO, "Rời quầy từ POS", false);
+                    }
                 }
                 leaveSess.removeAttribute("posStation");
                 leaveSess.removeAttribute("posState");
