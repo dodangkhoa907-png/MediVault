@@ -94,7 +94,7 @@ button.loading .btn-label{opacity:.85}
     <input type="hidden" name="_csrf" value="${csrfToken}">
     <input type="hidden" name="action" value="login">
     <div class="stg" style="--stg:4">
-      <label for="phone">Số điện thoại</label>
+      <label for="phone">Mã Khách hàng</label>
       <div class="phone-wrap">
         <span class="ic">📱</span>
         <input type="tel" id="phone" name="phone" placeholder="**********" maxlength="10"
