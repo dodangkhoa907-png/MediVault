@@ -55,8 +55,8 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
     public int createWithBatches(PurchaseOrders po, List<Batches> lines) {
         boolean receiveNow = !"PENDING".equals(po.getStatus());
         String poSql = "INSERT INTO PurchaseOrders " +
-                "(SupplierID, AccountID, OrderDate, TotalValue, Notes, Status, PaymentMethod, DiscountAmount) " +
-                "VALUES (?,?,GETDATE(),?,?,?,?,?); SELECT SCOPE_IDENTITY();";
+                "(SupplierID, AccountID, OrderDate, TotalValue, Notes, Status, PaymentMethod, DiscountAmount, ExpectedDate) " +
+                "VALUES (?,?,GETDATE(),?,?,?,?,?,?); SELECT SCOPE_IDENTITY();";
         String dSql = "INSERT INTO PurchaseOrderDetails " +
                 "(POID, MedicineID, Quantity, ImportPrice, BatchNumber, ExpiryDate, ManufactureDate) " +
                 "VALUES (?,?,?,?,?,?,?)";
@@ -75,6 +75,8 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
                     ps.setString(6, po.getPaymentMethod());
                 else ps.setNull(6, Types.VARCHAR);
                 ps.setBigDecimal(7, po.getDiscountAmount() != null ? po.getDiscountAmount() : BigDecimal.ZERO);
+                if (po.getExpectedDate() != null) ps.setDate(8, Date.valueOf(po.getExpectedDate()));
+                else ps.setNull(8, Types.DATE);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (!rs.next() || rs.getBigDecimal(1) == null) { cn.rollback(); return -1; }
                     poId = rs.getBigDecimal(1).intValue();
@@ -171,6 +173,20 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
 
+    /** Cập nhật "Ngày giao dự kiến" của 1 đơn — gọi khi Thủ kho gắn thêm dòng "chưa về" vào 1
+     *  PO có sẵn (qua {@link #addDetail}) và cho biết ngày dự kiến nhận hàng, để tab Đơn hàng
+     *  hiện đúng cột "Ngày giao dự kiến" và tính được "Quá hạn" cho đơn đó. */
+    public boolean updateExpectedDate(int poId, LocalDate expectedDate) {
+        if (expectedDate == null) return true;
+        String sql = "UPDATE PurchaseOrders SET ExpectedDate = ? WHERE POID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setDate(1, Date.valueOf(expectedDate));
+            ps.setInt(2, poId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
     /** Trạng thái 1 đơn (PENDING/COMPLETED) — null nếu không có. */
     public String getStatus(int poId) {
         try (Connection cn = DBContext.getConnection();
@@ -239,8 +255,10 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
 
             // Đọc chi tiết dòng hàng
             List<Batches> lines = new ArrayList<>();
+            List<String> missingExpiry = new ArrayList<>();
             try (PreparedStatement ps = cn.prepareStatement(
-                    "SELECT * FROM PurchaseOrderDetails WHERE POID = ? ORDER BY PODetailID")) {
+                    "SELECT d.*, m.MedicineName FROM PurchaseOrderDetails d " +
+                    "JOIN Medicines m ON m.MedicineID = d.MedicineID WHERE d.POID = ? ORDER BY d.PODetailID")) {
                 ps.setInt(1, poId);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
@@ -252,6 +270,14 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
                         if (rs.getDate("ExpiryDate") != null) b.setExpiryDate(rs.getDate("ExpiryDate").toLocalDate());
                         if (rs.getDate("ManufactureDate") != null) b.setManufactureDate(rs.getDate("ManufactureDate").toLocalDate());
                         b.setImportDate(LocalDate.now()); // ngày nhập kho = ngày hàng về thật
+                        // Batches.ExpiryDate là NOT NULL nhưng PurchaseOrderDetails.ExpiryDate được
+                        // phép để trống (đặt hàng trước khi biết HSD thật, ví dụ "mai hàng mới về") —
+                        // KHÔNG thể tạo Batch thiếu HSD, nên chặn sớm ở đây với thông báo rõ ràng thay
+                        // vì để rơi xuống Date.valueOf(null) và ném NPE khó hiểu (bug đã gặp thực tế).
+                        if (b.getExpiryDate() == null) {
+                            missingExpiry.add(rs.getString("MedicineName")
+                                    + (b.getBatchNumber() != null && !b.getBatchNumber().isEmpty() ? " (lô " + b.getBatchNumber() + ")" : ""));
+                        }
                         lines.add(b);
                     }
                 }
@@ -259,6 +285,12 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
             if (lines.isEmpty()) {
                 cn.rollback();
                 lastConfirmError.set("Đơn không có dòng hàng nào để nhập kho.");
+                return -1;
+            }
+            if (!missingExpiry.isEmpty()) {
+                cn.rollback();
+                lastConfirmError.set("Chưa nhập Hạn sử dụng cho: " + String.join(", ", missingExpiry)
+                        + " — vào Nhập kho bổ sung HSD (ghi trên bao bì hàng thực nhận) trước khi xác nhận nhận hàng.");
                 return -1;
             }
 
