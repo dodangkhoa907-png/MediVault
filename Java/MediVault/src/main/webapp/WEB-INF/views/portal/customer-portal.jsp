@@ -13,13 +13,7 @@
 
     int avail   = card != null ? card.getAvailablePoints() : 0;
     int total   = card != null ? card.getTotalPoints() : 0;
-    String tier = card != null && card.getTierName() != null ? card.getTierName() : "Đồng";
-    String nextTier   = card != null ? card.getNextTierName() : null;
-    int nextMin       = card != null ? card.getNextTierMinPoints() : 0;
-    int toNext        = nextTier != null ? Math.max(0, nextMin - total) : 0;
-    int progressPct   = (nextTier != null && nextMin > 0) ? Math.min(100, total * 100 / nextMin) : 100;
     String cardCode   = card != null && card.getCardCode() != null ? card.getCardCode() : "CARD—";
-    String tierIcon   = tier.contains("Kim") ? "💎" : tier.contains("Vàng") ? "👑" : tier.contains("Bạc") ? "🥈" : "🥉";
 
     // ── Thống kê "Tháng này" cho khu vực Analytics của Lịch sử mua hàng ──
     @SuppressWarnings("unchecked")
@@ -320,7 +314,7 @@ select,option{font-family:inherit;font-size:inherit}
   <div class="tb-user">
     <div style="text-align:right">
       <div class="tb-uname"><%= dn %></div>
-      <div class="tb-utier"><span aria-hidden="true"><%= tierIcon %></span> Thành viên <%= tier %></div>
+      <div class="tb-utier">Thành viên</div>
     </div>
     <div class="tb-av" aria-hidden="true"><%= initials %></div>
   </div>
@@ -333,28 +327,18 @@ select,option{font-family:inherit;font-size:inherit}
 
     <%-- Thẻ thành viên 3D (Digital Twin của thẻ NFC) --%>
     <div class="card-stage stg" style="--stg:1">
-      <div class="member-card" id="memberCard" role="group" aria-label="Thẻ thành viên hạng <%= tier %>, mã <%= cardCode %>">
+      <div class="member-card" id="memberCard" role="group" aria-label="Thẻ thành viên, mã <%= cardCode %>">
         <div class="mc-shield" aria-hidden="true">🛡️</div>
         <div class="mc-row1">
           <div>
-            <div class="mc-tier-lbl">Hạng thành viên</div>
-            <div class="mc-tier"><span aria-hidden="true"><%= tierIcon %></span> Hạng <%= tier %></div>
+            <div class="mc-tier-lbl">Thẻ thành viên</div>
+            <div class="mc-tier">MediCare Card</div>
           </div>
           <div class="mc-id"><%= cardCode %></div>
         </div>
         <div class="mc-points-lbl">Điểm khả dụng</div>
         <div class="mc-points"><b id="mcPointsVal" data-target="<%= avail %>">0</b><span>điểm</span></div>
-        <div class="mc-progress">
-          <% if (nextTier != null) { %>
-          <div class="mc-prog-row">
-            <span>Còn <b><fmt:formatNumber value="<%= toNext %>"/> điểm</b> để lên <b><%= nextTier %></b></span>
-            <span><%= progressPct %>%</span>
-          </div>
-          <% } else { %>
-          <div class="mc-prog-row"><span>🎉 Bạn đã đạt hạng cao nhất!</span><span>100%</span></div>
-          <% } %>
-          <div class="mc-bar"><div class="mc-fill" id="mcFill" data-pct="<%= progressPct %>"></div></div>
-        </div>
+        <div style="height: 12px;"></div>
         <div class="mc-qr-hint">
           <button onclick="openQrModal()">📱 Mã QR thay thẻ</button>
           <span>Quên thẻ NFC? Đưa mã QR cho dược sĩ quét</span>
@@ -723,11 +707,6 @@ renderHistory();
     setTimeout(function () { requestAnimationFrame(step); }, 350);
   }
 
-  var fill = document.getElementById('mcFill');
-  if (fill) {
-    var pct = fill.dataset.pct || 0;
-    requestAnimationFrame(function () { fill.style.width = pct + '%'; });
-  }
 })();
 
 /* ── 3D tilt thẻ thành viên (chuột + cảm biến gyro trên mobile) ── */

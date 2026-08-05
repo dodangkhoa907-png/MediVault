@@ -157,9 +157,6 @@ tbody tr:hover td{background:#F7FBFF}
           <span>Khách từ ${customer.createdAt != null ? fn:substring(customer.createdAt.toString(),0,10) : '—'}</span>
         </div>
         <div class="hero-badges">
-          <c:if test="${card != null and not empty card.tierName}">
-            <span class="hb gold">🏅 Hạng ${card.tierName}</span>
-          </c:if>
           <c:choose>
             <c:when test="${not empty customer.nfcCardUid}">
               <span class="hb nfc">📶 Đã gắn thẻ NFC</span>
@@ -245,17 +242,7 @@ tbody tr:hover td{background:#F7FBFF}
           <div class="loy-num">${card != null ? card.availablePoints : 0}</div>
           <div class="loy-lbl">điểm khả dụng</div>
         </div>
-        <c:if test="${card != null and not empty card.nextTierName and card.nextTierMinPoints > 0}">
-          <c:set var="pct" value="${card.totalPoints * 100 / card.nextTierMinPoints}"/>
-          <div class="loy-tier-row">
-            <span>${not empty card.tierName ? card.tierName : 'Thành viên'}</span>
-            <span>→ ${card.nextTierName}</span>
-          </div>
-          <div class="loy-bar"><span style="width:${pct > 100 ? 100 : pct}%"></span></div>
-          <div style="font-size:11.5px;color:var(--muted);margin-top:6px;text-align:center">
-            ${card.totalPoints} / ${card.nextTierMinPoints} điểm tích lũy
-          </div>
-        </c:if>
+
 
         <div class="loy-hist">
           <c:choose>
