@@ -747,7 +747,8 @@ async function verifyAndSubmit(descriptor) {
             setTimeout(() => {
                 window.location.href = FACE_CI_ACTION_URL + '?uid=' + FACE_CI_UID + '&msg=' + (data.msg || 'checked-in');
             }, 700);
-        } else {
+        } else if (data.reason) {
+            // Thất bại do KHÔNG khớp khuôn mặt — lỗi tạm thời, quét lại có thể qua được.
             const reasonMap = {
                 'no_match': '⚠️ Không khớp khuôn mặt. Vui lòng thử lại.',
                 'reenroll_pending': '⏳ Bạn đang có yêu cầu đổi khuôn mặt chờ duyệt — chưa thể điểm danh bằng khuôn mặt.',
@@ -759,6 +760,21 @@ async function verifyAndSubmit(descriptor) {
             };
             statusEl.textContent = reasonMap[data.reason] || ('❌ Lỗi: ' + data.reason);
             subEl.textContent = 'Đang thử lại...';
+        } else {
+            // Khuôn mặt ĐÃ khớp đúng chủ nhưng nghiệp vụ điểm danh thất bại (đã điểm danh
+            // rồi / chưa tới giờ / đã quá giờ / lỗi hệ thống…) — quét lại KHÔNG sửa được gì,
+            // dừng camera thay vì lặp vô ích, và không được lẫn với thông báo lỗi khuôn mặt.
+            const msgMap = {
+                'already-in':  '✓ Bạn đang trong ca làm việc rồi — không cần điểm danh lại.',
+                'no-schedule': '🚫 Hôm nay bạn không có lịch làm việc.',
+                'too-early':   '⏰ Chưa tới giờ vào ca — vui lòng quay lại đúng giờ.',
+                'too-late':    '⏰ Đã quá giờ ca làm — liên hệ quản lý để được hỗ trợ.',
+                'not-in':      '⚠️ Bạn chưa điểm danh vào ca nên không thể check-out.',
+                'error':       '❌ Lỗi hệ thống khi điểm danh — vui lòng thử lại sau.'
+            };
+            statusEl.textContent = msgMap[data.msg] || ('❌ Lỗi: ' + (data.msg || 'không xác định'));
+            subEl.textContent = '';
+            stopFaceCiStream();
         }
     } catch (err) {
         statusEl.textContent = '❌ Lỗi kết nối: ' + err.message;

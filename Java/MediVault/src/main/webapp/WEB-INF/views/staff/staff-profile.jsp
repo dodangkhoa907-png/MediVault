@@ -251,7 +251,7 @@ body{display:flex;background:var(--soft);color:var(--ink)}
   </nav>
   <div style="flex:1"></div>
   <div class="sidebar-footer">
-    <a href="<%= request.getContextPath() %>/logout?from=staff" class="logout-btn-full" title="Đăng xuất">
+    <a href="<%= request.getContextPath() %>/logout?from=staff&amp;uid=<%= _staffUid %>" class="logout-btn-full" title="Đăng xuất">
       <span style="font-size:15px;line-height:1">⏻</span>
       <span>Đăng xuất</span>
     </a>
@@ -588,26 +588,10 @@ async function submitReenroll() {
   if (urlToken) sessionStorage.setItem('staffToken', urlToken);
   sessionStorage.setItem('tabId', Math.random().toString(36).slice(2) + Date.now());
 
-  // Chỉ logout khi tab/browser đóng thật sự — KHÔNG logout khi navigate sang trang khác
-  window.addEventListener('pagehide', function(e) {
-      // e.persisted = true → trang được cache (BFCache), không đóng thật
-      if (e.persisted) return;
-      // Kiểm tra xem có đang navigate nội bộ không
-      if (window._navigating) return;
-      const uid = sessionStorage.getItem('staffUid');
-      const ctx = document.querySelector('meta[name="ctx"]')?.content || '';
-      if (uid) {
-          navigator.sendBeacon(ctx + '/logout?from=staff&uid=' + uid);
-      }
-  });
-  // Đánh dấu đang navigate nội bộ khi click link
-  document.addEventListener('click', function(e) {
-      const a = e.target.closest('a[href]');
-      if (a && a.href && !a.href.includes('logout') && a.hostname === location.hostname) {
-          window._navigating = true;
-      }
-  });
-  document.addEventListener('submit', function() { window._navigating = true; });
+  // ĐÃ GỠ: tự đăng xuất khi 'pagehide' (sendBeacon /logout) — xem giải thích đầy đủ trong
+  // staff-dashboard.jsp. Tóm tắt: pagehide bắn cả khi F5 / Back / gõ URL, nên nhân viên bị
+  // đăng xuất oan giữa lúc đang làm. Không có cách phân biệt "đóng tab" và "tải lại" trên
+  // trình duyệt, nên bỏ hẳn thay vì vá tiếp.
 
   const uid   = sessionStorage.getItem('staffUid');
   const token = sessionStorage.getItem('staffToken');

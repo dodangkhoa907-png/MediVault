@@ -20,6 +20,7 @@ public class ReturnsDAO implements IReturnsDAO {
         r.setReason(rs.getString("Reason"));
         r.setAccountId(rs.getInt("AccountID"));
         r.setRestoreStock(rs.getBoolean("RestoreStock"));
+        r.setRefundMethod(rs.getString("RefundMethod"));
         if (rs.getTimestamp("CreatedAt") != null)
             r.setCreatedAt(rs.getTimestamp("CreatedAt").toLocalDateTime());
         return r;
@@ -27,8 +28,8 @@ public class ReturnsDAO implements IReturnsDAO {
 
     @Override
     public int insert(Returns r) {
-        String sql = "INSERT INTO Returns (ReturnType, BatchID, InvoiceID, Quantity, Reason, AccountID, RestoreStock) " +
-                "VALUES (?,?,?,?,?,?,?); SELECT SCOPE_IDENTITY();";
+        String sql = "INSERT INTO Returns (ReturnType, BatchID, InvoiceID, Quantity, Reason, AccountID, RestoreStock, RefundMethod) " +
+                "VALUES (?,?,?,?,?,?,?,?); SELECT SCOPE_IDENTITY();";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, r.getReturnType());
@@ -38,6 +39,7 @@ public class ReturnsDAO implements IReturnsDAO {
             ps.setNString(5, r.getReason());
             ps.setInt(6, r.getAccountId());
             ps.setBoolean(7, r.isRestoreStock());
+            ps.setString(8, r.getRefundMethod() != null ? r.getRefundMethod() : "CASH");
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);
             }

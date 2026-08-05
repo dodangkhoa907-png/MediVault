@@ -127,11 +127,15 @@ public class AttendanceDAO implements IAttendanceDAO {
 
     @Override
     public Attendance findActiveByStation(int posStation) {
-        // SELECT_FULL đã LEFT JOIN ShiftSchedules ss — dùng luôn alias ss.PosStation.
-        // Tìm nhân viên đang check-in (chưa checkout) hôm nay tại quầy POS chỉ định.
+        // Dùng att.PosStation (quầy THỰC TẾ lúc check-in) — PHẢI khớp tiêu chí với
+        // findActiveStaffByStation() (badge "đang bận" ở modal chọn quầy). Trước đây lọc
+        // theo ss.PosStation (quầy DỰ KIẾN trong lịch ca) khiến 2 hàm lệch nhau: nhân viên
+        // check-in thực tế ở quầy X nhưng lịch ca trống/khác quầy → bấm "Rời quầy" không
+        // tìm thấy occupant nên KHÔNG checkout được, Attendance vẫn mở mãi → quầy vẫn hiện
+        // "đang bận" dù đã rời, và lần quét mặt sau bị coi là "đã có ca đang active".
         String sql = SELECT_FULL +
                 "WHERE att.CheckOutTime IS NULL " +
-                "  AND ss.PosStation = ? " +
+                "  AND att.PosStation = ? " +
                 "  AND CAST(att.CheckInTime AS DATE) = CAST(GETDATE() AS DATE) " +
                 "ORDER BY att.CheckInTime DESC";
         try (Connection cn = DBContext.getConnection();
@@ -280,7 +284,7 @@ public class AttendanceDAO implements IAttendanceDAO {
     }
 
     @Override
-    public int checkInWithPenalty(int accountId, int scheduleId, String method,
+    public int checkInWithPenalty(int accountId, Integer scheduleId, String method,
                                   BigDecimal openingCash, BigDecimal penaltyAmount,
                                   int lateMinutes, String status, Integer posStation) {
         // Tìm ShiftID đang mở của nhân viên để gán vào Attendance
@@ -308,7 +312,10 @@ public class AttendanceDAO implements IAttendanceDAO {
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, accountId);
-            ps.setInt(2, scheduleId);
+            // ScheduleID NULL = mở ca không theo lịch (Attendance.ScheduleID cho phép NULL
+            // trong schema — dùng cho Thủ kho, không xếp ShiftSchedule như bán hàng).
+            if (scheduleId != null) ps.setInt(2, scheduleId);
+            else ps.setNull(2, Types.INTEGER);
             int p = 3;
             if (shiftId != null) ps.setInt(p++, shiftId);
             ps.setString(p++, nowStr);

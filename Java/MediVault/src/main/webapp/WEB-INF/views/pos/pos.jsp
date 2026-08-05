@@ -21,7 +21,7 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
     
     
     
@@ -32,18 +32,20 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --blue:#1a56db;--blue2:#1e3a5f;--sky:#3f83f8;
-  --surface:#f3f4f6;--white:#fff;--border:#e5e7eb;
-  --navy:#111827;--muted:#6b7280;
-  --green:#059669;--red:#dc2626;--gold:#d97706;--orange:#f97316;
+  --blue:#2563EB;--blue2:#1D4ED8;--sky:#2563EB;
+  --surface:#F5F7FB;--white:#fff;--border:#E5E7EB;
+  --navy:#111827;--muted:#6B7280;--navy-sidebar:#1E3A5F;
+  --green:#16A34A;--red:#EF4444;--gold:#F59E0B;--orange:#F59E0B;
+  --radius-card:18px;--radius-input:14px;--radius-btn:14px;--radius-modal:24px;
+  --shadow-sm:0 4px 12px rgba(0,0,0,.06);
   --sw:64px;--rw:420px;
 }
-html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden;background:var(--surface);color:var(--navy);font-size:14px}
+html,body{height:100%;font-family:'Inter',sans-serif;overflow:hidden;background:var(--surface);color:var(--navy);font-size:14px}
 body{display:flex}
 
 /* SIDEBAR — hover-expand */
 .sidebar{
-  width:var(--sw);min-height:100vh;background:var(--blue2);
+  width:var(--sw);min-height:100vh;background:var(--navy-sidebar);
   display:flex;flex-direction:column;align-items:stretch;
   padding:10px 0;position:fixed;left:0;top:0;bottom:0;
   z-index:100;overflow:hidden;
@@ -61,10 +63,11 @@ body{display:flex}
 .sidebar:hover .sb-logo-full{opacity:1}
 /* Nav buttons */
 .sb-btn{height:44px;display:flex;align-items:center;gap:11px;padding:0 13px;
-  border-radius:9px;color:rgba(255,255,255,.5);cursor:pointer;transition:.15s;
+  border-radius:9px;color:rgba(255,255,255,.5);cursor:pointer;transition:.15s ease-out;
   text-decoration:none;margin:1px 6px;overflow:hidden;background:transparent;
-  border:none;font-family:inherit;width:calc(100% - 12px)}
+  border:none;font-family:inherit;width:calc(100% - 12px);position:relative}
 .sb-btn:hover,.sb-btn.active{color:#fff;background:rgba(255,255,255,.15)}
+.sb-btn.active::before{content:'';position:absolute;left:-6px;top:6px;bottom:6px;width:3px;border-radius:0 3px 3px 0;background:#60A5FA}
 .sb-icon{font-size:18px;min-width:28px;text-align:center;flex-shrink:0;line-height:1}
 .sb-label{font-size:12.5px;font-weight:750;color:rgba(255,255,255,.75);
   white-space:nowrap;opacity:0;transition:opacity .14s .06s}
@@ -87,8 +90,10 @@ body{display:flex}
 /* TOPBAR */
 .topbar{height:54px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0}
 .search-wrap{flex:1;position:relative}
-.search-wrap input{width:100%;height:38px;padding:0 38px 0 14px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit;outline:none;background:var(--surface);transition:.2s}
-.search-wrap input:focus{border-color:var(--sky);background:#fff}
+.search-wrap input{width:100%;height:42px;padding:0 38px 0 16px;border:1.5px solid var(--border);border-radius:var(--radius-input);font-size:14.5px;font-family:inherit;outline:none;background:var(--surface);transition:.2s ease-out}
+.search-wrap input:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 4px rgba(37,99,235,.12)}
+.search-wrap .search-clear{display:none;position:absolute;right:34px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;background:#e5e7eb;color:#6B7280;border:none;font-size:12px;cursor:pointer;align-items:center;justify-content:center;line-height:1}
+.search-wrap .search-clear.show{display:flex}
 .search-wrap::after{content:'🔍';position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:none}
 .med-count-badge{background:#eff6ff;color:var(--blue);font-size:13px;font-weight:750;padding:5px 12px;border-radius:7px;white-space:nowrap;flex-shrink:0}
 .topbar-date{font-size:12.5px;color:var(--muted);white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:4px}
@@ -98,7 +103,7 @@ body{display:flex}
 .cat-bar::-webkit-scrollbar{display:none}
 .cat-tab{height:30px;padding:0 15px;border-radius:100px;border:1.5px solid transparent;font-size:12.5px;font-weight:750;color:#64748b;background:#f1f5f9;cursor:pointer;white-space:nowrap;transition:.18s;flex-shrink:0;font-family:inherit;letter-spacing:.1px}
 .cat-tab:hover{color:var(--blue);background:#dbeafe;border-color:#bfdbfe}
-.cat-tab.active{color:#fff;background:var(--blue);border-color:var(--blue);box-shadow:0 2px 8px rgba(37,99,235,.35)}
+.cat-tab.active{color:#fff;background:var(--blue);border-color:var(--blue);box-shadow:var(--shadow-sm)}
 
 /* MED GRID */
 .med-grid{flex:1;overflow-y:auto;padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(152px,1fr));gap:10px;align-content:start}
@@ -106,8 +111,9 @@ body{display:flex}
 .med-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 
 /* Med Card — centered product card layout */
-.med-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:10px 12px 12px;cursor:pointer;transition:.2s;display:flex;flex-direction:column;align-items:center;position:relative;min-height:148px;text-align:center}
-.med-card:hover{border-color:#93c5fd;box-shadow:0 6px 20px rgba(59,130,246,.15);transform:translateY(-2px)}
+.med-card{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius-card);padding:10px 12px 12px;cursor:pointer;transition:.2s ease-out;display:flex;flex-direction:column;align-items:center;position:relative;min-height:148px;text-align:center}
+.med-card:hover{border-color:#93c5fd;box-shadow:var(--shadow-sm);transform:scale(1.02)}
+.med-card:active{transform:scale(.98)}
 .med-card.out-of-stock{opacity:.42;cursor:not-allowed}
 .med-card.out-of-stock:hover{transform:none;border-color:var(--border);box-shadow:none}
 /* Top row: stock left, badge right */
@@ -135,7 +141,7 @@ body{display:flex}
 .invoice-panel{width:var(--rw);height:100vh;background:#fff;border-left:2px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
 
 /* Header */
-.inv-head{padding:13px 16px;background:linear-gradient(135deg,#1e3a5f,#1a56db);flex-shrink:0}
+.inv-head{padding:13px 16px;background:linear-gradient(135deg,var(--navy-sidebar),var(--blue));flex-shrink:0}
 .inv-head-row{display:flex;align-items:center;justify-content:space-between}
 .inv-head h3{font-size:15px;font-weight:800;color:#fff}
 .inv-head-sub{font-size:12px;color:rgba(255,255,255,.6);margin-top:2px}
@@ -167,12 +173,13 @@ body{display:flex}
 .inv-i-name{font-size:13px;font-weight:750;color:var(--navy)}
 .inv-i-meta{font-size:10.5px;color:var(--muted);margin-top:2px}
 .inv-i-price{font-size:12px;color:var(--blue);font-weight:750}
-.qty-ctrl{display:flex;align-items:center;gap:4px;flex-shrink:0}
-.qty-btn{width:25px;height:25px;border-radius:6px;border:1.5px solid var(--border);background:#fff;font-size:13px;font-weight:750;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;color:var(--navy);transition:.15s}
-.qty-btn:hover{border-color:var(--sky);color:var(--blue)}
-.qty-btn.minus:hover{border-color:var(--red);color:var(--red)}
-.qty-val{width:38px;height:25px;text-align:center;font-size:13px;font-weight:750;border:1.5px solid var(--border);border-radius:6px;outline:none;font-family:inherit;color:var(--navy);background:#fff;padding:0}
-.qty-val:focus{border-color:var(--sky)}
+.qty-ctrl{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.qty-btn{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--border);background:#fff;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;color:var(--navy);transition:.15s ease-out}
+.qty-btn:hover{border-color:var(--blue);color:var(--blue);background:#EFF6FF}
+.qty-btn:active{transform:scale(.92)}
+.qty-btn.minus:hover{border-color:var(--red);color:var(--red);background:#FEF2F2}
+.qty-val{width:40px;height:30px;text-align:center;font-size:13.5px;font-weight:700;border:1.5px solid var(--border);border-radius:8px;outline:none;font-family:inherit;color:var(--navy);background:#fff;padding:0}
+.qty-val:focus{border-color:var(--blue)}
 .qty-val::-webkit-inner-spin-button,.qty-val::-webkit-outer-spin-button{-webkit-appearance:none}
 .inv-i-sub{font-size:13px;font-weight:800;color:var(--navy);white-space:nowrap;flex-shrink:0}
 .inv-i-rm{color:#d1d5db;cursor:pointer;background:none;border:none;font-size:15px;line-height:1;transition:.15s;flex-shrink:0}
@@ -189,8 +196,9 @@ body{display:flex}
 
 /* Payment method — 3 big cards */
 .pay-methods{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
-.pay-method-card{border:2px solid var(--border);background:#f8fafc;border-radius:13px;padding:12px 6px 10px;cursor:pointer;transition:.2s;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:inherit}
-.pay-method-card:hover{border-color:#93c5fd;background:#eff6ff}
+.pay-method-card{border:2px solid var(--border);background:#f8fafc;border-radius:14px;padding:12px 6px 10px;cursor:pointer;transition:.2s ease-out;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:inherit}
+.pay-method-card:hover{border-color:#93c5fd;background:#eff6ff;transform:scale(1.02)}
+.pay-method-card:active{transform:scale(.98)}
 .pay-method-card.active{border-color:var(--blue);background:#eff6ff;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
 .pmc-icon{font-size:22px;line-height:1}
 .pmc-label{font-size:11.5px;font-weight:750;color:#64748b;text-align:center;letter-spacing:.1px}
@@ -242,7 +250,7 @@ body{display:flex}
 .mdd-price-val{font-size:20px;font-weight:800;color:var(--blue)}
 /* Footer */
 .mdd-foot{padding:12px 20px;border-top:1.5px solid #F1F5F9;flex-shrink:0;display:flex;gap:8px}
-.mdd-add-btn{flex:1;height:42px;border-radius:10px;border:none;background:linear-gradient(135deg,#1a56db,#1e3a5f);color:#fff;font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit;transition:.15s}
+.mdd-add-btn{flex:1;height:42px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit;transition:.15s}
 .mdd-add-btn:hover{box-shadow:0 4px 14px rgba(26,86,219,.35)}
 .mdd-add-btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
 .mdd-close-btn{height:42px;padding:0 16px;border-radius:10px;border:1.5px solid #E2E8F0;background:#fff;color:#64748B;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
@@ -271,20 +279,21 @@ body{display:flex}
 /* TOTALS */
 .inv-totals{padding:8px 16px 5px;border-top:1px solid var(--border);flex-shrink:0}
 .total-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:4px}
-.total-row.grand{font-size:15px;font-weight:800;color:var(--navy);margin-top:6px;padding-top:6px;border-top:2px solid var(--border)}
-.total-row.grand .tv{font-size:18px;font-weight:800;color:var(--blue)}
+.total-row.grand{font-size:15px;font-weight:700;color:var(--navy);margin-top:6px;padding-top:8px;border-top:2px solid var(--border)}
+.total-row.grand .tv{font-size:24px;font-weight:700;color:var(--blue);letter-spacing:-.5px}
 
 /* Checkout button */
 .inv-action{padding:9px 16px 13px;flex-shrink:0}
-.btn-checkout{width:100%;height:50px;border-radius:12px;border:none;background:linear-gradient(135deg,#059669,#047857);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:9px;transition:.2s;letter-spacing:-.2px}
-.btn-checkout:hover:not(:disabled){box-shadow:0 6px 22px rgba(5,150,105,.45);transform:translateY(-1px)}
+.btn-checkout{width:100%;height:60px;border-radius:var(--radius-btn);border:none;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:9px;transition:.2s ease-out;letter-spacing:-.2px}
+.btn-checkout:hover:not(:disabled){filter:brightness(1.08);box-shadow:var(--shadow-sm);transform:scale(1.01)}
+.btn-checkout:active:not(:disabled){transform:scale(.98)}
 .btn-checkout:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
 
 /* SUCCESS MODAL */
 .success-modal{display:none;position:fixed;inset:0;z-index:500;align-items:center;justify-content:center}
 .success-modal.show{display:flex}
 .sm-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px)}
-.sm-panel{position:relative;width:380px;background:#fff;border-radius:18px;padding:28px 26px 24px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.22);animation:popIn .28s cubic-bezier(.34,1.56,.64,1)}
+.sm-panel{position:relative;width:380px;background:#fff;border-radius:24px;padding:28px 26px 24px;text-align:center;box-shadow:0 12px 32px rgba(0,0,0,.14);animation:popIn .28s cubic-bezier(.34,1.56,.64,1)}
 @keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
 .sm-icon{font-size:52px;margin-bottom:10px;display:block}
 .sm-title{font-size:21px;font-weight:800;color:var(--navy);margin-bottom:4px}
@@ -297,7 +306,7 @@ body{display:flex}
 .sm-btn-print:hover{border-color:var(--blue);color:var(--blue)}
 
 /* TOAST */
-.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);padding:10px 18px;border-radius:10px;font-size:14px;font-weight:750;box-shadow:0 6px 24px rgba(0,0,0,.2);z-index:600;animation:toastIn .25s ease;white-space:nowrap}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);padding:10px 18px;border-radius:10px;font-size:14px;font-weight:750;box-shadow:0 6px 24px rgba(0,0,0,.2);z-index:10050;animation:toastIn .25s ease;white-space:nowrap}
 @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .toast-ok{background:#064e3b;color:#fff}
 .toast-err{background:#7f1d1d;color:#fff}
@@ -307,7 +316,7 @@ body{display:flex}
 @keyframes scanFlash{0%{box-shadow:0 0 0 0 rgba(5,150,105,0)}30%{box-shadow:0 0 0 4px rgba(5,150,105,.55)}100%{box-shadow:0 0 0 0 rgba(5,150,105,0)}}
 .unk-modal{display:none;position:fixed;inset:0;z-index:9800;background:rgba(11,22,40,.7);align-items:center;justify-content:center;padding:20px}
 .unk-modal.show{display:flex}
-.unk-box{background:#fff;border-radius:18px;max-width:380px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden}
+.unk-box{background:#fff;border-radius:24px;max-width:380px;width:100%;box-shadow:0 12px 32px rgba(0,0,0,.14);overflow:hidden}
 .unk-head{padding:16px 20px;background:linear-gradient(135deg,#7c2d12,#c2410c);color:#fff}
 .unk-head h3{margin:0;font-size:15px;font-weight:800}
 .unk-code{font-family:'Courier New',monospace;font-size:17px;font-weight:800;margin-top:6px;opacity:.95}
@@ -324,7 +333,7 @@ body{display:flex}
   border-radius:9px;font-family:inherit;font-size:13px;outline:none}
 .unk-form input:focus,.unk-form select:focus{border-color:var(--blue)}
 .unk-form .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.unk-err{display:none;color:#dc2626;font-size:12px;font-weight:700;margin-top:6px}
+.unk-err{display:none;color:var(--red);font-size:12px;font-weight:700;margin-top:6px}
 .unk-err.show{display:block}
 
 /* CHECKIN */
@@ -337,12 +346,15 @@ body{display:flex}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.85)}}
 .station-label{font-size:12px;font-weight:750;color:var(--blue);white-space:nowrap}
 .station-staff{font-size:10.5px;color:var(--muted);font-weight:750}
+.btn-leave-station{align-items:center;gap:5px;background:#fef2f2;border:1.5px solid #fecaca;color:var(--red);border-radius:9px;padding:0 12px;height:38px;font-size:12px;font-weight:750;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;transition:.2s ease-out}
+.btn-leave-station:hover{background:#fee2e2;border-color:var(--red)}
+.btn-leave-station:active{transform:scale(.97)}
 
 /* STATION SELECTOR MODAL */
 .station-modal{display:none;position:fixed;inset:0;z-index:9500;align-items:center;justify-content:center}
 .station-modal.show{display:flex}
 .stm-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}
-.stm-panel{position:relative;width:420px;background:#fff;border-radius:20px;padding:28px 26px 24px;box-shadow:0 24px 64px rgba(0,0,0,.28);animation:popIn .25s cubic-bezier(.34,1.56,.64,1)}
+.stm-panel{position:relative;width:420px;background:#fff;border-radius:24px;padding:28px 26px 24px;box-shadow:0 12px 32px rgba(0,0,0,.14);animation:popIn .25s cubic-bezier(.34,1.56,.64,1)}
 .stm-title{font-size:18px;font-weight:800;color:var(--navy);margin-bottom:4px}
 .stm-sub{font-size:13px;color:var(--muted);margin-bottom:18px}
 .station-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
@@ -353,14 +365,14 @@ body{display:flex}
 .so-label{font-size:12px;font-weight:750;color:var(--muted)}
 .so-occupant{font-size:11px;font-weight:750;margin-top:2px;display:flex;align-items:center;gap:4px}
 .so-occupant.busy{color:#B45309}
-.so-occupant.free{color:#059669}
-.btn-confirm-station{width:100%;height:44px;border-radius:11px;border:none;background:linear-gradient(135deg,#059669,#047857);color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
+.so-occupant.free{color:var(--green)}
+.btn-confirm-station{width:100%;height:44px;border-radius:11px;border:none;background:linear-gradient(135deg,var(--green),#047857);color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
 
 /* FACE CHECK-IN MODAL */
 .face-modal{display:none;position:fixed;inset:0;z-index:9500;align-items:center;justify-content:center}
 .face-modal.show{display:flex}
 .fm-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px)}
-.fm-panel{position:relative;width:460px;background:#0f172a;border-radius:20px;padding:22px 22px 20px;box-shadow:0 24px 64px rgba(0,0,0,.5);animation:popIn .25s cubic-bezier(.34,1.56,.64,1)}
+.fm-panel{position:relative;width:460px;background:#0f172a;border-radius:24px;padding:22px 22px 20px;box-shadow:0 12px 32px rgba(0,0,0,.35);animation:popIn .25s cubic-bezier(.34,1.56,.64,1)}
 .fm-close{position:absolute;top:14px;right:16px;background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.6);width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
 .fm-title{font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:2px}
 .fm-sub{font-size:12px;color:#64748b;margin-bottom:14px}
@@ -377,7 +389,7 @@ body{display:flex}
 .fm-status.err{color:#f87171}
 .fm-actions{display:flex;gap:8px}
 .fm-btn-cancel{flex:1;height:38px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:transparent;color:rgba(255,255,255,.5);font-size:13px;cursor:pointer;font-family:inherit}
-.fm-btn-checkin{flex:2;height:38px;border-radius:9px;border:none;background:linear-gradient(135deg,#059669,#047857);color:#fff;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;display:none}
+.fm-btn-checkin{flex:2;height:38px;border-radius:9px;border:none;background:linear-gradient(135deg,var(--green),#047857);color:#fff;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;display:none}
 .fm-no-face{font-size:12px;color:#f87171;text-align:center;margin-bottom:8px;display:none}
 .fm-enrolled-count{font-size:11px;color:#475569;text-align:center;margin-bottom:8px}
 .fm-loader{display:flex;align-items:center;justify-content:center;gap:8px;color:#64748b;font-size:12px;padding:20px}
@@ -400,14 +412,14 @@ body{display:flex}
 .staff-action-menu button{display:block;width:100%;padding:10px 16px;background:none;border:none;text-align:left;cursor:pointer;font-family:inherit;font-size:13.5px;color:#374151;font-weight:750;transition:.1s}
 .staff-action-menu button:hover{background:#f3f4f6}
 .sam-divider{height:1px;background:#e5e7eb;margin:2px 0}
-.staff-action-menu button.sam-danger{color:#dc2626}
+.staff-action-menu button.sam-danger{color:var(--red)}
 .staff-action-menu button.sam-danger:hover{background:#fef2f2}
 
 /* QR PAYMENT MODAL */
 .qr-modal{display:none;position:fixed;inset:0;z-index:9600;align-items:center;justify-content:center}
 .qr-modal.show{display:flex}
 .qr-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.65);backdrop-filter:blur(5px)}
-.qrm-panel{position:relative;background:#fff;border-radius:22px;padding:26px 28px 22px;width:380px;max-width:calc(100vw - 32px);box-shadow:0 24px 64px rgba(0,0,0,.3);display:flex;flex-direction:column;align-items:center;gap:12px;animation:qrmPop .22s cubic-bezier(.34,1.56,.64,1)}
+.qrm-panel{position:relative;background:#fff;border-radius:24px;padding:26px 28px 22px;width:380px;max-width:calc(100vw - 32px);box-shadow:0 12px 32px rgba(0,0,0,.14);display:flex;flex-direction:column;align-items:center;gap:12px;animation:qrmPop .22s cubic-bezier(.34,1.56,.64,1)}
 @keyframes qrmPop{from{transform:scale(.88) translateY(16px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
 
 .qrm-header{display:flex;align-items:center;gap:8px;width:100%}
@@ -440,7 +452,7 @@ body{display:flex}
 .qrm-success-box.show{display:flex}
 .qrm-success-icon{font-size:52px;animation:qrmBounce .35s cubic-bezier(.34,1.56,.64,1)}
 @keyframes qrmBounce{from{transform:scale(.4)}to{transform:scale(1)}}
-.qrm-success-txt{font-size:17px;font-weight:800;color:#059669}
+.qrm-success-txt{font-size:17px;font-weight:800;color:var(--green)}
 
 .qrm-checkout-link{font-size:11px;color:#94a3b8;text-decoration:none;display:flex;align-items:center;gap:4px}
 .qrm-checkout-link:hover{color:#3b82f6}
@@ -450,9 +462,9 @@ body{display:flex}
 /* ── END SHIFT REPORT MODAL ─────────────────────────────────────── */
 .esr-bd{position:fixed;inset:0;background:rgba(15,23,42,.6);backdrop-filter:blur(4px);z-index:10000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.22s}
 .esr-bd.show{opacity:1;pointer-events:all}
-.esr-box{background:#fff;border-radius:20px;width:860px;max-width:96vw;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(15,23,42,.28);transform:translateY(22px);transition:.22s}
+.esr-box{background:#fff;border-radius:24px;width:860px;max-width:96vw;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 32px rgba(15,23,42,.14);transform:translateY(22px);transition:.22s}
 .esr-bd.show .esr-box{transform:translateY(0)}
-.esr-head{background:linear-gradient(135deg,#1e3a5f,#1a56db);padding:17px 22px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.esr-head{background:linear-gradient(135deg,var(--blue2),var(--blue));padding:17px 22px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .esr-head-title{color:#fff;font-size:15.5px;font-weight:800;display:flex;align-items:center;gap:7px}
 .esr-head-meta{font-size:11.5px;color:rgba(255,255,255,.55);margin-top:3px}
 .esr-hclose{background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.7);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s}
@@ -461,7 +473,7 @@ body{display:flex}
 .esr-left{padding:20px 20px;border-right:1.5px solid #F1F5F9}
 .esr-right{padding:20px 20px;background:#F8FAFF}
 .esr-sec-title{font-size:11px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:.8px;margin-bottom:11px}
-.esr-grand{background:linear-gradient(135deg,#0F172A,#1e3a5f);border-radius:12px;padding:12px 15px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.esr-grand{background:linear-gradient(135deg,#0F172A,var(--blue2));border-radius:12px;padding:12px 15px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
 .esr-grand-lbl{color:rgba(255,255,255,.6);font-size:11px;font-weight:750;margin-bottom:3px}
 .esr-grand-val{color:#fff;font-size:21px;font-weight:800;letter-spacing:-.4px}
 .esr-inv-chip{display:inline-flex;align-items:center;background:rgba(255,255,255,.12);border-radius:8px;padding:5px 10px;font-size:11.5px;font-weight:750;color:rgba(255,255,255,.8);white-space:nowrap}
@@ -490,13 +502,13 @@ body{display:flex}
 .esr-vbox.minus{background:#FEF2F2;border:1.5px solid #FECACA}
 .esr-vbox.plus{background:#FFFBEB;border:1.5px solid #FDE68A}
 .esr-vlbl{font-size:12.5px;font-weight:750}
-.esr-vlbl.empty{color:#94A3B8}.esr-vlbl.zero{color:#16A34A}.esr-vlbl.minus{color:#DC2626}.esr-vlbl.plus{color:#D97706}
+.esr-vlbl.empty{color:#94A3B8}.esr-vlbl.zero{color:#16A34A}.esr-vlbl.minus{color:var(--red)}.esr-vlbl.plus{color:var(--gold)}
 .esr-vval{font-size:15px;font-weight:800}
-.esr-vval.empty{color:#CBD5E1}.esr-vval.zero{color:#16A34A}.esr-vval.minus{color:#DC2626}.esr-vval.plus{color:#D97706}
+.esr-vval.empty{color:#CBD5E1}.esr-vval.zero{color:#16A34A}.esr-vval.minus{color:var(--red)}.esr-vval.plus{color:var(--gold)}
 .esr-foot{padding:14px 22px;border-top:1.5px solid #F1F5F9;display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-shrink:0}
 .esr-cancel{height:42px;padding:0 18px;border-radius:10px;border:1.5px solid #E2E8F0;background:#fff;color:#64748B;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;transition:.15s}
 .esr-cancel:hover{background:#F1F5F9}
-.esr-confirm{height:42px;padding:0 22px;border-radius:10px;border:none;background:linear-gradient(135deg,#DC2626,#B91C1C);color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;gap:7px}
+.esr-confirm{height:42px;padding:0 22px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--red),#B91C1C);color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;gap:7px}
 .esr-confirm:hover:not(:disabled){background:linear-gradient(135deg,#B91C1C,#991B1B)}
 .esr-confirm:disabled{background:#CBD5E1;cursor:not-allowed}
 </style>
@@ -545,11 +557,11 @@ body{display:flex}
         <span class="sb-tip"><%= isLoggedIn ? "Ca làm / " + fullName : "Điểm danh nhân viên" %></span>
       </button>
       <div id="checkinPanel" style="display:none;position:absolute;left:68px;bottom:0;width:230px;
-           background:#1e3a5f;border:1px solid rgba(255,255,255,.2);border-radius:13px;
+           background:var(--blue2);border:1px solid rgba(255,255,255,.2);border-radius:13px;
            padding:15px;box-shadow:0 8px 32px rgba(0,0,0,.4);z-index:9999">
         <% if (isLoggedIn) { %>
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px">
-          <div style="width:34px;height:34px;background:linear-gradient(135deg,#3f83f8,#1a56db);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff"><%= initials %></div>
+          <div style="width:34px;height:34px;background:linear-gradient(135deg,var(--sky),var(--blue));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff"><%= initials %></div>
           <div><div style="font-size:13px;font-weight:750;color:#fff"><%= fullName %></div><div style="font-size:10.5px;color:rgba(255,255,255,.45)">Đang ca làm việc</div></div>
         </div>
         <a href="<%= ctx %>/staff-dashboard" style="display:block;padding:8px 11px;background:rgba(255,255,255,.1);border-radius:8px;color:#93c5fd;font-size:12.5px;font-weight:750;text-decoration:none;margin-bottom:5px;text-align:center">📅 Xem lịch ca</a>
@@ -559,7 +571,7 @@ body{display:flex}
         <% } else { %>
         <div style="font-size:11.5px;color:rgba(255,255,255,.5);margin-bottom:11px">Điểm danh để ghi nhận doanh số theo nhân viên</div>
         <!-- Nút điểm danh khuôn mặt -->
-        <button onclick="openFaceModal();toggleCheckinPanel();" style="width:100%;padding:10px;background:linear-gradient(135deg,#059669,#047857);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:6px">
+        <button onclick="openFaceModal();toggleCheckinPanel();" style="width:100%;padding:10px;background:linear-gradient(135deg,var(--green),#047857);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:6px">
           📷 Điểm danh khuôn mặt
         </button>
         <div style="font-size:10.5px;color:rgba(255,255,255,.25);margin-top:6px;text-align:center">POS hoạt động bình thường khi chưa đăng nhập</div>
@@ -574,7 +586,8 @@ body{display:flex}
   <!-- Topbar -->
   <div class="topbar">
     <div class="search-wrap">
-      <input type="text" id="searchInput" placeholder="Tìm thuốc theo tên hoặc mã vạch…" autocomplete="off">
+      <input type="text" id="searchInput" placeholder="Tìm thuốc theo tên, mã vạch, hoạt chất..." autocomplete="off">
+      <button type="button" class="search-clear" id="searchClearBtn" title="Xóa tìm kiếm" onclick="const si=document.getElementById('searchInput');si.value='';si.dispatchEvent(new Event('input'));si.focus();">×</button>
     </div>
     <button type="button" class="btn-clear" style="background:var(--blue);border-color:var(--blue);color:#fff;white-space:nowrap;flex-shrink:0" onclick="openBarcodeScan()" title="Quét mã vạch bằng camera">📷 Quét mã vạch</button>
     <!-- Station badge -->
@@ -585,6 +598,7 @@ body{display:flex}
         <div class="station-staff" id="stationStaff"><%= isLoggedIn ? fullName : "Chưa điểm danh" %></div>
       </div>
     </div>
+    <button type="button" class="btn-leave-station" id="btnLeaveStation" onclick="event.stopPropagation();leaveStation()" title="Tan ca — kết thúc ca làm và rời quầy" style="display:<%= (posStation > 0 && isLoggedIn) ? "flex" : "none" %>">🚪 Tan ca</button>
     <span class="med-count-badge" id="medCountBadge">0 thuốc</span>
     <span class="topbar-date">📅 <span id="topDate"></span></span>
   </div>
@@ -614,25 +628,25 @@ body{display:flex}
 
   <%-- Modal: Khai báo tiền đầu ca (mở ca) --%>
   <div id="openCashModal" style="display:none;position:fixed;inset:0;z-index:9600;background:rgba(11,22,40,.55);align-items:center;justify-content:center;padding:20px">
-    <div style="background:#fff;border-radius:18px;max-width:400px;width:100%;padding:28px;box-shadow:0 24px 70px rgba(0,0,0,.35)">
+    <div style="background:#fff;border-radius:24px;max-width:400px;width:100%;padding:28px;box-shadow:0 12px 32px rgba(0,0,0,.14)">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
         <span style="font-size:26px">💵</span>
         <h3 style="margin:0;font-size:18px;font-weight:800;color:#0f172a">Khai báo tiền đầu ca</h3>
       </div>
       <p style="font-size:12.5px;color:#64748b;margin:0 0 16px;line-height:1.5">Đếm tiền mặt hiện có trong két và nhập số tiền để mở ca. Số này dùng đối soát khi kết ca.</p>
-      <label style="font-size:12.5px;font-weight:750;color:#334155;display:block;margin-bottom:6px">Tiền mặt trong két (đ) <span style="color:#dc2626">*</span></label>
+      <label style="font-size:12.5px;font-weight:750;color:#334155;display:block;margin-bottom:6px">Tiền mặt trong két (đ) <span style="color:var(--red)">*</span></label>
       <input type="number" id="openCashInput" min="0" step="1000" placeholder="VD: 500000"
              style="width:100%;border:1.5px solid #e2e8f0;border-radius:11px;padding:12px 14px;font-size:17px;font-weight:750;font-family:inherit;box-sizing:border-box"
              onkeydown="if(event.key==='Enter')confirmOpenShift()">
-      <div id="openCashErr" style="color:#dc2626;font-size:12px;margin-top:6px;display:none"></div>
+      <div id="openCashErr" style="color:var(--red);font-size:12px;margin-top:6px;display:none"></div>
       <button type="button" id="openShiftBtn" onclick="confirmOpenShift()"
-              style="width:100%;margin-top:16px;padding:13px;background:linear-gradient(135deg,#059669,#047857);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">✓ Mở ca &amp; bắt đầu bán hàng</button>
+              style="width:100%;margin-top:16px;padding:13px;background:linear-gradient(135deg,var(--green),#047857);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">✓ Mở ca &amp; bắt đầu bán hàng</button>
     </div>
   </div>
 
   <%-- Modal: Hóa đơn của tôi (bill trong ca hôm nay của chính nhân viên) --%>
   <div id="myInvModal" style="display:none;position:fixed;inset:0;z-index:9600;background:rgba(11,22,40,.55);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeMyInvModal()">
-    <div style="background:#fff;border-radius:18px;max-width:520px;width:100%;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden">
+    <div style="background:#fff;border-radius:24px;max-width:520px;width:100%;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 12px 32px rgba(0,0,0,.14);overflow:hidden">
       <div style="padding:18px 22px;background:linear-gradient(135deg,#1558A8,#3ABDE0);color:#fff;display:flex;align-items:center;justify-content:space-between">
         <div>
           <h3 style="margin:0;font-size:17px;font-weight:800">🧾 Hóa đơn của tôi — hôm nay</h3>
@@ -648,7 +662,7 @@ body{display:flex}
 
   <%-- Modal: LỊCH SỬ HÓA ĐƠN + TRẢ HÀNG — tìm hóa đơn cũ, xử lý trả hàng ngay tại quầy --%>
   <div id="invHistModal" style="display:none;position:fixed;inset:0;z-index:9600;background:rgba(11,22,40,.55);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeInvHistModal()">
-    <div style="background:#fff;border-radius:18px;max-width:640px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden">
+    <div style="background:#fff;border-radius:24px;max-width:640px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 12px 32px rgba(0,0,0,.14);overflow:hidden">
       <div style="padding:18px 22px;background:linear-gradient(135deg,#1558A8,#3ABDE0);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
         <div>
           <h3 style="margin:0;font-size:17px;font-weight:800" id="invHistTitle">🧾 Lịch sử hóa đơn</h3>
@@ -679,17 +693,17 @@ body{display:flex}
 
   <%-- Modal: TẠO NHANH khách hàng (2 trường, <5 giây) --%>
   <div id="quickCreateModal" style="display:none;position:fixed;inset:0;z-index:9650;background:rgba(11,22,40,.55);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeQuickCreate()">
-    <div style="background:#fff;border-radius:18px;max-width:380px;width:100%;padding:26px;box-shadow:0 24px 70px rgba(0,0,0,.35)">
+    <div style="background:#fff;border-radius:24px;max-width:380px;width:100%;padding:26px;box-shadow:0 12px 32px rgba(0,0,0,.14)">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
         <span style="font-size:24px">⚡</span>
         <h3 style="margin:0;font-size:17px;font-weight:800;color:#0f172a">Tạo nhanh khách hàng</h3>
       </div>
       <p style="font-size:12px;color:#64748b;margin:0 0 14px">Chỉ cần SĐT + Tên. Khách tự bổ sung hồ sơ tại Cổng khách hàng sau.</p>
-      <label style="font-size:12px;font-weight:750;color:#334155;display:block;margin-bottom:5px">Số điện thoại <span style="color:#dc2626">*</span></label>
+      <label style="font-size:12px;font-weight:750;color:#334155;display:block;margin-bottom:5px">Số điện thoại <span style="color:var(--red)">*</span></label>
       <input type="tel" id="qcPhone" maxlength="10" inputmode="numeric" placeholder="Thêm số điện thoại"
              oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)"
              style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:11px 13px;font-size:16px;font-weight:750;font-family:inherit;letter-spacing:1px;box-sizing:border-box">
-      <label style="font-size:12px;font-weight:750;color:#334155;display:block;margin:12px 0 5px">Họ tên khách <span style="color:#dc2626">*</span></label>
+      <label style="font-size:12px;font-weight:750;color:#334155;display:block;margin:12px 0 5px">Họ tên khách <span style="color:var(--red)">*</span></label>
       <input type="text" id="qcName" placeholder="VD: Nguyễn Văn A"
              onkeydown="if(event.key==='Enter')submitQuickCreate()"
              style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:11px 13px;font-size:14.5px;font-family:inherit;box-sizing:border-box">
@@ -699,7 +713,7 @@ body{display:flex}
         <label style="flex:1;display:flex;align-items:center;gap:7px;border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 12px;font-size:13px;font-weight:750;cursor:pointer">
           <input type="radio" name="qcGender" value="F" style="accent-color:#0d9488"> 👩 Nữ</label>
       </div>
-      <div id="qcErr" style="display:none;color:#dc2626;font-size:12px;margin-top:8px"></div>
+      <div id="qcErr" style="display:none;color:var(--red);font-size:12px;margin-top:8px"></div>
       <div style="display:flex;gap:10px;margin-top:16px">
         <button onclick="closeQuickCreate()" style="flex:1;background:#f1f5f9;color:#475569;border:none;border-radius:11px;padding:12px;font-weight:750;cursor:pointer;font-family:inherit">Hủy</button>
         <button id="qcSaveBtn" onclick="submitQuickCreate()" style="flex:2;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;border-radius:11px;padding:12px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit">💾 Lưu &amp; Chọn</button>
@@ -709,7 +723,7 @@ body{display:flex}
 
   <%-- Modal: THẺ NFC — chạm thẻ / nhập UID, liên kết thẻ trắng --%>
   <div id="nfcModal" style="display:none;position:fixed;inset:0;z-index:9650;background:rgba(11,22,40,.55);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeNfcModal()">
-    <div style="background:#fff;border-radius:18px;max-width:380px;width:100%;padding:26px;box-shadow:0 24px 70px rgba(0,0,0,.35);text-align:center">
+    <div style="background:#fff;border-radius:24px;max-width:380px;width:100%;padding:26px;box-shadow:0 12px 32px rgba(0,0,0,.14);text-align:center">
       <div style="width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#ccfbf1,#99f6e4);display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 12px">📶</div>
       <h3 style="margin:0 0 6px;font-size:17px;font-weight:800;color:#0f172a">Thẻ thành viên NFC</h3>
       <p id="nfcStatus" style="font-size:12.5px;color:#64748b;margin:0 0 14px;line-height:1.5">Chạm thẻ vào đầu đọc hoặc nhập mã thẻ…</p>
@@ -729,7 +743,7 @@ body{display:flex}
 
   <%-- Modal: QUẢN LÝ KHÁCH HÀNG — tìm / chọn / tạo mới ngay trong POS --%>
   <div id="custMgmtModal" style="display:none;position:fixed;inset:0;z-index:9650;background:rgba(11,22,40,.55);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeCustMgmt()">
-    <div style="background:#fff;border-radius:18px;max-width:560px;width:100%;max-height:82vh;display:flex;flex-direction:column;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,.35)">
+    <div style="background:#fff;border-radius:24px;max-width:560px;width:100%;max-height:82vh;display:flex;flex-direction:column;padding:22px;box-shadow:0 12px 32px rgba(0,0,0,.14)">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <h3 style="margin:0;font-size:17px;font-weight:800;color:#0f172a">👥 Khách hàng</h3>
         <button onclick="closeCustMgmt()" style="background:#f1f5f9;border:none;border-radius:9px;width:32px;height:32px;cursor:pointer;font-size:15px;color:#475569">✕</button>
@@ -745,7 +759,7 @@ body{display:flex}
 
   <%-- Modal: XEM CHI TIẾT khách hàng trong POS --%>
   <div id="custDetailModal" style="display:none;position:fixed;inset:0;z-index:9660;background:rgba(11,22,40,.6);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeCustDetail()">
-    <div style="background:#fff;border-radius:18px;max-width:600px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.4)">
+    <div style="background:#fff;border-radius:24px;max-width:600px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 12px 32px rgba(0,0,0,.16)">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #eef2f7">
         <h3 style="margin:0;font-size:15px;font-weight:800;color:#0f172a">👤 Hồ sơ khách hàng</h3>
         <button onclick="closeCustDetail()" style="background:#f1f5f9;border:none;border-radius:9px;width:32px;height:32px;cursor:pointer;font-size:15px;color:#475569">✕</button>
@@ -1023,6 +1037,7 @@ body{display:flex}
     <div class="sm-code" id="smCode"></div>
     <div class="sm-change" id="smChange"></div>
     <div class="sm-total" id="smTotal"></div>
+    <div id="smMethod" style="margin-top:6px;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:#f0fdfa;border:1px solid #99f6e4;border-radius:20px;font-size:12.5px;font-weight:750;color:#0f766e"></div>
     <div class="sm-btns">
       <button class="sm-btn-new" onclick="newInvoice()">＋ Hóa đơn mới</button>
       <button class="sm-btn-print" onclick="printReceipt()">🖨 In hóa đơn</button>
@@ -1155,8 +1170,8 @@ body{display:flex}
 
 <%-- Modal: Quét mã vạch bằng camera (bán hàng) --%>
 <div id="barcodeScanModal" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(11,22,40,.7);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeBarcodeScan()">
-  <div style="background:#fff;border-radius:18px;max-width:420px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden">
-    <div style="padding:16px 20px;background:linear-gradient(135deg,#1e3a5f,#1a56db);color:#fff;display:flex;align-items:center;justify-content:space-between">
+  <div style="background:#fff;border-radius:24px;max-width:420px;width:100%;box-shadow:0 12px 32px rgba(0,0,0,.14);overflow:hidden">
+    <div style="padding:16px 20px;background:linear-gradient(135deg,var(--blue2),var(--blue));color:#fff;display:flex;align-items:center;justify-content:space-between">
       <h3 style="margin:0;font-size:16px;font-weight:800">📷 Quét mã vạch bán hàng</h3>
       <button type="button" onclick="closeBarcodeScan()" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:30px;height:30px;border-radius:9px;font-size:15px;cursor:pointer">✕</button>
     </div>
@@ -1234,6 +1249,7 @@ let _saleInFlight = false;
 
 // ── Multi-POS state ──
 let currentStation = <%= posStation %>;  // 0 = belum pilih
+let isStaffLoggedIn = <%= isLoggedIn %>;  // có nhân viên đang điểm danh tại quầy hay chưa — nút "Tan ca" chỉ hiện khi true
 let nfcBridge = null;                    // EventSource cầu nối NFC (khai báo sớm, tránh TDZ)
 let currentStaffId = null;
 let currentStaffName = '<%= fullName %>';
@@ -1277,8 +1293,13 @@ document.getElementById('medCountBadge').textContent = allMedicines.length + ' t
 
 // ── Search (khớp theo tên, mã thuốc, hoặc mã vạch — hỗ trợ cả gõ tay lẫn máy quét mã vạch
 // kiểu bàn phím gõ nhanh số + Enter) ──
+// TODO: realtime suggestions dropdown (autocomplete list under the search box) was not
+// added here — it would need a ranked/deduped suggestion source and click-to-select wiring,
+// which is beyond a pure styling pass. Current behavior (instant grid filter) is unchanged.
 let searchTimer;
 document.getElementById('searchInput').addEventListener('input', function() {
+  const clearBtn = document.getElementById('searchClearBtn');
+  if (clearBtn) clearBtn.classList.toggle('show', this.value.length > 0);
   clearTimeout(searchTimer);
   const q = this.value.toLowerCase().trim();
   searchTimer = setTimeout(() => {
@@ -1653,7 +1674,7 @@ function renderCart() {
       if (item.expiry)  meta.push('📅 HSD: ' + fmtDate(item.expiry));
       // Tồn kho còn lại (để dược sĩ biết còn bao nhiêu mà bán) — đỏ nếu vượt tồn
       const remain = item.stock - item.qty;
-      const stockColor = item.qty >= item.stock ? '#DC2626' : (remain <= 5 ? '#D97706' : '#059669');
+      const stockColor = item.qty >= item.stock ? 'var(--red)' : (remain <= 5 ? 'var(--gold)' : 'var(--green)');
       meta.push('<span style="color:' + stockColor + ';font-weight:800">📦 Kho còn: ' + item.stock + ' ' + escHtml(item.unit)
                 + (item.qty > 0 ? ' (sau bán: ' + (remain < 0 ? 0 : remain) + ')' : '') + '</span>');
       const metaHtml = meta.length ? '<div class="inv-i-meta">' + meta.join(' · ') + '</div>' : '';
@@ -1896,8 +1917,8 @@ function applyCustomer(data) {
   document.getElementById('custFoundName').textContent  = data.name;
   document.getElementById('custFoundPhone').textContent = data.phone;
   const badge = document.getElementById('custTierBadge');
-  if (data.tier) {
-    badge.textContent = data.tier + ' · ' + (data.points || 0) + 'đ';
+  if (data.points !== undefined) {
+    badge.textContent = (data.points || 0) + ' điểm';
     badge.style.display = 'inline-block';
   } else badge.style.display = 'none';
   document.getElementById('custFound').style.display = 'flex';
@@ -1989,7 +2010,7 @@ function custMgmtSearch() {
         + '</div>'
       ).join('');
     } catch (e) {
-      box.innerHTML = '<div style="text-align:center;color:#dc2626;padding:24px;font-size:13px">❌ Lỗi tải danh sách</div>';
+      box.innerHTML = '<div style="text-align:center;color:var(--red);padding:24px;font-size:13px">❌ Lỗi tải danh sách</div>';
     }
   }, 250);
 }
@@ -2011,14 +2032,14 @@ async function posCustomerDetail(id) {
   try {
     const res = await fetch(ctx + '/pos?action=pos-customer-detail&id=' + id);
     const d = await res.json();
-    if (!d.ok) { body.innerHTML = '<div style="text-align:center;color:#dc2626;padding:40px">Không tìm thấy khách hàng.</div>'; return; }
+    if (!d.ok) { body.innerHTML = '<div style="text-align:center;color:var(--red);padding:40px">Không tìm thấy khách hàng.</div>'; return; }
     window._cdPhone = d.phone;
 
     const gender = d.gender === 'M' ? 'Nam' : d.gender === 'F' ? 'Nữ' : '—';
     const money  = n => new Intl.NumberFormat('vi-VN').format(Math.round(n || 0)) + 'đ';
-    const stBadge = s => s === 'COMPLETED' ? '<span style="color:#059669;font-weight:750">✅ Hoàn tất</span>'
-                        : s === 'CANCELLED' ? '<span style="color:#dc2626;font-weight:750">❌ Đã hủy</span>'
-                        : '<span style="color:#d97706;font-weight:750">⏳ Xử lý</span>';
+    const stBadge = s => s === 'COMPLETED' ? '<span style="color:var(--green);font-weight:750">✅ Hoàn tất</span>'
+                        : s === 'CANCELLED' ? '<span style="color:var(--red);font-weight:750">❌ Đã hủy</span>'
+                        : '<span style="color:var(--gold);font-weight:750">⏳ Xử lý</span>';
 
     let invRows = d.invoices.length
       ? d.invoices.map(iv =>
@@ -2041,14 +2062,14 @@ async function posCustomerDetail(id) {
       + '<div style="flex:1;min-width:0">'
       + '<div style="font-size:19px;font-weight:800;color:#0f172a">' + escHtml(d.name) + '</div>'
       + '<div style="font-size:13px;color:#64748b">📱 ' + escHtml(d.phone || '—')
-      + (d.tier ? ' · <span style="color:#d97706;font-weight:750">🏅 ' + escHtml(d.tier) + '</span>' : '')
+      + (d.tier ? ' · <span style="color:var(--gold);font-weight:750">🏅 ' + escHtml(d.tier) + '</span>' : '')
       + (d.hasNfc ? ' · <span style="color:#0d9488;font-weight:750">📶 có thẻ NFC</span>' : '') + '</div>'
       + '</div></div>'
       // KPI
       + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">'
       + '<div style="background:#f5f3ff;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:#7c3aed">' + d.points + '</div><div style="font-size:10.5px;color:#7a90b0;font-weight:750;text-transform:uppercase">Điểm</div></div>'
       + '<div style="background:#eff6ff;border-radius:12px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:#1558a8">' + d.invoiceCount + '</div><div style="font-size:10.5px;color:#7a90b0;font-weight:750;text-transform:uppercase">Hóa đơn</div></div>'
-      + '<div style="background:#ecfdf5;border-radius:12px;padding:12px;text-align:center"><div style="font-size:16px;font-weight:800;color:#059669">' + money(d.totalSpent) + '</div><div style="font-size:10.5px;color:#7a90b0;font-weight:750;text-transform:uppercase">Đã chi</div></div>'
+      + '<div style="background:#ecfdf5;border-radius:12px;padding:12px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--green)">' + money(d.totalSpent) + '</div><div style="font-size:10.5px;color:#7a90b0;font-weight:750;text-transform:uppercase">Đã chi</div></div>'
       + '</div>'
       // Info
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;margin-bottom:6px">'
@@ -2063,7 +2084,7 @@ async function posCustomerDetail(id) {
       + '<div style="margin-top:16px"><div style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:6px">📋 Lịch sử mua gần đây</div>'
       + '<table style="width:100%;border-collapse:collapse;font-size:12.5px">' + invRows + '</table></div>';
   } catch (e) {
-    body.innerHTML = '<div style="text-align:center;color:#dc2626;padding:40px">❌ Lỗi tải hồ sơ</div>';
+    body.innerHTML = '<div style="text-align:center;color:var(--red);padding:40px">❌ Lỗi tải hồ sơ</div>';
   }
 }
 function closeCustDetail() { document.getElementById('custDetailModal').style.display = 'none'; }
@@ -2273,6 +2294,7 @@ function submitSale() {
           discount:     discShown,
           cashReceived: received,
           change:       change,
+          paymentMethod: selectedPayment,
           date:         now,
           items:        JSON.parse(JSON.stringify(cart)),
           customer:     selectedCustomer ? {...selectedCustomer} : null
@@ -2307,6 +2329,7 @@ function submitSale() {
         document.getElementById('smTotal').textContent = fmtMoney(total);
         document.getElementById('smChange').textContent = (received > 0 && selectedPayment === 'CASH')
           ? 'Tiền thừa: ' + fmtMoney(change) : '';
+        document.getElementById('smMethod').textContent = 'Đã thanh toán: ' + paymentMethodLabel(selectedPayment);
         document.getElementById('successModal').classList.add('show');
         showToast('✅ Thanh toán thành công!'
           + (data.earnedPoints > 0 ? ' Khách +' + data.earnedPoints + ' điểm ⭐' : ''), 'ok');
@@ -2367,8 +2390,8 @@ function showMedInfo(medId) {
   let html = '';
   // Price + stock
   const stockHtml = m.stock <= 0
-    ? '<span style="color:#DC2626;font-weight:800">Hết hàng</span>'
-    : '<span style="color:#059669;font-weight:800">Còn ' + m.stock + ' ' + esc(m.unit) + '</span>';
+    ? '<span style="color:var(--red);font-weight:800">Hết hàng</span>'
+    : '<span style="color:var(--green);font-weight:800">Còn ' + m.stock + ' ' + esc(m.unit) + '</span>';
   html += '<div class="mdd-price-bar"><span class="mdd-price-lbl">Đơn giá bán</span><span class="mdd-price-val">' + fmtMoney(m.price) + '</span></div>';
   // Quick info grid
   const qRows = [];
@@ -2508,6 +2531,7 @@ function printReceipt() {
     + '<div class="kv"><span class="bold">Khách hàng:</span><span>' + (inv.customer ? escHtml(inv.customer.name) : 'Khách lẻ') + '</span></div>'
     + (inv.customer ? '<div class="kv"><span class="bold">SĐT:</span><span>' + escHtml(inv.customer.phone) + '</span></div>' : '')
     + '<div class="kv"><span class="bold">Dược sĩ bán:</span><span>' + escHtml(sellerName) + '</span></div>'
+    + '<div class="kv"><span class="bold">Phương thức TT:</span><span>' + escHtml(paymentMethodLabel(inv.paymentMethod)) + '</span></div>'
     + '<div class="divider"></div>'
     + '<table><thead><tr>'
     + '<th style="text-align:center;width:8%">STT</th>'
@@ -2530,8 +2554,8 @@ function printReceipt() {
     + renderReceiptFooter(inv, usageBlock)
     + '<div style="height:8px"></div>'
     + '<div class="center" style="margin-top:6px">'
-    + '<button onclick="window.print()" style="padding:8px 20px;background:#1a56db;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:750;font-family:&quot;Plus Jakarta Sans&quot;,sans-serif">🖶 In hóa đơn</button>'
-    + '<button onclick="window.close()" style="padding:8px 16px;background:#e5e7eb;color:#111;border:none;border-radius:6px;cursor:pointer;font-size:13px;margin-left:6px;font-family:&quot;Plus Jakarta Sans&quot;,sans-serif">✕ Đóng</button>'
+    + '<button onclick="window.print()" style="padding:8px 20px;background:var(--blue);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:750;font-family:&quot;Inter&quot;,sans-serif">🖶 In hóa đơn</button>'
+    + '<button onclick="window.close()" style="padding:8px 16px;background:#e5e7eb;color:#111;border:none;border-radius:6px;cursor:pointer;font-size:13px;margin-left:6px;font-family:&quot;Inter&quot;,sans-serif">✕ Đóng</button>'
     + '</div>'
     + '</body></html>';
 
@@ -2546,6 +2570,10 @@ function printReceipt() {
 }
 
 function fmt(n) { return new Intl.NumberFormat('vi-VN').format(Math.round(n||0)) + 'đ'; }
+
+function paymentMethodLabel(method) {
+  return { 'CASH': 'Tiền mặt', 'QR_CODE': 'Chuyển khoản QR', 'CARD': 'Quẹt thẻ' }[method] || (method || 'Tiền mặt');
+}
 
 // ── Receipt footer ─────────────────────────────────────────────────────────
 // Lọc lời dặn dược sĩ về danh sách dòng CÓ NỘI DUNG THẬT. Coi là rỗng nếu:
@@ -2640,7 +2668,7 @@ function invhSearch(immediate) {
       })
       .catch(() => {
         document.getElementById('invhResults').innerHTML =
-          '<div style="color:#dc2626;font-size:13px;text-align:center;padding:26px 0">Lỗi kết nối, thử lại.</div>';
+          '<div style="color:var(--red);font-size:13px;text-align:center;padding:26px 0">Lỗi kết nối, thử lại.</div>';
       });
   };
   if (immediate) run(); else invhTimer = setTimeout(run, 300);
@@ -2687,7 +2715,36 @@ function openInvReturnView(invoiceId) {
     .catch(() => showToast('❌ Lỗi kết nối', 'err'));
 }
 
+let invhRefundMethod = 'CASH';
+
+function invhRefundMethodBtn(method, icon, label, active) {
+  return '<button type="button" onclick="invhSelectRefundMethod(this,\'' + method + '\')" data-method="' + method + '"'
+    + ' style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 8px;border-radius:10px;cursor:pointer;font-family:inherit;'
+    + (active
+        ? 'border:1.5px solid #0d9488;background:#f0fdfa;color:#0f766e'
+        : 'border:1.5px solid #e2e8f0;background:#fff;color:#64748b')
+    + '">'
+    + '<span style="font-size:18px">' + icon + '</span>'
+    + '<span style="font-size:11.5px;font-weight:750">' + label + '</span>'
+    + '</button>';
+}
+
+function invhSelectRefundMethod(btn, method) {
+  invhRefundMethod = method;
+  const box = document.getElementById('invhRefundMethods');
+  if (!box) return;
+  box.querySelectorAll('button').forEach(b => {
+    const isActive = b.dataset.method === method;
+    b.style.border = isActive ? '1.5px solid #0d9488' : '1.5px solid #e2e8f0';
+    b.style.background = isActive ? '#f0fdfa' : '#fff';
+    b.style.color = isActive ? '#0f766e' : '#64748b';
+  });
+  const label = document.getElementById('invhSumRefundLabel');
+  if (label) label.textContent = method === 'VOUCHER' ? 'Giá trị voucher' : 'Tiền hoàn khách';
+}
+
 function renderInvReturnDetail(inv) {
+  invhRefundMethod = 'CASH';
   const rows = inv.items.map(function(it) {
     const disabled = it.returnable <= 0 ? 'disabled' : '';
     return '<tr style="border-bottom:1px solid #f1f5f9">'
@@ -2716,7 +2773,9 @@ function renderInvReturnDetail(inv) {
     + '<div style="font-size:15px;font-weight:800;color:#0f172a">' + escHtml(inv.code) + '</div>'
     + '<div style="font-size:12.5px;color:#64748b">' + escHtml(inv.time) + '</div>'
     + '</div>'
-    + '<div style="font-size:12.5px;color:#64748b;margin-bottom:14px">' + custLine + '</div>'
+    + '<div style="font-size:12.5px;color:#64748b;margin-bottom:8px">' + custLine + '</div>'
+    + '<div style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:#f0fdfa;border:1px solid #99f6e4;border-radius:20px;font-size:12.5px;font-weight:750;color:#0f766e;margin-bottom:14px">'
+    + 'Đã thanh toán: ' + escHtml(paymentMethodLabel(inv.paymentMethod)) + '</div>'
     + '<table style="width:100%;border-collapse:collapse">'
     + '<thead><tr style="border-bottom:2px solid #e2e8f0">'
     + '<th style="text-align:left;padding:6px;font-size:11px;color:#94a3b8;font-weight:750">SẢN PHẨM</th>'
@@ -2725,17 +2784,22 @@ function renderInvReturnDetail(inv) {
     + '</tr></thead>'
     + '<tbody>' + rows + '</tbody>'
     + '</table>'
-    + '<label style="font-size:12px;font-weight:750;color:#334155;display:block;margin:16px 0 6px">Lý do trả hàng <span style="color:#dc2626">*</span></label>'
+    + '<label style="font-size:12px;font-weight:750;color:#334155;display:block;margin:16px 0 6px">Lý do trả hàng <span style="color:var(--red)">*</span></label>'
     + '<textarea id="invhReason" rows="2" placeholder="VD: Khách đổi ý, thuốc mua nhầm loại…" style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:13.5px;font-family:inherit;box-sizing:border-box;resize:vertical"></textarea>'
     + '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;color:#334155;cursor:pointer">'
     + '<input type="checkbox" id="invhRestoreStock" checked style="accent-color:#0d9488;width:16px;height:16px"> Hàng còn nguyên vẹn — nhập lại kho để bán tiếp'
     + '</label>'
+    + '<label style="font-size:12px;font-weight:750;color:#334155;display:block;margin:14px 0 6px">Phương thức hoàn tiền</label>'
+    + '<div id="invhRefundMethods" style="display:flex;gap:8px">'
+    + invhRefundMethodBtn('CASH', '💵', 'Tiền mặt', true)
+    + invhRefundMethodBtn('VOUCHER', '🎟️', 'Voucher giảm giá', false)
+    + '</div>'
     + '<div id="invhSummary" style="margin-top:16px;padding:14px 16px;background:#f0fdfa;border:1.5px solid #99f6e4;border-radius:12px">'
     + '<div style="display:flex;justify-content:space-between;font-size:13px;color:#334155;margin-bottom:4px"><span>Số lượng trả</span><span id="invhSumQty" style="font-weight:750">0</span></div>'
-    + '<div style="display:flex;justify-content:space-between;font-size:13px;color:#334155;margin-bottom:4px"><span>Tiền hoàn khách</span><span id="invhSumRefund" style="font-weight:800;color:#0d9488">0đ</span></div>'
-    + '<div style="display:flex;justify-content:space-between;font-size:13px;color:#334155"><span>Điểm tích lũy bị thu hồi</span><span id="invhSumPoints" style="font-weight:750;color:#dc2626">0 điểm</span></div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:13px;color:#334155;margin-bottom:4px"><span id="invhSumRefundLabel">Tiền hoàn khách</span><span id="invhSumRefund" style="font-weight:800;color:#0d9488">0đ</span></div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:13px;color:#334155"><span>Điểm tích lũy bị thu hồi</span><span id="invhSumPoints" style="font-weight:750;color:var(--red)">0 điểm</span></div>'
     + '</div>'
-    + '<button id="invhSubmitBtn" onclick="submitInvReturn()" style="width:100%;margin-top:16px;padding:13px;background:linear-gradient(135deg,#dc2626,#b91c1c);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">✓ Xác nhận trả hàng</button>';
+    + '<button id="invhSubmitBtn" onclick="submitInvReturn()" style="width:100%;margin-top:16px;padding:13px;background:linear-gradient(135deg,var(--red),#b91c1c);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">✓ Xác nhận trả hàng</button>';
 
   invhRecalcReturn();
 }
@@ -2790,6 +2854,7 @@ function submitInvReturn() {
   params.set('invoiceId', invhCurrentInvoice.invoiceId);
   params.set('reason', reason);
   if (document.getElementById('invhRestoreStock').checked) params.set('restoreStock', 'on');
+  params.set('refundMethod', invhRefundMethod);
   lines.forEach(l => { params.append('batchId[]', l.batchId); params.append('qty[]', l.qty); });
 
   fetch('<%= ctx %>/pos', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params })
@@ -2826,6 +2891,13 @@ document.addEventListener('click', e => {
 
 // ── Keyboard shortcuts ────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
+  // F2 → Focus ô tìm kiếm
+  if (e.key === 'F2') {
+    e.preventDefault();
+    const si = document.getElementById('searchInput');
+    if (si) { si.focus(); si.select(); }
+    return;
+  }
   // F9 → Thanh toán
   if (e.key === 'F9') {
     e.preventDefault();
@@ -2978,6 +3050,19 @@ function confirmStation() {
   showToast('✓ Đã chuyển sang ' + stationLabelFor(station), 'ok');
 }
 
+async function leaveStation() {
+  if (currentStation <= 0 || !isStaffLoggedIn) return;
+  if (!confirm('Tan ca và rời ' + stationLabelFor(currentStation) + '? Ca làm việc của bạn sẽ được kết thúc, cần điểm danh lại để tiếp tục bán hàng.')) return;
+  try {
+    await fetch(ctx + '/pos', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'leave-station' }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+  } catch (e) {}
+  window.location.href = ctx + '/pos';
+}
+
 // ── CẦU NỐI NFC REALTIME (điện thoại quét thẻ → tự nhảy vào màn POS) ──────────
 // Điện thoại (app NFC Tools) POST UID về /pos/nfc-scan?station=N; server đẩy SSE
 // về đây. Ta chỉ nhận UID rồi tái dùng logic tra thẻ sẵn có.
@@ -3019,6 +3104,10 @@ async function onNfcScanned(uid) {
 function updateStationUI() {
   const lbl = document.getElementById('stationLabel');
   if (lbl) lbl.textContent = currentStation > 0 ? stationLabelFor(currentStation) : 'Chọn quầy';
+  const leaveBtn = document.getElementById('btnLeaveStation');
+  // Nút "Tan ca" chỉ áp dụng khi quầy hiện tại thật sự có nhân viên đang điểm danh —
+  // chọn 1 quầy trống (chưa điểm danh) thì chưa có gì để "tan ca" cả.
+  if (leaveBtn) leaveBtn.style.display = (currentStation > 0 && isStaffLoggedIn) ? 'flex' : 'none';
 }
 
 // ── FACE RECOGNITION CHECK-IN ─────────────────────────────────────────────────
@@ -3268,6 +3357,8 @@ async function confirmFaceCheckin() {
       // Sidebar button: đổi sang toggle panel (đã logged in)
       const cbtn = document.getElementById('checkinBtn');
       if (cbtn) cbtn.setAttribute('onclick', 'toggleCheckinPanel()');
+      isStaffLoggedIn = true;
+      updateStationUI(); // hiện nút "Tan ca" giờ quầy đã có người điểm danh
       closeFaceModal();
       const msg = data.status === 'checked-in'   ? '✅ Điểm danh thành công!' :
                   data.status === 'already-in' || data.status === 'already-active'
@@ -3373,7 +3464,7 @@ async function openMyInvModal() {
     const res = await fetch(ctx + '/pos?action=my-invoices');
     const data = await res.json();
     if (!data.ok) {
-      list.innerHTML = '<div style="color:#dc2626;font-size:13px;text-align:center;padding:26px 0">'
+      list.innerHTML = '<div style="color:var(--red);font-size:13px;text-align:center;padding:26px 0">'
         + (data.reason === 'not_logged_in' ? 'Chưa điểm danh ca làm.' : 'Lỗi tải dữ liệu.') + '</div>';
       sum.textContent = '';
       return;
@@ -3389,13 +3480,13 @@ async function openMyInvModal() {
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid #f1f5f9">'
         + '<div><div style="font-weight:750;font-size:13.5px;color:#0f172a">' + iv.code + '</div>'
         + '<div style="font-size:11.5px;color:#94a3b8;margin-top:2px">' + iv.time + ' · ' + (mLabel[iv.method] || iv.method) + '</div></div>'
-        + '<div style="text-align:right"><div style="font-weight:800;font-size:14px;color:' + (refunded ? '#dc2626' : '#059669') + '">'
+        + '<div style="text-align:right"><div style="font-weight:800;font-size:14px;color:' + (refunded ? 'var(--red)' : 'var(--green)') + '">'
         + fmtMoney(parseFloat(iv.amount) || 0) + '</div>'
-        + (refunded ? '<div style="font-size:10.5px;color:#dc2626;font-weight:750">Hoàn trả</div>' : '')
+        + (refunded ? '<div style="font-size:10.5px;color:var(--red);font-weight:750">Hoàn trả</div>' : '')
         + '</div></div>';
     }).join('');
   } catch (e) {
-    list.innerHTML = '<div style="color:#dc2626;font-size:13px;text-align:center;padding:26px 0">Lỗi kết nối.</div>';
+    list.innerHTML = '<div style="color:var(--red);font-size:13px;text-align:center;padding:26px 0">Lỗi kết nối.</div>';
     sum.textContent = '';
   }
 }

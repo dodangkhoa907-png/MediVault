@@ -11,6 +11,7 @@ public class Returns {
     private String reason;
     private int accountId;
     private boolean restoreStock;
+    private String refundMethod = "CASH"; // CASH | VOUCHER
     private LocalDateTime createdAt;
 
     public Returns() {}
@@ -43,6 +44,8 @@ public class Returns {
     public void setAccountId(int accountId) { this.accountId = accountId; }
     public boolean isRestoreStock() { return restoreStock; }
     public void setRestoreStock(boolean restoreStock) { this.restoreStock = restoreStock; }
+    public String getRefundMethod() { return refundMethod; }
+    public void setRefundMethod(String refundMethod) { this.refundMethod = refundMethod; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }
