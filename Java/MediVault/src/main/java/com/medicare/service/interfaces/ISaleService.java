@@ -28,6 +28,8 @@ public interface ISaleService {
      *        sĩ đã tự chọn cho dòng đó sau khi thấy cảnh báo rủi ro hạn dùng ở bước xem trước
      *        (action=preview-sale). null/rỗng = mọi dòng để hệ thống tự phân bổ FEFO.
      * @param remoteAddr   IP client (để ghi audit log)
+     * @param posStation   Quầy POS đang bán (null nếu không xác định) — ghi vào hóa đơn để
+     *                      báo cáo đầu/cuối ca lọc đúng theo quầy
      * @return ServiceResult chứa Invoice hoàn chỉnh nếu thành công
      */
     ServiceResult<Invoice> completeSale(
@@ -38,5 +40,6 @@ public interface ISaleService {
             int[] medicineIds,
             int[] quantities,
             java.util.Map<Integer, java.util.List<com.medicare.service.SaleLineRequest.ManualAllocation>> manualAllocationsByIndex,
-            String remoteAddr);
+            String remoteAddr,
+            Integer posStation);
 }

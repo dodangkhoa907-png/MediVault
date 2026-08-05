@@ -550,7 +550,7 @@ body{display:flex}
   <div class="sb-bottom">
     <div class="sb-divider" style="margin-bottom:6px"></div>
     <div class="sb-checkin-wrap">
-<% String checkinAction = isLoggedIn ? "toggleCheckinPanel()" : "openFaceModal()"; %>
+<% String checkinAction = isLoggedIn ? "toggleCheckinPanel()" : "openOpenCashModalStaged()"; %>
       <button class="sb-btn" id="checkinBtn" onclick="<%= checkinAction %>">
         <span class="sb-icon"><%= isLoggedIn ? "🟢" : "👤" %></span>
         <span class="sb-label"><%= isLoggedIn ? fullName : "Điểm danh" %></span>
@@ -571,7 +571,7 @@ body{display:flex}
         <% } else { %>
         <div style="font-size:11.5px;color:rgba(255,255,255,.5);margin-bottom:11px">Điểm danh để ghi nhận doanh số theo nhân viên</div>
         <!-- Nút điểm danh khuôn mặt -->
-        <button onclick="openFaceModal();toggleCheckinPanel();" style="width:100%;padding:10px;background:linear-gradient(135deg,var(--green),#047857);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:6px">
+        <button onclick="openOpenCashModalStaged();toggleCheckinPanel();" style="width:100%;padding:10px;background:linear-gradient(135deg,var(--green),#047857);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:6px">
           📷 Điểm danh khuôn mặt
         </button>
         <div style="font-size:10.5px;color:rgba(255,255,255,.25);margin-top:6px;text-align:center">POS hoạt động bình thường khi chưa đăng nhập</div>
@@ -620,7 +620,7 @@ body{display:flex}
       <div style="font-size:13px;font-weight:750;color:#92400e">Chưa điểm danh ca làm</div>
       <div style="font-size:11.5px;color:#b45309;margin-top:1px">Vui lòng điểm danh để ghi nhận doanh số theo nhân viên</div>
     </div>
-    <button onclick="openFaceModal()" style="padding:8px 18px;background:#f59e0b;border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:6px">
+    <button onclick="openOpenCashModalStaged()" style="padding:8px 18px;background:#f59e0b;border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:6px">
       📷 Điểm danh ngay
     </button>
   </div>
@@ -639,7 +639,7 @@ body{display:flex}
              style="width:100%;border:1.5px solid #e2e8f0;border-radius:11px;padding:12px 14px;font-size:17px;font-weight:750;font-family:inherit;box-sizing:border-box"
              oninput="formatMoneyInput(this)" onkeydown="if(event.key==='Enter')confirmOpenShift()">
       <div id="openCashErr" style="color:var(--red);font-size:12px;margin-top:6px;display:none"></div>
-      <button type="button" id="openShiftBtn" onclick="confirmOpenShift()"
+      <button type="button" id="openShiftBtn" onclick="confirmOpeningCashStep()"
               style="width:100%;margin-top:16px;padding:13px;background:linear-gradient(135deg,var(--green),#047857);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">✓ Mở ca &amp; bắt đầu bán hàng</button>
     </div>
   </div>
@@ -1295,6 +1295,11 @@ let nfcBridge = null;                    // EventSource cầu nối NFC (khai b�
 let currentStaffId = null;
 let currentStaffName = '<%= fullName %>';
 let currentInvoice = null; // {id, code, total, discount, cashReceived, change}
+
+// Tiền đầu ca nhập TRƯỚC khi quét khuôn mặt (chưa điểm danh nên chưa có accountId để gửi
+// open-shift ngay) — giữ tạm ở đây, gửi lên server ngay khi điểm danh khuôn mặt thành công.
+let pendingOpeningCash = null;
+let openCashStaging = false;
 
 // ── Date display ──
 (function() {
@@ -3608,9 +3613,17 @@ async function confirmFaceCheckin() {
       showToast(msg + ' — ' + data.name, 'ok');
       // Ca đã ACTIVE từ trước (đã khai báo tiền đầu ca trong phiên này) → khỏi hỏi lại.
       // Mọi trường hợp còn lại (mới điểm danh, hoặc điểm danh lại trên phiên/máy khác)
-      // đều BẮT BUỘC khai báo tiền đầu ca trước khi được bán hàng.
+      // đều BẮT BUỘC khai báo tiền đầu ca trước khi được bán hàng — nhưng giờ tiền đầu ca đã
+      // được nhập TRƯỚC lúc quét mặt (xem openOpenCashModalStaged/pendingOpeningCash) nên
+      // chỉ cần gửi thẳng lên server, không hỏi lại nhân viên lần nữa.
       if (data.status !== 'already-active') {
-        openOpenCashModal();
+        const stagedCash = pendingOpeningCash;
+        pendingOpeningCash = null;
+        if (stagedCash !== null) {
+          confirmOpenShift(stagedCash);
+        } else {
+          openOpenCashModal();
+        }
       }
     } else if (data.reason === 'wrong-station') {
       // Kèm tên ca + khung giờ (server đã gửi kèm) để đọc rõ ngay tại quầy POS, thay vì chỉ
@@ -3665,17 +3678,59 @@ function moneyInputValue(el) {
 }
 
 function openOpenCashModal() {
+  openCashStaging = false;
   const m = document.getElementById('openCashModal');
   m.style.display = 'flex';
   const inp = document.getElementById('openCashInput');
   inp.value = '';
   document.getElementById('openCashErr').style.display = 'none';
+  const btn = document.getElementById('openShiftBtn');
+  btn.disabled = false; btn.textContent = '✓ Mở ca & bắt đầu bán hàng';
   setTimeout(() => inp.focus(), 120);
 }
-async function confirmOpenShift() {
+
+// Khai báo tiền đầu ca TRƯỚC khi quét khuôn mặt — chưa cần điểm danh mới báo cáo được doanh
+// thu đầu ca. Số tiền chỉ được lưu tạm ở client (pendingOpeningCash), rồi gửi lên server ngay
+// sau khi quét khuôn mặt xác thực thành công (xem confirmFaceCheckin()).
+function openOpenCashModalStaged() {
+  openCashStaging = true;
+  const m = document.getElementById('openCashModal');
+  m.style.display = 'flex';
+  const inp = document.getElementById('openCashInput');
+  inp.value = '';
+  document.getElementById('openCashErr').style.display = 'none';
+  const btn = document.getElementById('openShiftBtn');
+  btn.disabled = false; btn.textContent = '✓ Tiếp tục → Quét khuôn mặt';
+  setTimeout(() => inp.focus(), 120);
+}
+
+// Điều phối nút xác nhận trên modal "Khai báo tiền đầu ca": nếu đang ở bước khai báo trước
+// khi điểm danh (chưa có accountId) → chỉ lưu tạm rồi mở camera quét mặt; nếu đang sửa tiền
+// đầu ca cho ca đã điểm danh (nút "Sửa tiền đầu ca") → gửi thẳng lên server như trước.
+function confirmOpeningCashStep() {
   const inp = document.getElementById('openCashInput');
   const err = document.getElementById('openCashErr');
   const val = moneyInputValue(inp);
+  if (isNaN(val) || val < 0) {
+    err.textContent = 'Vui lòng nhập số tiền hợp lệ (≥ 0).';
+    err.style.display = 'block';
+    inp.focus();
+    return;
+  }
+  if (openCashStaging) {
+    pendingOpeningCash = val;
+    document.getElementById('openCashModal').style.display = 'none';
+    openFaceModal();
+  } else {
+    confirmOpenShift(val);
+  }
+}
+
+async function confirmOpenShift(explicitVal) {
+  const inp = document.getElementById('openCashInput');
+  const err = document.getElementById('openCashErr');
+  const usingExplicit = explicitVal !== undefined && explicitVal !== null && !isNaN(explicitVal);
+  const val = usingExplicit ? explicitVal : moneyInputValue(inp);
   if (isNaN(val) || val < 0) {
     err.textContent = 'Vui lòng nhập số tiền hợp lệ (≥ 0).';
     err.style.display = 'block';
@@ -3695,6 +3750,11 @@ async function confirmOpenShift() {
       document.getElementById('openCashModal').style.display = 'none';
       hideShiftLock();
       showToast('🔓 Đã mở ca — tiền đầu ca ' + fmtMoney(val), 'ok');
+    } else if (usingExplicit) {
+      // Tiền đã nhập từ trước khi quét mặt nhưng mở ca tự động thất bại (hiếm, vd. session hết
+      // hạn giữa lúc quét mặt) — cho khai báo lại thủ công qua modal thay vì mất luôn số đã nhập.
+      showToast('⚠️ Không tự mở ca được, vui lòng khai báo lại tiền đầu ca.', 'err');
+      openOpenCashModal();
     } else {
       err.textContent = data.reason === 'not_logged_in'
         ? 'Chưa điểm danh — hãy điểm danh khuôn mặt trước.'
@@ -3703,6 +3763,11 @@ async function confirmOpenShift() {
       btn.disabled = false; btn.textContent = '✓ Mở ca & bắt đầu bán hàng';
     }
   } catch (e) {
+    if (usingExplicit) {
+      showToast('⚠️ Lỗi kết nối, vui lòng khai báo lại tiền đầu ca.', 'err');
+      openOpenCashModal();
+      return;
+    }
     err.textContent = 'Lỗi kết nối: ' + e.message;
     err.style.display = 'block';
     btn.disabled = false; btn.textContent = '✓ Mở ca & bắt đầu bán hàng';

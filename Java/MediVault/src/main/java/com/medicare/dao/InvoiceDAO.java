@@ -242,22 +242,27 @@ public class InvoiceDAO implements IInvoiceDAO {
     public int completeSaleTransaction(int accountId, Integer shiftId, Integer customerId,
                                        String paymentMethod, java.math.BigDecimal discount,
                                        int[] medicineIds, int[] quantities,
-                                       java.util.Map<Integer, java.util.List<com.medicare.service.SaleLineRequest.ManualAllocation>> manualAllocationsByIndex) {
+                                       java.util.Map<Integer, java.util.List<com.medicare.service.SaleLineRequest.ManualAllocation>> manualAllocationsByIndex, Integer posStation) {
         lastSaleError.remove();
         Connection cn = null;
         try {
             cn = DBContext.getConnection();
             cn.setAutoCommit(false);
 
-            // Bước 1: Tạo Invoice PENDING — bao gồm ShiftID
+            // Bước 1: Tạo Invoice PENDING — bao gồm ShiftID + PosStation. PosStation PHẢI được
+            // ghi ngay từ lúc tạo hóa đơn: handleShiftSummary/handleEndShift (PosServlet) lọc
+            // "WHERE ... AND PosStation=?" để tính lại Thu tiền mặt/QR/Thẻ theo đúng quầy đang
+            // chốt ca — nếu cột này luôn NULL (như trước đây), điều kiện đó không khớp bất kỳ
+            // hóa đơn nào ⇒ báo cáo đầu/cuối ca luôn hiện 0đ dù đã bán hàng thành công.
             int invoiceId;
-            String sqlInsert = "INSERT INTO Invoices (AccountID, ShiftID, CustomerID, PaymentMethod) " +
-                    "VALUES (?,?,?,?)";
+            String sqlInsert = "INSERT INTO Invoices (AccountID, ShiftID, CustomerID, PaymentMethod, PosStation) " +
+                    "VALUES (?,?,?,?,?)";
             try (PreparedStatement ps = cn.prepareStatement(sqlInsert, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setInt(1, accountId);
                 if (shiftId != null) ps.setInt(2, shiftId); else ps.setNull(2, Types.INTEGER);
                 if (customerId != null) ps.setInt(3, customerId); else ps.setNull(3, Types.INTEGER);
                 ps.setString(4, paymentMethod != null ? paymentMethod : "CASH");
+                if (posStation != null && posStation > 0) ps.setInt(5, posStation); else ps.setNull(5, Types.INTEGER);
                 ps.executeUpdate();
                 try (ResultSet keys = ps.getGeneratedKeys()) {
                     if (keys.next()) invoiceId = keys.getInt(1);

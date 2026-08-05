@@ -684,27 +684,7 @@ public class PosServlet extends HttpServlet {
 
                 ServiceResult<Invoice> result = saleService.completeSale(
                         accountId, customerId, payMethod, discount,
-                        medicineIds, quantities, manualAllocationsByIndex, req.getRemoteAddr());
-
-                // Ghi log riêng cho các dòng được xử lý thủ công — đúng tinh thần "con người quyết
-                // định cuối, hệ thống chỉ tính toán/cảnh báo": ai chọn, thuốc nào, lô nào, vì sao.
-                if (result.isOk() && !manualAllocationsByIndex.isEmpty()) {
-                    Invoice inv = result.getData();
-                    for (Map.Entry<Integer, java.util.List<com.medicare.service.SaleLineRequest.ManualAllocation>> e
-                            : manualAllocationsByIndex.entrySet()) {
-                        int idx = e.getKey();
-                        if (idx < 0 || idx >= medicineIds.length) continue;
-                        StringBuilder lots = new StringBuilder();
-                        for (com.medicare.service.SaleLineRequest.ManualAllocation m : e.getValue()) {
-                            if (lots.length() > 0) lots.append(", ");
-                            lots.append("lô #").append(m.getBatchId()).append(" x").append(m.getQuantity());
-                        }
-                        com.medicare.util.AuditHelper.log(req, "Chọn lô thủ công khi bán hàng", "Invoice",
-                                inv != null ? inv.getInvoiceId() : 0,
-                                "Thuốc ID " + medicineIds[idx] + " — hệ thống cảnh báo rủi ro hạn dùng, "
-                                        + "dược sĩ tự chọn: " + lots);
-                    }
-                }
+                        medicineIds, quantities, manualAllocationsByIndex, req.getRemoteAddr(), posStation);
 
                 String jsonResp;
                 if (result.isOk()) {

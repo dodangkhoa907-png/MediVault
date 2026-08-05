@@ -31,7 +31,7 @@ public interface IInvoiceDAO {
     int completeSaleTransaction(int accountId, Integer shiftId, Integer customerId,
                                 String paymentMethod, BigDecimal discount,
                                 int[] medicineIds, int[] quantities,
-                                java.util.Map<Integer, java.util.List<com.medicare.service.SaleLineRequest.ManualAllocation>> manualAllocationsByIndex);
+                                java.util.Map<Integer, java.util.List<com.medicare.service.SaleLineRequest.ManualAllocation>> manualAllocationsByIndex, Integer posStation);
 
     // Truy vấn
     Invoice findById(int id);
