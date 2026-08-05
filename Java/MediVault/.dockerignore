@@ -1,0 +1,32 @@
+# Build output — Docker tự build lại bên trong image, không cần copy từ máy host
+target/
+
+# IDE / tool-specific — không cần trong build context
+.idea/
+.vscode/
+.smarttomcat/
+.ai/
+.mvn/
+*.iml
+*.iws
+*.ipr
+
+# Git
+.git/
+.gitignore
+
+# Tài liệu / tài nguyên đồ hoạ nặng — không dùng khi build, chỉ làm chậm upload context
+TaiNguyen/
+database/
+*.md
+PROJECT_TREE.md
+
+# File test/script cục bộ không liên quan build
+*.ps1
+TestDB.java
+TestDB.class
+
+# Docker tự sinh
+Dockerfile
+.dockerignore
+docker-compose.yml
