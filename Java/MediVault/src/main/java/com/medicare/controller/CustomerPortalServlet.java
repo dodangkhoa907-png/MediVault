@@ -106,15 +106,32 @@ public class CustomerPortalServlet extends HttpServlet {
     private void handleLogin(HttpServletRequest req, HttpServletResponse resp)
             throws IOException, ServletException {
         String phone = req.getParameter("phone");
+        String code  = req.getParameter("customerCode");
         if (phone == null || !phone.trim().matches("^0\\d{9}$")) {
             req.setAttribute("loginError", "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0).");
             req.getRequestDispatcher("/WEB-INF/views/portal/portal-login.jsp").forward(req, resp);
             return;
         }
-        Customer c = customerDAO.findByPhone(phone.trim());
-        if (c == null) {
+        if (code == null || code.trim().isEmpty()) {
+            req.setAttribute("loginError", "Vui lòng nhập Mã khách hàng (được cấp tại quầy MediCare).");
+            req.setAttribute("phonePrefill", phone.trim());
+            req.getRequestDispatcher("/WEB-INF/views/portal/portal-login.jsp").forward(req, resp);
+            return;
+        }
+        // Kiểm tra SĐT trước để phân biệt "chưa có tài khoản" với "sai mã" —
+        // không lộ việc SĐT có tồn tại hay không khi mã sai (chống dò khách qua SĐT).
+        Customer byPhone = customerDAO.findByPhone(phone.trim());
+        if (byPhone == null) {
             req.setAttribute("loginError",
                     "Số điện thoại chưa có tài khoản. Vui lòng đăng ký tại quầy MediCare khi mua hàng.");
+            req.setAttribute("phonePrefill", phone.trim());
+            req.getRequestDispatcher("/WEB-INF/views/portal/portal-login.jsp").forward(req, resp);
+            return;
+        }
+        Customer c = customerDAO.findByPhoneAndCode(phone.trim(), code.trim().toUpperCase());
+        if (c == null) {
+            req.setAttribute("loginError",
+                    "Số điện thoại hoặc Mã khách hàng không đúng. Mã khách hàng được dược sĩ cấp khi tạo tài khoản tại quầy.");
             req.setAttribute("phonePrefill", phone.trim());
             req.getRequestDispatcher("/WEB-INF/views/portal/portal-login.jsp").forward(req, resp);
             return;
