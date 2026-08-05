@@ -153,9 +153,12 @@ body{display:flex}
     <a href="${pageContext.request.contextPath}/staff-profile?uid=<%= uid %>" class="nav-item">
       <span class="nav-icon">👤</span> Hồ sơ của tôi
     </a>
+    <% if (staffAcc.getRoleId() == 3) { %>
+    <%-- Thủ kho (roleId 3) không dùng POS — điểm danh vẫn qua đây, không được xoá. --%>
     <a href="${pageContext.request.contextPath}/staff-checkin?uid=<%= uid %>" class="nav-item">
       <span class="nav-icon">✅</span> Điểm danh
     </a>
+    <% } %>
     <a href="${pageContext.request.contextPath}/staff-my-shifts?uid=<%= uid %>" class="nav-item">
       <span class="nav-icon">🕐</span> Ca làm việc
     </a>
@@ -165,9 +168,6 @@ body{display:flex}
   </nav>
   <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
-    <a href="${pageContext.request.contextPath}/pos?uid=<%= uid %>" class="nav-item">
-      <span class="nav-icon">🛒</span> Bán thuốc (POS)
-    </a>
     <a href="${pageContext.request.contextPath}/staff-my-invoices?uid=<%= uid %>" class="nav-item">
       <span class="nav-icon">🧾</span> Hóa đơn của tôi
     </a>

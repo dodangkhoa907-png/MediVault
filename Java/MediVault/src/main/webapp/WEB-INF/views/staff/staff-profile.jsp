@@ -230,9 +230,12 @@ body{display:flex;background:var(--soft);color:var(--ink)}
     <a href="<%= request.getContextPath() %>/staff-profile?uid=<%= _staffUid %>" class="nav-item active">
       <span class="nav-icon">👤</span> Hồ sơ của tôi
     </a>
+    <% if (acc.getRoleId() == 3) { %>
+    <%-- Thủ kho (roleId 3) không dùng POS — điểm danh vẫn qua đây, không được xoá. --%>
     <a href="<%= request.getContextPath() %>/staff-checkin?uid=<%= _staffUid %>" class="nav-item">
       <span class="nav-icon">✅</span> Điểm danh
     </a>
+    <% } %>
     <a href="<%= request.getContextPath() %>/staff-my-shifts?uid=<%= _staffUid %>" class="nav-item">
       <span class="nav-icon">🕐</span> Ca làm việc
     </a>
@@ -242,9 +245,6 @@ body{display:flex;background:var(--soft);color:var(--ink)}
   </nav>
   <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
-    <a href="<%= request.getContextPath() %>/pos?uid=<%= _staffUid %>" class="nav-item">
-      <span class="nav-icon">🛒</span> Bán thuốc (POS)
-    </a>
     <a href="<%= request.getContextPath() %>/staff-my-invoices?uid=<%= _staffUid %>" class="nav-item">
       <span class="nav-icon">🧾</span> Hóa đơn của tôi
     </a>
