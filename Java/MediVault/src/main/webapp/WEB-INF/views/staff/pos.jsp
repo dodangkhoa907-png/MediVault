@@ -202,7 +202,7 @@ body{display:flex}
 
 
 /* Payment method — 3 big cards */
-.pay-methods{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.pay-methods{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
 .pay-method-card{border:2px solid var(--border);background:#f8fafc;border-radius:13px;padding:12px 6px 10px;cursor:pointer;transition:.2s;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:inherit}
 .pay-method-card:hover{border-color:#93c5fd;background:#eff6ff}
 .pay-method-card.active{border-color:var(--blue);background:#eff6ff;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
@@ -737,12 +737,24 @@ body{display:flex}
     <div class="cust-wrap">
       <input type="text" id="custPhone" placeholder="Nhập SĐT để tìm khách…" oninput="onCustInput()" autocomplete="off">
       <button class="cust-btn" onclick="searchCustomer()">🔍</button>
+      <button class="cust-btn" onclick="focusNfcInput()" title="Quẹt thẻ NFC để nhận diện khách" style="background:#0d9488">📶</button>
     </div>
+    <!-- Ô ẩn nhận UID từ đầu đọc thẻ NFC (đầu đọc hoạt động như bàn phím, gõ UID rồi Enter) -->
+    <input type="text" id="nfcInput" onkeydown="onNfcInput(event)" autocomplete="off"
+           style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
     <div class="cust-found-row" id="custFound">
       <span>👤</span>
       <span class="cust-found-name" id="custFoundName"></span>
       <span style="font-size:12px;color:var(--muted)" id="custFoundPhone"></span>
       <button class="cust-rm" onclick="removeCustomer()">✕</button>
+    </div>
+    <!-- Đổi điểm tích lũy lấy tiền thanh toán -->
+    <div id="redeemWrap" style="display:none;align-items:center;gap:6px;margin-top:7px;padding:7px 9px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px">
+      <span style="font-size:12px;color:#92400e;white-space:nowrap">🎁 Điểm: <b id="redeemAvail">0</b></span>
+      <input type="number" id="redeemInput" min="0" placeholder="Số điểm đổi"
+             style="flex:1;height:26px;padding:0 8px;border:1px solid #fcd34d;border-radius:6px;font-size:12px;font-family:inherit;min-width:0">
+      <button type="button" onclick="applyRedeemPoints()"
+              style="height:26px;padding:0 10px;border:none;border-radius:6px;background:#d97706;color:#fff;font-size:11.5px;font-weight:750;cursor:pointer;font-family:inherit;white-space:nowrap">Áp dụng</button>
     </div>
   </div>
 
@@ -763,9 +775,6 @@ body{display:flex}
         <button class="pay-method-card" data-method="QR_CODE" onclick="selectPay(this)">
           <span class="pmc-icon">📱</span><span class="pmc-label">QR VietQR</span>
         </button>
-        <button class="pay-method-card" data-method="CARD" onclick="selectPay(this)">
-          <span class="pmc-icon">💳</span><span class="pmc-label">Quẹt thẻ</span>
-        </button>
       </div>
       <!-- QR detail panel -->
       <div class="pay-detail-section" id="qrSection">
@@ -776,17 +785,6 @@ body{display:flex}
             <div class="pdi-sub">Nhấn <b>Thanh toán</b> để tạo mã QR — khách quét và chuyển khoản tự động</div>
           </div>
           <span class="pdi-amount" id="qrAmount">0đ</span>
-        </div>
-      </div>
-      <!-- Card detail panel -->
-      <div class="pay-detail-section" id="cardSection">
-        <div class="pdi-row">
-          <span class="pdi-icon">💳</span>
-          <div class="pdi-body">
-            <div class="pdi-title">Thanh toán quẹt thẻ</div>
-            <div class="pdi-sub">Cà thẻ trên máy POS vật lý, nhấn <b>Thanh toán</b> sau khi hoàn tất</div>
-          </div>
-          <span class="pdi-amount" id="cardAmount">0đ</span>
         </div>
       </div>
     </div>
@@ -992,13 +990,8 @@ body{display:flex}
             <span class="esr-prow-lbl">Thu QR / Chuyển khoản</span>
             <span class="esr-prow-val" id="esrQrTotal">—</span>
           </div>
-          <div class="esr-prow">
-            <span class="esr-prow-icon">💳</span>
-            <span class="esr-prow-lbl">Thu quẹt thẻ</span>
-            <span class="esr-prow-val" id="esrCardTotal">—</span>
-          </div>
         </div>
-        <div class="esr-note">💡 QR và Thẻ không ảnh hưởng đến két tiền mặt tại quầy. Chỉ tính vào doanh số nhân viên.</div>
+        <div class="esr-note">💡 QR không ảnh hưởng đến két tiền mặt tại quầy. Chỉ tính vào doanh số nhân viên.</div>
       </div>
       <!-- RIGHT: Cash Reconciliation -->
       <div class="esr-right">
@@ -1209,6 +1202,10 @@ function clearCart() {
 
 function fmtMoney(n) { return new Intl.NumberFormat('vi-VN').format(Math.round(n)) + 'đ'; }
 
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
 function getDiscountValue() {
   return parseInt((document.getElementById('discountInput').value || '').replace(/\D/g, ''), 10) || 0;
 }
@@ -1287,92 +1284,464 @@ function renderCart() {
   updateTotal();
 }
 
-/* truncated further JS for brevity in resolution block — actual file will splice this content into place */
-</script>
+// ── Totals ──
+let redeemPoints = 0;   // số điểm khách chọn đổi cho hóa đơn này
+let redeemValue  = 0;   // giá trị quy đổi (đ) — 1 điểm = 1.000đ, khớp LoyaltyDAO.VND_PER_POINT
+const VND_PER_POINT = 1000;
 
-<html lang="vi">
-<head>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
-    <meta charset="UTF-8">
-    <title>Hóa đơn \${escHtml(inv.code)}</title>
-    <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; color: #000; padding: 8px; max-width: 320px; margin: 0 auto; }
-    .center { text-align: center; }
-    .bold { font-weight: bold; }
-    .title { font-size: 15px; font-weight:800; margin: 4px 0; }
-    .divider { border-top: 1px dashed #000; margin: 7px 0; }
-    .divider2 { border-top: 2px solid #000; margin: 7px 0; }
-    table { width: 100%; border-collapse: collapse; font-size: 11px; }
-    th { background: #eee; padding: 4px 6px; font-weight:750; border-bottom: 1px solid #000; }
-    td { vertical-align: top; padding: 4px 6px; }
-    .totals { margin-top: 6px; }
-    .totals-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 12px; }
-    .totals-row.grand { font-size: 14px; font-weight:800; border-top: 2px solid #000; padding-top: 5px; margin-top: 3px; }
-    .footer { text-align: center; margin-top: 10px; font-style: italic; font-size: 11.5px; }
-    .kv { display: flex; justify-content: space-between; font-size: 11.5px; padding: 2px 0; }
-    @media print { body { padding: 0; } .print-actions { display: none !important; } }
-    </style>
-</head>
-<body>
-    <div class="center">
-        <div class="bold" style="font-size:14px">NHÀ THUỐC Medicare</div>
-        <div>Địa chỉ: 123 Đường Ba Cu, P.4, TP. Vũng Tàu</div>
-        <div>Điện thoại: 0901.234.567</div>
-    </div>
-    <div class="divider2"></div>
-    <div class="center"><div class="title">HÓA ĐƠN BÁN LẺ</div></div>
-    <div class="divider"></div>
-    <div class="kv"><span class="bold">Số HĐ:</span><span>#\${escHtml(inv.code)}</span></div>
-    <div class="kv"><span class="bold">Ngày lập:</span><span>\${dateStr}</span></div>
-    <div class="kv"><span class="bold">Khách hàng:</span><span>\${inv.customer ? escHtml(inv.customer.name) : 'Khách lẻ'}</span></div>
-    \${inv.customer ? '<div class="kv"><span class="bold">SĐT:</span><span>' + escHtml(inv.customer.phone) + '</span></div>' : ''}
-    <div class="kv"><span class="bold">Dược sĩ bán:</span><span>\${escHtml(sellerName)}</span></div>
-    <div class="divider"></div>
-    <table>
-        <thead>
-            <tr>
-                <th style="text-align:center;width:24px">STT</th>
-                <th>Tên Thuốc / Vật Tư</th>
-                <th style="text-align:center;width:30px">ĐVT</th>
-                <th style="text-align:center;width:24px">SL</th>
-                <th style="text-align:right;width:60px">Đơn Giá</th>
-                <th style="text-align:right;width:66px">Thành Tiền</th>
-            </tr>
-        </thead>
-        <tbody>\${itemRows}</tbody>
-    </table>
-    <div class="divider"></div>
-    <div class="totals">
-        <div class="totals-row"><span>Tổng tiền hàng:</span><span>\${fmt(inv.subtotal)}</span></div>
-        <div class="totals-row"><span>Giảm giá:</span><span>-\${fmt(inv.discount)}</span></div>
-        <div class="totals-row grand"><span>TỔNG THANH TOÁN:</span><span>\${fmt(inv.total)}</span></div>
-    </div>
-    \${inv.cashReceived > 0 ? '<div class="divider"></div><div class="totals-row"><span>Tiền khách đưa:</span><span>' + fmt(inv.cashReceived) + '</span></div><div class="totals-row"><span>Tiền thối:</span><span>' + fmt(inv.change) + '</span></div>' : ''}
-    <div class="divider"></div>
-    <div class="footer">
-        <div>-- Chúc quý khách sức khỏe và một ngày tốt lành --</div>
-        <div style="margin-top:4px;font-size:10px;color:#555">Hẹn gặp lại quý khách!</div>
-    </div>
-    <div style="height:16px"></div>
-    <div class="center print-actions" style="margin-top:8px">
-        <button onclick="window.print()" style="padding:8px 20px;background:#1a56db;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:750;font-family:'Plus Jakarta Sans',sans-serif">🖶 In hóa đơn</button>
-        <button onclick="window.close()" style="padding:8px 16px;background:#e5e7eb;color:#111;border:none;border-radius:6px;cursor:pointer;font-size:13px;margin-left:6px;font-family:'Plus Jakarta Sans',sans-serif">✕ Đóng</button>
-    </div>
-</body>
-</html>`;
+function calcTotal() {
+  const sub  = cart.reduce((s,i) => s + i.price*i.qty, 0);
+  const disc = getDiscountValue();
+  return Math.max(0, sub - disc - redeemValue);
+}
 
-  const win = window.open('', '_blank', 'width=380,height=600,toolbar=0,menubar=0,scrollbars=1');
-  if (win) {
-    win.document.write(html);
-    win.document.close();
-  } else {
-    showToast('⚠️ Trình duyệt chặn popup — vui lòng cho phép!', 'err');
+function updateTotal() {
+  const sub = cart.reduce((s,i) => s + i.price*i.qty, 0);
+  const tot = calcTotal();
+  const qty = cart.reduce((s,i) => s+i.qty, 0);
+  document.getElementById('sumSub').textContent   = fmtMoney(sub);
+  document.getElementById('sumTotal').textContent = fmtMoney(tot);
+  document.getElementById('invSubtitle').textContent = qty + ' sản phẩm · ' + fmtMoney(tot);
+  const needEl = document.getElementById('cashNeedVal');
+  if (needEl) needEl.textContent = fmtMoney(tot);
+  updateQuickButtons(tot);
+  calcChange();
+  syncPayPanelAmounts();
+}
+
+function updateQuickButtons(total) {
+  const wrap = document.getElementById('cashQuickBtns');
+  if (!wrap) return;
+  const amounts = buildQuickAmounts(total);
+  wrap.innerHTML = amounts.map(a =>
+    '<button class="cash-q-btn" onclick="setCash('+a+')">' + fmtMoney(a) + '</button>'
+  ).join('');
+}
+
+function buildQuickAmounts(total) {
+  const result = [];
+  if (total > 0) result.push(total);
+  const rounds = [10000, 20000, 50000, 100000, 200000, 500000];
+  for (const r of rounds) {
+    const rounded = Math.ceil(total / r) * r;
+    if (rounded > total && !result.includes(rounded) && result.length < 5) result.push(rounded);
+    if (result.length >= 5) break;
   }
-  closeSuccess();otal) + '</span></div>'
-    + '</div>'
+  return result.slice(0, 4);
+}
+
+function setCash(amount) {
+  document.getElementById('cashInput').value = new Intl.NumberFormat('vi-VN').format(amount);
+  calcChange();
+}
+
+// ── Payment ──
+function selectPay(btn) {
+  document.querySelectorAll('.pay-method-card').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedPayment = btn.dataset.method;
+
+  const cashSec   = document.getElementById('cashSection');
+  const qrSec     = document.getElementById('qrSection');
+  const needRow   = document.getElementById('cashNeedRow');
+  const changeRow = document.getElementById('cashChangeRow');
+
+  cashSec.classList.remove('show');
+  qrSec.classList.remove('show');
+  if (changeRow) changeRow.style.display = 'none';
+
+  if (selectedPayment === 'CASH') {
+    cashSec.classList.add('show');
+    if (needRow) needRow.style.display = 'none';
+  } else {
+    qrSec.classList.add('show');
+    if (needRow) needRow.style.display = 'flex';
+    syncPayPanelAmounts();
+  }
+  updateCheckoutBtnState();
+}
+
+function syncPayPanelAmounts() {
+  const fmtd = fmtMoney(calcTotal());
+  const qrEl = document.getElementById('qrAmount');
+  if (qrEl) qrEl.textContent = fmtd;
+}
+
+function calcChange() {
+  updateCheckoutBtnState();
+  if (selectedPayment !== 'CASH') return;
+  const total    = calcTotal();
+  const received = getCashValue();
+  const changeRow = document.getElementById('cashChangeRow');
+  const valEl     = document.getElementById('cashChangeVal');
+  const lblEl     = document.getElementById('cashChangeLbl');
+  if (received <= 0) { changeRow.style.display='none'; return; }
+  changeRow.style.display = 'flex';
+  const change = received - total;
+  if (change >= 0) {
+    changeRow.className = 'cash-change-row cash-change-ok';
+    lblEl.textContent = 'Tiền thừa trả khách';
+    valEl.className   = 'cash-change-val change-ok';
+    valEl.textContent = fmtMoney(change);
+  } else {
+    changeRow.className = 'cash-change-row cash-change-err';
+    lblEl.textContent = 'Thiếu';
+    valEl.className   = 'cash-change-val change-err';
+    valEl.textContent = '⚠ ' + fmtMoney(Math.abs(change));
+  }
+}
+
+// Cập nhật trạng thái nút Thanh Toán:
+// — Disabled khi giỏ trống
+// — Disabled khi CASH nhưng chưa nhập tiền hoặc chưa đủ
+function updateCheckoutBtnState() {
+  const btn = document.getElementById('checkoutBtn');
+  if (!btn) return;
+  if (cart.length === 0) {
+    btn.disabled = true;
+    btn.textContent = '🛒 THANH TOÁN';
+    return;
+  }
+  if (selectedPayment === 'CASH') {
+    const total = calcTotal();
+    const cash  = getCashValue();
+    if (cash <= 0) {
+      btn.disabled = true;
+      btn.textContent = '⏳ Nhập tiền khách đưa…';
+    } else if (cash < total) {
+      btn.disabled = true;
+      btn.textContent = '⚠️ Chưa đủ tiền';
+    } else {
+      btn.disabled = false;
+      btn.textContent = '✓  F9 — THANH TOÁN';
+    }
+  } else {
+    btn.disabled = false;
+    btn.textContent = '📱 Tạo mã QR thanh toán';
+  }
+}
+
+// ── Customer ──
+let custTimer;
+function onCustInput() { clearTimeout(custTimer); custTimer = setTimeout(searchCustomer, 600); }
+
+function searchCustomer() {
+  const phone = document.getElementById('custPhone').value.trim();
+  if (phone.length < 9) return;
+  fetch(ctx + '/pos?action=find-customer&phone=' + encodeURIComponent(phone))
+    .then(r => r.json()).then(data => applyCustomerResult(data, true))
+    .catch(() => showToast('Lỗi kết nối khi tìm khách hàng', 'err'));
+}
+
+function applyCustomerResult(data, warnIfMissing) {
+  const row = document.getElementById('custFound');
+  if (data.found) {
+    selectedCustomer = { id: data.id, name: data.name, phone: data.phone, points: data.points || 0 };
+    document.getElementById('custFoundName').textContent  = data.name;
+    document.getElementById('custFoundPhone').textContent = data.phone;
+    row.style.display = 'flex';
+    showRedeemPanel(selectedCustomer.points);
+  } else {
+    selectedCustomer = null;
+    if (warnIfMissing) showToast('⚠️ Không tìm thấy khách hàng', 'err');
+    row.style.display = 'none';
+    hideRedeemPanel();
+  }
+}
+
+function removeCustomer() {
+  selectedCustomer = null;
+  document.getElementById('custPhone').value = '';
+  document.getElementById('custFound').style.display = 'none';
+  hideRedeemPanel();
+}
+
+// ── NFC: nhận diện khách qua thẻ NFC. Đầu đọc NFC gắn ngoài hoạt động như
+// bàn phím — gõ UID thẻ rồi Enter vào ô ẩn #nfcInput, không cần gõ SĐT. ──
+function focusNfcInput() {
+  const inp = document.getElementById('nfcInput');
+  if (inp) { inp.value = ''; inp.focus(); }
+  showToast('📶 Đưa thẻ NFC của khách lại gần đầu đọc…', 'ok');
+}
+
+function onNfcInput(e) {
+  if (e.key !== 'Enter') return;
+  const uid = e.target.value.trim();
+  e.target.value = '';
+  if (!uid) return;
+  lookupNfc(uid);
+}
+
+function lookupNfc(uid) {
+  fetch(ctx + '/pos?action=nfc-lookup&uid=' + encodeURIComponent(uid))
+    .then(r => r.json()).then(data => {
+      if (data.found) {
+        document.getElementById('custPhone').value = data.phone || '';
+        applyCustomerResult(data, false);
+        showToast('✓ Nhận diện khách qua NFC: ' + data.name, 'ok');
+      } else {
+        showToast('⚠️ Thẻ NFC chưa liên kết với khách hàng nào', 'err');
+      }
+    }).catch(() => showToast('Lỗi kết nối khi đọc thẻ NFC', 'err'));
+}
+
+// ── Đổi điểm tích lũy lấy tiền thanh toán (1 điểm = 1.000đ, khớp LoyaltyDAO) ──
+function showRedeemPanel(points) {
+  const wrap = document.getElementById('redeemWrap');
+  if (!wrap) return;
+  if (!points || points <= 0) { hideRedeemPanel(); return; }
+  wrap.style.display = 'flex';
+  document.getElementById('redeemAvail').textContent = points + ' (' + fmtMoney(points * VND_PER_POINT) + ')';
+  document.getElementById('redeemInput').max = points;
+}
+
+function hideRedeemPanel() {
+  redeemPoints = 0; redeemValue = 0;
+  const wrap = document.getElementById('redeemWrap');
+  if (wrap) wrap.style.display = 'none';
+  const inp = document.getElementById('redeemInput');
+  if (inp) inp.value = '';
+  updateTotal();
+}
+
+function applyRedeemPoints() {
+  if (!selectedCustomer) { showToast('⚠️ Vui lòng chọn khách hàng trước!', 'err'); return; }
+  const inp = document.getElementById('redeemInput');
+  const avail = selectedCustomer.points || 0;
+  let pts = parseInt(inp.value, 10) || 0;
+  if (pts < 0) pts = 0;
+  if (pts > avail) { pts = avail; showToast('⚠️ Khách chỉ còn ' + avail + ' điểm', 'err'); }
+  const sub  = cart.reduce((s,i) => s + i.price*i.qty, 0);
+  const disc = getDiscountValue();
+  const maxRedeemValue = Math.max(0, sub - disc);
+  if (pts * VND_PER_POINT > maxRedeemValue) {
+    pts = Math.floor(maxRedeemValue / VND_PER_POINT);
+  }
+  inp.value    = pts;
+  redeemPoints = pts;
+  redeemValue  = pts * VND_PER_POINT;
+  updateTotal();
+}
+
+// ── Checkout ──
+function doCheckout() {
+  if (cart.length === 0) return;
+  const total = calcTotal();
+  if (selectedPayment === 'CASH') {
+    const cashEl = document.getElementById('cashInput');
+    const received = getCashValue();
+    if (received <= 0) {
+      showToast('⚠️ Vui lòng nhập số tiền khách đưa!', 'err');
+      cashEl.focus();
+      return;
+    }
+    if (received < total) {
+      showToast('⚠️ Tiền khách đưa (' + fmtMoney(received) + ') chưa đủ — thiếu ' + fmtMoney(total - received) + '!', 'err');
+      cashEl.focus();
+      return;
+    }
+  }
+  if (selectedPayment === 'QR_CODE') {
+    openQrModal(total);
+    return;
+  }
+  submitSale();
+}
+
+function submitSale() {
+  const total = calcTotal();
+  const btn = document.getElementById('checkoutBtn');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Đang xử lý…';
+  const fd = new URLSearchParams();
+  fd.append('action', 'complete-sale');
+  fd.append('paymentMethod', selectedPayment);
+  fd.append('discount', String(getDiscountValue()));
+  if (redeemPoints > 0) fd.append('redeemPoints', String(redeemPoints));
+  if (selectedCustomer) fd.append('customerId', selectedCustomer.id);
+  if (currentStaffId)   fd.append('uid', currentStaffId);
+  if (currentStation > 0) fd.append('posStation', currentStation);
+  fd.append('clientRequestId', (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('cr-' + Date.now() + '-' + Math.random()));
+  cart.forEach(item => { fd.append('medId[]', item.id); fd.append('qty[]', item.qty); });
+  fetch(ctx + '/pos', {
+    method: 'POST',
+    body: fd,
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        const disc     = getDiscountValue() + redeemValue;
+        const received = selectedPayment === 'CASH' ? getCashValue() : 0;
+        const change   = received > 0 ? Math.max(0, received - total) : 0;
+        const now      = new Date();
+
+        currentInvoice = {
+          id:           data.invoiceId || 0,
+          code:         data.invoiceCode || '',
+          total:        total,
+          subtotal:     cart.reduce((s,i) => s + i.price*i.qty, 0),
+          discount:     disc,
+          cashReceived: received,
+          change:       change,
+          date:         now,
+          items:        JSON.parse(JSON.stringify(cart)),
+          customer:     selectedCustomer ? {...selectedCustomer} : null
+        };
+
+        cart.forEach(item => {
+          const med = allMedicines.find(m => m.id === item.id);
+          if (!med) return;
+          med.stock = Math.max(0, med.stock - item.qty);
+          const card = med.el;
+          card.dataset.stock = med.stock;
+          const stockEl = card.querySelector('.mc-stock');
+          if (stockEl) {
+            if (med.stock === 0) {
+              stockEl.className = 'mc-stock stock-out';
+              stockEl.textContent = 'Hết hàng';
+              card.classList.add('out-of-stock');
+            } else {
+              stockEl.textContent = 'Còn ' + med.stock;
+            }
+          }
+        });
+
+        document.getElementById('smCode').textContent  = '#' + currentInvoice.code;
+        document.getElementById('smTotal').textContent = fmtMoney(currentInvoice.total);
+        const earned = data.earnedPoints || 0;
+        document.getElementById('smChange').textContent = (received > 0 && selectedPayment === 'CASH')
+          ? 'Tiền thừa: ' + fmtMoney(change)
+          : (earned > 0 ? 'Khách được tích ' + earned + ' điểm' : '');
+
+        cart = []; selectedCustomer = null; redeemPoints = 0; redeemValue = 0;
+        document.getElementById('custPhone').value = '';
+        document.getElementById('custFound').style.display = 'none';
+        hideRedeemPanel();
+        document.getElementById('discountInput').value = '0';
+        document.getElementById('cashInput').value = '';
+        document.getElementById('cashChangeRow').style.display = 'none';
+        renderCart();
+
+        document.getElementById('successModal').classList.add('show');
+      } else {
+        showToast('❌ ' + (data.msg || 'Thanh toán thất bại'), 'err');
+      }
+    })
+    .catch(() => showToast('❌ Lỗi kết nối máy chủ', 'err'))
+    .finally(() => {
+      btn.disabled = false;
+      updateCheckoutBtnState();
+    });
+}
+
+function newInvoice() {
+  document.getElementById('successModal').classList.remove('show');
+  currentInvoice = null;
+}
+
+function closeSuccess() {
+  document.getElementById('successModal').classList.remove('show');
+}
+
+// ── Medicine info drawer ──
+let drawerMedId = null;
+function showMedInfo(medId) {
+  const med = allMedicines.find(m => m.id === medId);
+  if (!med) return;
+  drawerMedId = medId;
+  document.getElementById('mddRx').textContent = med.rx ? '⚠ Cần đơn thuốc' : '✓ Không cần đơn';
+  document.getElementById('mddRx').className = 'mdd-rx ' + (med.rx ? 'mb-rx' : 'mb-otc');
+  document.getElementById('mddName').textContent = med.name;
+  document.getElementById('mddCode').textContent  = 'Mã: ' + (med.code || '—');
+
+  const rows = [];
+  rows.push('<div class="mdd-price-bar"><span class="mdd-price-lbl">Giá bán</span><span class="mdd-price-val">' + fmtMoney(med.price) + '</span></div>');
+  rows.push('<div class="mdd-rows">'
+    + '<div class="mdd-row"><div class="dk">Đơn vị</div><div class="dv">' + escHtml(med.unit||'—') + '</div></div>'
+    + '<div class="mdd-row"><div class="dk">Tồn kho</div><div class="dv">' + med.stock + '</div></div>'
+    + '<div class="mdd-row"><div class="dk">Số lô</div><div class="dv">' + escHtml(med.batchNo||'—') + '</div></div>'
+    + '<div class="mdd-row"><div class="dk">Hạn dùng</div><div class="dv">' + fmtDate(med.expiry) + '</div></div>'
+    + '</div>');
+  if (med.generic) rows.push('<div class="mdd-section"><div class="mdd-sec-title">Hoạt chất</div><div class="mdd-text">' + escHtml(med.generic) + '</div></div>');
+  if (med.dosage)  rows.push('<div class="mdd-section"><div class="mdd-sec-title">Liều dùng</div><div class="mdd-text">' + escHtml(med.dosage) + '</div></div>');
+  if (med.warning) rows.push('<div class="mdd-section mdd-warn"><div class="mdd-sec-title">Lưu ý</div><div class="mdd-text">' + escHtml(med.warning) + '</div></div>');
+  if (med.contra)  rows.push('<div class="mdd-section mdd-contra"><div class="mdd-sec-title">Chống chỉ định</div><div class="mdd-text">' + escHtml(med.contra) + '</div></div>');
+  if (med.storage) rows.push('<div class="mdd-section"><div class="mdd-sec-title">Bảo quản</div><div class="mdd-text">' + escHtml(med.storage) + '</div></div>');
+
+  document.getElementById('mddBody').innerHTML = rows.join('');
+  document.getElementById('mddAddBtn').disabled = med.stock === 0;
+  document.getElementById('medDrawerBd').classList.add('show');
+  document.getElementById('medDrawer').classList.add('show');
+}
+
+function closeInfoDrawer() {
+  document.getElementById('medDrawerBd').classList.remove('show');
+  document.getElementById('medDrawer').classList.remove('show');
+  drawerMedId = null;
+}
+
+function addFromDrawer() {
+  if (drawerMedId == null) return;
+  const med = allMedicines.find(m => m.id === drawerMedId);
+  if (med && med.el) addToCart(med.el);
+  closeInfoDrawer();
+}
+
+// ── Print receipt ──
+function printReceipt() {
+  const inv = currentInvoice;
+  if (!inv) { closeSuccess(); return; }
+  const dateStr = formatDateTime(inv.date);
+  const itemRows = inv.items.map((it, idx) =>
+    '<tr><td style="text-align:center">' + (idx+1) + '</td>'
+    + '<td>' + escHtml(it.name) + '</td>'
+    + '<td style="text-align:center">' + escHtml(it.unit) + '</td>'
+    + '<td style="text-align:center">' + it.qty + '</td>'
+    + '<td style="text-align:right">' + fmt(it.price) + '</td>'
+    + '<td style="text-align:right">' + fmt(it.price*it.qty) + '</td></tr>'
+  ).join('');
+
+  const html = '<!DOCTYPE html><html lang="vi"><head>'
+    + '<meta charset="UTF-8">'
+    + '<title>Hóa đơn ' + escHtml(inv.code) + '</title>'
+    + '<style>'
+    + '* { margin:0; padding:0; box-sizing:border-box; }'
+    + 'body { font-family: Arial, sans-serif; font-size: 12px; color: #000; padding: 8px; max-width: 320px; margin: 0 auto; }'
+    + '.center { text-align: center; } .bold { font-weight: bold; }'
+    + '.title { font-size: 15px; font-weight:800; margin: 4px 0; }'
+    + '.divider { border-top: 1px dashed #000; margin: 7px 0; }'
+    + '.divider2 { border-top: 2px solid #000; margin: 7px 0; }'
+    + 'table { width: 100%; border-collapse: collapse; font-size: 11px; }'
+    + 'th { background: #eee; padding: 4px 6px; font-weight:750; border-bottom: 1px solid #000; }'
+    + 'td { vertical-align: top; padding: 4px 6px; }'
+    + '.totals-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 12px; }'
+    + '.totals-row.grand { font-size: 14px; font-weight:800; border-top: 2px solid #000; padding-top: 5px; margin-top: 3px; }'
+    + '.footer { text-align: center; margin-top: 10px; font-style: italic; font-size: 11.5px; }'
+    + '.kv { display: flex; justify-content: space-between; font-size: 11.5px; padding: 2px 0; }'
+    + '@media print { body { padding: 0; } .print-actions { display: none !important; } }'
+    + '</style></head><body>'
+    + '<div class="center"><div class="bold" style="font-size:14px">NHÀ THUỐC Medicare</div>'
+    + '<div>Địa chỉ: 123 Đường Ba Cu, P.4, TP. Vũng Tàu</div>'
+    + '<div>Điện thoại: 0901.234.567</div></div>'
+    + '<div class="divider2"></div>'
+    + '<div class="center"><div class="title">HÓA ĐƠN BÁN LẺ</div></div>'
+    + '<div class="divider"></div>'
+    + '<div class="kv"><span class="bold">Số HĐ:</span><span>#' + escHtml(inv.code) + '</span></div>'
+    + '<div class="kv"><span class="bold">Ngày lập:</span><span>' + dateStr + '</span></div>'
+    + '<div class="kv"><span class="bold">Khách hàng:</span><span>' + (inv.customer ? escHtml(inv.customer.name) : 'Khách lẻ') + '</span></div>'
+    + (inv.customer ? '<div class="kv"><span class="bold">SĐT:</span><span>' + escHtml(inv.customer.phone) + '</span></div>' : '')
+    + '<div class="kv"><span class="bold">Dược sĩ bán:</span><span>' + escHtml(sellerName) + '</span></div>'
+    + '<div class="divider"></div>'
+    + '<table><thead><tr>'
+    + '<th style="text-align:center;width:24px">STT</th><th>Tên Thuốc / Vật Tư</th>'
+    + '<th style="text-align:center;width:30px">ĐVT</th><th style="text-align:center;width:24px">SL</th>'
+    + '<th style="text-align:right;width:60px">Đơn Giá</th><th style="text-align:right;width:66px">Thành Tiền</th>'
+    + '</tr></thead><tbody>' + itemRows + '</tbody></table>'
+    + '<div class="divider"></div>'
+    + '<div class="totals-row"><span>Tổng tiền hàng:</span><span>' + fmt(inv.subtotal) + '</span></div>'
+    + '<div class="totals-row"><span>Giảm giá:</span><span>-' + fmt(inv.discount) + '</span></div>'
+    + '<div class="totals-row grand"><span>TỔNG THANH TOÁN:</span><span>' + fmt(inv.total) + '</span></div>'
     + (inv.cashReceived > 0
         ? '<div class="divider"></div>'
           + '<div class="totals-row"><span>Tiền khách đưa:</span><span>' + fmt(inv.cashReceived) + '</span></div>'
@@ -1385,8 +1754,8 @@ function renderCart() {
     + '</div>'
     + '<div style="height:16px"></div>'
     + '<div class="center" style="margin-top:8px">'
-    + '<button onclick="window.print()" style="padding:8px 20px;background:#1a56db;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:750;font-family:'Plus Jakarta Sans',sans-serif">🖶 In hóa đơn</button>'
-    + '<button onclick="window.close()" style="padding:8px 16px;background:#e5e7eb;color:#111;border:none;border-radius:6px;cursor:pointer;font-size:13px;margin-left:6px;font-family:'Plus Jakarta Sans',sans-serif">✕ Đóng</button>'
+    + '<button onclick="window.print()" style="padding:8px 20px;background:#1a56db;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:750">🖶 In hóa đơn</button>'
+    + '<button onclick="window.close()" style="padding:8px 16px;background:#e5e7eb;color:#111;border:none;border-radius:6px;cursor:pointer;font-size:13px;margin-left:6px">✕ Đóng</button>'
     + '</div>'
     + '</body></html>';
 
@@ -1398,6 +1767,11 @@ function renderCart() {
     showToast('⚠️ Trình duyệt chặn popup — vui lòng cho phép!', 'err');
   }
   closeSuccess();
+}
+
+function formatDateTime(d) {
+  const p2 = n => String(n).padStart(2,'0');
+  return p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear()+' '+p2(d.getHours())+':'+p2(d.getMinutes());
 }
 
 function fmt(n) { return new Intl.NumberFormat('vi-VN').format(Math.round(n||0)) + 'đ'; }
@@ -1964,7 +2338,7 @@ async function openEndShiftModal() {
   modal.classList.add('show');
   document.getElementById('esrActualInput').value = '';
   document.getElementById('esrHeadMeta').textContent = 'Đang tải...';
-  ['esrGrandTotal','esrCashTotal','esrQrTotal','esrCardTotal','esrOpening','esrCashSold','esrExpected']
+  ['esrGrandTotal','esrCashTotal','esrQrTotal','esrOpening','esrCashSold','esrExpected']
     .forEach(function(id) { document.getElementById(id).textContent = '—'; });
   document.getElementById('esrConfirmBtn').disabled = false;
   document.getElementById('esrConfirmBtn').textContent = '⏻ Xác nhận & Đóng ca';
@@ -1980,7 +2354,7 @@ async function openEndShiftModal() {
     }
     var cashV  = parseFloat(d.cashTotal)  || 0;
     var qrV    = parseFloat(d.qrTotal)    || 0;
-    var cardV  = parseFloat(d.cardTotal)  || 0;
+    var cardV  = parseFloat(d.cardTotal)  || 0; // hóa đơn CARD lịch sử (tính năng đã gỡ bỏ) vẫn cộng vào tổng
     var grand  = cashV + qrV + cardV;
     var stLbl  = d.posStation > 0 ? ' · Quầy ' + d.posStation : '';
     var timeLbl = d.checkInTime ? ' · Vào ca: ' + d.checkInTime : '';
@@ -1988,11 +2362,9 @@ async function openEndShiftModal() {
     document.getElementById('esrGrandTotal').textContent = fmtMoney(grand);
     document.getElementById('esrInvChip').textContent    = d.invoiceCount + ' hóa đơn';
     document.getElementById('esrCashTotal').textContent  = fmtMoney(cashV);
-    document.getElementById('esrQrTotal').textContent    = fmtMoney(qrV);
-    document.getElementById('esrCardTotal').textContent  = fmtMoney(cardV);
+    document.getElementById('esrQrTotal').textContent    = fmtMoney(qrV + cardV);
     document.getElementById('esrCashTotal').className    = 'esr-prow-val' + (cashV === 0 ? ' zero' : '');
-    document.getElementById('esrQrTotal').className      = 'esr-prow-val' + (qrV   === 0 ? ' zero' : '');
-    document.getElementById('esrCardTotal').className    = 'esr-prow-val' + (cardV === 0 ? ' zero' : '');
+    document.getElementById('esrQrTotal').className      = 'esr-prow-val' + ((qrV+cardV) === 0 ? ' zero' : '');
     document.getElementById('esrOpening').textContent  = fmtMoney(parseFloat(d.openingCash) || 0);
     document.getElementById('esrCashSold').textContent = fmtMoney(cashV);
     _esrExpected = parseFloat(d.expectedCash) || 0;
