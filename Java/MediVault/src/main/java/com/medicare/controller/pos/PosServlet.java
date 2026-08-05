@@ -33,6 +33,7 @@ public class PosServlet extends HttpServlet {
     private final IAccountDAO    accountDAO    = new AccountDAO();
     private final IAttendanceDAO attendanceDAO = new AttendanceDAO();
     private final IShiftScheduleDAO scheduleDAO = new ShiftScheduleDAO();
+    private final IShiftDAO         shiftDAO         = new ShiftDAO();
     private final IInvoiceDAO       invoiceDAO       = new InvoiceDAO();
     private final IInvoiceDetailDAO invoiceDetailDAO = new InvoiceDetailDAO();
     private final IReturnsDAO       returnsDAO       = new ReturnsDAO();
@@ -408,6 +409,14 @@ public class PosServlet extends HttpServlet {
                     Attendance occupant = attendanceDAO.findActiveByStation(leaveStation);
                     if (occupant != null) {
                         attendanceDAO.checkOutById(occupant.getAttendanceId(), BigDecimal.ZERO, "Rời quầy từ POS", false);
+                        // Từ khi handleOpenShift() bắt đầu mở thật bản ghi Shifts (hợp nhất với
+                        // luồng "staff"), phải đóng luôn Shift của người bị chiếm quầy — nếu
+                        // không nó treo mãi ở trạng thái OPEN vì chủ nhân đã rời đi, không còn
+                        // ai gọi pos-end-shift để đóng bằng tiền đếm thật.
+                        Shift abandoned = shiftDAO.findCurrent(occupant.getAccountId());
+                        if (abandoned != null) {
+                            shiftDAO.forceClose(abandoned.getShiftId(), "Tự đóng — quầy bị chiếm bởi nhân viên khác");
+                        }
                     }
                 }
                 leaveSess.removeAttribute("posStation");
@@ -611,8 +620,28 @@ public class PosServlet extends HttpServlet {
                 Integer customerId = parseIntOrNull(req.getParameter("customerId"));
                 String  payMethod  = req.getParameter("paymentMethod");
                 String  discStr    = req.getParameter("discount");
-                BigDecimal discount = (discStr != null && !discStr.isEmpty())
+                BigDecimal manualDiscount = (discStr != null && !discStr.isEmpty())
                         ? new BigDecimal(discStr) : BigDecimal.ZERO;
+                BigDecimal discount = manualDiscount;
+
+                // Đổi điểm tích lũy lấy tiền thanh toán — số điểm do client đề nghị, GIÁ TRỊ quy
+                // đổi và số dư khả dụng luôn được tính/kiểm tra lại ở server (không tin client).
+                Integer redeemPointsParam = parseIntOrNull(req.getParameter("redeemPoints"));
+                int redeemPoints = redeemPointsParam != null && redeemPointsParam > 0 ? redeemPointsParam : 0;
+                if (redeemPoints > 0) {
+                    if (customerId == null) {
+                        out.print("{\"ok\":false,\"msg\":\"Cần chọn khách hàng để đổi điểm!\"}");
+                        return;
+                    }
+                    com.medicare.entity.LoyaltyCard card =
+                            new com.medicare.dao.LoyaltyDAO().findByCustomer(customerId);
+                    if (card == null || card.getAvailablePoints() < redeemPoints) {
+                        out.print("{\"ok\":false,\"msg\":\"Khách hàng không đủ điểm để đổi!\"}");
+                        return;
+                    }
+                    discount = discount.add(BigDecimal.valueOf(redeemPoints)
+                            .multiply(BigDecimal.valueOf(com.medicare.dao.LoyaltyDAO.VND_PER_POINT)));
+                }
 
                 String[] medIdStrs = req.getParameterValues("medId[]");
                 String[] qtyStrs   = req.getParameterValues("qty[]");
@@ -631,6 +660,28 @@ public class PosServlet extends HttpServlet {
                 String jsonResp;
                 if (result.isOk()) {
                     Invoice inv = result.getData();
+                    // Trừ điểm khách vừa đổi lấy tiền cho hóa đơn này (nếu có). DiscountAmount
+                    // ghi trên hóa đơn có thể đã bị PricingUtil.settle() kẹp nhỏ hơn tổng đề nghị
+                    // (manualDiscount + giá trị điểm) nếu vượt quá subtotal — quy đổi lại đúng số
+                    // điểm tương ứng với phần giảm giá THỰC SỰ được áp dụng, không trừ dư điểm.
+                    if (redeemPoints > 0 && customerId != null && inv != null) {
+                        BigDecimal appliedDiscount = inv.getDiscountAmount() != null
+                                ? inv.getDiscountAmount() : BigDecimal.ZERO;
+                        BigDecimal redeemValueApplied = appliedDiscount.subtract(manualDiscount);
+                        if (redeemValueApplied.compareTo(BigDecimal.ZERO) > 0) {
+                            int actualRedeemPoints = Math.min(redeemPoints,
+                                    redeemValueApplied.divideToIntegralValue(
+                                            BigDecimal.valueOf(com.medicare.dao.LoyaltyDAO.VND_PER_POINT)).intValue());
+                            if (actualRedeemPoints > 0) {
+                                boolean redeemed = new com.medicare.dao.LoyaltyDAO().redeem(customerId, actualRedeemPoints,
+                                        "Đổi điểm thanh toán hóa đơn", inv.getInvoiceId());
+                                if (!redeemed) {
+                                    com.medicare.util.AuditHelper.log(req, "Lỗi trừ điểm đổi tiền", "Invoice", inv.getInvoiceId(),
+                                            "Hóa đơn " + inv.getInvoiceCode() + " đã áp giảm giá đổi điểm nhưng trừ điểm thất bại — cần đối soát thủ công");
+                                }
+                            }
+                        }
+                    }
                     // Tích điểm loyalty (1 điểm / 10.000đ) nếu hóa đơn gắn khách hàng
                     int earned = 0;
                     if (customerId != null && inv != null) {
@@ -1105,6 +1156,14 @@ public class PosServlet extends HttpServlet {
         if (schedule != null && openingCash.compareTo(BigDecimal.ZERO) > 0) {
             ((ShiftScheduleDAO) scheduleDAO).updateOpeningCash(schedule.getScheduleId(), openingCash);
         }
+        // Hợp nhất với luồng check-in bên "staff" (StaffAttendanceServlet.performCheckIn):
+        // luồng đó mở luôn bản ghi Shifts với tiền đầu ca thật. POS trước đây KHÔNG làm
+        // bước này → SaleService.completeSale tra shiftDAO.findCurrent(accountId) luôn ra
+        // null cho nhân viên chỉ điểm danh qua POS, khiến hóa đơn không gắn ShiftID và các
+        // báo cáo/đối soát theo ca (ShiftServlet, ReportServlet…) bỏ sót toàn bộ doanh số POS.
+        if (shiftDAO.findCurrent(staff.getAccountId()) == null) {
+            shiftDAO.openShift(staff.getAccountId(), openingCash);
+        }
         session.setAttribute("posState", "ACTIVE");
         session.setAttribute("posOpeningCash", openingCash);
         out.print("{\"ok\":true}");
@@ -1152,6 +1211,14 @@ public class PosServlet extends HttpServlet {
 
         // Record actual handover cash in attendance checkout
         attendanceDAO.checkOut(staff.getAccountId(), closingCash, "Đóng ca từ POS", false);
+
+        // Hợp nhất với luồng checkout bên "staff" (StaffAttendanceServlet.performCheckOut):
+        // đóng luôn bản ghi Shifts đang mở (nếu có) với đúng tiền cuối ca đã đếm — nếu
+        // không, Shift mở từ handleOpenShift() ở trên sẽ treo mãi ở trạng thái OPEN.
+        Shift openShift = shiftDAO.findCurrent(staff.getAccountId());
+        if (openShift != null) {
+            shiftDAO.closeShift(openShift.getShiftId(), closingCash, "Đóng ca từ POS");
+        }
 
         session.removeAttribute("posState");
         session.removeAttribute("staffAccount");
