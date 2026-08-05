@@ -33,7 +33,52 @@ public class AuthFilter implements Filter {
         return ip != null && ADMIN_IP_WHITELIST.contains(ip);
     }
 
+    /** roleId Thủ kho / Quản lý kho — khớp WarehouseAuth.ROLE_WAREHOUSE. */
+    private static final int ROLE_WAREHOUSE = 3;
+
     private final IAccountDAO accountDAO = new AccountDAO();
+
+    // ── Tiện ích lấy danh tính từ session (thay cho việc quét bừa lấy cái đầu tiên) ──
+
+    private static Account asAccount(Object o) {
+        return o instanceof Account a ? a : null;
+    }
+
+    /** Tài khoản staff trong session có roleId đúng bằng {@code role}, hoặc null. */
+    private static Account findByRole(HttpSession session, int role) {
+        return scan(session, a -> a.getRoleId() == role);
+    }
+
+    /** Tài khoản staff trong session có roleId KHÁC {@code role}, hoặc null. */
+    private static Account findExcludingRole(HttpSession session, int role) {
+        return scan(session, a -> a.getRoleId() != role);
+    }
+
+    /** Bất kỳ tài khoản staff nào trong session — chỉ dùng cho URL dùng chung. */
+    private static Account findAnyStaff(HttpSession session) {
+        return scan(session, a -> true);
+    }
+
+    private static Account scan(HttpSession session, java.util.function.Predicate<Account> ok) {
+        if (session == null) return null;
+        java.util.Enumeration<String> names = session.getAttributeNames();
+        while (names.hasMoreElements()) {
+            String name = names.nextElement();
+            if (!name.startsWith("staffAccount_")) continue;
+            Account a = asAccount(session.getAttribute(name));
+            if (a != null && ok.test(a)) return a;
+        }
+        return null;
+    }
+
+    /** URL chỉ dành cho nhân viên bán hàng (không phải portal Kho, không phải dùng chung). */
+    private static boolean isStaffOnlyUri(String uri, String ctx) {
+        return uri.startsWith(ctx + "/staff-dashboard")
+                || uri.equals(ctx + "/staff-profile")
+                || uri.startsWith(ctx + "/staff-my-shifts")
+                || uri.startsWith(ctx + "/staff-my-invoices")
+                || uri.startsWith(ctx + "/staff-checkin");
+    }
 
     // ── Tiện ích: đọc giá trị cookie theo tên ──
     private String getCookieValue(HttpServletRequest req, String name) {
@@ -97,10 +142,24 @@ public class AuthFilter implements Filter {
 
     // ── Xóa tất cả cookie khi logout ──
     public static void clearAllCookies(HttpServletResponse resp) {
+        clearAdminCookies(resp);
+        clearStaffCookies(resp);
+    }
+
+    /**
+     * Chỉ xoá cookie ADMIN. Tách riêng vì trước đây staff đăng xuất cũng gọi
+     * clearAllCookies() → xoá luôn mv_admin_remember, admin đang bật "Ghi nhớ đăng nhập"
+     * trên cùng máy bị mất phiên dài hạn dù không hề đăng xuất.
+     */
+    public static void clearAdminCookies(HttpServletResponse resp) {
         Cookie a = new Cookie("mv_admin_uid", "");
         a.setMaxAge(0); a.setPath("/"); resp.addCookie(a);
         Cookie r = new Cookie("mv_admin_remember", ""); // xóa Remember Me
         r.setMaxAge(0); r.setPath("/"); resp.addCookie(r);
+    }
+
+    /** Chỉ xoá cookie STAFF — admin đăng xuất không được đụng tới phiên staff. */
+    public static void clearStaffCookies(HttpServletResponse resp) {
         Cookie s = new Cookie("mv_staff_uid", "");
         s.setMaxAge(0); s.setPath("/"); resp.addCookie(s);
     }
@@ -113,6 +172,12 @@ public class AuthFilter implements Filter {
 
         String uri = req.getRequestURI();
         String ctx = req.getContextPath();
+
+        // Portal Kho dùng URL sạch (không mang ?uid=) nên phải biết SỚM đây có phải route
+        // Kho không, để bước lấy danh tính bên dưới đọc đúng khoá session "warehouseUser"
+        // thay vì mò trong đống staffAccount_*.
+        boolean isWarehouseUri = uri.equals(ctx + "/warehouse")
+                || uri.startsWith(ctx + "/warehouse-");
 
         // ── 1. Public URLs — không cần đăng nhập ──
         boolean isPublic = uri.equals(ctx + "/login")
@@ -147,27 +212,51 @@ public class AuthFilter implements Filter {
             adminAcc = null;
         }
 
-        // Lấy staffAccount từ URL param uid — mỗi tab tự mang uid của mình
+        // ── Danh tính STAFF / KHO ────────────────────────────────────────────────
+        // BUG GỐC (đã sửa): trước đây khi request không mang ?uid=, đoạn này quét
+        // session.getAttributeNames() rồi lấy staffAccount_* ĐẦU TIÊN gặp được. Thứ tự
+        // attribute trong session KHÔNG xác định, nên khi cùng một trình duyệt có cả tài
+        // khoản Dược sĩ (roleId 2) lẫn Thủ kho (roleId 3):
+        //   /warehouse-dashboard → filter bốc trúng tài khoản roleId 2 → thấy "không phải
+        //   thủ kho" → đá về /warehouse-login → WarehouseLoginServlet đọc staffUid thấy
+        //   roleId 3 → đá ngược lại /warehouse-dashboard → LẶP VÔ HẠN, hoặc nhảy loạn
+        //   giữa 2 portal.
+        // Nay lấy danh tính theo ĐÚNG cửa đang đi, cùng nguồn sự thật với WarehouseAuth
+        // để filter và servlet không bao giờ nhìn ra 2 người khác nhau.
         Account staffAcc = null;
         String reqUid = req.getParameter("uid");
-        if (reqUid != null && !reqUid.isEmpty() && session != null) {
-            staffAcc = (Account) session.getAttribute("staffAccount_" + reqUid);
-        }
-
-        // Chỉ quét toàn bộ staffAccount_* khi request KHÔNG mang uid cụ thể — nếu URL
-        // đã chỉ rõ uid mà không khớp session nào thì coi như KHÔNG có danh tính, tránh
-        // việc rơi về nhầm 1 tài khoản khác còn sót trong session (máy dùng chung).
         boolean uidSpecified = reqUid != null && !reqUid.isEmpty();
-        if (staffAcc == null && session != null && !uidSpecified) {
-            java.util.Enumeration<String> names = session.getAttributeNames();
-            while (names.hasMoreElements()) {
-                String name = names.nextElement();
-                if (name.startsWith("staffAccount_")) {
-                    Object val = session.getAttribute(name);
-                    if (val instanceof Account) {
-                        staffAcc = (Account) val;
-                        break;
-                    }
+
+        if (session != null) {
+            if (uidSpecified) {
+                // URL đã chỉ rõ uid → chỉ chấp nhận đúng tài khoản đó. Không khớp thì coi
+                // như chưa đăng nhập, tuyệt đối không rơi về tài khoản khác còn sót lại
+                // trong session (máy dùng chung).
+                staffAcc = asAccount(session.getAttribute("staffAccount_" + reqUid));
+            } else if (isWarehouseUri) {
+                // Portal Kho: đọc đúng khoá mà WarehouseAuth ghi khi đăng nhập.
+                staffAcc = asAccount(session.getAttribute("warehouseUser"));
+                if (staffAcc == null || staffAcc.getRoleId() != ROLE_WAREHOUSE) {
+                    // Vào bằng /staff-login (chỉ đặt staffAccount_<id>) hoặc phiên mở từ
+                    // trước bản vá → tìm ĐÚNG tài khoản thủ kho, không bốc bừa.
+                    staffAcc = findByRole(session, ROLE_WAREHOUSE);
+                }
+            } else {
+                // Trang staff / trang dùng chung: ưu tiên con trỏ "tab vừa dùng gần nhất".
+                Object ptr = session.getAttribute("staffUid");
+                if (ptr instanceof String s && !s.isEmpty()) {
+                    staffAcc = asAccount(session.getAttribute("staffAccount_" + s));
+                }
+                // Con trỏ đang trỏ sang thủ kho mà đây là trang staff → bỏ qua, tìm tài
+                // khoản bán hàng thật sự; nếu không có thì mới chấp nhận thủ kho.
+                if (isStaffOnlyUri(uri, ctx) && staffAcc != null
+                        && staffAcc.getRoleId() == ROLE_WAREHOUSE) {
+                    staffAcc = null;
+                }
+                if (staffAcc == null) {
+                    staffAcc = isStaffOnlyUri(uri, ctx)
+                            ? findExcludingRole(session, ROLE_WAREHOUSE)
+                            : findAnyStaff(session);
                 }
             }
         }
@@ -209,7 +298,11 @@ public class AuthFilter implements Filter {
             if (adminAcc != null) {
                 resp.sendRedirect(ctx + "/dashboard");      // đã login admin → vào dashboard
             } else if (staffAcc != null) {
-                resp.sendRedirect(ctx + "/staff-dashboard?uid=" + staffAcc.getAccountId());
+                // Thủ kho có portal riêng — đẩy vào /staff-dashboard thì servlet đó lại
+                // bắn sang /warehouse-dashboard, thừa một vòng nhảy trước mắt người dùng.
+                resp.sendRedirect(staffAcc.getRoleId() == ROLE_WAREHOUSE
+                        ? ctx + "/warehouse-dashboard"
+                        : ctx + "/staff-dashboard?uid=" + staffAcc.getAccountId());
             } else {
                 resp.sendRedirect(ctx + "/login");           // chưa login → về login
             }
@@ -242,6 +335,15 @@ public class AuthFilter implements Filter {
         if (uri.equals(ctx + "/dashboard") || uri.equals(ctx + "/dashboard/")) {
             if (adminAcc == null && staffAcc == null) {
                 resp.sendRedirect(ctx + "/login");
+                return;
+            }
+            // /dashboard là dashboard ADMIN. Nếu chỉ có phiên staff/kho thì DashboardServlet
+            // sẽ đá thẳng ra trang đăng nhập admin — người dùng đang đăng nhập bình thường
+            // lại thấy màn hình đòi tài khoản quản trị, rất khó hiểu. Đưa về đúng portal.
+            if (adminAcc == null) {
+                resp.sendRedirect(staffAcc.getRoleId() == ROLE_WAREHOUSE
+                        ? ctx + "/warehouse-dashboard"
+                        : ctx + "/staff-dashboard?uid=" + staffAcc.getAccountId());
                 return;
             }
             chain.doFilter(request, response);
@@ -317,15 +419,40 @@ public class AuthFilter implements Filter {
                 resp.sendRedirect(ctx + "/staff-login");
                 return;
             }
+            // Thủ kho lạc sang portal bán hàng → đưa thẳng về portal Kho, KHÔNG đá về
+            // /staff-login (trang đó thấy staffUid role 3 sẽ lại đá đi tiếp → lòng vòng).
+            if (staffAcc.getRoleId() == ROLE_WAREHOUSE && isStaffOnlyUri(uri, ctx)) {
+                resp.sendRedirect(ctx + "/warehouse-dashboard");
+                return;
+            }
+            // Các servlet staff lấy danh tính từ ?uid= trên URL. Gõ thẳng "/staff-dashboard"
+            // (hoặc bookmark không kèm uid) thì servlet đòi uid không có → đá về /staff-login
+            // dù phiên vẫn còn sống. Bổ sung uid chuẩn rồi cho đi tiếp: lượt sau uidSpecified
+            // = true nên vào thẳng, không lặp.
+            // CHỈ áp dụng cho URL là TRANG (isStaffOnlyUri). Các endpoint AJAX/SSE như
+            // /staff-notifications không được redirect — fetch() sẽ nuốt luôn 302 và nhận
+            // về HTML thay vì JSON, hỏng im lặng.
+            if (!uidSpecified && isStaffOnlyUri(uri, ctx)
+                    && !"XMLHttpRequest".equals(req.getHeader("X-Requested-With"))) {
+                String qs = req.getQueryString();
+                resp.sendRedirect(uri + "?uid=" + staffAcc.getAccountId()
+                        + (qs != null && !qs.isEmpty() ? "&" + qs : ""));
+                return;
+            }
             chain.doFilter(request, response);
             return;
         }
 
         // ── 8b. Trang chỉ dành cho Quản lý kho ──
-        if (uri.equals(ctx + "/warehouse")
-                || uri.startsWith(ctx + "/warehouse-")) {
-            if (staffAcc == null || staffAcc.getRoleId() != 3) {
+        if (isWarehouseUri) {
+            if (staffAcc == null) {
                 resp.sendRedirect(ctx + "/warehouse-login");
+                return;
+            }
+            // Dược sĩ bán hàng lạc sang portal Kho → về đúng portal của họ, không đá sang
+            // /warehouse-login (họ đăng nhập ở đó cũng không vào được, chỉ tổ quẩn).
+            if (staffAcc.getRoleId() != ROLE_WAREHOUSE) {
+                resp.sendRedirect(ctx + "/staff-dashboard?uid=" + staffAcc.getAccountId());
                 return;
             }
             chain.doFilter(request, response);
