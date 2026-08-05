@@ -182,6 +182,16 @@ a{text-decoration:none;color:inherit}
 .exp-done .acts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 
 /* ── Modal quét mã vạch ───────────────────────────────────────────────── */
+.wh-modal svg, #bcModal svg, #helpModal svg, #bcUnknownModal svg {
+  width: 20px !important;
+  height: 20px !important;
+  flex: none !important;
+}
+.wh-modal-head svg {
+  width: 22px !important;
+  height: 22px !important;
+  color: var(--main) !important;
+}
 .bc-manual-row{display:flex;gap:8px;margin-top:12px}
 .bc-manual-row input{flex:1;height:38px;padding:0 12px;border:1.5px solid var(--border);border-radius:10px;
   font-family:inherit;font-size:13.5px;outline:none}
@@ -190,6 +200,7 @@ a{text-decoration:none;color:inherit}
   border:1.5px solid var(--border);background:#fff;color:var(--deep);font-size:12.5px;font-weight:700;
   cursor:pointer;font-family:inherit}
 .bc-tool-btn:hover{border-color:var(--main);color:var(--main)}
+.bc-tool-btn svg{width:18px !important;height:18px !important;flex:none !important}
 #expBcReaderBox{margin-top:12px;border-radius:14px;overflow:hidden;display:none}
 #expBcReaderBox.on{display:block}
 .bc-wiz-err{display:none;color:var(--danger);font-size:12px;font-weight:700;margin-top:8px}
