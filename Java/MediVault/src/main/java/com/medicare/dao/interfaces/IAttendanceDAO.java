@@ -13,6 +13,14 @@ public interface IAttendanceDAO {
     int checkIn(int accountId, String method, BigDecimal openingCash, String note);
     boolean checkOut(int accountId, BigDecimal closingCash, String notes, boolean isAutoClose);
 
+    /**
+     * Check-out ĐÚNG 1 bản ghi Attendance theo AttendanceID cụ thể (không dò "bản ghi mở mới nhất
+     * theo AccountID" như SP_CheckOut/checkOut()). Dùng khi đã xác định chính xác bản ghi cần đóng
+     * (VD: "Tan ca" từ quầy X — occupant có thể có NHIỀU bản ghi Attendance còn mở do lỗi cũ, nếu
+     * đóng nhầm bản ghi khác thì quầy X vẫn hiện "đang bận" mãi dù đã tan ca).
+     */
+    boolean checkOutById(int attendanceId, BigDecimal closingCash, String notes, boolean isAutoClose);
+
     // ── Query ─────────────────────────────────────────────────────
     /** Ca đang active (chưa check-out) của nhân viên */
     Attendance findActiveByAccount(int accountId);
