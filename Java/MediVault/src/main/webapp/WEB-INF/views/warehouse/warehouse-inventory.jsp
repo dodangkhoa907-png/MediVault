@@ -85,7 +85,32 @@ a{text-decoration:none;color:inherit}
 .rx{display:inline-block;margin-left:6px;padding:1px 5px;border-radius:5px;background:#EEF2FF;color:#4338CA;
     font-size:9.5px;font-weight:800;letter-spacing:.04em;vertical-align:middle}
 
-</style>
+/* ── Custom Select Dropdown UI (Đồng bộ style với ứng dụng) ────────── */
+.wh-custom-select{position:relative;display:inline-block}
+.wh-cselect-btn{height:40px;padding:0 14px;border:1px solid var(--border,#CBD5E1);border-radius:var(--wh-r-ctl,12px);
+  font-family:inherit;font-size:13px;font-weight:650;color:var(--ink,#1E293B);background:var(--white,#FFFFFF);
+  cursor:pointer;outline:none;display:inline-flex;align-items:center;justify-content:space-between;gap:10px;
+  transition:all .15s ease;user-select:none}
+.wh-cselect-btn:hover{border-color:#94A3B8;background:#F8FAFC}
+.wh-cselect-btn.open{border-color:var(--main,#0D9488);box-shadow:0 0 0 3px rgba(13,148,136,.15);background:#FFFFFF}
+.wh-cselect-btn .caret{width:14px;height:14px;stroke:#64748B;transition:transform .15s ease;flex-shrink:0}
+.wh-cselect-btn.open .caret{transform:rotate(180deg)}
+
+.wh-cselect-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:70;min-width:230px;padding:6px;
+  background:#FFFFFF;border:1px solid var(--border,#E2E8F0);border-radius:14px;
+  box-shadow:0 10px 25px -5px rgba(15,23,42,0.12), 0 8px 10px -6px rgba(15,23,42,0.04);
+  display:none;flex-direction:column;gap:2px}
+.wh-cselect-menu.open{display:flex;animation:wh-pop-in 140ms cubic-bezier(.4,0,.2,1)}
+
+.wh-custom-select.wh-dropup .wh-cselect-menu{top:auto;bottom:calc(100% + 6px)}
+.wh-custom-select.wh-dropup .wh-cselect-menu.open{animation:wh-pop-up-in 140ms cubic-bezier(.4,0,.2,1)}
+@keyframes wh-pop-up-in{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}
+
+.wh-cselect-opt{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:8px;
+  font-size:13px;font-weight:600;color:#334155;cursor:pointer;transition:all .12s ease}
+.wh-cselect-opt:hover{background:#F1F5F9;color:#0F172A}
+.wh-cselect-opt.is-selected{background:#E6F4F1;color:var(--main,#0F766E);font-weight:750}
+.wh-cselect-opt.is-selected::after{content:"✓";font-weight:800;font-size:13px;margin-left:8px;color:var(--main,#0F766E)}</style>
 <meta name="csrf-token" content="${csrfToken}">
 <script src="<%= ctx %>/js/csrf.js"></script>
 </head>
@@ -187,15 +212,24 @@ a{text-decoration:none;color:inherit}
           <button type="button" class="clear" id="qClear" aria-label="Xoá từ khoá"><svg><use href="#ic-x"/></svg></button>
         </div>
 
-        <select class="wh-select" id="sort" aria-label="Sắp xếp danh sách">
-          <option value="name:asc">Tên A → Z</option>
-          <option value="name:desc">Tên Z → A</option>
-          <option value="stock:asc">Tồn kho thấp nhất</option>
-          <option value="stock:desc">Tồn kho cao nhất</option>
-          <option value="exp:asc">Hạn dùng gần nhất</option>
-          <option value="price:desc">Giá bán cao nhất</option>
-          <option value="price:asc">Giá bán thấp nhất</option>
-        </select>
+        <div class="wh-custom-select" id="sortSelectWrap">
+          <button type="button" class="wh-cselect-btn" id="btnSort" aria-expanded="false" aria-haspopup="true" aria-label="Sắp xếp danh sách">
+            <span class="lbl" id="sortLabel">Hạn dùng gần nhất → xa nhất</span>
+            <svg class="caret"><use href="#ic-chevron-down"/></svg>
+          </button>
+          <div class="wh-cselect-menu" id="popSort" role="menu">
+            <div class="wh-cselect-opt is-selected" data-value="exp:asc">Hạn dùng gần nhất → xa nhất</div>
+            <div class="wh-cselect-opt" data-value="exp:desc">Hạn dùng xa nhất → gần nhất</div>
+            <div class="wh-cselect-opt" data-value="batch:asc">Lô gần nhất (A → Z)</div>
+            <div class="wh-cselect-opt" data-value="batch:desc">Lô gần nhất (Z → A)</div>
+            <div class="wh-cselect-opt" data-value="name:asc">Tên thuốc A → Z</div>
+            <div class="wh-cselect-opt" data-value="name:desc">Tên thuốc Z → A</div>
+            <div class="wh-cselect-opt" data-value="stock:asc">Tồn kho thấp → cao</div>
+            <div class="wh-cselect-opt" data-value="stock:desc">Tồn kho cao → thấp</div>
+            <div class="wh-cselect-opt" data-value="price:asc">Giá bán thấp → cao</div>
+            <div class="wh-cselect-opt" data-value="price:desc">Giá bán cao → thấp</div>
+          </div>
+        </div>
 
         <div class="wh-pop-wrap">
           <button type="button" class="wh-btn" id="btnCols" aria-expanded="false" aria-haspopup="true">
@@ -225,11 +259,11 @@ a{text-decoration:none;color:inherit}
             <tr>
               <th class="c-check"><input type="checkbox" id="checkAll" aria-label="Chọn tất cả dòng đang hiển thị"></th>
               <th class="c-code sortable"  data-key="code"  aria-sort="none"><span class="th-in">Mã <svg class="caret"><use href="#ic-chevron-down"/></svg></span></th>
-              <th class="c-med sortable"   data-key="name"  aria-sort="ascending"><span class="th-in">Thuốc <svg class="caret"><use href="#ic-chevron-down"/></svg></span></th>
+              <th class="c-med sortable"   data-key="name"  aria-sort="none"><span class="th-in">Thuốc <svg class="caret"><use href="#ic-chevron-down"/></svg></span></th>
               <th class="c-cat">Danh mục</th>
               <th class="c-stock sortable" data-key="stock" aria-sort="none" style="text-align:right"><span class="th-in">Tồn / Tối thiểu <svg class="caret"><use href="#ic-chevron-down"/></svg></span></th>
-              <th class="c-batch">Lô gần nhất</th>
-              <th class="c-exp sortable"   data-key="exp"   aria-sort="none"><span class="th-in">Hạn dùng <svg class="caret"><use href="#ic-chevron-down"/></svg></span></th>
+              <th class="c-batch sortable" data-key="batch" aria-sort="none"><span class="th-in">Lô gần nhất <svg class="caret"><use href="#ic-chevron-down"/></svg></span></th>
+              <th class="c-exp sortable"   data-key="exp"   aria-sort="ascending"><span class="th-in">Hạn dùng <svg class="caret"><use href="#ic-chevron-down"/></svg></span></th>
               <th class="c-status">Trạng thái</th>
               <th class="c-price sortable" data-key="price" aria-sort="none" style="text-align:right"><span class="th-in">Giá bán <svg class="caret"><use href="#ic-chevron-down"/></svg></span></th>
               <th class="c-act" style="text-align:right">Thao tác</th>
@@ -246,6 +280,7 @@ a{text-decoration:none;color:inherit}
                   data-cat="${fn:escapeXml(catNameMap[m.categoryId])}"
                   data-stock="${m.totalStock}" data-min="${m.minInventory}"
                   data-price="${m.sellingPrice}" data-exp="${m.nearestExpiry}"
+                  data-batch="${fn:escapeXml(m.nearestBatchNo)}"
                   data-unit="${fn:escapeXml(m.unit)}" data-status="${st}">
                 <td class="c-check"><input type="checkbox" class="rowck" aria-label="Chọn ${fn:escapeXml(m.medicineName)}"></td>
                 <td class="c-code"><span class="wh-code">${m.medicineCode}</span></td>
@@ -359,12 +394,18 @@ a{text-decoration:none;color:inherit}
       <div class="wh-pager" id="pager">
         <div class="info" id="pagerInfo"></div>
         <div class="nav" id="pagerNav"></div>
-        <select class="wh-select" id="pageSize" aria-label="Số dòng mỗi trang">
-          <option value="15">15 dòng</option>
-          <option value="25" selected>25 dòng</option>
-          <option value="50">50 dòng</option>
-          <option value="100">100 dòng</option>
-        </select>
+        <div class="wh-custom-select wh-dropup" id="pageSizeSelectWrap">
+          <button type="button" class="wh-cselect-btn" id="btnPageSize" aria-expanded="false" aria-haspopup="true" aria-label="Số dòng mỗi trang">
+            <span class="lbl" id="pageSizeLabel">25 dòng</span>
+            <svg class="caret"><use href="#ic-chevron-down"/></svg>
+          </button>
+          <div class="wh-cselect-menu" id="popPageSize" role="menu">
+            <div class="wh-cselect-opt" data-value="15">15 dòng</div>
+            <div class="wh-cselect-opt is-selected" data-value="25">25 dòng</div>
+            <div class="wh-cselect-opt" data-value="50">50 dòng</div>
+            <div class="wh-cselect-opt" data-value="100">100 dòng</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -410,7 +451,7 @@ a{text-decoration:none;color:inherit}
   var bodyMed   = document.getElementById('bodyMed');
   var bodyBatch = document.getElementById('bodyBatch');
 
-  var state = { view:'all', q:'', sortKey:'name', sortDir:'asc', page:1, size:25 };
+  var state = { view:'all', q:'', sortKey:'exp', sortDir:'asc', page:1, size:25 };
   var selected = new Set();
 
   /* ── Hạn dùng: tính "còn N ngày" một lần lúc tải, cho cả 2 bảng ─────────── */
@@ -499,14 +540,31 @@ a{text-decoration:none;color:inherit}
     src = base.filter(function(r){ return matches(r, q); });
 
     var k = state.sortKey, dir = state.sortDir === 'desc' ? -1 : 1;
-    var num = (k === 'stock' || k === 'price');
     src.sort(function(a, b){
+      var num = (k === 'stock' || k === 'price');
       var va, vb;
       if (num)            { va = +a.dataset[k] || 0;  vb = +b.dataset[k] || 0; }
       else if (k === 'exp'){ va = a.dataset.exp || '9999-12-31'; vb = b.dataset.exp || '9999-12-31'; }
+      else if (k === 'batch'){ va = norm(a.dataset.batch || 'zzzz'); vb = norm(b.dataset.batch || 'zzzz'); }
       else                { va = norm(a.dataset[k]); vb = norm(b.dataset[k]); }
+
       if (va < vb) return -1 * dir;
       if (va > vb) return  1 * dir;
+
+      // Tie-breakers cho Hạn dùng: ưu tiên trạng thái cảnh báo khẩn hơn rồi đến Tên A-Z
+      if (k === 'exp') {
+        var rankMap = { dead: 1, out: 1, soon: 2, low: 2, ok: 3 };
+        var stA = rankMap[a.dataset.kind || a.dataset.status] || 3;
+        var stB = rankMap[b.dataset.kind || b.dataset.status] || 3;
+        if (stA !== stB) return (stA - stB) * dir;
+      }
+
+      // Tie-breaker: tên thuốc A-Z
+      if (k !== 'name') {
+        var na = norm(a.dataset.name), nb = norm(b.dataset.name);
+        if (na < nb) return -1;
+        if (na > nb) return 1;
+      }
       return 0;
     });
     return src;
@@ -637,29 +695,94 @@ a{text-decoration:none;color:inherit}
     qEl.value = ''; state.q = ''; qBox.classList.remove('has-value'); setView('all');
   });
 
-  /* ── Sắp xếp: dropdown và click tiêu đề cột luôn đồng bộ 2 chiều ────────── */
-  var sortEl = document.getElementById('sort');
+  /* ── Sắp xếp UI tùy chỉnh ─────────────────────────────────────────── */
+  var btnSort = document.getElementById('btnSort'), popSort = document.getElementById('popSort');
+  var sortLabel = document.getElementById('sortLabel');
   function syncSortUI(){
-    sortEl.value = state.sortKey + ':' + state.sortDir;
+    var val = state.sortKey + ':' + state.sortDir;
+    if (popSort) {
+      popSort.querySelectorAll('.wh-cselect-opt').forEach(function(opt){
+        var sel = opt.dataset.value === val;
+        opt.classList.toggle('is-selected', sel);
+        if (sel && sortLabel) sortLabel.textContent = opt.textContent.replace('✓', '').trim();
+      });
+    }
     document.querySelectorAll('#tblMed th.sortable').forEach(function(th){
-      th.setAttribute('aria-sort', th.dataset.key === state.sortKey
+      var isCurrent = th.dataset.key === state.sortKey;
+      th.setAttribute('aria-sort', isCurrent
         ? (state.sortDir === 'asc' ? 'ascending' : 'descending') : 'none');
     });
   }
-  sortEl.addEventListener('change', function(){
-    var p = sortEl.value.split(':');
-    state.sortKey = p[0]; state.sortDir = p[1]; state.page = 1;
-    syncSortUI(); render();
-  });
+  if (btnSort && popSort) {
+    btnSort.addEventListener('click', function(e){
+      e.stopPropagation();
+      closeOtherPopups(popSort);
+      var open = popSort.classList.toggle('open');
+      btnSort.classList.toggle('open', open);
+      btnSort.setAttribute('aria-expanded', String(open));
+    });
+    popSort.addEventListener('click', function(e){
+      var opt = e.target.closest('.wh-cselect-opt');
+      if (!opt) return;
+      var p = opt.dataset.value.split(':');
+      state.sortKey = p[0]; state.sortDir = p[1]; state.page = 1;
+      popSort.classList.remove('open'); btnSort.classList.remove('open');
+      btnSort.setAttribute('aria-expanded', 'false');
+      syncSortUI(); render();
+    });
+  }
   document.querySelectorAll('#tblMed th.sortable').forEach(function(th){
     th.addEventListener('click', function(e){
       if (e.target.classList.contains('grip')) return;
       var k = th.dataset.key;
-      if (state.sortKey === k) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
-      else { state.sortKey = k; state.sortDir = (k === 'stock' || k === 'price') ? 'desc' : 'asc'; }
+      if (state.sortKey === k) {
+        state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        state.sortKey = k;
+        state.sortDir = 'asc';
+      }
       state.page = 1; syncSortUI(); render();
     });
   });
+
+  /* ── Số dòng mỗi trang UI tùy chỉnh ───────────────────────────────────── */
+  var btnPageSize = document.getElementById('btnPageSize'), popPageSize = document.getElementById('popPageSize');
+  var pageSizeLabel = document.getElementById('pageSizeLabel');
+  function syncPageSizeUI(){
+    if (!popPageSize) return;
+    popPageSize.querySelectorAll('.wh-cselect-opt').forEach(function(opt){
+      var sel = +opt.dataset.value === state.size;
+      opt.classList.toggle('is-selected', sel);
+      if (sel && pageSizeLabel) pageSizeLabel.textContent = opt.textContent.replace('✓', '').trim();
+    });
+  }
+  if (btnPageSize && popPageSize) {
+    btnPageSize.addEventListener('click', function(e){
+      e.stopPropagation();
+      closeOtherPopups(popPageSize);
+      var open = popPageSize.classList.toggle('open');
+      btnPageSize.classList.toggle('open', open);
+      btnPageSize.setAttribute('aria-expanded', String(open));
+    });
+    popPageSize.addEventListener('click', function(e){
+      var opt = e.target.closest('.wh-cselect-opt');
+      if (!opt) return;
+      state.size = +opt.dataset.value; state.page = 1;
+      popPageSize.classList.remove('open'); btnPageSize.classList.remove('open');
+      btnPageSize.setAttribute('aria-expanded', 'false');
+      syncPageSizeUI(); render();
+    });
+  }
+
+  function closeOtherPopups(activePop){
+    [popSort, popPageSize, popCols].forEach(function(p){
+      if (p && p !== activePop) {
+        p.classList.remove('open');
+        var btn = p.parentElement ? p.parentElement.querySelector('button') : null;
+        if (btn) { btn.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); }
+      }
+    });
+  }
 
   /* ── Kéo giãn bề rộng cột ──────────────────────────────────────────────── */
   document.querySelectorAll('#tblMed thead th').forEach(function(th, i, all){
@@ -825,11 +948,6 @@ a{text-decoration:none;color:inherit}
     location.reload();
   });
 
-  /* ── Số dòng mỗi trang ─────────────────────────────────────────────────── */
-  document.getElementById('pageSize').addEventListener('change', function(e){
-    state.size = +e.target.value; state.page = 1; render();
-  });
-
   /* ── Phím tắt: "/" nhảy vào ô tìm, Esc thoát ───────────────────────────── */
   document.addEventListener('keydown', function(e){
     if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) {
@@ -838,6 +956,8 @@ a{text-decoration:none;color:inherit}
     if (e.key === 'Escape') {
       if (document.getElementById('drawer').classList.contains('open')) closeDetail();
       else if (popCols.classList.contains('open')) { popCols.classList.remove('open'); btnCols.setAttribute('aria-expanded','false'); }
+      else if (popSort && popSort.classList.contains('open')) { popSort.classList.remove('open'); btnSort.classList.remove('open'); btnSort.setAttribute('aria-expanded','false'); }
+      else if (popPageSize && popPageSize.classList.contains('open')) { popPageSize.classList.remove('open'); btnPageSize.classList.remove('open'); btnPageSize.setAttribute('aria-expanded','false'); }
       else if (document.activeElement === qEl && qEl.value) { qEl.value = ''; onQuery(); }
     }
   });
@@ -962,6 +1082,7 @@ a{text-decoration:none;color:inherit}
   });
 
   syncSortUI();
+  syncPageSizeUI();
   render();
 })();
 </script>
