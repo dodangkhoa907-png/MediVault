@@ -106,13 +106,12 @@ public class CustomerDAO implements ICustomerDAO {
         return code;
     }
 
-    /** Đăng nhập Portal: cần đúng cả SĐT lẫn Mã khách hàng (cấp tại POS). */
-    public Customer findByPhoneAndCode(String phone, String code) {
-        String sql = "SELECT * FROM Customers WHERE Phone = ? AND CustomerCode = ?";
+    /** Tìm khách theo Email (không phân biệt hoa/thường) — dùng cho đăng nhập Portal bằng Email. */
+    public Customer findByEmail(String email) {
+        String sql = "SELECT * FROM Customers WHERE LOWER(Email) = LOWER(?)";
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
-            ps.setString(1, phone);
-            ps.setString(2, code);
+            ps.setString(1, email);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return mapRow(rs);
             }

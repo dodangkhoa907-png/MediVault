@@ -1,8 +1,8 @@
 <%@ page contentType="text/html;charset=UTF-8"  pageEncoding="UTF-8" %>
 <%
     String loginError   = (String) request.getAttribute("loginError");
-    String phonePrefill = (String) request.getAttribute("phonePrefill");
-    if (phonePrefill == null) phonePrefill = "";
+    String emailPrefill = (String) request.getAttribute("emailPrefill");
+    if (emailPrefill == null) emailPrefill = "";
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -58,11 +58,9 @@ h1{font-size:19px;font-weight:800;text-align:center;margin-bottom:6px}
 label{font-size:12.5px;font-weight:750;color:#334155;display:block;margin-bottom:7px}
 .phone-wrap{position:relative}
 .phone-wrap .ic{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:17px;transition:transform .2s var(--ease-spring)}
-input[type=tel],input[type=text]{width:100%;border:1.5px solid var(--border);border-radius:14px;padding:14px 14px 14px 44px;font-size:17px;font-weight:750;font-family:inherit;letter-spacing:1px;outline:none;transition:border .18s,box-shadow .18s,transform .18s var(--ease-spring)}
-input[type=tel]:focus,input[type=text]:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(13,148,136,.12)}
-input[type=tel]:focus + .ic,input[type=text]:focus + .ic,.phone-wrap:focus-within .ic{transform:translateY(-50%) scale(1.12)}
-.stg[style*="--stg:4.5"]{margin-top:16px}
-.field-hint{font-size:11px;color:#94a3b8;margin-top:6px;line-height:1.5}
+input[type=email]{width:100%;border:1.5px solid var(--border);border-radius:14px;padding:14px 14px 14px 44px;font-size:17px;font-weight:750;font-family:inherit;letter-spacing:.2px;outline:none;transition:border .18s,box-shadow .18s,transform .18s var(--ease-spring)}
+input[type=email]:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(13,148,136,.12)}
+input[type=email]:focus + .ic,.phone-wrap:focus-within .ic{transform:translateY(-50%) scale(1.12)}
 .err{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:12.5px;border-radius:11px;padding:11px 13px;margin-top:12px;line-height:1.5;animation:shake .45s var(--ease-out)}
 @keyframes shake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
 button{width:100%;margin-top:18px;padding:14px;background:linear-gradient(135deg,var(--teal),var(--teal-d));border:none;border-radius:14px;color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 10px 22px -8px rgba(13,148,136,.55);transition:transform .18s var(--ease-spring),box-shadow .18s;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:8px}
@@ -90,40 +88,29 @@ button.loading .btn-label{opacity:.85}
   <div class="logo-sub stg" style="--stg:1">Customer Portal</div>
 
   <h1 class="stg" style="--stg:2">Chào mừng bạn trở lại! 👋</h1>
-  <p class="sub stg" style="--stg:3">Nhập số điện thoại và mã khách hàng đã được cấp tại quầy để xem điểm tích lũy, lịch sử mua hàng và ưu đãi của bạn.</p>
+  <p class="sub stg" style="--stg:3">Nhập Email đã đăng ký tại quầy — hệ thống sẽ gửi mã OTP vào Gmail để xác minh trước khi vào portal.</p>
 
   <form method="post" action="${pageContext.request.contextPath}/portal" id="loginForm">
     <input type="hidden" name="_csrf" value="${csrfToken}">
-    <input type="hidden" name="action" value="login">
+    <input type="hidden" name="action" value="request-otp">
     <div class="stg" style="--stg:4">
-      <label for="phone">Mã Khách hàng</label>
+      <label for="email">Email</label>
       <div class="phone-wrap">
-        <span class="ic">📱</span>
-        <input type="tel" id="phone" name="phone" placeholder="**********" maxlength="10"
-               inputmode="numeric" pattern="0[0-9]{9}" required autofocus
-               value="<%= phonePrefill %>"
-               oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)">
+        <span class="ic">📧</span>
+        <input type="email" id="email" name="email" placeholder="ban@gmail.com"
+               required autofocus
+               value="<%= emailPrefill %>">
       </div>
-    </div>
-    <div class="stg" style="--stg:4.5">
-      <label for="customerCode">Mã khách hàng</label>
-      <div class="phone-wrap">
-        <span class="ic">🔑</span>
-        <input type="text" id="customerCode" name="customerCode" placeholder="KH000123" maxlength="10"
-               autocomplete="off" required
-               oninput="this.value=this.value.toUpperCase()">
-      </div>
-      <p class="field-hint">Mã được dược sĩ cấp tại quầy MediCare cùng lúc tạo tài khoản (VD: KH000123).</p>
     </div>
     <% if (loginError != null) { %>
       <div class="err">⚠️ <%= loginError %></div>
     <% } %>
     <button type="submit" class="stg" style="--stg:5" id="loginBtn">
-      <span class="spinner"></span><span class="btn-label">Đăng nhập →</span>
+      <span class="spinner"></span><span class="btn-label">Gửi mã OTP →</span>
     </button>
   </form>
 
-  <p class="note stg" style="--stg:6">Chưa có tài khoản? Chỉ cần mua hàng tại quầy MediCare,<br>dược sĩ sẽ tạo tài khoản cho bạn trong 5 giây!</p>
+  <p class="note stg" style="--stg:6">Chưa có tài khoản? Chỉ cần mua hàng tại quầy MediCare,<br>dược sĩ sẽ tạo tài khoản và ghi nhận Email của bạn<br>để có thể đăng nhập Portal bằng OTP.</p>
 </div>
 <script>
 document.getElementById('loginForm').addEventListener('submit', function () {
