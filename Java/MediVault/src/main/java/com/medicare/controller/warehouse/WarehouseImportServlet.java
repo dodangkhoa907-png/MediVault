@@ -183,18 +183,15 @@ public class WarehouseImportServlet extends HttpServlet {
             // vật lý — không có lý do nghiệp vụ nào hợp thức hoá được, nên chặn ở tầng server
             // dù JS đã chặn từ trước, phòng khi JS bị tắt hoặc bị qua mặt.
             if (!expiryDate.isAfter(manufactureDate)) {
-                resp.sendRedirect(req.getContextPath() + "/warehouse-import?msg=import-error");
+                resp.sendRedirect(req.getContextPath() + "/warehouse-import?msg=err-exp-mfg");
                 return;
             }
             if (importDate.isBefore(manufactureDate)) {
-                resp.sendRedirect(req.getContextPath() + "/warehouse-import?msg=import-error");
+                resp.sendRedirect(req.getContextPath() + "/warehouse-import?msg=err-imp-mfg");
                 return;
             }
-            // HSD đã trôi qua quá khứ = lô ĐÃ HẾT HẠN — khác NSX (NSX ở quá khứ là bình thường,
-            // thuốc nào cũng sản xuất trước khi nhập). Không có lý do nghiệp vụ nào để NHẬP KHO
-            // MỚI một lô đã hết hạn, nên chặn cứng ở đây luôn, không chỉ cảnh báo mềm như trước.
             if (!expiryDate.isAfter(LocalDate.now())) {
-                resp.sendRedirect(req.getContextPath() + "/warehouse-import?msg=import-error");
+                resp.sendRedirect(req.getContextPath() + "/warehouse-import?msg=err-exp-past");
                 return;
             }
 
