@@ -543,12 +543,54 @@ select,option{font-family:inherit;font-size:inherit}
       </div>
     </div>
   </section>
+
+  <%-- ═══════════ TAB 5: ĐƠN THUỐC ═══════════ --%>
+  <section class="tab-page" id="page-prescriptions">
+    <div class="sec">
+      <div class="sec-head">
+        <h3>📋 Danh sách đơn thuốc kê toa</h3>
+        <span style="font-size:12px;font-weight:800;color:var(--teal-d)">${prescriptions.size()} đơn</span>
+      </div>
+      <div class="sec-body" style="padding-top:6px;padding-bottom:6px">
+        <c:choose>
+          <c:when test="${empty prescriptions}">
+            <div class="empty">
+              <div class="ei">📋</div>
+              <p>Bạn chưa có đơn thuốc nào được ghi nhận.<br>Khi mua thuốc kê đơn tại quầy, dược sĩ sẽ cập nhật đơn vào tài khoản của bạn.</p>
+            </div>
+          </c:when>
+          <c:otherwise>
+            <c:forEach var="p" items="${prescriptions}">
+              <div class="offer" style="cursor:pointer;flex-direction:column;align-items:stretch" onclick="openPrescDetail(${p.prescriptionId})">
+                <div style="display:flex;justify-content:space-between;align-items:start">
+                  <div style="display:flex;gap:11px;align-items:center">
+                    <div class="offer-ic" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8)">📋</div>
+                    <div>
+                      <div class="offer-name" style="font-size:14px">Đơn thuốc BS. ${p.doctorName != null ? p.doctorName : 'Chưa rõ'}</div>
+                      <div style="font-size:11px;color:var(--muted);margin-top:2px">${p.hospitalName != null ? p.hospitalName : 'MediCare'}</div>
+                    </div>
+                  </div>
+                  <span class="inv-status" style="background:#eff6ff;color:#1d4ed8;margin-top:0">${p.prescriptionDate}</span>
+                </div>
+                <c:if test="${not empty p.notes}">
+                  <div style="font-size:11.5px;color:var(--muted);margin-top:8px;border-top:1px dashed var(--border);padding-top:8px">
+                    <b>Dặn dò:</b> ${p.notes}
+                  </div>
+                </c:if>
+              </div>
+            </c:forEach>
+          </c:otherwise>
+        </c:choose>
+      </div>
+    </div>
+  </section>
 </div>
 
 <%-- ═══════════ BOTTOM NAV ═══════════ --%>
 <nav class="bottom-nav" aria-label="Điều hướng chính">
   <button class="bn-item active" data-tab="home"    onclick="switchTab('home')" aria-current="page"><span class="bi" aria-hidden="true">🏠</span><span class="bl">Trang chủ</span></button>
   <button class="bn-item" data-tab="history" onclick="switchTab('history')"><span class="bi" aria-hidden="true">🧾</span><span class="bl">Lịch sử</span></button>
+  <button class="bn-item" data-tab="prescriptions" onclick="switchTab('prescriptions')"><span class="bi" aria-hidden="true">📋</span><span class="bl">Đơn thuốc</span></button>
   <button class="bn-item" data-tab="offers"  onclick="switchTab('offers')"><span class="bi" aria-hidden="true">🎁</span><span class="bl">Ưu đãi</span></button>
   <button class="bn-item" data-tab="account" onclick="switchTab('account')"><span class="bi" aria-hidden="true">👤</span><span class="bl">Tài khoản</span></button>
 </nav>
@@ -570,6 +612,14 @@ select,option{font-family:inherit;font-size:inherit}
   <div class="pm-box pm-drawer-box" role="dialog" aria-modal="true" aria-labelledby="invModalTitle">
     <div class="pm-head"><h4 id="invModalTitle">🧾 Chi tiết hóa đơn</h4><button class="pm-x" aria-label="Đóng chi tiết hóa đơn" onclick="closeInvModal()">✕</button></div>
     <div id="invDetailBody" style="padding:18px 20px">Đang tải…</div>
+  </div>
+</div>
+
+<%-- Chi tiết đơn thuốc — Bottom Sheet (mobile/tablet) / Right Drawer (desktop ≥992px) --%>
+<div class="pmodal pmodal-drawer" id="prescModal" onclick="if(event.target===this)closePrescModal()">
+  <div class="pm-box pm-drawer-box" role="dialog" aria-modal="true" aria-labelledby="prescModalTitle">
+    <div class="pm-head"><h4 id="prescModalTitle">📋 Chi tiết đơn thuốc</h4><button class="pm-x" aria-label="Đóng chi tiết đơn thuốc" onclick="closePrescModal()">✕</button></div>
+    <div id="prescDetailBody" style="padding:18px 20px">Đang tải…</div>
   </div>
 </div>
 
@@ -842,7 +892,8 @@ async function openInvDetail(id) {
       + '<div style="display:flex;justify-content:space-between;align-items:center;background:#f0fdfa;border:1px solid #99f6e4;border-radius:13px;padding:12px 14px;margin-top:12px">'
       + '<span style="font-size:12px;font-weight:750;color:#0f766e">Tổng thanh toán</span>'
       + '<b style="font-size:18px">' + fmtV(d.total) + '</b></div>'
-      + '<button type="button" class="btn-save" style="margin-top:14px;background:linear-gradient(135deg,#134e4a,#0d9488)" onclick="openInvQr(\'' + d.code + '\')">📱 Xem mã QR hóa đơn</button>';
+      + (d.prescriptionId ? '<button type="button" class="btn-save" style="margin-top:14px;background:linear-gradient(135deg,#3b82f6,#1d4ed8)" onclick="openPrescDetail(' + d.prescriptionId + ')">💊 Xem chi tiết đơn thuốc kê toa</button>' : '')
+      + '<button type="button" class="btn-save" style="margin-top:10px;background:linear-gradient(135deg,#134e4a,#0d9488)" onclick="openInvQr(\'' + d.code + '\')">📱 Xem mã QR hóa đơn</button>';
   } catch (e) {
     body.innerHTML = '<div style="color:#dc2626;text-align:center;padding:16px 0">Lỗi kết nối.</div>';
   }
@@ -856,8 +907,78 @@ function openInvQr(code) {
   renderQrBox('MEDICARE|INVOICE|' + code);
 }
 
+let prescModalLastFocus = null;
+function closePrescModal() {
+  document.getElementById('prescModal').classList.remove('open');
+  if (prescModalLastFocus) { prescModalLastFocus.focus(); prescModalLastFocus = null; }
+}
+
+async function openPrescDetail(id) {
+  prescModalLastFocus = document.activeElement;
+  const modal = document.getElementById('prescModal');
+  const body  = document.getElementById('prescDetailBody');
+  modal.classList.add('open');
+  modal.querySelector('.pm-x').focus();
+  body.innerHTML =
+      '<div class="skel" style="height:16px;width:55%;margin-bottom:8px"></div>'
+    + '<div class="skel" style="height:12px;width:35%;margin-bottom:18px"></div>'
+    + '<div class="skel" style="height:52px;border-radius:11px;margin-bottom:7px"></div>'
+    + '<div class="skel" style="height:52px;border-radius:11px;margin-bottom:7px"></div>'
+    + '<div class="skel" style="height:52px;border-radius:11px"></div>';
+  try {
+    const res = await fetch(CTX + '/portal?action=prescription-detail&id=' + id);
+    const d = await res.json();
+    if (!d.ok) { body.innerHTML = '<div style="color:#dc2626;text-align:center;padding:16px 0">Không tải được chi tiết đơn thuốc.</div>'; return; }
+    
+    let itemsHtml = d.items.map(it => {
+      return '<div style="background:#f8fafc;border-radius:11px;padding:10px 12px;margin-bottom:7px">'
+        + '<div style="display:flex;justify-content:space-between;align-items:start">'
+        + '<div>'
+        + '<div style="font-weight:750;font-size:13px;color:var(--teal-d)">' + it.name + '</div>'
+        + '<div style="font-size:11px;color:#64748b;margin-top:3px">'
+        + 'Liều dùng: ' + it.dosageQty + ' ' + it.dosageUnit + ' · ' + it.frequency
+        + (it.duration ? ' · Dùng trong ' + it.duration + ' ngày' : '')
+        + '</div>'
+        + (it.instruction ? '<div style="font-size:11px;color:#0f766e;margin-top:3px;font-style:italic">👉 ' + it.instruction + '</div>' : '')
+        + '</div>'
+        + '<span style="font-size:12px;font-weight:800;color:var(--ink)">SL: ' + it.totalQty + ' ' + it.unit + '</span>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+
+    if (!itemsHtml) {
+      itemsHtml = '<div class="empty"><p>Không có chi tiết thuốc trong đơn này.</p></div>';
+    }
+
+    let imgHtml = '';
+    if (d.imagePath) {
+      imgHtml = '<div style="margin-top:14px;border-top:1px solid #f1f5f9;padding-top:12px">'
+        + '<div style="font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:.5px;margin-bottom:8px">HÌNH ẢNH ĐƠN THUỐC</div>'
+        + '<a href="' + CTX + d.imagePath + '" target="_blank" title="Xem ảnh kích thước đầy đủ">'
+        + '<img src="' + CTX + d.imagePath + '" style="width:100%;border-radius:11px;border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.05)" alt="Ảnh đơn thuốc"/>'
+        + '</a>'
+        + '</div>';
+    }
+
+    body.innerHTML =
+      '<div style="border-bottom:1px solid #f1f5f9;padding-bottom:12px;margin-bottom:12px">'
+      + '<b style="font-size:15px">BS. ' + (d.doctor || 'Chưa rõ') + '</b>'
+      + '<div style="color:#94a3b8;font-size:11.5px;margin-top:2px">Nơi kê: ' + (d.hospital || 'MediCare') + ' · Ngày: ' + d.date + '</div>'
+      + (d.notes ? '<div style="background:#eff6ff;color:#1d4ed8;font-size:11.5px;padding:8px 12px;border-radius:8px;margin-top:8px"><b>Dặn dò:</b> ' + d.notes + '</div>' : '')
+      + '</div>'
+      + '<div style="font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:.5px;margin-bottom:8px">CHỈ DẪN DÙNG THUỐC</div>'
+      + itemsHtml
+      + imgHtml;
+  } catch (e) {
+    body.innerHTML = '<div style="color:#dc2626;text-align:center;padding:16px 0">Lỗi kết nối.</div>';
+  }
+}
+
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && document.getElementById('invModal').classList.contains('open')) closeInvModal();
+  if (e.key === 'Escape') {
+    if (document.getElementById('invModal').classList.contains('open')) closeInvModal();
+    if (document.getElementById('prescModal').classList.contains('open')) closePrescModal();
+  }
 });
 </script>
 </body>

@@ -6,6 +6,9 @@ import com.medicare.dao.LoyaltyDAO;
 import com.medicare.entity.Customer;
 import com.medicare.entity.Invoice;
 import com.medicare.entity.LoyaltyCard;
+import com.medicare.dao.PrescriptionDAO;
+import com.medicare.dao.interfaces.IPrescriptionDAO;
+import com.medicare.entity.Prescription;
 import com.medicare.util.AuditHelper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -36,6 +39,7 @@ public class CustomerPortalServlet extends HttpServlet {
     private final CustomerDAO customerDAO = new CustomerDAO();
     private final LoyaltyDAO  loyaltyDAO  = new LoyaltyDAO();
     private final InvoiceDAO  invoiceDAO  = new InvoiceDAO();
+    private final IPrescriptionDAO prescriptionDAO = new PrescriptionDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -46,6 +50,10 @@ public class CustomerPortalServlet extends HttpServlet {
 
         if ("invoice-detail".equals(action)) {
             handleInvoiceDetail(req, resp, me);
+            return;
+        }
+        if ("prescription-detail".equals(action)) {
+            handlePrescriptionDetail(req, resp, me);
             return;
         }
 
@@ -67,12 +75,14 @@ public class CustomerPortalServlet extends HttpServlet {
         List<Invoice> invoices = invoiceDAO.findByCustomer(fresh.getCustomerId());
         List<String[]> pointHistory = loyaltyDAO.history(fresh.getCustomerId(), 20);
         java.util.Map<Integer, Integer> invoicePoints = loyaltyDAO.earnedPointsByInvoice(fresh.getCustomerId());
+        List<Prescription> prescriptions = prescriptionDAO.findByCustomer(fresh.getCustomerId());
 
         req.setAttribute("me",           fresh);
         req.setAttribute("card",         card);
         req.setAttribute("invoices",     invoices);
         req.setAttribute("pointHistory", pointHistory);
         req.setAttribute("invoicePoints", invoicePoints);
+        req.setAttribute("prescriptions", prescriptions);
         req.getRequestDispatcher("/WEB-INF/views/portal/customer-portal.jsp").forward(req, resp);
     }
 
@@ -225,6 +235,7 @@ public class CustomerPortalServlet extends HttpServlet {
                                 ",\"method\":\"" + esc(rs.getString("PaymentMethod")) + "\"" +
                                 ",\"station\":" + (posNull ? "null" : pos) +
                                 ",\"prescription\":" + (prescriptionId != null) +
+                                ",\"prescriptionId\":" + (prescriptionId != null ? prescriptionId : "null") +
                                 ",\"points\":" + loyaltyDAO.sumEarnedForInvoice(invId);
                     }
                     if (!first) items.append(",");
@@ -238,6 +249,70 @@ public class CustomerPortalServlet extends HttpServlet {
                          .append(",\"subtotal\":").append(rs.getBigDecimal("SubTotal").toPlainString())
                          .append("}");
                     first = false;
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+
+        if (header == null) { out.print("{\"ok\":false,\"reason\":\"not_found\"}"); return; }
+        out.print("{\"ok\":true," + header + ",\"items\":[" + items + "]}");
+    }
+
+    // ── Chi tiết đơn thuốc (AJAX) ─────────────────────────────────────────────
+    private void handlePrescriptionDetail(HttpServletRequest req, HttpServletResponse resp, Customer me)
+            throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        PrintWriter out = resp.getWriter();
+        if (me == null) { out.print("{\"ok\":false,\"reason\":\"unauthorized\"}"); return; }
+
+        int prescId = 0;
+        try { prescId = Integer.parseInt(req.getParameter("id")); } catch (Exception ignored) {}
+
+        StringBuilder items = new StringBuilder();
+        String header = null;
+
+        String sqlPresc = "SELECT DoctorName, HospitalName, Notes, ImagePath, " +
+                "CONVERT(VARCHAR(10), PrescriptionDate, 120) AS PrescriptionDate " +
+                "FROM Prescriptions WHERE PrescriptionID = ? AND CustomerID = ?";
+
+        String sqlDetails = "SELECT pd.DosageQuantity, pd.DosageUnit, pd.Frequency, pd.Duration, pd.UsageInstruction, pd.TotalPrescribedQty, " +
+                "m.MedicineName, m.Unit " +
+                "FROM PrescriptionDetails pd " +
+                "JOIN Medicines m ON m.MedicineID = pd.MedicineID " +
+                "WHERE pd.PrescriptionID = ?";
+
+        try (java.sql.Connection cn = com.medicare.config.DBContext.getConnection()) {
+            try (java.sql.PreparedStatement ps = cn.prepareStatement(sqlPresc)) {
+                ps.setInt(1, prescId);
+                ps.setInt(2, me.getCustomerId());
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        header = "\"doctor\":\"" + esc(rs.getString("DoctorName")) + "\"" +
+                                ",\"hospital\":\"" + esc(rs.getString("HospitalName")) + "\"" +
+                                ",\"notes\":\"" + esc(rs.getString("Notes")) + "\"" +
+                                ",\"date\":\"" + rs.getString("PrescriptionDate") + "\"" +
+                                ",\"imagePath\":" + (rs.getString("ImagePath") != null ? "\"" + esc(rs.getString("ImagePath")) + "\"" : "null");
+                    }
+                }
+            }
+            if (header != null) {
+                try (java.sql.PreparedStatement ps = cn.prepareStatement(sqlDetails)) {
+                    ps.setInt(1, prescId);
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        boolean first = true;
+                        while (rs.next()) {
+                            if (!first) items.append(",");
+                            items.append("{\"name\":\"").append(esc(rs.getString("MedicineName")))
+                                 .append("\",\"unit\":\"").append(esc(rs.getString("Unit")))
+                                 .append("\",\"dosageQty\":").append(rs.getDouble("DosageQuantity"))
+                                 .append(",\"dosageUnit\":\"").append(esc(rs.getString("DosageUnit")))
+                                 .append("\",\"frequency\":\"").append(esc(rs.getString("Frequency")))
+                                 .append("\",\"duration\":").append(rs.getInt("Duration"))
+                                 .append(",\"instruction\":\"").append(esc(rs.getString("UsageInstruction")))
+                                 .append("\",\"totalQty\":").append(rs.getInt("TotalPrescribedQty"))
+                                 .append("}");
+                            first = false;
+                        }
+                    }
                 }
             }
         } catch (Exception e) { e.printStackTrace(); }
