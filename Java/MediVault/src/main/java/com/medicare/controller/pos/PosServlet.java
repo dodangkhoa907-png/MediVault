@@ -655,7 +655,7 @@ public class PosServlet extends HttpServlet {
 
                 ServiceResult<Invoice> result = saleService.completeSale(
                         accountId, customerId, payMethod, discount,
-                        medicineIds, quantities, req.getRemoteAddr());
+                        medicineIds, quantities, req.getRemoteAddr(), posStation);
 
                 String jsonResp;
                 if (result.isOk()) {

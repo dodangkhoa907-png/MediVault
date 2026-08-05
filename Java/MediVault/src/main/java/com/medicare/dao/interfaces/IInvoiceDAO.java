@@ -23,7 +23,7 @@ public interface IInvoiceDAO {
      */
     int completeSaleTransaction(int accountId, Integer shiftId, Integer customerId,
                                 String paymentMethod, BigDecimal discount,
-                                int[] medicineIds, int[] quantities);
+                                int[] medicineIds, int[] quantities, Integer posStation);
 
     // Truy vấn
     Invoice findById(int id);

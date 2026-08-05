@@ -24,6 +24,8 @@ public interface ISaleService {
      * @param medicineIds  Mảng ID thuốc
      * @param quantities   Mảng số lượng tương ứng
      * @param remoteAddr   IP client (để ghi audit log)
+     * @param posStation   Quầy POS đang bán (null nếu không xác định) — ghi vào hóa đơn để
+     *                      báo cáo đầu/cuối ca lọc đúng theo quầy
      * @return ServiceResult chứa Invoice hoàn chỉnh nếu thành công
      */
     ServiceResult<Invoice> completeSale(
@@ -33,5 +35,6 @@ public interface ISaleService {
             BigDecimal discount,
             int[] medicineIds,
             int[] quantities,
-            String remoteAddr);
+            String remoteAddr,
+            Integer posStation);
 }

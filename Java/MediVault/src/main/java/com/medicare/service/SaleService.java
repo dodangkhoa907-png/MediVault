@@ -33,7 +33,8 @@ public class SaleService implements ISaleService {
             BigDecimal discount,
             int[] medicineIds,
             int[] quantities,
-            String remoteAddr) {
+            String remoteAddr,
+            Integer posStation) {
 
         // Validate đầu vào cơ bản
         if (medicineIds == null || medicineIds.length == 0)
@@ -49,7 +50,7 @@ public class SaleService implements ISaleService {
         int invoiceId = invoiceDAO.completeSaleTransaction(
                 accountId, shiftId, customerId,
                 paymentMethod, discount,
-                medicineIds, quantities);
+                medicineIds, quantities, posStation);
 
         if (invoiceId > 0) {
             auditDAO.log(new StaffAuditLog(
