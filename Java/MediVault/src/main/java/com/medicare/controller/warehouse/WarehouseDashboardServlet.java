@@ -109,9 +109,15 @@ public class WarehouseDashboardServlet extends HttpServlet {
      * lô đã xuất hết không còn là rủi ro, đưa lên dải chỉ làm nhiễu.</p>
      */
     private String buildHorizonJson(IMedicineDAO medDao) {
-        List<com.medicare.entity.Batches> rows = new ArrayList<>();
-        rows.addAll(batchesDAO.findExpired());
-        rows.addAll(batchesDAO.findExpiringSoon());
+        // BUG THẬT (đã fix): trước đây gộp findExpired() + findExpiringSoon() — nhưng
+        // findExpiringSoon() giới hạn cứng "ExpiryDate <= DATEADD(day, 30, GETDATE())"
+        // (xem BatchesDAO), nên rows chỉ bao giờ chứa lô ĐÃ quá hạn hoặc hạn TRONG 30
+        // NGÀY. Widget "Đường chân trời hạn dùng" hứa hẹn 4 vùng (Quá hạn/≤30/31–90/
+        // >90) nhưng 2 vùng "31–90 ngày" và "Trên 90 ngày" KHÔNG BAO GIỜ có dữ liệu để
+        // hiển thị — không phải do kho trống, mà do nguồn dữ liệu chưa từng truy vấn tới
+        // đó. Đổi sang findAll() (mọi lô ACTIVE, không giới hạn hạn dùng) — vòng lặp bên
+        // dưới đã tự lọc currentQuantity<=0 nên không cần siết thêm ở tầng query.
+        List<com.medicare.entity.Batches> rows = batchesDAO.findAll();
 
         Map<Integer, String> names = new HashMap<>();
         for (com.medicare.entity.Medicines m : medDao.findAll()) {

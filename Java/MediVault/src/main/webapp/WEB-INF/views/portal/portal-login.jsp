@@ -97,7 +97,7 @@ button.loading .btn-label{opacity:.85}
       <label for="phone">Số điện thoại</label>
       <div class="phone-wrap">
         <span class="ic">📱</span>
-        <input type="tel" id="phone" name="phone" placeholder="0901 234 567" maxlength="10"
+        <input type="tel" id="phone" name="phone" placeholder="**********" maxlength="10"
                inputmode="numeric" pattern="0[0-9]{9}" required autofocus
                value="<%= phonePrefill %>"
                oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)">

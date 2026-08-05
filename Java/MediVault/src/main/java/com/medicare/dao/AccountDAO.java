@@ -254,8 +254,12 @@ public class AccountDAO implements IAccountDAO {
             ps.setString(4, a.getEmail() != null ? a.getEmail().trim() : null);
             ps.setString(5, a.getPhone() != null ? a.getPhone().trim() : null);
             ps.setInt(6, a.getRoleId());
+            // CitizenId là NOT NULL trong DB (schema), nhưng UI coi CCCD là tùy chọn (không có
+            // dấu * bắt buộc, validate chỉ kiểm định dạng "nếu có nhập"). Để trống trên form
+            // KHÔNG được gửi NULL xuống đây — phải gửi chuỗi rỗng "" để thỏa NOT NULL, nếu
+            // không INSERT sẽ ném lỗi ràng buộc ngay khi tạo tài khoản không nhập CCCD.
             String cid = a.getCitizenId();
-            ps.setString(7, (cid != null && !cid.trim().isEmpty()) ? cid.trim() : null);
+            ps.setString(7, (cid != null && !cid.trim().isEmpty()) ? cid.trim() : "");
             String pos = a.getPosition();
             ps.setString(8, (pos != null && !pos.trim().isEmpty()) ? pos.trim() : null);
             return ps.executeUpdate() > 0;
@@ -288,8 +292,13 @@ public class AccountDAO implements IAccountDAO {
             ps.setString(2, a.getEmail() != null ? a.getEmail().trim() : null);
             ps.setString(3, a.getPhone() != null ? a.getPhone().trim() : null);
             ps.setInt(4, a.getRoleId());
+            // BUG THẬT (đã fix): CitizenId là NOT NULL trong DB, nhưng dòng này gán NULL khi
+            // ô CCCD để trống — vi phạm ràng buộc, UPDATE bị SQL Server từ chối cho MỌI lần
+            // lưu (kể cả chỉ đổi Họ tên) hễ tài khoản đó đang có CCCD trống. Người dùng chỉ
+            // thấy "Lưu thất bại — kiểm tra log Tomcat!" chung chung, không rõ nguyên nhân.
+            // Gửi chuỗi rỗng "" thay vì null để thỏa NOT NULL, giữ đúng ý "CCCD tùy chọn".
             String cidUpd = a.getCitizenId();
-            ps.setString(5, (cidUpd != null && !cidUpd.trim().isEmpty()) ? cidUpd.trim() : null);
+            ps.setString(5, (cidUpd != null && !cidUpd.trim().isEmpty()) ? cidUpd.trim() : "");
             ps.setString(6, a.getPosition() != null ? a.getPosition().trim() : null);
             // 3 field chuyên môn — nullable
             ps.setString(7, a.getProfessionalCertNo());

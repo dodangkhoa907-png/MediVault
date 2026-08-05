@@ -1,0 +1,25 @@
+# render.yaml — Render Blueprint: vào Render Dashboard > New > Blueprint, trỏ vào repo
+# này, Render tự đọc file này và tạo sẵn service theo đúng cấu hình dưới đây.
+#
+# QUAN TRỌNG: 3 biến DB_URL/DB_USERNAME/DB_PASSWORD đánh dấu "sync: false" — Render sẽ
+# KHÔNG lưu giá trị vào file này (không commit được), mà hỏi bạn nhập trực tiếp trên
+# Dashboard sau khi tạo Blueprint. Không tự ý điền mật khẩu thật vào file này.
+services:
+  - type: web
+    name: medivault
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter          # đổi thành "free" nếu muốn dùng gói miễn phí lúc test
+    region: singapore       # gần Việt Nam nhất trong các region Render hỗ trợ — giảm độ trễ
+    healthCheckPath: /staff-login   # route public, không cần đăng nhập, trả 200 thật (không redirect)
+    envVars:
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_DRIVER
+        value: com.microsoft.sqlserver.jdbc.SQLServerDriver
+      - key: TZ
+        value: Asia/Ho_Chi_Minh

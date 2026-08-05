@@ -1,23 +1,23 @@
 <mxfile host="Electron">
   <diagram name="Use Case - MediCare (Updated)" id="usecase2026">
-    <mxGraphModel dx="2289" dy="1391" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="10140" dy="6100" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="ADM-1" connectable="0" parent="1" style="group;fontStyle=1" value="" vertex="1">
-          <mxGeometry height="2759" width="1060" as="geometry" />
+          <mxGeometry height="2759" width="1060" x="176" y="52" as="geometry" />
         </mxCell>
         <mxCell id="ADM-2" connectable="0" parent="ADM-1" style="group" value="" vertex="1">
           <mxGeometry height="2699" width="900" x="80" y="60" as="geometry" />
         </mxCell>
         <mxCell id="ADM-3" parent="ADM-2" style="rounded=1;whiteSpace=wrap;html=1;arcSize=4;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" value="" vertex="1">
-          <mxGeometry height="2699" width="840" x="60" as="geometry" />
+          <mxGeometry height="2699" width="892" x="8" as="geometry" />
         </mxCell>
         <mxCell id="ADM-4" parent="ADM-2" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=44;fontStyle=1" value="QUẢN TRỊ VIÊN (ADMIN)" vertex="1">
           <mxGeometry height="80" width="740" x="140" y="15" as="geometry" />
         </mxCell>
         <mxCell id="ADM-5" parent="ADM-2" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Admin" vertex="1">
-          <mxGeometry height="60" width="30" x="35" y="312" as="geometry" />
+          <mxGeometry height="60" width="30" x="44" y="1280" as="geometry" />
         </mxCell>
         <mxCell id="ADM-6" parent="ADM-2" style="text;html=1;whiteSpace=wrap;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;rounded=0;fontStyle=1;fontSize=20;fontColor=#333333;" value="Use Case 1: Đăng nhập &amp; Kiểm soát truy cập" vertex="1">
           <mxGeometry height="50" width="640" x="150" y="150" as="geometry" />
@@ -357,19 +357,19 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="POS-87" connectable="0" parent="1" style="group;fontStyle=1" value="" vertex="1">
-          <mxGeometry height="1790" width="1060" x="1400" as="geometry" />
+          <mxGeometry height="1790" width="1060" x="1165" y="40" as="geometry" />
         </mxCell>
         <mxCell id="POS-88" connectable="0" parent="POS-87" style="group" value="" vertex="1">
           <mxGeometry height="1730" width="900" x="80" y="60" as="geometry" />
         </mxCell>
         <mxCell id="POS-89" parent="POS-88" style="rounded=1;whiteSpace=wrap;html=1;arcSize=4;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" value="" vertex="1">
-          <mxGeometry height="1730" width="840" x="60" as="geometry" />
+          <mxGeometry height="1730" width="908" x="-8" as="geometry" />
         </mxCell>
         <mxCell id="POS-90" parent="POS-88" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=44;fontStyle=1" value="BÁN HÀNG (POS)" vertex="1">
           <mxGeometry height="80" width="740" x="140" y="15" as="geometry" />
         </mxCell>
         <mxCell id="POS-91" parent="POS-88" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Nhân viên bán hàng" vertex="1">
-          <mxGeometry height="60" width="30" x="80" y="820" as="geometry" />
+          <mxGeometry height="60" width="30" x="67" y="1297" as="geometry" />
         </mxCell>
         <mxCell id="POS-92" parent="POS-88" style="text;html=1;whiteSpace=wrap;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;rounded=0;fontStyle=1;fontSize=20;fontColor=#333333;" value="Use Case 1: Đăng nhập &amp; Mở ca" vertex="1">
           <mxGeometry height="50" width="640" x="150" y="150" as="geometry" />
@@ -382,7 +382,7 @@
             <Array as="points" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="POS-95" parent="POS-88" style="ellipse;whiteSpace=wrap;html=1;" value="Chấm công Face ID / NFC" vertex="1">
+        <mxCell id="POS-95" parent="POS-88" style="ellipse;whiteSpace=wrap;html=1;" value="Chấm công Face ID" vertex="1">
           <mxGeometry height="56" width="230" x="470" y="225" as="geometry" />
         </mxCell>
         <mxCell id="POS-96" edge="1" parent="POS-88" source="POS-93" style="curved=1;endArrow=classic;html=1;rounded=0;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="POS-95" value="">
@@ -583,7 +583,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="WH-184" connectable="0" parent="1" style="group;fontStyle=1" value="" vertex="1">
-          <mxGeometry height="2183" width="1060" x="1400" y="1860" as="geometry" />
+          <mxGeometry height="2183" width="1060" x="2276" y="148" as="geometry" />
         </mxCell>
         <mxCell id="WH-185" connectable="0" parent="WH-184" style="group" value="" vertex="1">
           <mxGeometry height="2123" width="900" x="80" y="60" as="geometry" />
@@ -592,10 +592,10 @@
           <mxGeometry height="2123" width="990" x="-90" as="geometry" />
         </mxCell>
         <mxCell id="WH-187" parent="WH-185" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=44;fontStyle=1" value="THỦ KHO (WAREHOUSE)" vertex="1">
-          <mxGeometry height="80" width="740" x="140" y="15" as="geometry" />
+          <mxGeometry height="80" width="740" x="76" y="15" as="geometry" />
         </mxCell>
         <mxCell id="WH-188" parent="WH-185" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Thủ kho" vertex="1">
-          <mxGeometry height="60" width="30" x="66" y="1972" as="geometry" />
+          <mxGeometry height="60" width="30" x="72" y="1972" as="geometry" />
         </mxCell>
         <mxCell id="WH-189" parent="WH-185" style="text;html=1;whiteSpace=wrap;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;rounded=0;fontStyle=1;fontSize=20;fontColor=#333333;" value="Use Case 1: Đăng nhập Portal Thủ kho" vertex="1">
           <mxGeometry height="50" width="640" x="150" y="150" as="geometry" />
@@ -708,8 +708,8 @@
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="WH-216" parent="WH-185" style="text;html=1;whiteSpace=wrap;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;rounded=0;fontStyle=1;fontSize=20;fontColor=#333333;" value="Use Case 4: Xuất kho / Thu hồi" vertex="1">
-          <mxGeometry height="50" width="640" x="150" y="1035" as="geometry" />
+        <mxCell id="WH-216" parent="WH-185" style="text;html=1;whiteSpace=wrap;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;rounded=0;fontStyle=1;fontSize=20;fontColor=#333333;" value="Use Case 5: Xuất kho / Thu hồi" vertex="1">
+          <mxGeometry height="49" width="640" x="150" y="1035" as="geometry" />
         </mxCell>
         <mxCell id="WH-217" parent="WH-185" style="ellipse;whiteSpace=wrap;html=1;" value="Xuất kho nội bộ" vertex="1">
           <mxGeometry height="70" width="230" x="150" y="1152" as="geometry" />
@@ -745,7 +745,7 @@
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="WH-225" parent="WH-185" style="text;html=1;whiteSpace=wrap;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;rounded=0;fontStyle=1;fontSize=20;fontColor=#333333;" value="Use Case 5: Gợi ý đặt hàng tự động" vertex="1">
+        <mxCell id="WH-225" parent="WH-185" style="text;html=1;whiteSpace=wrap;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;rounded=0;fontStyle=1;fontSize=20;fontColor=#333333;" value="Use Case 4: Gợi ý đặt hàng tự động" vertex="1">
           <mxGeometry height="50" width="640" x="150" y="1330" as="geometry" />
         </mxCell>
         <mxCell id="WH-226" parent="WH-185" style="ellipse;whiteSpace=wrap;html=1;" value="Xem gợi ý&amp;nbsp;&lt;div&gt;đặt hàng (Reorder)&lt;/div&gt;" vertex="1">
@@ -806,7 +806,7 @@
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="WH-240" parent="WH-185" style="text;html=1;whiteSpace=wrap;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;rounded=0;fontStyle=1;fontSize=20;fontColor=#333333;" value="Use Case 7: Nhận &amp; báo cáo Task" vertex="1">
+        <mxCell id="WH-240" parent="WH-185" style="text;html=1;whiteSpace=wrap;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;rounded=0;fontStyle=1;fontSize=20;fontColor=#333333;" value="Use Case 6: Nhận &amp;amp; báo cáo Task" vertex="1">
           <mxGeometry height="50" width="640" x="150" y="1850" as="geometry" />
         </mxCell>
         <mxCell id="WH-241" parent="WH-185" style="ellipse;whiteSpace=wrap;html=1;" value="Nhận task từ Admin&amp;nbsp;&lt;div&gt;(Kanban)&lt;/div&gt;" vertex="1">
@@ -844,25 +844,25 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="STF-249" connectable="0" parent="1" style="group;fontStyle=1" value="" vertex="1">
-          <mxGeometry height="1298" width="1060" x="90" y="5280" as="geometry" />
+          <mxGeometry height="1298" width="1060" x="2328" y="2475" as="geometry" />
         </mxCell>
         <mxCell id="STF-250" connectable="0" parent="STF-249" style="group" value="" vertex="1">
           <mxGeometry height="1238" width="900" x="80" y="60" as="geometry" />
         </mxCell>
         <mxCell id="STF-251" parent="STF-250" style="rounded=1;whiteSpace=wrap;html=1;arcSize=4;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" value="" vertex="1">
-          <mxGeometry height="1238" width="840" x="60" as="geometry" />
+          <mxGeometry height="1238" width="1012" x="-112" as="geometry" />
         </mxCell>
         <mxCell id="STF-252" parent="STF-250" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=44;fontStyle=1" value="NHÂN VIÊN (SELF-SERVICE)" vertex="1">
           <mxGeometry height="80" width="740" x="140" y="15" as="geometry" />
         </mxCell>
         <mxCell id="STF-253" parent="STF-250" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Nhân viên" vertex="1">
-          <mxGeometry height="60" width="30" x="80" y="595" as="geometry" />
+          <mxGeometry height="60" width="30" x="41" y="260" as="geometry" />
         </mxCell>
         <mxCell id="STF-254" parent="STF-250" style="text;html=1;whiteSpace=wrap;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;rounded=0;fontStyle=1;fontSize=20;fontColor=#333333;" value="Use Case 1: Chấm công" vertex="1">
           <mxGeometry height="50" width="640" x="150" y="150" as="geometry" />
         </mxCell>
         <mxCell id="STF-255" parent="STF-250" style="ellipse;whiteSpace=wrap;html=1;" value="Chấm công&amp;nbsp;&lt;div&gt;(Check-in/out)&lt;/div&gt;" vertex="1">
-          <mxGeometry height="70" width="230" x="150" y="267" as="geometry" />
+          <mxGeometry height="70" width="230" x="180" y="255" as="geometry" />
         </mxCell>
         <mxCell id="STF-256" edge="1" parent="STF-250" source="STF-253" style="curved=1;endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="STF-255" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
@@ -870,7 +870,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="STF-257" parent="STF-250" style="ellipse;whiteSpace=wrap;html=1;" value="Face ID (1-vs-N,&amp;nbsp;&lt;div&gt;chống giả mạo)&lt;/div&gt;" vertex="1">
-          <mxGeometry height="56" width="230" x="470" y="225" as="geometry" />
+          <mxGeometry height="56" width="230" x="474" y="262" as="geometry" />
         </mxCell>
         <mxCell id="STF-258" edge="1" parent="STF-250" source="STF-255" style="curved=1;endArrow=classic;html=1;rounded=0;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="STF-257" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
@@ -878,19 +878,6 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="STF-259" connectable="0" parent="STF-258" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="include" vertex="1">
-          <mxGeometry relative="1" y="-8" as="geometry">
-            <mxPoint as="offset" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="STF-260" parent="STF-250" style="ellipse;whiteSpace=wrap;html=1;" value="Quẹt thẻ NFC" vertex="1">
-          <mxGeometry height="56" width="230" x="470" y="295" as="geometry" />
-        </mxCell>
-        <mxCell id="STF-261" edge="1" parent="STF-250" source="STF-255" style="curved=1;endArrow=classic;html=1;rounded=0;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="STF-260" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
-            <Array as="points" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="STF-262" connectable="0" parent="STF-261" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="extend" vertex="1">
           <mxGeometry relative="1" y="-8" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
@@ -994,21 +981,21 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="PTL-144" connectable="0" parent="1" style="group" value="" vertex="1">
-          <mxGeometry height="1344" width="900" x="165" y="3452" as="geometry" />
+          <mxGeometry height="1344" width="900" x="1269" y="2096" as="geometry" />
         </mxCell>
         <mxCell id="PTL-145" parent="PTL-144" style="rounded=1;whiteSpace=wrap;html=1;arcSize=4;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" value="" vertex="1">
-          <mxGeometry height="1344" width="840" x="60" as="geometry" />
+          <mxGeometry height="1344" width="922" x="-22" as="geometry" />
         </mxCell>
         <mxCell id="PTL-146" parent="PTL-144" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=44;fontStyle=1" value="KHÁCH HÀNG (PORTAL)" vertex="1">
           <mxGeometry height="76.6349206349206" width="740" x="140" y="14.36904761904762" as="geometry" />
         </mxCell>
         <mxCell id="PTL-147" parent="PTL-144" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Khách hàng" vertex="1">
-          <mxGeometry height="57.47619047619048" width="30" x="80" y="617.8690476190476" as="geometry" />
+          <mxGeometry height="57.47619047619048" width="30" x="69" y="1223.2890476190478" as="geometry" />
         </mxCell>
         <mxCell id="PTL-148" parent="PTL-144" style="text;html=1;whiteSpace=wrap;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;rounded=0;fontStyle=1;fontSize=20;fontColor=#333333;" value="Use Case 1: Đăng nhập Portal" vertex="1">
           <mxGeometry height="47.89682539682539" width="640" x="150" y="143.6904761904762" as="geometry" />
         </mxCell>
-        <mxCell id="PTL-149" parent="PTL-144" style="ellipse;whiteSpace=wrap;html=1;" value="Đăng nhập bằng&amp;nbsp;&lt;div&gt;số điện thoại&lt;/div&gt;" vertex="1">
+        <mxCell id="PTL-149" parent="PTL-144" style="ellipse;whiteSpace=wrap;html=1;" value="Đăng kí tại quầy" vertex="1">
           <mxGeometry height="67.05555555555553" width="230" x="150" y="222.24126984126985" as="geometry" />
         </mxCell>
         <mxCell id="PTL-150" edge="1" parent="PTL-144" source="PTL-147" style="curved=1;endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="PTL-149" value="">
@@ -1016,7 +1003,7 @@
             <Array as="points" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="PTL-151" parent="PTL-144" style="ellipse;whiteSpace=wrap;html=1;" value="Xác thực OTP" vertex="1">
+        <mxCell id="PTL-151" parent="PTL-144" style="ellipse;whiteSpace=wrap;html=1;" value="Đăng nhập = số điện thoại" vertex="1">
           <mxGeometry height="53.644444444444446" width="230" x="470" y="215.53571428571425" as="geometry" />
         </mxCell>
         <mxCell id="PTL-152" edge="1" parent="PTL-144" source="PTL-149" style="curved=1;endArrow=classic;html=1;rounded=0;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="PTL-151" value="">
@@ -1040,7 +1027,7 @@
             <Array as="points" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="PTL-157" parent="PTL-144" style="ellipse;whiteSpace=wrap;html=1;" value="Gửi OTP khi&amp;nbsp;&lt;div&gt;đổi email/phone&lt;/div&gt;" vertex="1">
+        <mxCell id="PTL-157" parent="PTL-144" style="ellipse;whiteSpace=wrap;html=1;" value="Gửi OTP khi&amp;nbsp;&lt;div&gt;đổi SDT&lt;/div&gt;" vertex="1">
           <mxGeometry height="53.644444444444446" width="230" x="470" y="431.0714285714285" as="geometry" />
         </mxCell>
         <mxCell id="PTL-158" edge="1" parent="PTL-144" source="PTL-155" style="curved=1;endArrow=classic;html=1;rounded=0;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="PTL-157" value="">
