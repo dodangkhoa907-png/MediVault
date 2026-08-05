@@ -111,25 +111,45 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
 
     private void insertBatchesFromLines(Connection cn, int poId, int supplierId, List<Batches> lines)
             throws SQLException {
-        String bSql = "INSERT INTO Batches (MedicineID, POID, SupplierID, BatchNumber, " +
+        String checkSql = "SELECT BatchID FROM Batches WHERE MedicineID = ? AND BatchNumber = ? AND Status != 'CANCELLED'";
+        String updateSql = "UPDATE Batches SET CurrentQuantity = CurrentQuantity + ?, InitialQuantity = InitialQuantity + ?, ImportPrice = ?, ImportDate = ?, Status = 'ACTIVE' WHERE BatchID = ?";
+        String insertSql = "INSERT INTO Batches (MedicineID, POID, SupplierID, BatchNumber, " +
                 "ManufactureDate, ImportDate, ExpiryDate, ImportPrice, InitialQuantity, CurrentQuantity) " +
                 "VALUES (?,?,?,?,?,?,?,?,?,?)";
-        try (PreparedStatement ps = cn.prepareStatement(bSql)) {
+        try (PreparedStatement checkPs = cn.prepareStatement(checkSql);
+             PreparedStatement updatePs = cn.prepareStatement(updateSql);
+             PreparedStatement insertPs = cn.prepareStatement(insertSql)) {
+
             for (Batches b : lines) {
-                ps.setInt(1, b.getMedicineId());
-                ps.setInt(2, poId);
-                ps.setInt(3, supplierId);
-                ps.setString(4, b.getBatchNumber() != null && !b.getBatchNumber().isEmpty()
-                        ? b.getBatchNumber() : ("PO" + poId + "-" + b.getMedicineId()));
-                ps.setObject(5, b.getManufactureDate() != null ? Date.valueOf(b.getManufactureDate()) : null);
-                ps.setDate(6, b.getImportDate() != null ? Date.valueOf(b.getImportDate()) : Date.valueOf(LocalDate.now()));
-                ps.setDate(7, Date.valueOf(b.getExpiryDate()));
-                ps.setBigDecimal(8, b.getImportPrice());
-                ps.setInt(9, b.getInitialQuantity());
-                ps.setInt(10, b.getInitialQuantity());
-                ps.addBatch();
+                String batchNo = b.getBatchNumber() != null && !b.getBatchNumber().isEmpty()
+                        ? b.getBatchNumber() : ("PO" + poId + "-" + b.getMedicineId());
+
+                checkPs.setInt(1, b.getMedicineId());
+                checkPs.setString(2, batchNo);
+                try (ResultSet rs = checkPs.executeQuery()) {
+                    if (rs.next()) {
+                        int batchId = rs.getInt("BatchID");
+                        updatePs.setInt(1, b.getInitialQuantity());
+                        updatePs.setInt(2, b.getInitialQuantity());
+                        updatePs.setBigDecimal(3, b.getImportPrice());
+                        updatePs.setDate(4, b.getImportDate() != null ? Date.valueOf(b.getImportDate()) : Date.valueOf(java.time.LocalDate.now()));
+                        updatePs.setInt(5, batchId);
+                        updatePs.executeUpdate();
+                    } else {
+                        insertPs.setInt(1, b.getMedicineId());
+                        insertPs.setInt(2, poId);
+                        insertPs.setInt(3, supplierId);
+                        insertPs.setString(4, batchNo);
+                        insertPs.setObject(5, b.getManufactureDate() != null ? Date.valueOf(b.getManufactureDate()) : null);
+                        insertPs.setDate(6, b.getImportDate() != null ? Date.valueOf(b.getImportDate()) : Date.valueOf(java.time.LocalDate.now()));
+                        insertPs.setDate(7, Date.valueOf(b.getExpiryDate()));
+                        insertPs.setBigDecimal(8, b.getImportPrice());
+                        insertPs.setInt(9, b.getInitialQuantity());
+                        insertPs.setInt(10, b.getInitialQuantity());
+                        insertPs.executeUpdate();
+                    }
+                }
             }
-            ps.executeBatch();
         }
     }
 

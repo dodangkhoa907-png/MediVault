@@ -214,6 +214,92 @@ a{text-decoration:none;color:inherit}
 .exp-drawer-row .mt{font-size:12px;color:var(--muted);margin-top:4px}
 .exp-filter-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
 .exp-filter-row select,.exp-filter-row input{height:36px;padding:0 10px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:12.5px}
+
+/* ── Layout Thông tin Xác nhận dạng Thẻ/Cột To (Rõ Ràng, In Đậm, Dễ Đọc) ── */
+.exp-review-list { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
+.exp-review-card {
+  background: #FFFFFF;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+  transition: all 0.2s ease;
+}
+.exp-review-card:hover {
+  border-color: #0F766E;
+  box-shadow: 0 6px 20px rgba(15, 118, 110, 0.08);
+}
+.exp-review-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 2px dashed #E2E8F0;
+  margin-bottom: 16px;
+}
+.exp-review-med-name {
+  font-size: 19px;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.3;
+}
+.exp-review-med-sub {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #475569;
+  margin-top: 4px;
+}
+.exp-review-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+.exp-review-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  background: #F8FAFC;
+  border-radius: 12px;
+  border: 1.5px solid #E2E8F0;
+}
+.exp-review-item.full-width {
+  grid-column: 1 / -1;
+  background: #FFFBEB;
+  border-color: #FDE68A;
+}
+.exp-review-lbl {
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: #64748B;
+  text-transform: uppercase;
+}
+.exp-review-item.full-width .exp-review-lbl {
+  color: #92400E;
+}
+.exp-review-val {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.4;
+}
+.exp-review-val.highlight-qty {
+  font-size: 20px;
+  font-weight: 800;
+  color: #059669;
+}
+.exp-review-val.highlight-stock {
+  font-size: 17px;
+  font-weight: 800;
+  color: #2563EB;
+}
+.exp-review-val.highlight-lot {
+  font-size: 16.5px;
+  font-weight: 800;
+  color: #B45309;
+}
 </style>
 <meta name="csrf-token" content="${csrfToken}">
 <script src="<%= ctx %>/js/csrf.js"></script>
@@ -464,16 +550,8 @@ a{text-decoration:none;color:inherit}
           <div class="err" id="e-override-reason">Bắt buộc khi có dòng ghi đè FEFO.</div>
         </div>
 
-        <div class="wh-tablecard" style="margin-top:16px">
-          <div class="wh-tablescroll needs-x">
-            <table class="wh-table" id="reviewTable">
-              <thead><tr>
-                <th>Thuốc &amp; Hoạt chất</th><th>Mã vạch / SP</th><th>Vị trí kệ</th><th>Tồn khả dụng</th><th>SL xuất</th><th>Lô &amp; HSD đã chọn</th><th></th>
-              </tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
+        <!-- Thẻ thông tin xác nhận dạng Cột To, In Đậm, Rõ Ràng -->
+        <div class="exp-review-list" id="reviewCards"></div>
 
         <div class="wh-note danger exp-review-warn" id="reviewErrors" style="display:none"></div>
 
@@ -1181,23 +1259,49 @@ a{text-decoration:none;color:inherit}
     var anyOverride = lines.some(function (l) { return l.overridden; });
     document.getElementById('overrideReasonWrap').style.display = anyOverride ? 'block' : 'none';
 
-    var tbody = document.querySelector('#reviewTable tbody');
-    tbody.innerHTML = lines.map(function (l) {
+    var box = document.getElementById('reviewCards');
+    if (!box) return;
+    box.innerHTML = lines.map(function (l) {
       var a = l.allocation;
       var lotsText = l.overridden
         ? (a.lots.find(function (x) { return x.batchId === l.overrideBatchId; }) ?
-            (function (lot) { return lot.batchNumber + ' (HSD ' + lot.expiryDate + ')'; })(a.lots.find(function (x) { return x.batchId === l.overrideBatchId; }))
+            (function (lot) { return '<b>' + escapeHtml(lot.batchNumber) + '</b> (HSD ' + lot.expiryDate + ')'; })(a.lots.find(function (x) { return x.batchId === l.overrideBatchId; }))
             : '<span style="color:var(--danger)">Chưa chọn lô ghi đè</span>')
-        : (a.lots || []).map(function (lot) { return lot.batchNumber + ' ×' + lot.allocatedQuantity + ' (HSD ' + lot.expiryDate + ')'; }).join(', ');
-      return '<tr>' +
-        '<td><b>' + escapeHtml(l.name) + '</b>' + (l.genericName ? '<div style="font-size:11.5px;color:var(--muted)">Hoạt chất: ' + escapeHtml(l.genericName) + '</div>' : '') + '</td>' +
-        '<td>' + escapeHtml(l.barcode || l.code || '—') + '</td>' +
-        '<td>' + escapeHtml(l.shelfName || (l.shelfId ? ('Kệ #' + l.shelfId) : '—')) + '</td>' +
-        '<td class="num">' + l.totalStock + ' ' + escapeHtml(l.unit || '') + '</td>' +
-        '<td class="num"><b>' + l.qty + '</b> ' + escapeHtml(l.unit || '') + '</td>' +
-        '<td>' + lotsText + (l.overridden ? ' <span class="wh-badge low">Ghi đè</span>' : '') + '</td>' +
-        '<td><button type="button" class="wh-btn wh-btn-icon" onclick="goStepFromReview(2)" title="Chỉnh sửa"><svg><use href="#ic-edit"/></svg></button></td>' +
-        '</tr>';
+        : (a.lots || []).map(function (lot) { return '<b>' + escapeHtml(lot.batchNumber) + '</b> ×' + lot.allocatedQuantity + ' (HSD ' + lot.expiryDate + ')'; }).join(', ');
+
+      return '<div class="exp-review-card">' +
+        '<div class="exp-review-card-head">' +
+          '<div class="exp-review-med-info">' +
+            '<div class="exp-review-med-name">' + escapeHtml(l.name) + '</div>' +
+            (l.genericName ? '<div class="exp-review-med-sub">Hoạt chất: <b>' + escapeHtml(l.genericName) + '</b></div>' : '') +
+          '</div>' +
+          '<button type="button" class="wh-btn" onclick="goStepFromReview(2)" title="Chỉnh sửa dòng này" style="border-radius:10px;font-weight:700">' +
+            '<svg><use href="#ic-edit"/></svg> Chỉnh sửa' +
+          '</button>' +
+        '</div>' +
+        '<div class="exp-review-card-grid">' +
+          '<div class="exp-review-item">' +
+            '<span class="exp-review-lbl">MÃ VẠCH / SP</span>' +
+            '<span class="exp-review-val" style="font-family:monospace">' + escapeHtml(l.barcode || l.code || '—') + '</span>' +
+          '</div>' +
+          '<div class="exp-review-item">' +
+            '<span class="exp-review-lbl">VỊ TRÍ KỆ</span>' +
+            '<span class="exp-review-val">' + escapeHtml(l.shelfName || (l.shelfId ? ('Kệ #' + l.shelfId) : '—')) + '</span>' +
+          '</div>' +
+          '<div class="exp-review-item">' +
+            '<span class="exp-review-lbl">TỒN KHẢ DỤNG</span>' +
+            '<span class="exp-review-val highlight-stock">' + l.totalStock + ' ' + escapeHtml(l.unit || '') + '</span>' +
+          '</div>' +
+          '<div class="exp-review-item">' +
+            '<span class="exp-review-lbl">SL XUẤT</span>' +
+            '<span class="exp-review-val highlight-qty">' + l.qty + ' ' + escapeHtml(l.unit || '') + '</span>' +
+          '</div>' +
+          '<div class="exp-review-item full-width">' +
+            '<span class="exp-review-lbl">LÔ &amp; HSD ĐÃ CHỌN</span>' +
+            '<span class="exp-review-val highlight-lot">' + lotsText + (l.overridden ? ' <span class="wh-badge low" style="margin-left:8px;font-size:12px">Ghi đè FEFO</span>' : '') + '</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
     }).join('');
     document.getElementById('reviewErrors').style.display = 'none';
   }

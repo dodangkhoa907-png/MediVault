@@ -221,10 +221,25 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
 
-    <% if ("import-error".equals(msg)) { %>
+    <% if ("err-exp-mfg".equals(msg)) { %>
       <div class="wh-note danger" role="alert">
         <svg><use href="#ic-alert"/></svg>
-        <span>Không nhập được lô. Kiểm tra lại số lô (không trùng), số lượng và các mốc ngày (hạn dùng phải sau ngày sản xuất) rồi thử lại.</span>
+        <span>Không thể nhập lô: Hạn sử dụng phải sau Ngày sản xuất. Vui lòng kiểm tra lại mốc thời gian trên vỏ hộp.</span>
+      </div>
+    <% } else if ("err-imp-mfg".equals(msg)) { %>
+      <div class="wh-note danger" role="alert">
+        <svg><use href="#ic-alert"/></svg>
+        <span>Không thể nhập lô: Ngày nhập hàng không được trước Ngày sản xuất.</span>
+      </div>
+    <% } else if ("err-exp-past".equals(msg)) { %>
+      <div class="wh-note danger" role="alert">
+        <svg><use href="#ic-alert"/></svg>
+        <span>Không thể nhập lô: Lô hàng này đã hết hạn sử dụng. Không được phép nhập hàng đã hết hạn vào kho.</span>
+      </div>
+    <% } else if ("import-error".equals(msg)) { %>
+      <div class="wh-note danger" role="alert">
+        <svg><use href="#ic-alert"/></svg>
+        <span>Không nhập được lô. Đã xảy ra lỗi hệ thống khi lưu chứng từ, vui lòng kiểm tra lại thông tin và thử lại.</span>
       </div>
     <% } else if ("success".equals(msg)) { %>
       <div class="wh-note ok" role="status">
@@ -362,6 +377,7 @@ a{text-decoration:none;color:inherit}
               <div class="suggest" id="lotSuggest">
                 <svg><use href="#ic-history"/></svg>
                 <span>Lô gần nhất của thuốc này: <b id="lotSugText">—</b></span>
+                <button type="button" class="fill" id="lotSugFill">Dùng lô này</button>
               </div>
             </div>
             <div class="wh-fg">
@@ -558,10 +574,18 @@ a{text-decoration:none;color:inherit}
   var step = 1, MAX = 4;
   var reached = 1;
 
+  function getLocalIsoDate() {
+    var d = new Date();
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  }
+
   var F = { med:$('imMed'), sup:$('imSup'), po:$('imPo'), lot:$('imLot'), qty:$('imQty'),
             price:$('imPrice'), mfg:$('imMfg'), exp:$('imExp'), imp:$('imIn') };
 
-  if (!F.imp.value) F.imp.value = new Date().toISOString().slice(0, 10);
+  if (!F.imp.value) F.imp.value = getLocalIsoDate();
 
   var vnd = function (n) { return (Number(n) || 0).toLocaleString('vi-VN'); };
   var esc = function (s) {
@@ -863,11 +887,29 @@ a{text-decoration:none;color:inherit}
     $('qtyUnit').textContent = '—';
     $('packagingNote').hidden = true;
   }
+  function cleanBatchNo(b) {
+    if (!b) return '';
+    return b.replace(/\s*\([\d\-/\s]+\)\s*/g, '').replace(/\s*\([^)]*\)\s*$/g, '').trim();
+  }
   function updateSuggestions() {
     var lastPrice = selData(F.med, 'lastprice'), lastBatch = selData(F.med, 'lastbatch'), lastDate = selData(F.med, 'lastdate');
     if (lastBatch) {
-      $('lotSugText').textContent = lastBatch + (lastDate ? ' (' + lastDate + ')' : '');
+      var pureBatch = cleanBatchNo(lastBatch);
+      var displayDate = lastDate || (lastBatch.match(/\(([\d\-/\s]+)\)/) || [])[1];
+      $('lotSugText').textContent = pureBatch + (displayDate ? ' (' + displayDate + ')' : '');
       $('lotSuggest').classList.add('on');
+      $('lotSugFill').onclick = function (e) {
+        if (e) e.stopPropagation();
+        F.lot.value = pureBatch;
+        clear(F.lot, 'e-lot');
+        F.lot.focus();
+      };
+      $('lotSuggest').onclick = function () {
+        F.lot.value = pureBatch;
+        clear(F.lot, 'e-lot');
+        F.lot.focus();
+      };
+      $('lotSuggest').style.cursor = 'pointer';
     } else {
       $('lotSuggest').classList.remove('on');
     }
@@ -917,6 +959,11 @@ a{text-decoration:none;color:inherit}
     $('dateWarnMsg').textContent = softWarn.join(' ');
     return { hardErr: hardErr, softWarn: softWarn };
   }
+  F.mfg.addEventListener('change', function () {
+    if (F.mfg.value && F.imp.value && F.imp.value < F.mfg.value) {
+      F.imp.value = F.mfg.value;
+    }
+  });
   [F.mfg, F.exp, F.imp].forEach(function (el) { el.addEventListener('change', checkDates); });
 
   /* ── Bước 4: tóm tắt + hệ quả ────────────────────────────────────────── */

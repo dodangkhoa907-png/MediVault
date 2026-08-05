@@ -155,6 +155,8 @@ D:\GitHub\MediVault\Java\MediVault\src\main\java\com\medicare\entity\StaffAuditL
 D:\GitHub\MediVault\Java\MediVault\src\main\java\com\medicare\entity\StockMovements.java
 D:\GitHub\MediVault\Java\MediVault\src\main\java\com\medicare\entity\Supplier.java
 D:\GitHub\MediVault\Java\MediVault\src\main\java\com\medicare\entity\Task.java
+D:\GitHub\MediVault\Java\MediVault\src\main\java\com\medicare\entity\TaskChecklistItem.java
+D:\GitHub\MediVault\Java\MediVault\src\main\java\com\medicare\entity\TaskComment.java
 D:\GitHub\MediVault\Java\MediVault\src\main\java\com\medicare\entity\WarehouseExport.java
 D:\GitHub\MediVault\Java\MediVault\src\main\java\com\medicare\entity\WarehouseExportDetail.java
 D:\GitHub\MediVault\Java\MediVault\src\main\java\com\medicare\filter\AppFilter.java
@@ -196,5 +198,6 @@ D:\GitHub\MediVault\Java\MediVault\src\main\java\com\medicare\util\PricingUtil.j
 D:\GitHub\MediVault\Java\MediVault\src\main\java\com\medicare\util\SessionTracker.java
 D:\GitHub\MediVault\Java\MediVault\src\main\java\com\medicare\util\SidebarHelper.java
 D:\GitHub\MediVault\Java\MediVault\src\main\java\com\medicare\util\StaffNotifHelper.java
+D:\GitHub\MediVault\Java\MediVault\src\main\java\com\medicare\util\TaskRefResolver.java
 D:\GitHub\MediVault\Java\MediVault\src\main\java\com\medicare\util\ValidationUtil.java
 D:\GitHub\MediVault\Java\MediVault\src\main\java\com\medicare\util\WarehouseAuth.java
