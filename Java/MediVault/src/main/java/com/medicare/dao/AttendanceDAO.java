@@ -111,6 +111,36 @@ public class AttendanceDAO implements IAttendanceDAO {
     }
 
     @Override
+    public boolean checkOutById(int attendanceId, BigDecimal closingCash, String notes, boolean isAutoClose) {
+        // Đóng đúng bản ghi này (không dò lại theo AccountID) — tránh trường hợp tài khoản có
+        // nhiều Attendance còn mở (do lỗi cũ / check-in nhiều lần), khiến SP_CheckOut chỉ đóng
+        // bản ghi mới nhất mà không phải bản ghi đang gắn với quầy đang "Tan ca".
+        String sql = "UPDATE Attendance SET CheckOutTime = GETDATE(), IsAutoClose = ?, CheckInNote = " +
+                "CASE WHEN ? IS NOT NULL THEN ? ELSE CheckInNote END " +
+                "WHERE AttendanceID = ? AND CheckOutTime IS NULL";
+        String shiftSql = "UPDATE Shifts SET EndTime = GETDATE(), ClosingCash = ? " +
+                "WHERE ShiftID = (SELECT ShiftID FROM Attendance WHERE AttendanceID = ?) AND EndTime IS NULL";
+        try (Connection cn = DBContext.getConnection()) {
+            boolean updated;
+            try (PreparedStatement ps = cn.prepareStatement(sql)) {
+                ps.setBoolean(1, isAutoClose);
+                ps.setNString(2, notes);
+                ps.setNString(3, notes);
+                ps.setInt(4, attendanceId);
+                updated = ps.executeUpdate() > 0;
+            }
+            if (updated) {
+                try (PreparedStatement ps = cn.prepareStatement(shiftSql)) {
+                    ps.setBigDecimal(1, closingCash != null ? closingCash : BigDecimal.ZERO);
+                    ps.setInt(2, attendanceId);
+                    ps.executeUpdate();
+                }
+            }
+            return updated;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    @Override
     public Attendance findActiveByAccount(int accountId) {
         String sql = SELECT_FULL +
                 "WHERE att.AccountID=? AND att.CheckOutTime IS NULL " +

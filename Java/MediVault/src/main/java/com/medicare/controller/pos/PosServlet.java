@@ -247,6 +247,8 @@ public class PosServlet extends HttpServlet {
         // biết trước quầy nào đang có người trước khi chọn (tránh chọn nhầm quầy người khác).
         if ("station-staff".equals(action)) {
             resp.setContentType("application/json;charset=UTF-8");
+            resp.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+            resp.setHeader("Pragma", "no-cache");
             PrintWriter out = resp.getWriter();
             Map<Integer, String> staffByStation = attendanceDAO.findActiveStaffByStation();
             StringBuilder sb = new StringBuilder("{");
@@ -399,9 +401,13 @@ public class PosServlet extends HttpServlet {
                 // check-in từ phiên/máy khác rồi bỏ đi mà chưa bấm kết ca.
                 Integer leaveStation = (Integer) leaveSess.getAttribute("posStation");
                 if (leaveStation != null && leaveStation > 0) {
+                    // Đóng ĐÚNG bản ghi Attendance đang gắn với quầy này (theo AttendanceID) —
+                    // KHÔNG dùng checkOut(accountId,...) vì nó dò "bản ghi mở mới nhất theo
+                    // AccountID", có thể khác bản ghi đang thực sự gắn với quầy đang tan ca nếu
+                    // tài khoản lỡ có nhiều Attendance còn mở (dữ liệu cũ / check-in trùng).
                     Attendance occupant = attendanceDAO.findActiveByStation(leaveStation);
                     if (occupant != null) {
-                        attendanceDAO.checkOut(occupant.getAccountId(), BigDecimal.ZERO, "Rời quầy từ POS", false);
+                        attendanceDAO.checkOutById(occupant.getAttendanceId(), BigDecimal.ZERO, "Rời quầy từ POS", false);
                     }
                 }
                 leaveSess.removeAttribute("posStation");
