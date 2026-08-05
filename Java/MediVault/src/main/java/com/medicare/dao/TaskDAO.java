@@ -106,6 +106,49 @@ public class TaskDAO implements ITaskDAO {
     }
 
     @Override
+    public int requestTaskApproval(String title, String description, String priority,
+                                   Integer assignedTo, int createdBy, LocalDateTime dueDate) {
+        String sql = "INSERT INTO Tasks (Title, Description, TaskType, Priority, Status, AssignedTo, CreatedBy, DueDate) " +
+                "VALUES (?, ?, 'MANUAL', ?, 'APPROVAL_PENDING', ?, ?, ?)";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setNString(1, title);
+            ps.setNString(2, description);
+            ps.setString(3, priority);
+            if (assignedTo != null) ps.setInt(4, assignedTo); else ps.setNull(4, Types.INTEGER);
+            ps.setInt(5, createdBy);
+            if (dueDate != null) ps.setTimestamp(6, Timestamp.valueOf(dueDate)); else ps.setNull(6, Types.TIMESTAMP);
+            int affected = ps.executeUpdate();
+            if (affected > 0) {
+                try (ResultSet keys = ps.getGeneratedKeys()) {
+                    if (keys.next()) return keys.getInt(1);
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return -1;
+    }
+
+    @Override
+    public boolean approveTaskRequest(int taskId, int adminId) {
+        String sql = "UPDATE Tasks SET Status = 'PENDING' WHERE TaskID = ? AND Status = 'APPROVAL_PENDING'";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, taskId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    @Override
+    public boolean rejectTaskRequest(int taskId, int adminId, String reason) {
+        String sql = "UPDATE Tasks SET Status = 'CANCELLED' WHERE TaskID = ? AND Status = 'APPROVAL_PENDING'";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setInt(1, taskId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    @Override
     public boolean existsOpenTaskForRef(String refTable, int refId) {
         String sql = "SELECT TOP 1 1 FROM Tasks WHERE RefTable = ? AND RefID = ? AND Status IN ('PENDING','IN_PROGRESS')";
         try (Connection cn = DBContext.getConnection();

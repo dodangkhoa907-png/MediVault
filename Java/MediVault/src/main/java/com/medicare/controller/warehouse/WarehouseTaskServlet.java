@@ -168,9 +168,16 @@ public class WarehouseTaskServlet extends HttpServlet {
             try { dueDate = LocalDateTime.parse(dueDateRaw); } catch (Exception ignored) { }
         }
 
-        int taskId = taskDAO.insertManualTask(title, description, priority, assignedTo, acc.getAccountId(), dueDate);
-        if (taskId <= 0) return "Không thể tạo công việc, vui lòng thử lại.";
-        AuditHelper.log(req, "Tạo công việc (Thủ kho)", "Tasks", "TaskID=" + taskId + ": " + title, acc.getAccountId());
+        // Sườn code: Yêu cầu Tạo nhiệm vụ mới từ Thủ kho được chuyển sang trạng thái APPROVAL_PENDING để Admin duyệt
+        int taskId;
+        if (acc.isWarehouseManager()) {
+            taskId = taskDAO.insertManualTask(title, description, priority, assignedTo, acc.getAccountId(), dueDate);
+        } else {
+            taskId = taskDAO.requestTaskApproval(title, description, priority, assignedTo, acc.getAccountId(), dueDate);
+        }
+
+        if (taskId <= 0) return "Không thể gửi yêu cầu tạo nhiệm vụ, vui lòng thử lại.";
+        AuditHelper.log(req, "Gửi yêu cầu tạo nhiệm vụ mới", "Tasks", "TaskID=" + taskId + ": " + title, acc.getAccountId());
         return null;
     }
 

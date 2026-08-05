@@ -137,10 +137,10 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
                         updatePs.executeUpdate();
                     } else {
                         insertPs.setInt(1, b.getMedicineId());
-                        insertPs.setInt(2, poId);
-                        insertPs.setInt(3, supplierId);
+                        if (poId > 0) insertPs.setInt(2, poId); else insertPs.setNull(2, Types.INTEGER);
+                        if (supplierId > 0) insertPs.setInt(3, supplierId); else insertPs.setNull(3, Types.INTEGER);
                         insertPs.setString(4, batchNo);
-                        insertPs.setObject(5, b.getManufactureDate() != null ? Date.valueOf(b.getManufactureDate()) : null);
+                        if (b.getManufactureDate() != null) insertPs.setDate(5, Date.valueOf(b.getManufactureDate())); else insertPs.setNull(5, Types.DATE);
                         insertPs.setDate(6, b.getImportDate() != null ? Date.valueOf(b.getImportDate()) : Date.valueOf(java.time.LocalDate.now()));
                         insertPs.setDate(7, Date.valueOf(b.getExpiryDate()));
                         insertPs.setBigDecimal(8, b.getImportPrice());
@@ -151,6 +151,17 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
                 }
             }
         }
+    }
+
+    /** Cập nhật trạng thái phiếu xuất/nhập (VD: PENDING -> COMPLETED). */
+    public boolean updateStatus(int poId, String status) {
+        String sql = "UPDATE PurchaseOrders SET Status = ? WHERE POID = ?";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, status);
+            ps.setInt(2, poId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) { e.printStackTrace(); return false; }
     }
 
     /** Thêm 1 dòng chi tiết vào đơn (dùng khi gắn lô vào đơn ĐÃ CÓ, đơn để PENDING). */
@@ -165,8 +176,8 @@ public class PurchaseOrderDAO implements IPurchaseOrderDAO {
             ps.setInt(3, b.getInitialQuantity());
             ps.setBigDecimal(4, b.getImportPrice());
             ps.setString(5, b.getBatchNumber());
-            ps.setObject(6, b.getExpiryDate() != null ? Date.valueOf(b.getExpiryDate()) : null);
-            ps.setObject(7, b.getManufactureDate() != null ? Date.valueOf(b.getManufactureDate()) : null);
+            if (b.getExpiryDate() != null) ps.setDate(6, Date.valueOf(b.getExpiryDate())); else ps.setNull(6, Types.DATE);
+            if (b.getManufactureDate() != null) ps.setDate(7, Date.valueOf(b.getManufactureDate())); else ps.setNull(7, Types.DATE);
             return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }

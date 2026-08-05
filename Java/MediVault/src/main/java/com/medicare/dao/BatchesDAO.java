@@ -151,10 +151,10 @@ public class BatchesDAO implements IBatchesDAO {
             }
             try (PreparedStatement ps = cn.prepareStatement(insertSql)) {
                 ps.setInt(1, b.getMedicineId());
-                ps.setObject(2, b.getPoId() > 0 ? b.getPoId() : null);
-                ps.setObject(3, b.getSupplierId() > 0 ? b.getSupplierId() : null);
+                if (b.getPoId() > 0) ps.setInt(2, b.getPoId()); else ps.setNull(2, Types.INTEGER);
+                if (b.getSupplierId() > 0) ps.setInt(3, b.getSupplierId()); else ps.setNull(3, Types.INTEGER);
                 ps.setString(4, b.getBatchNumber());
-                ps.setObject(5, b.getManufactureDate() != null ? Date.valueOf(b.getManufactureDate()) : null);
+                if (b.getManufactureDate() != null) ps.setDate(5, Date.valueOf(b.getManufactureDate())); else ps.setNull(5, Types.DATE);
                 ps.setDate(6, b.getImportDate() != null ? Date.valueOf(b.getImportDate()) : Date.valueOf(java.time.LocalDate.now()));
                 ps.setDate(7, Date.valueOf(b.getExpiryDate()));
                 ps.setBigDecimal(8, b.getImportPrice());

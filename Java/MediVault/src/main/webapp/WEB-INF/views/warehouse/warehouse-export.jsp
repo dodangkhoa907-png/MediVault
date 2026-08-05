@@ -300,6 +300,122 @@ a{text-decoration:none;color:inherit}
   font-weight: 800;
   color: #B45309;
 }
+
+/* ── Layout Thẻ Phân Bổ Lô Cột To (Step 3: FEFO Alloc - In Đậm, Rõ Ràng, Dễ Đọc) ── */
+.exp-alloc-block {
+  border: 1.5px solid #CBD5E1;
+  border-radius: 18px;
+  margin-bottom: 20px;
+  overflow: hidden;
+  background: #FFFFFF;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+.exp-alloc-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #F8FAFC;
+  border-bottom: 2px solid #E2E8F0;
+  flex-wrap: wrap;
+}
+.exp-alloc-head .nm {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0F172A;
+}
+.exp-alloc-head .mt {
+  font-size: 14px;
+  font-weight: 700;
+  color: #475569;
+}
+.exp-alloc-head .mt b {
+  color: #0F766E;
+  font-weight: 800;
+}
+
+.exp-lot-cards-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+.exp-lot-card {
+  background: #FFFFFF;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 14px;
+  padding: 16px 20px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+  transition: all 0.2s ease;
+}
+.exp-lot-card.dim {
+  opacity: 0.45;
+  background: #F8FAFC;
+}
+.exp-lot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: center;
+}
+.exp-lot-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px 14px;
+  background: #F8FAFC;
+  border-radius: 10px;
+  border: 1.5px solid #E2E8F0;
+}
+.exp-lot-item.highlight-take-box {
+  background: #ECFDF5;
+  border-color: #A7F3D0;
+}
+.exp-lot-lbl {
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: #64748B;
+  text-transform: uppercase;
+}
+.exp-lot-item.highlight-take-box .exp-lot-lbl {
+  color: #065F46;
+}
+.exp-lot-val {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0F172A;
+}
+.exp-lot-val.code {
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-size: 16.5px;
+  color: #0F172A;
+}
+.exp-lot-val.highlight-exp {
+  color: #B45309;
+}
+.exp-lot-val.highlight-stock {
+  color: #2563EB;
+}
+.exp-lot-val.highlight-qty {
+  font-size: 20px;
+  color: #059669;
+}
+.exp-lot-shelf-bar {
+  margin-top: 14px;
+  padding: 14px 18px;
+  background: #F1F5F9;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  line-height: 1.6;
+}
+.exp-lot-shelf-bar b {
+  color: #0F172A;
+  font-weight: 800;
+}
 </style>
 <meta name="csrf-token" content="${csrfToken}">
 <script src="<%= ctx %>/js/csrf.js"></script>
@@ -1203,18 +1319,43 @@ a{text-decoration:none;color:inherit}
   }
 
   function lotTableHtml(lots, l) {
-    if (!lots || lots.length === 0) return '<div class="wh-note warn"><svg><use href="#ic-alert"/></svg><span>Không có lô nào còn tồn kho.</span></div>';
-    var rows = lots.map(function (lot) {
+    if (!lots || lots.length === 0) return '<div class="wh-note warn" style="margin-top:12px"><svg><use href="#ic-alert"/></svg><span>Không có lô nào còn tồn kho.</span></div>';
+
+    var cards = lots.map(function (lot) {
       var picked = l.overridden ? (l.overrideBatchId === lot.batchId) : true;
-      return '<tr' + (l.overridden && !picked ? ' style="opacity:.4"' : '') + '>' +
-        '<td>' + escapeHtml(lot.batchNumber) + '</td><td>' + escapeHtml(lot.expiryDate) + '</td>' +
-        '<td class="num">' + lot.availableQuantity + '</td>' +
-        '<td class="num">' + (l.overridden ? (picked ? l.qty : 0) : lot.allocatedQuantity) + '</td></tr>';
+      var qtyTaken = l.overridden ? (picked ? l.qty : 0) : lot.allocatedQuantity;
+
+      return '<div class="exp-lot-card' + (l.overridden && !picked ? ' dim' : '') + '">' +
+        '<div class="exp-lot-grid">' +
+          '<div class="exp-lot-item">' +
+            '<span class="exp-lot-lbl">SỐ LÔ</span>' +
+            '<span class="exp-lot-val code">' + escapeHtml(lot.batchNumber) + '</span>' +
+          '</div>' +
+          '<div class="exp-lot-item">' +
+            '<span class="exp-lot-lbl">HẠN SỬ DỤNG (HSD)</span>' +
+            '<span class="exp-lot-val highlight-exp">' + escapeHtml(lot.expiryDate) + '</span>' +
+          '</div>' +
+          '<div class="exp-lot-item">' +
+            '<span class="exp-lot-lbl">TỒN KHẢ DỤNG</span>' +
+            '<span class="exp-lot-val highlight-stock">' + lot.availableQuantity + '</span>' +
+          '</div>' +
+          '<div class="exp-lot-item highlight-take-box">' +
+            '<span class="exp-lot-lbl">ĐƯỢC LẤY</span>' +
+            '<span class="exp-lot-val highlight-qty">' + qtyTaken + '</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
     }).join('');
-    return '<div class="wh-tablecard" style="margin-top:10px"><div class="wh-tablescroll"><table class="wh-table">' +
-      '<thead><tr><th>Số lô</th><th>HSD</th><th>Tồn khả dụng</th><th>Được lấy</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>' +
-      '<div class="hint">Vị trí kệ: <b>' + escapeHtml(l.shelfName || (l.allocation && l.allocation.shelfName) || 'Chưa xếp kệ') +
-      '</b>' + ((l.storageConditions || (l.allocation && l.allocation.storageConditions)) ? ' · Bảo quản: ' + escapeHtml(l.storageConditions || l.allocation.storageConditions) : '') + '</div>';
+
+    var shelfInfo = escapeHtml(l.shelfName || (l.allocation && l.allocation.shelfName) || 'Chưa xếp kệ');
+    var storageInfo = (l.storageConditions || (l.allocation && l.allocation.storageConditions))
+      ? escapeHtml(l.storageConditions || l.allocation.storageConditions) : '';
+
+    return '<div class="exp-lot-cards-wrap">' + cards + '</div>' +
+      '<div class="exp-lot-shelf-bar">' +
+        '📍 Vị trí kệ: <b>' + shelfInfo + '</b>' +
+        (storageInfo ? ' · ❄️ Bảo quản: <b>' + storageInfo + '</b>' : '') +
+      '</div>';
   }
 
   function overrideBoxHtml(l, a) {

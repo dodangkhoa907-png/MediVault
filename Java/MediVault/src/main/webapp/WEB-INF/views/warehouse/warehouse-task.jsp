@@ -77,9 +77,40 @@ a{text-decoration:none;color:inherit}
 .t-title{width:auto;min-width:250px} .t-type{width:120px} .t-pri{width:120px}
 .t-status{width:140px} .t-asg{width:150px} .t-by{width:150px} .t-done{width:210px} .t-act{width:90px}
 #tblBoard{min-width:1120px}
-.t-title .cell{white-space:normal;line-height:1.45;font-weight:700;color:var(--ink)}
-.type-tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);font-weight:650}
 .type-tag svg{width:14px;height:14px;opacity:.8}
+
+/* ── Custom Select UI (Style đồng bộ cho Độ ưu tiên & Giao cho) ── */
+.wh-custom-select { position: relative; display: block; width: 100%; }
+.wh-cselect-btn {
+  width: 100%; height: 44px; padding: 0 14px;
+  border: 1.5px solid var(--border, #CBD5E1); border-radius: 12px;
+  font-family: inherit; font-size: 14px; font-weight: 700;
+  color: var(--ink, #1E293B); background: var(--white, #FFFFFF);
+  cursor: pointer; outline: none; display: flex; align-items: center;
+  justify-content: space-between; gap: 10px; transition: all .15s ease;
+  user-select: none;
+}
+.wh-cselect-btn:hover { border-color: #94A3B8; background: #F8FAFC; }
+.wh-cselect-btn.open { border-color: var(--main, #0D9488); box-shadow: 0 0 0 3px rgba(13, 148, 136, .15); background: #FFFFFF; }
+.wh-cselect-btn .caret { width: 16px; height: 16px; stroke: #64748B; transition: transform .15s ease; flex-shrink: 0; }
+.wh-cselect-btn.open .caret { transform: rotate(180deg); }
+
+.wh-cselect-menu {
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 90;
+  width: 100%; padding: 6px; background: #FFFFFF; border: 1px solid var(--border, #E2E8F0);
+  border-radius: 14px; box-shadow: 0 12px 30px -5px rgba(15, 23, 42, 0.15);
+  display: none; flex-direction: column; gap: 3px; max-height: 250px; overflow-y: auto;
+}
+.wh-cselect-menu.open { display: flex; animation: wh-pop-in 140ms cubic-bezier(.4,0,.2,1); }
+@keyframes wh-pop-in { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
+
+.wh-cselect-opt {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-radius: 8px; font-size: 13.5px; font-weight: 700;
+  color: #334155; cursor: pointer; transition: all .12s ease;
+}
+.wh-cselect-opt:hover { background: #F0FDFA; color: #0D9488; }
+.wh-cselect-opt.selected { background: #CCFBF1; color: #0F766E; font-weight: 800; }
 </style>
 <meta name="csrf-token" content="${csrfToken}">
 <script src="<%= ctx %>/js/csrf.js"></script>
@@ -315,13 +346,13 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
 
-    <!-- ══ Tạo công việc mới ══ -->
+    <!-- ══ Tạo nhiệm vụ mới ══ -->
     <div class="wh-card">
       <div class="wh-card-head">
         <div class="wh-ic violet"><svg><use href="#ic-plus"/></svg></div>
         <div class="tt">
-          <h2>Tạo công việc mới</h2>
-          <div class="desc">Giao cho Thủ kho khác, hoặc để chung cho ai rảnh thì nhận.</div>
+          <h2>Tạo nhiệm vụ mới</h2>
+          <div class="desc">Gửi yêu cầu tạo nhiệm vụ để Admin duyệt, giao cho Thủ kho khác hoặc để chung.</div>
         </div>
       </div>
       <div class="wh-card-body">
@@ -343,20 +374,45 @@ a{text-decoration:none;color:inherit}
           <div class="wh-row2">
             <div class="wh-fg">
               <label for="tkPri">Độ ưu tiên</label>
-              <select class="wh-in" id="tkPri" name="priority">
-                <option value="HIGH">Cao</option>
-                <option value="MEDIUM" selected>Trung bình</option>
-                <option value="LOW">Thấp</option>
-              </select>
+              <div class="wh-custom-select" id="priSelectWrap">
+                <button type="button" class="wh-cselect-btn" id="priSelectBtn">
+                  <span class="wh-cselect-val" id="priSelectVal">Trung bình</span>
+                  <svg class="caret"><use href="#ic-chevron-down"/></svg>
+                </button>
+                <div class="wh-cselect-menu" id="priSelectMenu">
+                  <div class="wh-cselect-opt" data-value="HIGH">Cao</div>
+                  <div class="wh-cselect-opt selected" data-value="MEDIUM">Trung bình</div>
+                  <div class="wh-cselect-opt" data-value="LOW">Thấp</div>
+                </div>
+                <select class="wh-in" id="tkPri" name="priority" style="display:none">
+                  <option value="HIGH">Cao</option>
+                  <option value="MEDIUM" selected>Trung bình</option>
+                  <option value="LOW">Thấp</option>
+                </select>
+              </div>
             </div>
             <div class="wh-fg">
               <label for="tkAsg">Giao cho</label>
-              <select class="wh-in" id="tkAsg" name="assignedTo">
-                <option value="">— Để chung, ai cũng nhận được —</option>
-                <c:forEach var="a" items="${assignees}">
-                  <option value="${a.accountId}" ${a.accountId == staffAcc.accountId ? 'selected' : ''}>${a.fullName}<c:if test="${a.accountId == staffAcc.accountId}"> (Tôi)</c:if></option>
-                </c:forEach>
-              </select>
+              <div class="wh-custom-select" id="asgSelectWrap">
+                <button type="button" class="wh-cselect-btn" id="asgSelectBtn">
+                  <span class="wh-cselect-val" id="asgSelectVal">${staffAcc.fullName} (Tôi)</span>
+                  <svg class="caret"><use href="#ic-chevron-down"/></svg>
+                </button>
+                <div class="wh-cselect-menu" id="asgSelectMenu">
+                  <div class="wh-cselect-opt" data-value="">— Để chung, ai cũng nhận được —</div>
+                  <c:forEach var="a" items="${assignees}">
+                    <div class="wh-cselect-opt ${a.accountId == staffAcc.accountId ? 'selected' : ''}" data-value="${a.accountId}">
+                      ${a.fullName}<c:if test="${a.accountId == staffAcc.accountId}"> (Tôi)</c:if>
+                    </div>
+                  </c:forEach>
+                </div>
+                <select class="wh-in" id="tkAsg" name="assignedTo" style="display:none">
+                  <option value="">— Để chung, ai cũng nhận được —</option>
+                  <c:forEach var="a" items="${assignees}">
+                    <option value="${a.accountId}" ${a.accountId == staffAcc.accountId ? 'selected' : ''}>${a.fullName}<c:if test="${a.accountId == staffAcc.accountId}"> (Tôi)</c:if></option>
+                  </c:forEach>
+                </select>
+              </div>
             </div>
           </div>
           <div class="wh-fg">
@@ -364,7 +420,7 @@ a{text-decoration:none;color:inherit}
             <input class="wh-in" type="datetime-local" id="tkDue" name="dueDate">
           </div>
           <button type="submit" class="wh-btn wh-btn-primary">
-            <svg><use href="#ic-plus"/></svg> Tạo công việc
+            <svg><use href="#ic-plus"/></svg> Gửi yêu cầu tạo nhiệm vụ
           </button>
         </form>
       </div>
@@ -736,11 +792,50 @@ a{text-decoration:none;color:inherit}
   qEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') e.preventDefault(); });
   $('qClear').addEventListener('click', function () { qEl.value = ''; render(); qEl.focus(); });
 
-  document.addEventListener('keydown', function (e) {
-    if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) {
-      e.preventDefault(); qEl.focus(); qEl.select();
-    }
-    if (e.key === 'Escape' && document.activeElement === qEl && qEl.value) { qEl.value = ''; render(); }
+  // ── Custom Select Dropdown Handlers cho Độ ưu tiên và Giao cho ──
+  function setupCustomSelect(wrapId, btnId, menuId, valId, selectId) {
+    var wrap = $(wrapId);
+    var btn = $(btnId);
+    var menu = $(menuId);
+    var val = $(valId);
+    var select = $(selectId);
+    if (!wrap || !btn || !menu || !select) return;
+
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var isOpen = menu.classList.contains('open');
+      document.querySelectorAll('.wh-cselect-menu.open').forEach(function (m) {
+        m.classList.remove('open');
+        m.previousElementSibling.classList.remove('open');
+      });
+      if (!isOpen) {
+        menu.classList.add('open');
+        btn.classList.add('open');
+      }
+    });
+
+    menu.querySelectorAll('.wh-cselect-opt').forEach(function (opt) {
+      opt.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var v = opt.getAttribute('data-value');
+        select.value = v;
+        val.textContent = opt.textContent.trim();
+        menu.querySelectorAll('.wh-cselect-opt').forEach(function (o) { o.classList.remove('selected'); });
+        opt.classList.add('selected');
+        menu.classList.remove('open');
+        btn.classList.remove('open');
+      });
+    });
+  }
+
+  setupCustomSelect('priSelectWrap', 'priSelectBtn', 'priSelectMenu', 'priSelectVal', 'tkPri');
+  setupCustomSelect('asgSelectWrap', 'asgSelectBtn', 'asgSelectMenu', 'asgSelectVal', 'tkAsg');
+
+  document.addEventListener('click', function () {
+    document.querySelectorAll('.wh-cselect-menu.open').forEach(function (m) {
+      m.classList.remove('open');
+      m.previousElementSibling.classList.remove('open');
+    });
   });
 })();
 </script>

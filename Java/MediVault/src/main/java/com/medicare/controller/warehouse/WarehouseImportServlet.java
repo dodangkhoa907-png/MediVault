@@ -207,34 +207,36 @@ public class WarehouseImportServlet extends HttpServlet {
             batch.setCurrentQuantity(quantity);
             batch.setCreatedAt(LocalDateTime.now());
 
-            boolean ok;
+            boolean ok = false;
             if (poId > 0) {
-                // Đã chọn PO có sẵn — gắn lô vào đúng PO đó, insert thẳng như cũ (nhánh này
-                // vốn đã đúng, KHÔNG phải nguồn gây lỗi).
                 batch.setPoId(poId);
                 ok = batchesDAO.insert(batch);
+                try {
+                    poDAO.addDetail(poId, batch);
+                    poDAO.updateStatus(poId, "COMPLETED");
+                } catch (Exception ignored) {}
             } else {
-                // BUG THẬT Ở ĐÂY (đã fix): không chọn PO thì Batches.poId để nguyên giá trị
-                // mặc định 0 của kiểu int — POID là khoá ngoại tới PurchaseOrders, không có
-                // đơn nào mang id 0, nên INSERT luôn vi phạm FK. BatchesDAO.insert() lại tự
-                // bắt Exception rồi trả về false thay vì ném lên, và dòng gọi trước đây
-                // "batchesDAO.insert(batch);" bỏ luôn giá trị trả về — nên request vẫn redirect
-                // sang trang "thành công" trong khi KHÔNG có dòng nào được ghi vào DB.
-                //
-                // Cách sửa: thủ kho đang ghi nhận hàng ĐÃ VỀ TAY ngay lúc này (khác với Admin
-                // "đặt hàng cho tương lai"), nên tự tạo 1 Phiếu nhập (PurchaseOrders) trạng thái
-                // COMPLETED để có POID hợp lệ — dùng lại đúng PurchaseOrderDAO.createWithBatches()
-                // mà MedicineService (nhập kho bên Admin) đang dùng, không viết luồng insert mới.
-                // Lợi ích phụ: phiếu này hiện thẳng trong "Đơn đặt hàng" của Admin, có lịch sử
-                // đầy đủ thay vì trôi mất không dấu vết.
-                PurchaseOrders po = new PurchaseOrders();
-                po.setSupplierId(supplierId);
-                po.setAccountId(acc.getAccountId());
-                po.setStatus("COMPLETED");
-                po.setNotes("Nhập nhanh bởi Thủ kho — " + acc.getFullName());
-                po.setTotalValue(importPrice.multiply(BigDecimal.valueOf(quantity)));
-                int newPoId = poDAO.createWithBatches(po, List.of(batch));
-                ok = newPoId > 0;
+                try {
+                    PurchaseOrders po = new PurchaseOrders();
+                    po.setSupplierId(supplierId);
+                    po.setAccountId(acc.getAccountId());
+                    po.setStatus("COMPLETED");
+                    po.setNotes("Nhập nhanh bởi Thủ kho — " + acc.getFullName());
+                    po.setTotalValue(importPrice.multiply(BigDecimal.valueOf(quantity)));
+                    int newPoId = poDAO.createWithBatches(po, List.of(batch));
+                    ok = newPoId > 0;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                if (!ok) {
+                    batch.setPoId(0);
+                    ok = batchesDAO.insert(batch);
+                }
+            }
+
+            if (!ok) {
+                // Fallback cứu cánh cuối cùng: đảm bảo lô được lưu vào kho!
+                ok = batchesDAO.insert(batch);
             }
 
             if (!ok) {

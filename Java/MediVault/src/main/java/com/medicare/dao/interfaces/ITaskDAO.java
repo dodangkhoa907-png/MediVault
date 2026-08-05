@@ -49,6 +49,16 @@ public interface ITaskDAO {
     int insertManualTask(String title, String description, String priority,
                           Integer assignedTo, int createdBy, LocalDateTime dueDate);
 
+    /** Sườn code: Gửi yêu cầu Tạo nhiệm vụ mới từ Thủ kho lên Admin để chờ duyệt (Status = 'APPROVAL_PENDING'). */
+    int requestTaskApproval(String title, String description, String priority,
+                            Integer assignedTo, int createdBy, LocalDateTime dueDate);
+
+    /** Sườn code: Admin duyệt yêu cầu tạo nhiệm vụ (chuyển Status -> 'PENDING'). */
+    boolean approveTaskRequest(int taskId, int adminId);
+
+    /** Sườn code: Admin từ chối yêu cầu tạo nhiệm vụ (chuyển Status -> 'REJECTED'). */
+    boolean rejectTaskRequest(int taskId, int adminId, String reason);
+
     /** Đã có task CHƯA đóng (PENDING/IN_PROGRESS) nào trỏ tới bản ghi nguồn này chưa — chống tạo trùng mỗi lần job chạy. */
     boolean existsOpenTaskForRef(String refTable, int refId);
 
