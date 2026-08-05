@@ -226,6 +226,20 @@ public class WarehouseExportDAO implements IWarehouseExportDAO {
             }
         } catch (Exception ignored) {}
 
+        // BUG THẬT (đã fix): hàm tên "IfEmpty" nhưng KHÔNG hề kiểm tra bảng đã có dữ liệu
+        // chưa — INSERT chạy vô điều kiện mỗi lần gọi. Hàm này lại bị gọi từ
+        // ensureExportTablesExist(), mà ensureExportTablesExist() chạy ở ĐẦU MỖI LẦN tải
+        // trang Xuất kho (findReasons()) VÀ mỗi lần xác nhận phiếu xuất (confirmExport()) —
+        // nghĩa là mỗi lần vào trang hoặc xuất kho thành công lại chèn thêm 7 dòng lý do
+        // trùng lặp vào ExportReasons, dồn lại thành hàng chục/hàng trăm thẻ trùng y hệt
+        // nhau hiển thị ở bước "Chọn loại xuất kho" (đúng hiện tượng trong ảnh báo lỗi).
+        // Thêm guard COUNT(*) — chỉ seed khi bảng THẬT SỰ trống, đúng như tên hàm.
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement cps = cn.prepareStatement("SELECT COUNT(*) FROM ExportReasons");
+             ResultSet crs = cps.executeQuery()) {
+            if (crs.next() && crs.getInt(1) > 0) return; // đã có dữ liệu — không seed lại
+        } catch (Exception ignored) {}
+
         String insertSql = "INSERT INTO ExportReasons (ReasonCode, ReasonName, Description, RequiresReceiver, IsActive) VALUES " +
                 "('RETAIL_SALE', N'Bán lẻ (POS)', N'Xuất thuốc phục vụ bán hàng trực tiếp tại quầy POS', 0, 1)," +
                 "('CUSTOMER_ORDER', N'Đơn hàng khách (Portal)', N'Xuất thuốc cho đơn hàng đặt qua Cổng khách hàng', 1, 1)," +

@@ -314,7 +314,7 @@ public class AttendanceDAO implements IAttendanceDAO {
     }
 
     @Override
-    public int checkInWithPenalty(int accountId, int scheduleId, String method,
+    public int checkInWithPenalty(int accountId, Integer scheduleId, String method,
                                   BigDecimal openingCash, BigDecimal penaltyAmount,
                                   int lateMinutes, String status, Integer posStation) {
         // Tìm ShiftID đang mở của nhân viên để gán vào Attendance
@@ -342,7 +342,10 @@ public class AttendanceDAO implements IAttendanceDAO {
         try (Connection cn = DBContext.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, accountId);
-            ps.setInt(2, scheduleId);
+            // ScheduleID NULL = mở ca không theo lịch (Attendance.ScheduleID cho phép NULL
+            // trong schema — dùng cho Thủ kho, không xếp ShiftSchedule như bán hàng).
+            if (scheduleId != null) ps.setInt(2, scheduleId);
+            else ps.setNull(2, Types.INTEGER);
             int p = 3;
             if (shiftId != null) ps.setInt(p++, shiftId);
             ps.setString(p++, nowStr);

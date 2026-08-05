@@ -1,0 +1,20 @@
+# docker-compose.yml — chỉ để TEST image ở máy local trước khi đẩy lên Render, không phải
+# file Render dùng để deploy (Render đọc thẳng Dockerfile/render.yaml).
+#
+# Chạy:  docker compose up --build
+# Rồi mở: http://localhost:8080
+#
+# Sửa 3 biến DB_* bên dưới trỏ đúng SQL Server của bạn trước khi chạy — KHÔNG commit
+# giá trị thật vào file này, dùng file ".env" (đã có sẵn trong .gitignore mặc định của
+# Docker Compose nếu bạn tạo — nhớ tự thêm ".env" vào .gitignore của repo).
+services:
+  medivault:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+      DB_URL: "jdbc:sqlserver://HOST_CUA_BAN;databaseName=PharmacyPro_DB;encrypt=true;trustServerCertificate=true"
+      DB_USERNAME: "sa"
+      DB_PASSWORD: "DIEN_MAT_KHAU_MOI_O_DAY"
+      DB_DRIVER: "com.microsoft.sqlserver.jdbc.SQLServerDriver"

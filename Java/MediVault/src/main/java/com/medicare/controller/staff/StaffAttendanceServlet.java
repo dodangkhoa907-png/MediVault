@@ -118,7 +118,32 @@ public class StaffAttendanceServlet extends HttpServlet {
             return "already-in";
         }
 
-        // 2. Phải có lịch ca hôm nay
+        // 1b. BUG THẬT (đã fix): Thủ kho (roleId 3) làm giờ hành chính, KHÔNG được xếp
+        // ShiftSchedule như nhân viên bán hàng — portal Kho đã CỐ TÌNH bỏ hẳn "Lịch làm
+        // việc tuần" (xem class-doc WarehouseDashboardServlet: không phù hợp với giờ hành
+        // chính). Đòi schedule ở bước 2 bên dưới khiến vai trò này KHÔNG BAO GIỜ điểm danh
+        // được — quét mặt xong vẫn báo "không có lịch làm việc". Check-in đơn giản, không
+        // lịch, không tính trễ/phạt (không có gì để so trễ). ScheduleID lưu NULL — đúng ý
+        // nghĩa "mở ca không theo lịch" đã ghi sẵn trong schema Attendance.ScheduleID.
+        if (staff.getRoleId() == 3) {
+            BigDecimal openingCash = openingCashOverride != null ? openingCashOverride : BigDecimal.ZERO;
+            int attId = attendanceDAO.checkInWithPenalty(
+                    staff.getAccountId(), null, method, openingCash,
+                    BigDecimal.ZERO, 0, "CONFIRMED", null);
+            if (attId <= 0) return "error";
+            if (shiftDAO.findCurrent(staff.getAccountId()) == null) {
+                shiftDAO.openShift(staff.getAccountId(), openingCash);
+            }
+            String methodLabel = "FACE_ID".equals(method) ? " (qua nhận diện khuôn mặt)" : "";
+            AuditHelper.log(req, "Check-in", "Attendance",
+                    "@" + staff.getUsername() + " check-in" + methodLabel
+                            + " (Thủ kho, không theo lịch ca) — tiền đầu ca: "
+                            + openingCash.toPlainString() + "đ",
+                    staff.getAccountId());
+            return "checked-in";
+        }
+
+        // 2. Phải có lịch ca hôm nay (áp dụng cho Dược sĩ bán hàng — roleId 2)
         ShiftSchedule schedule = scheduleDAO.findTodaySchedule(staff.getAccountId());
         if (schedule == null) {
             return "no-schedule";
@@ -280,7 +305,18 @@ public class StaffAttendanceServlet extends HttpServlet {
             catch (NumberFormatException ignored) {}
         }
         String msg = performCheckIn(req, staff, "FACE_ID", openingCash);
-        writeJson(resp, "{\"ok\":true,\"msg\":\"" + msg + "\"}");
+        // BUG THẬT (đã fix): trước đây "ok":true bị hard-code bất kể msg là thành công hay
+        // thất bại ("already-in"/"no-schedule"/"too-early"/"too-late"/"error"). Client
+        // (verifyAndSubmit trong staff-checkin.jsp) đọc data.ok để quyết định hiện
+        // "✅ Xác minh thành công!" rồi redirect — với msg thất bại, người dùng thấy chớp
+        // nhoáng dòng xanh "thành công" xong lập tức bị đá sang trang có toast đỏ NGƯỢC LẠI
+        // nội dung vừa thấy — đúng kiểu "2 thông báo chồng lên nhau" đang bị report ở POS.
+        writeJson(resp, "{\"ok\":" + isCheckInSuccess(msg) + ",\"msg\":\"" + msg + "\"}");
+    }
+
+    /** true nếu msg trả về từ performCheckIn là 1 lần điểm danh THÀNH CÔNG thật sự. */
+    private static boolean isCheckInSuccess(String msg) {
+        return "checked-in".equals(msg) || "checked-in-late".equals(msg) || "checked-in-absent".equals(msg);
     }
 
     private void handleFaceCheckOut(HttpServletRequest req, HttpServletResponse resp,
@@ -295,7 +331,8 @@ public class StaffAttendanceServlet extends HttpServlet {
         String notes = req.getParameter("notes");
         String handoverStr = req.getParameter("handoverCash");
         String msg = performCheckOut(req, staff, "FACE_ID", notes, handoverStr);
-        writeJson(resp, "{\"ok\":true,\"msg\":\"" + msg + "\"}");
+        // Cùng bug với face-checkin phía trên — xem giải thích ở đó.
+        writeJson(resp, "{\"ok\":" + "checked-out".equals(msg) + ",\"msg\":\"" + msg + "\"}");
     }
 
     /**

@@ -38,13 +38,17 @@ public class DBContext {
                 .getResourceAsStream("db.properties")) {
 
             Properties props = new Properties();
-            props.load(in);
+            if (in != null) props.load(in);
 
+            // Biến môi trường ĐÈ giá trị trong db.properties — dùng khi deploy Docker/Render.
+            // db.properties chỉ còn là fallback cho dev local (chạy trực tiếp trong IDE/Tomcat
+            // máy mình), KHÔNG được đóng gói mật khẩu thật vào image production nữa. Đọc biến
+            // môi trường trước, rỗng/không có thì mới rơi về giá trị trong file.
             HikariConfig config = new HikariConfig();
-            config.setDriverClassName(props.getProperty("db.driver"));
-            config.setJdbcUrl(props.getProperty("db.url"));
-            config.setUsername(props.getProperty("db.username"));
-            config.setPassword(props.getProperty("db.password"));
+            config.setDriverClassName(env("DB_DRIVER", props.getProperty("db.driver")));
+            config.setJdbcUrl(env("DB_URL", props.getProperty("db.url")));
+            config.setUsername(env("DB_USERNAME", props.getProperty("db.username")));
+            config.setPassword(env("DB_PASSWORD", props.getProperty("db.password")));
 
             // ── Pool sizing ───────────────────────────────────────────────
             // DB đặt từ xa (network latency mỗi query) + click liên tục → cần nhiều
@@ -111,6 +115,12 @@ public class DBContext {
 
     public static Connection getConnection() throws SQLException {
         return ds.getConnection();
+    }
+
+    /** Ưu tiên biến môi trường {@code name}; rỗng/không có thì rơi về {@code fallback} (từ db.properties). */
+    private static String env(String name, String fallback) {
+        String v = System.getenv(name);
+        return (v != null && !v.trim().isEmpty()) ? v.trim() : fallback;
     }
 
     public static void main(String[] args) {

@@ -60,7 +60,12 @@ public interface IAttendanceDAO {
      *         OVERTIME | NO_SCHEDULE | FORCE_CHECKOUT
      */
     List<Attendance> findByStatusAndMonth(String status, int month, int year);
-    int checkInWithPenalty(int accountId, int scheduleId, String method,
+    /**
+     * @param scheduleId {@code null} = mở ca không theo lịch (đúng ý nghĩa cột
+     *                   Attendance.ScheduleID NULL trong schema) — dùng cho Thủ kho
+     *                   (roleId 3), vốn không được xếp ShiftSchedule như nhân viên bán hàng.
+     */
+    int checkInWithPenalty(int accountId, Integer scheduleId, String method,
                            BigDecimal openingCash, BigDecimal penaltyAmount,
                            int lateMinutes, String status, Integer posStation);
 
