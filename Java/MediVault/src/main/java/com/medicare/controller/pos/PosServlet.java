@@ -1264,6 +1264,22 @@ public class PosServlet extends HttpServlet {
         Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
         if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
 
+        // Chống "buddy punching" — người đang đứng đóng ca (bấm nút, gõ tiền cuối ca) phải là
+        // ĐÚNG người đang đăng nhập trên quầy, không phải đồng nghiệp bấm hộ. Verify PHÍA SERVER
+        // (không tin kết quả so khớp client) — 1-vs-N, claim = chính staff của session hiện tại,
+        // dùng lại FaceVerifier đã dùng cho check-in đầu ca (xem handlePosFaceCheckin).
+        if (staff.isFaceReenrollPending()) {
+            out.print("{\"ok\":false,\"reason\":\"reenroll_pending\"}");
+            return;
+        }
+        String descriptorJson = req.getParameter("descriptor");
+        String verifyResult = com.medicare.util.FaceVerifier.verify(
+                staff.getAccountId(), descriptorJson, accountDAO.findAllWithFaceVector());
+        if (!"MATCH".equals(verifyResult)) {
+            out.print("{\"ok\":false,\"reason\":\"" + verifyResult + "\"}");
+            return;
+        }
+
         // Accept actual cash counted by staff
         BigDecimal closingCash = BigDecimal.ZERO;
         String ccStr = req.getParameter("closingCash");

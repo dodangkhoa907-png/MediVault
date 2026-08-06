@@ -1030,6 +1030,32 @@ body{display:flex}
   </div>
 </div>
 
+<!-- QUÉT MẶT XÁC THỰC KHI ĐÓNG CA — sau khi đếm & nhập tiền cuối ca, bắt buộc quét mặt đúng
+     người đang đăng nhập mới cho đóng ca (chống đồng nghiệp bấm hộ / gõ hộ tiền cuối ca). -->
+<div class="face-modal" id="checkoutFaceModal" style="z-index:10500">
+  <div class="fm-backdrop" onclick="closeCheckoutFaceModal()"></div>
+  <div class="fm-panel">
+    <button class="fm-close" onclick="closeCheckoutFaceModal()">✕</button>
+    <div class="fm-title">📷 Xác thực khuôn mặt để đóng ca</div>
+    <div class="fm-sub">Nhìn thẳng vào camera — xác thực xong sẽ tự động đóng ca</div>
+    <div id="cfLoading" class="fm-loader"><div class="fm-spinner"></div>Đang tải mô hình nhận dạng…</div>
+    <div id="cfCameraWrap" style="display:none">
+      <div class="face-video-wrap">
+        <video id="checkoutFaceVideo" autoplay muted playsinline></video>
+        <canvas id="checkoutFaceCanvas"></canvas>
+        <div class="face-overlay">
+          <div class="face-ring" id="cfRing"></div>
+        </div>
+      </div>
+      <div class="fm-no-face" id="cfNoFace">⚠ Không phát hiện khuôn mặt — hãy nhìn thẳng vào camera</div>
+      <div class="fm-status" id="cfStatus">Đang quét…</div>
+      <div class="fm-actions">
+        <button class="fm-btn-cancel" onclick="closeCheckoutFaceModal()">Hủy — quay lại</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MEDICINE INFO DRAWER -->
 <div class="med-drawer-bd" id="medDrawerBd" onclick="closeInfoDrawer()"></div>
 <div class="med-drawer" id="medDrawer">
@@ -3566,6 +3592,166 @@ function setFmStatus(msg, type) {
   el.className   = 'fm-status' + (type ? ' ' + type : '');
 }
 
+// ── QUÉT MẶT XÁC THỰC KHI ĐÓNG CA ────────────────────────────────────────────
+// Khác điểm danh đầu ca (không biết trước là ai → identify 1-vs-N rồi mới hỏi xác nhận):
+// ở đây ĐÃ BIẾT claim = currentStaffId (người đang login quầy) — chỉ cần gom mẫu quét ổn
+// định rồi gửi thẳng lên pos-end-shift, server tự verify 1-vs-1 (FaceVerifier.verify) và
+// đóng ca luôn trong CÙNG 1 request nếu khớp — không cần bước "xác nhận" tay riêng, khuôn
+// mặt khớp CHÍNH LÀ xác nhận.
+let checkoutFaceStream  = null;
+let checkoutFaceLoopId  = null;
+let checkoutFaceSamples = [];
+let pendingClosingCash  = null;
+
+async function openCheckoutFaceModal(closingCash) {
+  pendingClosingCash = closingCash;
+  checkoutFaceSamples = [];
+  document.getElementById('checkoutFaceModal').classList.add('show');
+  document.getElementById('cfLoading').style.display = 'flex';
+  document.getElementById('cfCameraWrap').style.display = 'none';
+  setCfStatus('Đang quét…');
+  document.getElementById('cfRing').className = 'face-ring';
+  if (document.getElementById('cfNoFace')) document.getElementById('cfNoFace').style.display = 'none';
+
+  try {
+    await loadFaceModels();
+  } catch (e) {
+    setCfStatus('❌ Lỗi tải mô hình: ' + e.message, 'err');
+    document.getElementById('cfLoading').style.display = 'none';
+    document.getElementById('cfCameraWrap').style.display = 'block';
+    return;
+  }
+  document.getElementById('cfLoading').style.display = 'none';
+  document.getElementById('cfCameraWrap').style.display = 'block';
+
+  try {
+    checkoutFaceStream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 640, height: 480, facingMode: 'user' }
+    });
+    const video = document.getElementById('checkoutFaceVideo');
+    video.srcObject = checkoutFaceStream;
+    await video.play();
+    startCheckoutFaceDetection();
+  } catch (e) {
+    setCfStatus('❌ Không truy cập được camera: ' + e.message, 'err');
+  }
+}
+
+function closeCheckoutFaceModal() {
+  if (checkoutFaceLoopId) { cancelAnimationFrame(checkoutFaceLoopId); checkoutFaceLoopId = null; }
+  if (checkoutFaceStream) { checkoutFaceStream.getTracks().forEach(t => t.stop()); checkoutFaceStream = null; }
+  document.getElementById('checkoutFaceModal').classList.remove('show');
+  checkoutFaceSamples = [];
+  const cv = document.getElementById('checkoutFaceCanvas');
+  if (cv) cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
+}
+
+function setCfStatus(msg, type) {
+  const el = document.getElementById('cfStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.className   = 'fm-status' + (type ? ' ' + type : '');
+}
+
+const CF_REASON_MAP = {
+  'no_match':          '⚠ Không khớp khuôn mặt — thử lại, nhìn thẳng vào camera.',
+  'impersonation':     '🚫 Khuôn mặt không phải của bạn — không thể đóng ca hộ người khác.',
+  'ambiguous':         '⚠ Chưa đủ rõ để phân biệt — thử lại, đứng gần camera hơn.',
+  'no_face_enrolled':  '⚠ Tài khoản chưa đăng ký khuôn mặt — liên hệ Quản lý/Admin.',
+  'reenroll_pending':  '⏳ Đang chờ duyệt đổi khuôn mặt — chưa thể xác thực lúc này.',
+  'not_logged_in':     '⚠ Phiên đăng nhập đã hết — vui lòng đăng nhập lại quầy.',
+  'missing_descriptor':'⚠ Chưa nhận được dữ liệu quét — thử lại.',
+  'invalid_descriptor':'⚠ Dữ liệu quét không hợp lệ — thử lại.'
+};
+
+function startCheckoutFaceDetection() {
+  const video  = document.getElementById('checkoutFaceVideo');
+  const canvas = document.getElementById('checkoutFaceCanvas');
+  let busy = false;
+
+  async function loop() {
+    if (!checkoutFaceStream) return;
+    if (busy) { checkoutFaceLoopId = requestAnimationFrame(loop); return; }
+
+    if (video.videoWidth > 0) {
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      busy = true;
+      const detections = await faceapi
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 }))
+        .withFaceLandmarks()
+        .withFaceDescriptors();
+      busy = false;
+
+      const detection = pickPrimaryFace(detections);
+      const ctx2 = canvas.getContext('2d');
+      ctx2.clearRect(0, 0, canvas.width, canvas.height);
+      const noFaceEl = document.getElementById('cfNoFace');
+      const ring     = document.getElementById('cfRing');
+
+      if (!detection) {
+        noFaceEl.style.display = 'block';
+        ring.className = 'face-ring';
+        checkoutFaceSamples = [];
+        checkoutFaceLoopId = requestAnimationFrame(loop);
+        return;
+      }
+      noFaceEl.style.display = 'none';
+      ring.className = 'face-ring scanning';
+      faceapi.draw.drawDetections(canvas, [detection.detection]);
+
+      if (checkoutFaceSamples.length > 0 &&
+          faceapi.euclideanDistance(checkoutFaceSamples[checkoutFaceSamples.length - 1], Array.from(detection.descriptor)) > FACE_CONTINUITY_MAX) {
+        checkoutFaceSamples = [];
+      }
+
+      if (checkoutFaceSamples.length < FACE_STABLE_FRAMES) {
+        checkoutFaceSamples.push(Array.from(detection.descriptor));
+        setCfStatus('Đang thu thập mẫu quét… (' + checkoutFaceSamples.length + '/' + FACE_STABLE_FRAMES + ')');
+      } else {
+        const dim = checkoutFaceSamples[0].length;
+        const avg = new Array(dim).fill(0);
+        for (const s of checkoutFaceSamples) for (let i = 0; i < dim; i++) avg[i] += s[i];
+        for (let i = 0; i < dim; i++) avg[i] /= checkoutFaceSamples.length;
+
+        busy = true;
+        setCfStatus('Đang xác thực với máy chủ…');
+        try {
+          const res = await fetch(ctx + '/pos', {
+            method: 'POST',
+            body: new URLSearchParams({
+              action: 'pos-end-shift',
+              closingCash: pendingClosingCash,
+              descriptor: JSON.stringify(avg)
+            }),
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+          });
+          const data = await res.json();
+          if (data.ok) {
+            ring.className = 'face-ring matched';
+            setCfStatus('✓ Xác thực thành công — đang đóng ca…', 'ok');
+            closeCheckoutFaceModal();
+            closeEndShiftModal();
+            showToast('✓ Đóng ca thành công — ' + (data.staffName || ''), 'ok');
+            setTimeout(function () { location.reload(); }, 1600);
+            return; // dừng loop — đã xong
+          } else {
+            checkoutFaceSamples = [];
+            setCfStatus(CF_REASON_MAP[data.reason] || '⚠ Xác thực thất bại, thử lại…', 'err');
+          }
+        } catch (e) {
+          checkoutFaceSamples = [];
+          setCfStatus('❌ Lỗi kết nối máy chủ: ' + e.message, 'err');
+        }
+        busy = false;
+      }
+    }
+    checkoutFaceLoopId = requestAnimationFrame(loop);
+  }
+  loop();
+}
+
 async function confirmFaceCheckin() {
   if (!faceMatchedId) { showToast('⚠️ Chưa nhận dạng được khuôn mặt!', 'err'); return; }
   const btn = document.getElementById('fmCheckinBtn');
@@ -4164,30 +4350,10 @@ async function confirmEndShift() {
     return;
   }
   err.style.display = 'none';
-  var btn = document.getElementById('esrConfirmBtn');
-  btn.disabled = true;
-  btn.textContent = '⏳ Đang đóng ca...';
-  try {
-    var res = await fetch(ctx + '/pos', {
-      method: 'POST',
-      body: new URLSearchParams({ action: 'pos-end-shift', closingCash: closingCash }),
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-    });
-    var d = await res.json();
-    if (d.ok) {
-      closeEndShiftModal();
-      showToast('✓ Đóng ca thành công — ' + (d.staffName || ''), 'ok');
-      setTimeout(function() { location.reload(); }, 1600);
-    } else {
-      showToast('❌ ' + (d.reason || d.msg || 'Lỗi đóng ca'), 'err');
-      btn.disabled = false;
-      btn.textContent = '⏻ Xác nhận & Đóng ca';
-    }
-  } catch(e) {
-    showToast('❌ Lỗi kết nối', 'err');
-    btn.disabled = false;
-    btn.textContent = '⏻ Xác nhận & Đóng ca';
-  }
+  // Đã nhập tiền cuối ca hợp lệ — bắt buộc quét mặt xác thực ĐÚNG người đang đăng nhập trước
+  // khi thật sự đóng ca (chống đồng nghiệp bấm hộ). pos-end-shift chỉ được gọi BÊN TRONG
+  // startCheckoutFaceDetection() sau khi khớp mặt — xem hàm đó để biết luồng đầy đủ.
+  openCheckoutFaceModal(closingCash);
 }
 </script>
 </body>
