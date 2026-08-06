@@ -856,6 +856,7 @@ public class PosServlet extends HttpServlet {
                 + ",\"id\":" + c.getCustomerId()
                 + ",\"name\":\"" + esc(c.getCustomerName()) + "\""
                 + ",\"phone\":\"" + esc(c.getPhone() != null ? c.getPhone() : "") + "\""
+                + ",\"code\":\"" + esc(c.getCustomerCode() != null ? c.getCustomerCode() : "") + "\""
                 + ",\"email\":\"" + esc(c.getEmail() != null ? c.getEmail() : "") + "\""
                 + ",\"address\":\"" + esc(c.getAddress() != null ? c.getAddress() : "") + "\""
                 + ",\"gender\":\"" + esc(c.getGender() != null ? c.getGender() : "") + "\""
@@ -884,6 +885,7 @@ public class PosServlet extends HttpServlet {
         return "{\"found\":true,\"id\":" + c.getCustomerId()
                 + ",\"name\":\"" + esc(c.getCustomerName()) + "\""
                 + ",\"phone\":\"" + esc(c.getPhone() != null ? c.getPhone() : "") + "\""
+                + ",\"code\":\"" + esc(c.getCustomerCode() != null ? c.getCustomerCode() : "") + "\""
                 + ",\"allergy\":\"" + esc(allergy) + "\""
                 + ",\"points\":" + (card != null ? card.getAvailablePoints() : 0)
                 + ",\"tier\":\"" + esc(card != null && card.getTierName() != null ? card.getTierName() : "") + "\""
@@ -918,11 +920,13 @@ public class PosServlet extends HttpServlet {
 
         // Tạo luôn thẻ tích điểm hạng khởi điểm
         new com.medicare.dao.LoyaltyDAO().getOrCreateCard(newId);
+        String code = dao.findById(newId).getCustomerCode();
 
         com.medicare.util.AuditHelper.log(req, "Tạo khách hàng (POS)", "Customer", newId,
-                "Tạo nhanh khách tại quầy: " + name.trim() + " — " + phone);
+                "Tạo nhanh khách tại quầy: " + name.trim() + " — " + phone + " — Mã KH: " + code);
         out.print("{\"ok\":true,\"id\":" + newId + ",\"name\":\"" + esc(name.trim())
-                + "\",\"phone\":\"" + phone + "\",\"points\":0,\"tier\":\"\",\"allergy\":\"\"}");
+                + "\",\"phone\":\"" + phone + "\",\"code\":\"" + esc(code)
+                + "\",\"points\":0,\"tier\":\"\",\"allergy\":\"\"}");
     }
 
     /**

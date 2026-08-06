@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 public class Customer {
     private int customerId;
+    private String customerCode; // Mã khách hàng duy nhất, cấp tại POS — dùng cùng SĐT để đăng nhập Portal
     private String customerName;
     private String phone;
     private String email;
@@ -37,6 +38,8 @@ public class Customer {
 
     public int getCustomerId() { return customerId; }
     public void setCustomerId(int customerId) { this.customerId = customerId; }
+    public String getCustomerCode() { return customerCode; }
+    public void setCustomerCode(String customerCode) { this.customerCode = customerCode; }
     public String getCustomerName() { return customerName; }
     public void setCustomerName(String customerName) { this.customerName = customerName; }
     public String getPhone() { return phone; }
