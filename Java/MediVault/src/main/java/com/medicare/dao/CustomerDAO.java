@@ -13,6 +13,7 @@ public class CustomerDAO implements ICustomerDAO {
     private Customer mapRow(ResultSet rs) throws SQLException {
         Customer c = new Customer();
         c.setCustomerId(rs.getInt("CustomerID"));
+        try { c.setCustomerCode(rs.getString("CustomerCode")); } catch (SQLException ignored) {}
         c.setCustomerName(MojibakeUtil.fix(rs.getString("CustomerName")));
         c.setPhone(rs.getString("Phone"));
         c.setEmail(rs.getString("Email"));
@@ -70,7 +71,7 @@ public class CustomerDAO implements ICustomerDAO {
                 "DateOfBirth, Gender, NationalId, Occupation, AllergyHistory, ChronicDisease) " +
                 "VALUES (?,?,?,?,?,?,?,?,?,?)";
         try (Connection cn = DBContext.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
+             PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setNString(1, c.getCustomerName());
             ps.setString(2, c.getPhone());
             ps.setString(3, c.getEmail());
@@ -81,8 +82,41 @@ public class CustomerDAO implements ICustomerDAO {
             ps.setNString(8, c.getOccupation());
             ps.setNString(9, c.getAllergyHistory());
             ps.setNString(10, c.getChronicDisease());
-            return ps.executeUpdate() > 0;
+            if (ps.executeUpdate() == 0) return false;
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    int newId = rs.getInt(1);
+                    c.setCustomerId(newId);
+                    c.setCustomerCode(assignCustomerCode(cn, newId));
+                }
+            }
+            return true;
         } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    /** Sinh Mã khách hàng duy nhất (KH + 6 số theo CustomerID) và lưu vào DB. */
+    private String assignCustomerCode(Connection cn, int customerId) throws SQLException {
+        String code = "KH" + String.format("%06d", customerId);
+        try (PreparedStatement ps = cn.prepareStatement(
+                "UPDATE Customers SET CustomerCode = ? WHERE CustomerID = ?")) {
+            ps.setString(1, code);
+            ps.setInt(2, customerId);
+            ps.executeUpdate();
+        }
+        return code;
+    }
+
+    /** Tìm khách theo Email (không phân biệt hoa/thường) — dùng cho đăng nhập Portal bằng Email. */
+    public Customer findByEmail(String email) {
+        String sql = "SELECT * FROM Customers WHERE LOWER(Email) = LOWER(?)";
+        try (Connection cn = DBContext.getConnection();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+            ps.setString(1, email);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapRow(rs);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return null;
     }
 
     /** Tìm khách theo UID thẻ NFC đã liên kết. */
@@ -128,7 +162,11 @@ public class CustomerDAO implements ICustomerDAO {
             else ps.setString(3, gender);
             if (ps.executeUpdate() == 0) return -1;
             try (ResultSet rs = ps.getGeneratedKeys()) {
-                if (rs.next()) return rs.getInt(1);
+                if (rs.next()) {
+                    int newId = rs.getInt(1);
+                    assignCustomerCode(cn, newId);
+                    return newId;
+                }
             }
         } catch (Exception e) { e.printStackTrace(); }
         return -1;

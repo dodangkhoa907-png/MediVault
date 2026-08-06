@@ -33,9 +33,12 @@ public class PosServlet extends HttpServlet {
     private final IAccountDAO    accountDAO    = new AccountDAO();
     private final IAttendanceDAO attendanceDAO = new AttendanceDAO();
     private final IShiftScheduleDAO scheduleDAO = new ShiftScheduleDAO();
+    private final IShiftDAO         shiftDAO         = new ShiftDAO();
     private final IInvoiceDAO       invoiceDAO       = new InvoiceDAO();
     private final IInvoiceDetailDAO invoiceDetailDAO = new InvoiceDetailDAO();
     private final IReturnsDAO       returnsDAO       = new ReturnsDAO();
+    private final com.medicare.service.SaleValidationService saleValidationService = new com.medicare.service.SaleValidationService();
+    private final com.medicare.util.BarcodeService barcodeService = new com.medicare.util.BarcodeService();
 
     private static final int POS_ACCOUNT_ID = 1;
 
@@ -91,6 +94,21 @@ public class PosServlet extends HttpServlet {
             resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             resp.setContentType("application/json;charset=UTF-8");
             resp.getWriter().print("{\"ok\":false,\"error\":\"unauthorized\"}");
+            return;
+        }
+
+        if ("lookup-barcode".equals(action)) {
+            String barcode = req.getParameter("barcode");
+            String source = req.getParameter("source");
+            Medicines m = barcodeService.lookup(barcode, source);
+            resp.setContentType("application/json;charset=UTF-8");
+            resp.setHeader("Cache-Control", "no-store");
+            PrintWriter out = resp.getWriter();
+            if (m != null) {
+                out.print("{\"ok\":true,\"found\":true,\"medicine\":" + com.medicare.util.BarcodeService.medicineJson(m) + "}");
+            } else {
+                out.print("{\"ok\":true,\"found\":false}");
+            }
             return;
         }
 
@@ -247,6 +265,8 @@ public class PosServlet extends HttpServlet {
         // biết trước quầy nào đang có người trước khi chọn (tránh chọn nhầm quầy người khác).
         if ("station-staff".equals(action)) {
             resp.setContentType("application/json;charset=UTF-8");
+            resp.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+            resp.setHeader("Pragma", "no-cache");
             PrintWriter out = resp.getWriter();
             Map<Integer, String> staffByStation = attendanceDAO.findActiveStaffByStation();
             StringBuilder sb = new StringBuilder("{");
@@ -399,9 +419,21 @@ public class PosServlet extends HttpServlet {
                 // check-in từ phiên/máy khác rồi bỏ đi mà chưa bấm kết ca.
                 Integer leaveStation = (Integer) leaveSess.getAttribute("posStation");
                 if (leaveStation != null && leaveStation > 0) {
+                    // Đóng ĐÚNG bản ghi Attendance đang gắn với quầy này (theo AttendanceID) —
+                    // KHÔNG dùng checkOut(accountId,...) vì nó dò "bản ghi mở mới nhất theo
+                    // AccountID", có thể khác bản ghi đang thực sự gắn với quầy đang tan ca nếu
+                    // tài khoản lỡ có nhiều Attendance còn mở (dữ liệu cũ / check-in trùng).
                     Attendance occupant = attendanceDAO.findActiveByStation(leaveStation);
                     if (occupant != null) {
-                        attendanceDAO.checkOut(occupant.getAccountId(), BigDecimal.ZERO, "Rời quầy từ POS", false);
+                        attendanceDAO.checkOutById(occupant.getAttendanceId(), BigDecimal.ZERO, "Rời quầy từ POS", false);
+                        // Từ khi handleOpenShift() bắt đầu mở thật bản ghi Shifts (hợp nhất với
+                        // luồng "staff"), phải đóng luôn Shift của người bị chiếm quầy — nếu
+                        // không nó treo mãi ở trạng thái OPEN vì chủ nhân đã rời đi, không còn
+                        // ai gọi pos-end-shift để đóng bằng tiền đếm thật.
+                        Shift abandoned = shiftDAO.findCurrent(occupant.getAccountId());
+                        if (abandoned != null) {
+                            shiftDAO.forceClose(abandoned.getShiftId(), "Tự đóng — quầy bị chiếm bởi nhân viên khác");
+                        }
                     }
                 }
                 leaveSess.removeAttribute("posStation");
@@ -551,6 +583,11 @@ public class PosServlet extends HttpServlet {
             return;
         }
 
+        if ("preview-sale".equals(action)) {
+            handlePreviewSale(req, out);
+            return;
+        }
+
         if ("complete-sale".equals(action)) {
             String clientReqId = req.getParameter("clientRequestId");
             if (clientReqId != null && !clientReqId.isBlank()) {
@@ -605,8 +642,28 @@ public class PosServlet extends HttpServlet {
                 Integer customerId = parseIntOrNull(req.getParameter("customerId"));
                 String  payMethod  = req.getParameter("paymentMethod");
                 String  discStr    = req.getParameter("discount");
-                BigDecimal discount = (discStr != null && !discStr.isEmpty())
+                BigDecimal manualDiscount = (discStr != null && !discStr.isEmpty())
                         ? new BigDecimal(discStr) : BigDecimal.ZERO;
+                BigDecimal discount = manualDiscount;
+
+                // Đổi điểm tích lũy lấy tiền thanh toán — số điểm do client đề nghị, GIÁ TRỊ quy
+                // đổi và số dư khả dụng luôn được tính/kiểm tra lại ở server (không tin client).
+                Integer redeemPointsParam = parseIntOrNull(req.getParameter("redeemPoints"));
+                int redeemPoints = redeemPointsParam != null && redeemPointsParam > 0 ? redeemPointsParam : 0;
+                if (redeemPoints > 0) {
+                    if (customerId == null) {
+                        out.print("{\"ok\":false,\"msg\":\"Cần chọn khách hàng để đổi điểm!\"}");
+                        return;
+                    }
+                    com.medicare.entity.LoyaltyCard card =
+                            new com.medicare.dao.LoyaltyDAO().findByCustomer(customerId);
+                    if (card == null || card.getAvailablePoints() < redeemPoints) {
+                        out.print("{\"ok\":false,\"msg\":\"Khách hàng không đủ điểm để đổi!\"}");
+                        return;
+                    }
+                    discount = discount.add(BigDecimal.valueOf(redeemPoints)
+                            .multiply(BigDecimal.valueOf(com.medicare.dao.LoyaltyDAO.VND_PER_POINT)));
+                }
 
                 String[] medIdStrs = req.getParameterValues("medId[]");
                 String[] qtyStrs   = req.getParameterValues("qty[]");
@@ -618,13 +675,42 @@ public class PosServlet extends HttpServlet {
                     quantities[i]  = Integer.parseInt(qtyStrs[i]);
                 }
 
+                // Dòng risky (chia lô/không đủ hạn cho liệu trình) mà dược sĩ đã tự chọn cách xử
+                // lý ở modal xác nhận (sau khi thấy cảnh báo từ action=preview-sale) — FE gửi kèm
+                // JSON {"<index trong medId[]/qty[]>": [{"batchId":x,"quantity":y}, ...], ...}.
+                // Dòng nào KHÔNG có trong đây thì để hệ thống tự phân bổ FEFO như bình thường.
+                java.util.Map<Integer, java.util.List<com.medicare.service.SaleLineRequest.ManualAllocation>> manualAllocationsByIndex =
+                        parseManualAllocations(req.getParameter("manualAllocationsJson"));
+
                 ServiceResult<Invoice> result = saleService.completeSale(
                         accountId, customerId, payMethod, discount,
-                        medicineIds, quantities, req.getRemoteAddr());
+                        medicineIds, quantities, manualAllocationsByIndex, req.getRemoteAddr(), posStation);
 
                 String jsonResp;
                 if (result.isOk()) {
                     Invoice inv = result.getData();
+                    // Trừ điểm khách vừa đổi lấy tiền cho hóa đơn này (nếu có). DiscountAmount
+                    // ghi trên hóa đơn có thể đã bị PricingUtil.settle() kẹp nhỏ hơn tổng đề nghị
+                    // (manualDiscount + giá trị điểm) nếu vượt quá subtotal — quy đổi lại đúng số
+                    // điểm tương ứng với phần giảm giá THỰC SỰ được áp dụng, không trừ dư điểm.
+                    if (redeemPoints > 0 && customerId != null && inv != null) {
+                        BigDecimal appliedDiscount = inv.getDiscountAmount() != null
+                                ? inv.getDiscountAmount() : BigDecimal.ZERO;
+                        BigDecimal redeemValueApplied = appliedDiscount.subtract(manualDiscount);
+                        if (redeemValueApplied.compareTo(BigDecimal.ZERO) > 0) {
+                            int actualRedeemPoints = Math.min(redeemPoints,
+                                    redeemValueApplied.divideToIntegralValue(
+                                            BigDecimal.valueOf(com.medicare.dao.LoyaltyDAO.VND_PER_POINT)).intValue());
+                            if (actualRedeemPoints > 0) {
+                                boolean redeemed = new com.medicare.dao.LoyaltyDAO().redeem(customerId, actualRedeemPoints,
+                                        "Đổi điểm thanh toán hóa đơn", inv.getInvoiceId());
+                                if (!redeemed) {
+                                    com.medicare.util.AuditHelper.log(req, "Lỗi trừ điểm đổi tiền", "Invoice", inv.getInvoiceId(),
+                                            "Hóa đơn " + inv.getInvoiceCode() + " đã áp giảm giá đổi điểm nhưng trừ điểm thất bại — cần đối soát thủ công");
+                                }
+                            }
+                        }
+                    }
                     // Tích điểm loyalty (1 điểm / 10.000đ) nếu hóa đơn gắn khách hàng
                     int earned = 0;
                     if (customerId != null && inv != null) {
@@ -770,6 +856,7 @@ public class PosServlet extends HttpServlet {
                 + ",\"id\":" + c.getCustomerId()
                 + ",\"name\":\"" + esc(c.getCustomerName()) + "\""
                 + ",\"phone\":\"" + esc(c.getPhone() != null ? c.getPhone() : "") + "\""
+                + ",\"code\":\"" + esc(c.getCustomerCode() != null ? c.getCustomerCode() : "") + "\""
                 + ",\"email\":\"" + esc(c.getEmail() != null ? c.getEmail() : "") + "\""
                 + ",\"address\":\"" + esc(c.getAddress() != null ? c.getAddress() : "") + "\""
                 + ",\"gender\":\"" + esc(c.getGender() != null ? c.getGender() : "") + "\""
@@ -798,6 +885,7 @@ public class PosServlet extends HttpServlet {
         return "{\"found\":true,\"id\":" + c.getCustomerId()
                 + ",\"name\":\"" + esc(c.getCustomerName()) + "\""
                 + ",\"phone\":\"" + esc(c.getPhone() != null ? c.getPhone() : "") + "\""
+                + ",\"code\":\"" + esc(c.getCustomerCode() != null ? c.getCustomerCode() : "") + "\""
                 + ",\"allergy\":\"" + esc(allergy) + "\""
                 + ",\"points\":" + (card != null ? card.getAvailablePoints() : 0)
                 + ",\"tier\":\"" + esc(card != null && card.getTierName() != null ? card.getTierName() : "") + "\""
@@ -832,11 +920,13 @@ public class PosServlet extends HttpServlet {
 
         // Tạo luôn thẻ tích điểm hạng khởi điểm
         new com.medicare.dao.LoyaltyDAO().getOrCreateCard(newId);
+        String code = dao.findById(newId).getCustomerCode();
 
         com.medicare.util.AuditHelper.log(req, "Tạo khách hàng (POS)", "Customer", newId,
-                "Tạo nhanh khách tại quầy: " + name.trim() + " — " + phone);
+                "Tạo nhanh khách tại quầy: " + name.trim() + " — " + phone + " — Mã KH: " + code);
         out.print("{\"ok\":true,\"id\":" + newId + ",\"name\":\"" + esc(name.trim())
-                + "\",\"phone\":\"" + phone + "\",\"points\":0,\"tier\":\"\",\"allergy\":\"\"}");
+                + "\",\"phone\":\"" + phone + "\",\"code\":\"" + esc(code)
+                + "\",\"points\":0,\"tier\":\"\",\"allergy\":\"\"}");
     }
 
     /**
@@ -1086,6 +1176,67 @@ public class PosServlet extends HttpServlet {
         }
     }
 
+    /**
+     * action=preview-sale — xem trước cách hệ thống sẽ chia lô cho từng dòng giỏ hàng TRƯỚC khi
+     * thanh toán, KHÔNG ghi gì vào DB. FE gọi đúng lúc bấm "Thanh toán": nếu mọi dòng risky=false
+     * thì gọi thẳng complete-sale như cũ (đường nhanh, không làm chậm giao dịch bình thường);
+     * nếu có dòng risky=true thì dừng lại, hiện cho dược sĩ chọn cách xử lý trước khi xác nhận.
+     * Xem SaleValidationService#previewLine để biết định nghĩa "risky".
+     */
+    private void handlePreviewSale(HttpServletRequest req, PrintWriter out) {
+        String[] medIdStrs = req.getParameterValues("medId[]");
+        String[] qtyStrs   = req.getParameterValues("qty[]");
+        String[] durStrs   = req.getParameterValues("duration[]");
+
+        if (medIdStrs == null || qtyStrs == null || medIdStrs.length != qtyStrs.length) {
+            out.print("{\"ok\":false,\"msg\":\"Dữ liệu giỏ hàng không hợp lệ!\"}");
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder("{\"ok\":true,\"lines\":[");
+        for (int i = 0; i < medIdStrs.length; i++) {
+            int medicineId = Integer.parseInt(medIdStrs[i]);
+            int qty = Integer.parseInt(qtyStrs[i]);
+            Integer duration = (durStrs != null && i < durStrs.length) ? parseIntOrNull(durStrs[i]) : null;
+
+            com.medicare.service.SaleLinePreview preview =
+                    saleValidationService.previewLine(medicineId, qty, duration);
+
+            if (i > 0) sb.append(',');
+            sb.append("{\"index\":").append(i)
+              .append(",\"medicineId\":").append(medicineId)
+              .append(",\"requestedQuantity\":").append(qty)
+              .append(",\"risky\":").append(preview.isRisky())
+              .append(",\"lots\":[");
+            List<com.medicare.service.warehouse.LotAllocation> lots = preview.getFefoAllocation().getAllocations();
+            for (int j = 0; j < lots.size(); j++) {
+                com.medicare.service.warehouse.LotAllocation la = lots.get(j);
+                if (j > 0) sb.append(',');
+                appendLotJson(sb, la.getBatchId(), la.getBatchNumber(), la.getExpiryDate(), la.getAllocatedQuantity());
+            }
+            sb.append(']');
+            com.medicare.service.warehouse.LotAllocation suggested = preview.getSuggestedSingleBatch();
+            sb.append(",\"suggestedSingleBatch\":");
+            if (suggested != null) {
+                appendLotJson(sb, suggested.getBatchId(), suggested.getBatchNumber(), suggested.getExpiryDate(), qty);
+            } else {
+                sb.append("null");
+            }
+            sb.append('}');
+        }
+        sb.append("]}");
+        out.print(sb);
+    }
+
+    private void appendLotJson(StringBuilder sb, int batchId, String batchNumber,
+                               java.time.LocalDate expiryDate, int qty) {
+        sb.append("{\"batchId\":").append(batchId)
+          .append(",\"batchNumber\":\"").append(esc(batchNumber)).append('"')
+          .append(",\"expiryDate\":\"").append(expiryDate != null ? expiryDate.toString() : "").append('"')
+          .append(",\"quantity\":").append(qty)
+          .append('}');
+    }
+
     private void handleOpenShift(HttpServletRequest req, PrintWriter out) {
         HttpSession session = req.getSession(false);
         Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
@@ -1099,6 +1250,14 @@ public class PosServlet extends HttpServlet {
         if (schedule != null && openingCash.compareTo(BigDecimal.ZERO) > 0) {
             ((ShiftScheduleDAO) scheduleDAO).updateOpeningCash(schedule.getScheduleId(), openingCash);
         }
+        // Hợp nhất với luồng check-in bên "staff" (StaffAttendanceServlet.performCheckIn):
+        // luồng đó mở luôn bản ghi Shifts với tiền đầu ca thật. POS trước đây KHÔNG làm
+        // bước này → SaleService.completeSale tra shiftDAO.findCurrent(accountId) luôn ra
+        // null cho nhân viên chỉ điểm danh qua POS, khiến hóa đơn không gắn ShiftID và các
+        // báo cáo/đối soát theo ca (ShiftServlet, ReportServlet…) bỏ sót toàn bộ doanh số POS.
+        if (shiftDAO.findCurrent(staff.getAccountId()) == null) {
+            shiftDAO.openShift(staff.getAccountId(), openingCash);
+        }
         session.setAttribute("posState", "ACTIVE");
         session.setAttribute("posOpeningCash", openingCash);
         out.print("{\"ok\":true}");
@@ -1108,6 +1267,22 @@ public class PosServlet extends HttpServlet {
         HttpSession session = req.getSession(false);
         Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
         if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
+
+        // Chống "buddy punching" — người đang đứng đóng ca (bấm nút, gõ tiền cuối ca) phải là
+        // ĐÚNG người đang đăng nhập trên quầy, không phải đồng nghiệp bấm hộ. Verify PHÍA SERVER
+        // (không tin kết quả so khớp client) — 1-vs-N, claim = chính staff của session hiện tại,
+        // dùng lại FaceVerifier đã dùng cho check-in đầu ca (xem handlePosFaceCheckin).
+        if (staff.isFaceReenrollPending()) {
+            out.print("{\"ok\":false,\"reason\":\"reenroll_pending\"}");
+            return;
+        }
+        String descriptorJson = req.getParameter("descriptor");
+        String verifyResult = com.medicare.util.FaceVerifier.verify(
+                staff.getAccountId(), descriptorJson, accountDAO.findAllWithFaceVector());
+        if (!"MATCH".equals(verifyResult)) {
+            out.print("{\"ok\":false,\"reason\":\"" + verifyResult + "\"}");
+            return;
+        }
 
         // Accept actual cash counted by staff
         BigDecimal closingCash = BigDecimal.ZERO;
@@ -1146,6 +1321,14 @@ public class PosServlet extends HttpServlet {
 
         // Record actual handover cash in attendance checkout
         attendanceDAO.checkOut(staff.getAccountId(), closingCash, "Đóng ca từ POS", false);
+
+        // Hợp nhất với luồng checkout bên "staff" (StaffAttendanceServlet.performCheckOut):
+        // đóng luôn bản ghi Shifts đang mở (nếu có) với đúng tiền cuối ca đã đếm — nếu
+        // không, Shift mở từ handleOpenShift() ở trên sẽ treo mãi ở trạng thái OPEN.
+        Shift openShift = shiftDAO.findCurrent(staff.getAccountId());
+        if (openShift != null) {
+            shiftDAO.closeShift(openShift.getShiftId(), closingCash, "Đóng ca từ POS");
+        }
 
         session.removeAttribute("posState");
         session.removeAttribute("staffAccount");
@@ -1477,6 +1660,34 @@ public class PosServlet extends HttpServlet {
     }
 
     // ── Helpers ──────────────────────────────────────────────
+    /**
+     * Parse tham số manualAllocationsJson (FE gửi khi dược sĩ tự chọn lô cho dòng risky) —
+     * dạng {@code {"<index>":[{"batchId":x,"quantity":y}, ...], ...}}. Trả về map rỗng nếu
+     * tham số trống/không parse được (nghĩa là mọi dòng để hệ thống tự phân bổ FEFO).
+     */
+    private java.util.Map<Integer, List<com.medicare.service.SaleLineRequest.ManualAllocation>> parseManualAllocations(String json) {
+        java.util.Map<Integer, List<com.medicare.service.SaleLineRequest.ManualAllocation>> result = new HashMap<>();
+        if (json == null || json.trim().isEmpty()) return result;
+        try {
+            com.google.gson.JsonObject obj = com.google.gson.JsonParser.parseString(json).getAsJsonObject();
+            for (String key : obj.keySet()) {
+                int index = Integer.parseInt(key);
+                com.google.gson.JsonArray arr = obj.getAsJsonArray(key);
+                List<com.medicare.service.SaleLineRequest.ManualAllocation> list = new java.util.ArrayList<>();
+                for (com.google.gson.JsonElement el : arr) {
+                    com.google.gson.JsonObject o = el.getAsJsonObject();
+                    list.add(new com.medicare.service.SaleLineRequest.ManualAllocation(
+                            o.get("batchId").getAsInt(), o.get("quantity").getAsInt()));
+                }
+                result.put(index, list);
+            }
+        } catch (Exception ignored) {
+            // JSON hỏng/không đúng định dạng → coi như không có dòng nào được chọn tay,
+            // completeSaleTransaction sẽ tự phân bổ FEFO cho mọi dòng (an toàn, không chặn bán hàng).
+        }
+        return result;
+    }
+
     private Integer parseIntOrNull(String s) {
         if (s == null || s.trim().isEmpty()) return null;
         try { return Integer.parseInt(s.trim()); } catch (Exception e) { return null; }

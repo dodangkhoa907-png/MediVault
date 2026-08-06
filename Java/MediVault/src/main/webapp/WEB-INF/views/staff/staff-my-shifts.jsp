@@ -197,9 +197,12 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
     <a href="<%= request.getContextPath() %>/staff-profile?uid=<%= uid %>" class="nav-item">
       <span class="nav-icon">👤</span> Hồ sơ của tôi
     </a>
+    <% if (staffAcc.getRoleId() == 3) { %>
+    <%-- Thủ kho (roleId 3) không dùng POS — điểm danh vẫn qua đây, không được xoá. --%>
     <a href="<%= request.getContextPath() %>/staff-checkin?uid=<%= uid %>" class="nav-item">
       <span class="nav-icon">✅</span> Điểm danh
     </a>
+    <% } %>
     <a href="<%= request.getContextPath() %>/staff-my-shifts?uid=<%= uid %>" class="nav-item active">
       <span class="nav-icon">🕐</span> Ca làm việc
     </a>
@@ -210,9 +213,6 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
   <% if (staffAcc.getRoleId() == 2) { %>
   <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
-    <a href="<%= request.getContextPath() %>/pos?uid=<%= uid %>" class="nav-item">
-      <span class="nav-icon">🛒</span> Bán thuốc (POS)
-    </a>
     <a href="<%= request.getContextPath() %>/staff-my-invoices?uid=<%= uid %>" class="nav-item">
       <span class="nav-icon">🧾</span> Hóa đơn của tôi
     </a>
@@ -290,34 +290,10 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
           </div>
         </div>
 
-        <%-- Thông báo: Chỉ Admin đóng ca hoặc quẹt thẻ NFC ─-%>
-        <%-- Form nhập tiền cuối ca + đóng ca --%>
-        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:16px 18px;margin-top:10px">
-          <div style="font-size:13px;font-weight:750;color:var(--ink);margin-bottom:12px">🔴 Kết thúc ca</div>
-          <form action="${pageContext.request.contextPath}/staff-shift" method="post">
-            <input type="hidden" name="_csrf" value="${csrfToken}">
-            <input type="hidden" name="action"  value="close">
-            <input type="hidden" name="uid"     value="<%= uid %>">
-            <input type="hidden" name="shiftId" value="<%= currentShift != null ? currentShift.getShiftId() : 0 %>">
-            <div class="fg" style="margin-bottom:10px">
-              <label>💰 Tiền cuối ca (tiền trong két)</label>
-              <input type="number" name="closingCash" min="0" step="1000"
-                     placeholder="Nhập số tiền trong két lúc đóng ca"
-                     style="border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;width:100%;outline:none"
-                     required>
-            </div>
-            <div class="fg" style="margin-bottom:12px">
-              <label>📝 Ghi chú bàn giao</label>
-              <textarea name="notes" rows="2"
-                        placeholder="Tình trạng cuối ca, bàn giao..."
-                        style="border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;width:100%;outline:none;resize:vertical"></textarea>
-            </div>
-            <button type="submit" class="btn-close"
-                    onclick="return confirm('Xác nhận đóng ca và nhập tiền cuối ca?')"
-                    style="width:100%">
-              🔴 Đóng ca
-            </button>
-          </form>
+        <%-- View-only: đóng ca giờ thực hiện tại quầy POS (nhập tiền cuối ca + quét khuôn mặt),
+             không còn form thao tác ở cổng Staff — đúng vai trò mới "chỉ xem trạng thái ca". --%>
+        <div style="background:#ECFDF5;border:1.5px solid #A7F3D0;border-radius:10px;padding:12px 14px;margin-top:10px;font-size:12.5px;color:#065F46;line-height:1.6">
+          📱 Đóng ca (nhập tiền cuối ca + quét khuôn mặt) thực hiện tại quầy POS.
         </div>
         <div style="background:#FEF3C7;border:1.5px solid #FDE68A;border-radius:10px;padding:10px 14px;margin-top:8px;font-size:12px;color:#92400E;line-height:1.6">
           💡 Ca cũng tự động đóng sau <strong>20 phút</strong> kết thúc giờ ca. Trễ &gt; 5 phút → trừ tiền lương.
@@ -341,17 +317,9 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
                   </div>
                 </div>
               </div>
-              <div style="font-size:12px;color:#065F46;background:#DCFCE7;border-radius:8px;padding:8px 12px;margin-bottom:10px">
-                ✅ Bạn có lịch ca hôm nay — cần check-in để mở ca chính thức
+              <div style="font-size:12px;color:#065F46;background:#DCFCE7;border-radius:8px;padding:8px 12px">
+                📱 Bạn có lịch ca hôm nay — điểm danh tại quầy POS để mở ca chính thức
               </div>
-              <a href="${pageContext.request.contextPath}/staff-checkin?uid=<%= uid %>"
-                 style="display:block;text-align:center;background:#10B981;color:#fff;
-                        padding:10px;border-radius:9px;font-size:13px;font-weight:750;
-                        text-decoration:none;transition:background .2s"
-                 onmouseover="this.style.background='#059669'"
-                 onmouseout="this.style.background='#10B981'">
-                ✅ Đến trang Điểm danh để check-in
-              </a>
             </div>
           </c:when>
           <%-- Không có lịch ca hôm nay --%>
@@ -359,7 +327,7 @@ tbody td{padding:12px 16px;font-size:13px;color:var(--ink)}
             <div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:12px;padding:14px 18px;text-align:center;margin:12px 0">
               <div style="font-size:22px;margin-bottom:8px">🔒</div>
               <div style="font-size:13px;font-weight:750;color:#991B1B;margin-bottom:4px">Chưa có ca đang mở</div>
-              <div style="font-size:12px;color:#B91C1C">Vào trang <a href="${pageContext.request.contextPath}/staff-checkin?uid=<%= uid %>" style="color:#1558A8;font-weight:750">Điểm danh</a> để check-in khi có lịch ca.</div>
+              <div style="font-size:12px;color:#B91C1C">Điểm danh tại quầy POS để check-in khi có lịch ca.</div>
             </div>
           </c:otherwise>
         </c:choose>

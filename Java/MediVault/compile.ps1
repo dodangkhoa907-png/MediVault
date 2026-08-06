@@ -1,4 +1,4 @@
-$jars = Get-ChildItem -Recurse "C:\Users\cambi\.m2\repository\*.jar" | Select-Object -ExpandProperty FullName
+$jars = Get-ChildItem -Recurse "$env:USERPROFILE\.m2\repository\*.jar" | Select-Object -ExpandProperty FullName
 $localJars = Get-ChildItem -Recurse "lib\*.jar" | Select-Object -ExpandProperty FullName
 $allJars = @($localJars + $jars + "target/classes") -join ";"
 Set-Content -Path "options.txt" -Value "-encoding`nUTF-8`n-cp`n$allJars`n-d`ntarget/classes"

@@ -79,6 +79,10 @@ public final class BarcodeService {
         m.setStorageConditions(storageConditions);
         m.setMinInventory(0);
         m.setExpiryAlertDays(30);
+        // Dosage là NOT NULL trên Medicines (không có default) — wizard tạo nhanh không có ô
+        // "Liều dùng", nhưng phải điền chuỗi rỗng, nếu không INSERT vi phạm ràng buộc NOT NULL
+        // và bị nuốt lỗi ở insertGetId(), khiến FE hiểu nhầm thành "mã vạch trùng".
+        m.setDosage("");
 
         int newId = ((MedicineDAO) medicineDAO).insertGetId(m);
         if (newId <= 0) return null;

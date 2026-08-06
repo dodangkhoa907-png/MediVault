@@ -85,6 +85,13 @@ public class StaffShiftServlet extends HttpServlet {
             resp.sendRedirect(req.getContextPath() + "/staff-login");
             return;
         }
+        // Dược sĩ bán hàng (roleId 2) mở/đóng ca qua POS từ nay — cổng Staff chỉ còn xem
+        // (GET /staff-my-shifts vẫn hoạt động bình thường, chỉ chặn hành động open/close ở đây).
+        // Thủ kho (roleId 3) không bị ảnh hưởng.
+        if (staffAcc.getRoleId() == 2) {
+            resp.sendRedirect(req.getContextPath() + "/staff-my-shifts?uid=" + uid);
+            return;
+        }
 
         String action = req.getParameter("action");
 

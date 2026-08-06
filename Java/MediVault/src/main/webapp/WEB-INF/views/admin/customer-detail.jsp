@@ -154,6 +154,8 @@ tbody tr:hover td{background:#F7FBFF}
         <div class="hero-sub">
           <span>📱 ${not empty customer.phone ? customer.phone : 'Chưa có SĐT'}</span>
           <span>·</span>
+          <span>🔑 ${not empty customer.customerCode ? customer.customerCode : '—'}</span>
+          <span>·</span>
           <span>Khách từ ${customer.createdAt != null ? fn:substring(customer.createdAt.toString(),0,10) : '—'}</span>
         </div>
         <div class="hero-badges">
