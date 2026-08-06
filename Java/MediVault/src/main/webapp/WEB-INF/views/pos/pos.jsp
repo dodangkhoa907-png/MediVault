@@ -1008,8 +1008,8 @@ body{display:flex}
   <div class="fm-backdrop" onclick="closeFaceModal()"></div>
   <div class="fm-panel">
     <button class="fm-close" onclick="closeFaceModal()">✕</button>
-    <div class="fm-title" id="fmTitle">📷 Điểm danh qua khuôn mặt</div>
-    <div class="fm-sub" id="fmSub">Nhìn thẳng vào camera — hệ thống tự nhận dạng</div>
+    <div class="fm-title">📷 Điểm danh qua khuôn mặt</div>
+    <div class="fm-sub">Nhìn thẳng vào camera — hệ thống tự nhận dạng</div>
     <div id="fmLoading" class="fm-loader"><div class="fm-spinner"></div>Đang tải mô hình nhận dạng…</div>
     <div id="fmCameraWrap" style="display:none">
       <div class="face-video-wrap">
@@ -1024,7 +1024,33 @@ body{display:flex}
       <div class="fm-status" id="fmStatus">Đang quét…</div>
       <div class="fm-actions">
         <button class="fm-btn-cancel" onclick="closeFaceModal()">Hủy</button>
-        <button class="fm-btn-checkin" id="fmCheckinBtn" onclick="onFaceModalConfirm()">✓ Xác nhận điểm danh</button>
+        <button class="fm-btn-checkin" id="fmCheckinBtn" onclick="confirmFaceCheckin()">✓ Xác nhận điểm danh</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- QUÉT MẶT XÁC THỰC KHI ĐÓNG CA — sau khi đếm & nhập tiền cuối ca, bắt buộc quét mặt đúng
+     người đang đăng nhập mới cho đóng ca (chống đồng nghiệp bấm hộ / gõ hộ tiền cuối ca). -->
+<div class="face-modal" id="checkoutFaceModal" style="z-index:10500">
+  <div class="fm-backdrop" onclick="closeCheckoutFaceModal()"></div>
+  <div class="fm-panel">
+    <button class="fm-close" onclick="closeCheckoutFaceModal()">✕</button>
+    <div class="fm-title">📷 Xác thực khuôn mặt để đóng ca</div>
+    <div class="fm-sub">Nhìn thẳng vào camera — xác thực xong sẽ tự động đóng ca</div>
+    <div id="cfLoading" class="fm-loader"><div class="fm-spinner"></div>Đang tải mô hình nhận dạng…</div>
+    <div id="cfCameraWrap" style="display:none">
+      <div class="face-video-wrap">
+        <video id="checkoutFaceVideo" autoplay muted playsinline></video>
+        <canvas id="checkoutFaceCanvas"></canvas>
+        <div class="face-overlay">
+          <div class="face-ring" id="cfRing"></div>
+        </div>
+      </div>
+      <div class="fm-no-face" id="cfNoFace">⚠ Không phát hiện khuôn mặt — hãy nhìn thẳng vào camera</div>
+      <div class="fm-status" id="cfStatus">Đang quét…</div>
+      <div class="fm-actions">
+        <button class="fm-btn-cancel" onclick="closeCheckoutFaceModal()">Hủy — quay lại</button>
       </div>
     </div>
   </div>
@@ -1248,6 +1274,23 @@ body{display:flex}
   </div>
 </div>
 
+<%-- Modal quyết định FEFO — chỉ hiện khi action=preview-sale báo có dòng "risky" (chia ≥2 lô
+     khác hạn, hoặc lô gần hạn nhất không đủ cho "số ngày dùng" đã nhập). Con người luôn là
+     người quyết định cuối — hệ thống chỉ tính toán và cảnh báo, không tự ý chọn thay. --%>
+<div class="unk-modal" id="fefoModal" onclick="if(event.target===this)closeFefoModal()">
+  <div class="unk-box" style="max-width:540px">
+    <div class="unk-head" style="background:linear-gradient(135deg,#92400e,#b45309)">
+      <h3>⚠️ Cần xác nhận cách chia lô</h3>
+      <div class="unk-code" style="font-size:12px;font-weight:600;letter-spacing:0">Hệ thống phát hiện rủi ro hạn dùng — bạn quyết định trước khi thanh toán</div>
+    </div>
+    <div class="unk-body" id="fefoBody" style="max-height:56vh;overflow-y:auto"></div>
+    <div style="padding:14px 20px;border-top:1.5px solid var(--border);display:flex;gap:8px">
+      <button type="button" class="unk-opt cancel" style="margin:0;flex:none;width:auto;padding:0 16px" onclick="closeFefoModal()"><span class="ic">✕</span> Hủy</button>
+      <button type="button" class="btn-checkout" style="height:44px;flex:1;border-radius:10px" id="fefoConfirmBtn" onclick="confirmFefoChoices()">Xác nhận &amp; Thanh toán</button>
+    </div>
+  </div>
+</div>
+
 <%-- defer: cả 3 lib này chỉ dùng bên trong hàm gọi lúc người dùng thao tác (quét mã vạch,
      thanh toán QR, check-in khuôn mặt) — không cái nào cần ngay lúc trang vừa load. Để mặc
      định (blocking) thì HTML parser phải dừng lại chờ tải xong CẢ 3 lib từ CDN ngoài trước
@@ -1364,10 +1407,15 @@ function openBarcodeScan() {
     status.textContent = '⚠️ Không tải được thư viện quét mã vạch — kiểm tra kết nối mạng.';
     return;
   }
-  barcodeScanner = new Html5Qrcode('barcodeReaderBox');
+  barcodeScanner = new Html5Qrcode('barcodeReaderBox', { verbose: false });
   const config = {
-    fps: 10,
+    fps: 20,
     qrbox: { width: 260, height: 140 },
+    disableFlip: true, // camera sau không cần dò cả ảnh lật gương — giảm nửa số lần thử/khung hình
+    // BarcodeDetector là API giải mã NATIVE của trình duyệt (Chrome/Edge/Android) — nhanh hơn
+    // nhiều lần so với ZXing chạy bằng JS/WASM mà html5-qrcode dùng mặc định. Có sẵn thì ưu
+    // tiên dùng, trình duyệt không hỗ trợ thì tự rơi về ZXing như cũ, không mất gì.
+    experimentalFeatures: { useBarCodeDetectorIfSupported: true },
     formatsToSupport: [
       Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
       Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
@@ -1674,6 +1722,15 @@ function removeItem(id) {
   renderCart();
 }
 
+/** Dược sĩ nhập "số ngày dùng" cho 1 dòng Rx — dùng ở previewSale() để so với hạn dùng lô.
+ *  Không renderCart() lại — chỉ lưu giá trị, tránh mất focus ô đang gõ. */
+function setCartDuration(id, value) {
+  const item = cart.find(i => i.id === id);
+  if (!item) return;
+  const v = parseInt(value);
+  item.duration = (!isNaN(v) && v > 0) ? v : null;
+}
+
 function clearCart() {
   cart = []; selectedCustomer = null;
   redeemPoints = 0; redeemValue = 0;
@@ -1712,11 +1769,21 @@ function renderCart() {
                 + (item.qty > 0 ? ' (sau bán: ' + (remain < 0 ? 0 : remain) + ')' : '') + '</span>');
       const metaHtml = meta.length ? '<div class="inv-i-meta">' + meta.join(' · ') + '</div>' : '';
       const rxBadge = item.rx ? '<span class="mc-badge mb-rx" style="font-size:9px;padding:1px 4px;margin-right:6px;border-radius:3px;">Rx</span>' : '<span class="mc-badge mb-otc" style="font-size:9px;padding:1px 4px;margin-right:6px;border-radius:3px;">OTC</span>';
+      // S\u1ED1 ng\u00E0y d\u00F9ng \u2014 CH\u1EC8 hi\u1EC7n cho thu\u1ED1c Rx, d\u00F9ng \u0111\u1EC3 so v\u1EDBi h\u1EA1n d\u00F9ng l\u00F4 l\u00FAc b\u1EA5m Thanh to\u00E1n
+      // (xem previewSale()). \u0110\u1EC3 tr\u1ED1ng = b\u1ECF qua ki\u1EC3m tra, h\u00E0nh vi y h\u1EC7t tr\u01B0\u1EDBc khi c\u00F3 t\u00EDnh n\u0103ng n\u00E0y.
+      const durationHtml = item.rx
+        ? '<div class="inv-i-duration" style="margin-top:4px;display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B">'
+          + '<span>\u{1F4C5} S\u1ED1 ng\u00E0y d\u00F9ng:</span>'
+          + '<input type="number" min="1" step="1" value="' + (item.duration || '') + '" placeholder="\u2014"'
+          + ' style="width:52px;padding:2px 6px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit"'
+          + ' onchange="setCartDuration(' + item.id + ', this.value)">'
+          + '</div>'
+        : '';
       return '<div class="inv-item">'
         + '<div class="inv-i-info">'
           + '<div class="inv-i-name" style="display:flex;align-items:center;">' + rxBadge + escHtml(item.name) + '</div>'
           + '<div class="inv-i-price" style="margin-top:3px;color:#475569;">M\u00E3: <span style="font-weight:750;color:#0F172A;">' + escHtml(item.code) + '</span> \u00B7 ' + fmtMoney(item.price) + ' / ' + escHtml(item.unit) + '</div>'
-          + metaHtml
+          + metaHtml + durationHtml
         + '</div>'
         + '<div class="qty-ctrl">'
           + '<button class="qty-btn minus" onclick="changeQty('+item.id+',-1)">−</button>'
@@ -2307,6 +2374,134 @@ function doCheckout() {
     openQrModal(total);
     return;
   }
+  previewThenSubmit();
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FEFO — xem trước cách chia lô, dừng lại hỏi dược sĩ khi có dòng rủi ro
+   (chia ≥2 lô khác hạn, hoặc lô gần hạn nhất không đủ cho "số ngày dùng" đã
+   nhập). Giao dịch bình thường (không rủi ro) đi thẳng submitSale() như cũ —
+   không làm chậm quầy bán cho đa số trường hợp. ══════════════════════════ */
+let _fefoLines = [];              // dòng risky đang chờ dược sĩ chọn: [{index,medicineId,name,lots,suggestedSingleBatch,choice,reason}]
+let _pendingManualAllocationsJson = null; // set sau khi confirmFefoChoices(), gửi kèm complete-sale
+
+async function previewThenSubmit() {
+  const btn = document.getElementById('checkoutBtn');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Đang kiểm tra…';
+  _pendingManualAllocationsJson = null;
+  try {
+    const fd = new URLSearchParams();
+    fd.append('action', 'preview-sale');
+    if (currentStaffId) fd.append('uid', currentStaffId);
+    cart.forEach(item => {
+      fd.append('medId[]', item.id);
+      fd.append('qty[]', item.qty);
+      fd.append('duration[]', item.duration || '');
+    });
+    fd.append('_csrf', '${csrfToken}');
+    const res = await fetch(ctx + '/pos', {
+      method: 'POST', body: fd,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    const data = await res.json();
+    // preview lỗi/không parse được → KHÔNG chặn bán hàng, để submitSale() tự xử lý (đúng tinh
+    // thần "lớp cảnh báo phụ trợ", không phải điều kiện bắt buộc mới được thanh toán).
+    if (!data.ok) { submitSale(); return; }
+
+    const risky = (data.lines || []).filter(l => l.risky);
+    if (risky.length === 0) { submitSale(); return; }
+
+    _fefoLines = risky.map(l => {
+      const item = cart[l.index];
+      return {
+        index: l.index,
+        medicineId: l.medicineId,
+        name: item ? item.name : ('Thuốc #' + l.medicineId),
+        unit: item ? item.unit : '',
+        requestedQuantity: l.requestedQuantity,
+        lots: l.lots,
+        suggestedSingleBatch: l.suggestedSingleBatch,
+        choice: l.suggestedSingleBatch ? 'suggested' : 'split',
+        reason: ''
+      };
+    });
+    openFefoModal();
+    btn.disabled = false; btn.innerHTML = '🛒 THANH TOÁN';
+  } catch (e) {
+    // Lỗi mạng lúc xem trước — không chặn bán hàng, submitSale() sẽ tự báo lỗi thật nếu có.
+    submitSale();
+  }
+}
+
+function openFefoModal() {
+  renderFefoModal();
+  document.getElementById('fefoModal').classList.add('show');
+}
+function closeFefoModal() {
+  document.getElementById('fefoModal').classList.remove('show');
+}
+
+function renderFefoModal() {
+  const body = document.getElementById('fefoBody');
+  body.innerHTML = _fefoLines.map(function (l, li) {
+    const lotsHtml = l.lots.map(function (lot) {
+      return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px dashed var(--border)">'
+        + '<span>Lô ' + escHtml(lot.batchNumber) + ' — HSD ' + escHtml(lot.expiryDate) + '</span>'
+        + '<span style="font-weight:750">' + lot.quantity + ' ' + escHtml(l.unit) + '</span></div>';
+    }).join('');
+
+    const suggestedOpt = l.suggestedSingleBatch
+      ? '<label style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border:1.5px solid var(--green);background:#f0fdf4;border-radius:10px;margin-top:8px;cursor:pointer">'
+        + '<input type="radio" name="fefoChoice' + li + '" ' + (l.choice === 'suggested' ? 'checked' : '') + ' onchange="setFefoChoice(' + li + ',\'suggested\')" style="margin-top:2px">'
+        + '<span><b>Lấy hết từ Lô ' + escHtml(l.suggestedSingleBatch.batchNumber) + '</b> (HSD ' + escHtml(l.suggestedSingleBatch.expiryDate) + ')'
+        + '<div style="font-size:11.5px;color:#166534;margin-top:2px">✓ Đủ hạn dùng cho cả liệu trình, không cần chia lô</div></span></label>'
+      : '<div style="font-size:12px;color:#b45309;background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:10px 12px;margin-top:8px">'
+        + '⚠️ Không có lô nào đơn lẻ vừa đủ số lượng vừa đủ hạn cho liệu trình — bắt buộc chọn chia lô nếu muốn bán đủ số lượng.</div>';
+
+    const splitChecked = l.choice === 'split' ? 'checked' : '';
+    const reasonDisplay = l.choice === 'split' ? 'block' : 'none';
+    return '<div style="padding:12px 0;border-bottom:1.5px solid var(--border)">'
+      + '<div style="font-weight:800;font-size:13.5px;margin-bottom:6px">' + escHtml(l.name) + ' <span style="font-weight:600;color:var(--muted);font-size:12px">(yêu cầu ' + l.requestedQuantity + ' ' + escHtml(l.unit) + ')</span></div>'
+      + '<div style="background:#f8fafc;border-radius:10px;padding:8px 12px">' + lotsHtml + '</div>'
+      + suggestedOpt
+      + '<label style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;margin-top:8px;cursor:pointer">'
+      + '<input type="radio" name="fefoChoice' + li + '" ' + splitChecked + ' onchange="setFefoChoice(' + li + ',\'split\')" style="margin-top:2px">'
+      + '<span><b>Vẫn chia theo đề xuất FEFO như trên</b>'
+      + '<div style="font-size:11.5px;color:var(--muted);margin-top:2px">Cần nhập lý do trước khi xác nhận</div></span></label>'
+      + '<textarea id="fefoReason' + li + '" placeholder="VD: Đã tư vấn khách dùng lô gần hạn trước…" rows="2" '
+      + 'style="display:' + reasonDisplay + ';width:100%;margin-top:6px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:12.5px" '
+      + 'oninput="setFefoReason(' + li + ',this.value)">' + escHtml(l.reason) + '</textarea>'
+      + '</div>';
+  }).join('');
+}
+
+function setFefoChoice(li, choice) {
+  _fefoLines[li].choice = choice;
+  const reasonEl = document.getElementById('fefoReason' + li);
+  if (reasonEl) reasonEl.style.display = choice === 'split' ? 'block' : 'none';
+}
+function setFefoReason(li, value) {
+  _fefoLines[li].reason = value;
+}
+
+function confirmFefoChoices() {
+  const manual = {};
+  for (const l of _fefoLines) {
+    if (l.choice === 'split') {
+      if (!l.reason || !l.reason.trim()) {
+        showToast('⚠️ Vui lòng nhập lý do cho "' + l.name + '" trước khi xác nhận chia lô.', 'err');
+        return;
+      }
+      // Vẫn chia theo đúng đề xuất FEFO ban đầu (l.lots) — dược sĩ đồng ý với cách hệ thống
+      // đã tính, chỉ xác nhận + ghi lý do, không tự gõ lại số lượng từng lô.
+      manual[l.index] = l.lots.map(function (lot) { return { batchId: lot.batchId, quantity: lot.quantity }; });
+    } else if (l.suggestedSingleBatch) {
+      manual[l.index] = [{ batchId: l.suggestedSingleBatch.batchId, quantity: l.requestedQuantity }];
+    }
+  }
+  _pendingManualAllocationsJson = JSON.stringify(manual);
+  closeFefoModal();
   submitSale();
 }
 
@@ -2329,6 +2524,12 @@ function submitSale() {
   if (currentStaffId)   fd.append('uid', currentStaffId);
   if (currentStation > 0) fd.append('posStation', currentStation);
   cart.forEach(item => { fd.append('medId[]', item.id); fd.append('qty[]', item.qty); });
+  // Lô dược sĩ đã tự chọn cho (các) dòng risky, từ confirmFefoChoices() — reset ngay sau khi
+  // đưa vào request để lần thanh toán TIẾP THEO (giỏ hàng khác) không vô tình dùng lại.
+  if (_pendingManualAllocationsJson) {
+    fd.append('manualAllocationsJson', _pendingManualAllocationsJson);
+    _pendingManualAllocationsJson = null;
+  }
   fd.append('_csrf', '${csrfToken}');
   fetch(ctx + '/pos', {
     method: 'POST',
@@ -3202,8 +3403,6 @@ function pickPrimaryFace(detections) {
   return best;
 }
 
-let faceModalMode     = 'checkin'; // 'checkin' (điểm danh đầu ca) hoặc 'end-shift' (xác thực trước khi đóng ca)
-let pendingClosingCash = null;     // Tiền cuối ca đã nhập & kiểm tra hợp lệ, chờ quét mặt xác thực xong mới gửi lên server
 let faceModelsLoaded  = false;
 let faceVideoStream   = null;
 let faceDetectLoopId  = null;
@@ -3273,37 +3472,6 @@ function closeFaceModal() {
   // clear canvas
   const cv = document.getElementById('faceCanvas');
   if (cv) cv.getContext('2d').clearRect(0,0,cv.width,cv.height);
-  // Trả modal về trạng thái mặc định (điểm danh đầu ca) cho lần mở tiếp theo
-  faceModalMode = 'checkin';
-  const titleEl = document.getElementById('fmTitle');
-  const subEl   = document.getElementById('fmSub');
-  const btn2    = document.getElementById('fmCheckinBtn');
-  if (titleEl) titleEl.textContent = '📷 Điểm danh qua khuôn mặt';
-  if (subEl)   subEl.textContent   = 'Nhìn thẳng vào camera — hệ thống tự nhận dạng';
-  if (btn2)    btn2.textContent    = '✓ Xác nhận điểm danh';
-}
-
-// Điều phối nút xác nhận trên modal quét mặt: chế độ 'checkin' (điểm danh đầu ca, mặc định)
-// dùng luồng cũ confirmFaceCheckin(); chế độ 'end-shift' (xác thực trước khi đóng ca) chỉ cần
-// khớp đúng khuôn mặt nhân viên đang trong ca rồi mới thực sự gửi yêu cầu đóng ca.
-function onFaceModalConfirm() {
-  if (faceModalMode === 'end-shift') {
-    confirmFaceForEndShift();
-  } else {
-    confirmFaceCheckin();
-  }
-}
-
-function confirmFaceForEndShift() {
-  if (!faceMatchedId) { showToast('⚠️ Chưa nhận dạng được khuôn mặt!', 'err'); return; }
-  // Server (handleEndShift) luôn đóng ca theo staffAccount đang lưu trong session — không
-  // theo faceMatchedId gửi từ client — nên chỉ cần xác nhận ĐÃ quét thành công một khuôn mặt
-  // hợp lệ (không cần so khớp lại với currentStaffId, biến này có thể null nếu trang được tải
-  // lại sau lúc điểm danh, khiến việc so khớp phía client sai lệch một cách giả tạo).
-  closeFaceModal();
-  const closingCash = pendingClosingCash;
-  pendingClosingCash = null;
-  doEndShift(closingCash);
 }
 
 function startFaceDetection() {
@@ -3422,6 +3590,166 @@ function setFmStatus(msg, type) {
   if (!el) return;
   el.textContent = msg;
   el.className   = 'fm-status' + (type ? ' ' + type : '');
+}
+
+// ── QUÉT MẶT XÁC THỰC KHI ĐÓNG CA ────────────────────────────────────────────
+// Khác điểm danh đầu ca (không biết trước là ai → identify 1-vs-N rồi mới hỏi xác nhận):
+// ở đây ĐÃ BIẾT claim = currentStaffId (người đang login quầy) — chỉ cần gom mẫu quét ổn
+// định rồi gửi thẳng lên pos-end-shift, server tự verify 1-vs-1 (FaceVerifier.verify) và
+// đóng ca luôn trong CÙNG 1 request nếu khớp — không cần bước "xác nhận" tay riêng, khuôn
+// mặt khớp CHÍNH LÀ xác nhận.
+let checkoutFaceStream  = null;
+let checkoutFaceLoopId  = null;
+let checkoutFaceSamples = [];
+let pendingClosingCash  = null;
+
+async function openCheckoutFaceModal(closingCash) {
+  pendingClosingCash = closingCash;
+  checkoutFaceSamples = [];
+  document.getElementById('checkoutFaceModal').classList.add('show');
+  document.getElementById('cfLoading').style.display = 'flex';
+  document.getElementById('cfCameraWrap').style.display = 'none';
+  setCfStatus('Đang quét…');
+  document.getElementById('cfRing').className = 'face-ring';
+  if (document.getElementById('cfNoFace')) document.getElementById('cfNoFace').style.display = 'none';
+
+  try {
+    await loadFaceModels();
+  } catch (e) {
+    setCfStatus('❌ Lỗi tải mô hình: ' + e.message, 'err');
+    document.getElementById('cfLoading').style.display = 'none';
+    document.getElementById('cfCameraWrap').style.display = 'block';
+    return;
+  }
+  document.getElementById('cfLoading').style.display = 'none';
+  document.getElementById('cfCameraWrap').style.display = 'block';
+
+  try {
+    checkoutFaceStream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 640, height: 480, facingMode: 'user' }
+    });
+    const video = document.getElementById('checkoutFaceVideo');
+    video.srcObject = checkoutFaceStream;
+    await video.play();
+    startCheckoutFaceDetection();
+  } catch (e) {
+    setCfStatus('❌ Không truy cập được camera: ' + e.message, 'err');
+  }
+}
+
+function closeCheckoutFaceModal() {
+  if (checkoutFaceLoopId) { cancelAnimationFrame(checkoutFaceLoopId); checkoutFaceLoopId = null; }
+  if (checkoutFaceStream) { checkoutFaceStream.getTracks().forEach(t => t.stop()); checkoutFaceStream = null; }
+  document.getElementById('checkoutFaceModal').classList.remove('show');
+  checkoutFaceSamples = [];
+  const cv = document.getElementById('checkoutFaceCanvas');
+  if (cv) cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
+}
+
+function setCfStatus(msg, type) {
+  const el = document.getElementById('cfStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.className   = 'fm-status' + (type ? ' ' + type : '');
+}
+
+const CF_REASON_MAP = {
+  'no_match':          '⚠ Không khớp khuôn mặt — thử lại, nhìn thẳng vào camera.',
+  'impersonation':     '🚫 Khuôn mặt không phải của bạn — không thể đóng ca hộ người khác.',
+  'ambiguous':         '⚠ Chưa đủ rõ để phân biệt — thử lại, đứng gần camera hơn.',
+  'no_face_enrolled':  '⚠ Tài khoản chưa đăng ký khuôn mặt — liên hệ Quản lý/Admin.',
+  'reenroll_pending':  '⏳ Đang chờ duyệt đổi khuôn mặt — chưa thể xác thực lúc này.',
+  'not_logged_in':     '⚠ Phiên đăng nhập đã hết — vui lòng đăng nhập lại quầy.',
+  'missing_descriptor':'⚠ Chưa nhận được dữ liệu quét — thử lại.',
+  'invalid_descriptor':'⚠ Dữ liệu quét không hợp lệ — thử lại.'
+};
+
+function startCheckoutFaceDetection() {
+  const video  = document.getElementById('checkoutFaceVideo');
+  const canvas = document.getElementById('checkoutFaceCanvas');
+  let busy = false;
+
+  async function loop() {
+    if (!checkoutFaceStream) return;
+    if (busy) { checkoutFaceLoopId = requestAnimationFrame(loop); return; }
+
+    if (video.videoWidth > 0) {
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      busy = true;
+      const detections = await faceapi
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 }))
+        .withFaceLandmarks()
+        .withFaceDescriptors();
+      busy = false;
+
+      const detection = pickPrimaryFace(detections);
+      const ctx2 = canvas.getContext('2d');
+      ctx2.clearRect(0, 0, canvas.width, canvas.height);
+      const noFaceEl = document.getElementById('cfNoFace');
+      const ring     = document.getElementById('cfRing');
+
+      if (!detection) {
+        noFaceEl.style.display = 'block';
+        ring.className = 'face-ring';
+        checkoutFaceSamples = [];
+        checkoutFaceLoopId = requestAnimationFrame(loop);
+        return;
+      }
+      noFaceEl.style.display = 'none';
+      ring.className = 'face-ring scanning';
+      faceapi.draw.drawDetections(canvas, [detection.detection]);
+
+      if (checkoutFaceSamples.length > 0 &&
+          faceapi.euclideanDistance(checkoutFaceSamples[checkoutFaceSamples.length - 1], Array.from(detection.descriptor)) > FACE_CONTINUITY_MAX) {
+        checkoutFaceSamples = [];
+      }
+
+      if (checkoutFaceSamples.length < FACE_STABLE_FRAMES) {
+        checkoutFaceSamples.push(Array.from(detection.descriptor));
+        setCfStatus('Đang thu thập mẫu quét… (' + checkoutFaceSamples.length + '/' + FACE_STABLE_FRAMES + ')');
+      } else {
+        const dim = checkoutFaceSamples[0].length;
+        const avg = new Array(dim).fill(0);
+        for (const s of checkoutFaceSamples) for (let i = 0; i < dim; i++) avg[i] += s[i];
+        for (let i = 0; i < dim; i++) avg[i] /= checkoutFaceSamples.length;
+
+        busy = true;
+        setCfStatus('Đang xác thực với máy chủ…');
+        try {
+          const res = await fetch(ctx + '/pos', {
+            method: 'POST',
+            body: new URLSearchParams({
+              action: 'pos-end-shift',
+              closingCash: pendingClosingCash,
+              descriptor: JSON.stringify(avg)
+            }),
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+          });
+          const data = await res.json();
+          if (data.ok) {
+            ring.className = 'face-ring matched';
+            setCfStatus('✓ Xác thực thành công — đang đóng ca…', 'ok');
+            closeCheckoutFaceModal();
+            closeEndShiftModal();
+            showToast('✓ Đóng ca thành công — ' + (data.staffName || ''), 'ok');
+            setTimeout(function () { location.reload(); }, 1600);
+            return; // dừng loop — đã xong
+          } else {
+            checkoutFaceSamples = [];
+            setCfStatus(CF_REASON_MAP[data.reason] || '⚠ Xác thực thất bại, thử lại…', 'err');
+          }
+        } catch (e) {
+          checkoutFaceSamples = [];
+          setCfStatus('❌ Lỗi kết nối máy chủ: ' + e.message, 'err');
+        }
+        busy = false;
+      }
+    }
+    checkoutFaceLoopId = requestAnimationFrame(loop);
+  }
+  loop();
 }
 
 async function confirmFaceCheckin() {
@@ -4011,7 +4339,7 @@ function calcCashVariance() {
   }
 }
 
-function confirmEndShift() {
+async function confirmEndShift() {
   var inp = document.getElementById('esrActualInput');
   var err = document.getElementById('esrActualErr');
   var closingCash = moneyInputValue(inp);
@@ -4022,55 +4350,10 @@ function confirmEndShift() {
     return;
   }
   err.style.display = 'none';
-  // Số tiền cuối ca đã hợp lệ — lưu tạm rồi bắt quét khuôn mặt xác thực nhân viên,
-  // xong mới thực sự gửi yêu cầu đóng ca lên server (xem confirmFaceForEndShift()).
-  pendingClosingCash = closingCash;
-  startEndShiftFaceVerify();
-}
-
-function startEndShiftFaceVerify() {
-  faceModalMode = 'end-shift';
-  // Ẩn modal Báo cáo & Đóng ca giống hệt cách modal "Khai báo tiền đầu ca" ẩn đi khi chuyển
-  // sang bước quét mặt (xem confirmOpeningCashStep()) — chỉ hiện lại nếu đóng ca thất bại.
-  document.getElementById('esrModal').classList.remove('show');
-  var titleEl = document.getElementById('fmTitle');
-  var subEl   = document.getElementById('fmSub');
-  var btn     = document.getElementById('fmCheckinBtn');
-  if (titleEl) titleEl.textContent = '📷 Xác thực khuôn mặt trước khi đóng ca';
-  if (subEl)   subEl.textContent   = 'Nhìn thẳng vào camera để xác nhận đóng ca';
-  if (btn)     btn.textContent     = '✓ Xác nhận đóng ca';
-  openFaceModal();
-}
-
-async function doEndShift(closingCash) {
-  var btn = document.getElementById('esrConfirmBtn');
-  btn.disabled = true;
-  btn.textContent = '⏳ Đang đóng ca...';
-  try {
-    var res = await fetch(ctx + '/pos', {
-      method: 'POST',
-      body: new URLSearchParams({ action: 'pos-end-shift', closingCash: closingCash }),
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-    });
-    var d = await res.json();
-    if (d.ok) {
-      closeEndShiftModal();
-      showToast('✓ Đóng ca thành công — ' + (d.staffName || ''), 'ok');
-      setTimeout(function() { location.reload(); }, 1600);
-    } else {
-      // Đã quét mặt xong nhưng đóng ca thất bại (hiếm, vd. session hết hạn) — hiện lại modal
-      // báo cáo để nhân viên xem lại số liệu & thử lại, giống mẫu openOpenCashModal() ở luồng đầu ca.
-      document.getElementById('esrModal').classList.add('show');
-      showToast('❌ ' + (d.reason || d.msg || 'Lỗi đóng ca'), 'err');
-      btn.disabled = false;
-      btn.textContent = '⏻ Xác nhận & Đóng ca';
-    }
-  } catch(e) {
-    document.getElementById('esrModal').classList.add('show');
-    showToast('❌ Lỗi kết nối', 'err');
-    btn.disabled = false;
-    btn.textContent = '⏻ Xác nhận & Đóng ca';
-  }
+  // Đã nhập tiền cuối ca hợp lệ — bắt buộc quét mặt xác thực ĐÚNG người đang đăng nhập trước
+  // khi thật sự đóng ca (chống đồng nghiệp bấm hộ). pos-end-shift chỉ được gọi BÊN TRONG
+  // startCheckoutFaceDetection() sau khi khớp mặt — xem hàm đó để biết luồng đầy đủ.
+  openCheckoutFaceModal(closingCash);
 }
 </script>
 </body>

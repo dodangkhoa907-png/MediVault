@@ -60,7 +60,22 @@ public class WarehouseInventoryServlet extends HttpServlet {
         MedicineDAO mdao = (MedicineDAO) medicineDAO;
         List<Medicines> allMeds = CacheManager.getShort("wh.allMedsStock", mdao::findAllWithStock);
 
-        List<Medicines> displayMeds = hasKeyword ? mdao.searchWithStock(q.trim()) : allMeds;
+        List<Medicines> displayMeds = new java.util.ArrayList<>(hasKeyword ? mdao.searchWithStock(q.trim()) : allMeds);
+
+        // Sắp xếp mặc định FEFO (Hạn dùng gần nhất -> Trạng thái ưu tiên -> Tên thuốc)
+        displayMeds.sort((m1, m2) -> {
+            String exp1 = m1.getNearestExpiry() != null && !m1.getNearestExpiry().isEmpty() ? m1.getNearestExpiry() : "9999-12-31";
+            String exp2 = m2.getNearestExpiry() != null && !m2.getNearestExpiry().isEmpty() ? m2.getNearestExpiry() : "9999-12-31";
+            int cExp = exp1.compareTo(exp2);
+            if (cExp != 0) return cExp;
+
+            int st1 = m1.getTotalStock() == 0 ? 1 : (m1.getMinInventory() > 0 && m1.getTotalStock() <= m1.getMinInventory() ? 2 : 3);
+            int st2 = m2.getTotalStock() == 0 ? 1 : (m2.getMinInventory() > 0 && m2.getTotalStock() <= m2.getMinInventory() ? 2 : 3);
+            int cSt = Integer.compare(st1, st2);
+            if (cSt != 0) return cSt;
+
+            return m1.getMedicineName().compareToIgnoreCase(m2.getMedicineName());
+        });
 
         // Map medicineId → tên thuốc (để hiển thị tên trong bảng lô cận/hết hạn)
         Map<Integer, String> medNameMap = new HashMap<>();

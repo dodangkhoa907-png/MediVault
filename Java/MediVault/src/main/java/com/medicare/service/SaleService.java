@@ -33,8 +33,8 @@ public class SaleService implements ISaleService {
             BigDecimal discount,
             int[] medicineIds,
             int[] quantities,
-            String remoteAddr,
-            Integer posStation) {
+            java.util.Map<Integer, java.util.List<SaleLineRequest.ManualAllocation>> manualAllocationsByIndex,
+            String remoteAddr, Integer posStation) {
 
         // Validate đầu vào cơ bản
         if (medicineIds == null || medicineIds.length == 0)
@@ -46,11 +46,11 @@ public class SaleService implements ISaleService {
         Shift currentShift = shiftDAO.findCurrent(accountId);
         Integer shiftId = (currentShift != null) ? currentShift.getShiftId() : null;
 
-        // Chạy transaction: tạo hóa đơn → trừ kho FEFO → hoàn tất
+        // Chạy transaction: tạo hóa đơn → trừ kho FEFO (hoặc lô dược sĩ đã chọn tay) → hoàn tất
         int invoiceId = invoiceDAO.completeSaleTransaction(
                 accountId, shiftId, customerId,
                 paymentMethod, discount,
-                medicineIds, quantities, posStation);
+                medicineIds, quantities, manualAllocationsByIndex, posStation);
 
         if (invoiceId > 0) {
             auditDAO.log(new StaffAuditLog(

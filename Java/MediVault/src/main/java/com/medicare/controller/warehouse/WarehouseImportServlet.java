@@ -171,30 +171,45 @@ public class WarehouseImportServlet extends HttpServlet {
                 poId = Integer.parseInt(poIdStr);
             }
 
+            // "Hàng đã về tay" (mặc định — param vắng mặt vẫn coi là true, tương thích ngược)
+            // vs "Đặt hàng trước — chưa nhận" (mới, field ẩn receiveNow do warehouse-import.jsp
+            // gửi). Chưa nhận thì KHÔNG cộng tồn kho — chỉ ghi chứng từ PurchaseOrderDetails,
+            // hiện "Chờ giao" ở tab Đơn hàng; NSX/HSD được phép bỏ trống vì hàng thật chưa về
+            // tay nên có thể chưa biết chính xác (bắt buộc điền lại lúc "Nhận hàng" thật —
+            // xem PurchaseOrderDAO.confirmReceived()).
+            boolean receiveNow = !"0".equals(req.getParameter("receiveNow"));
+
             String batchNumber = req.getParameter("batchNumber");
-            LocalDate manufactureDate = LocalDate.parse(req.getParameter("manufactureDate"));
-            LocalDate expiryDate = LocalDate.parse(req.getParameter("expiryDate"));
-            LocalDate importDate = LocalDate.parse(req.getParameter("importDate"));
+            LocalDate manufactureDate = parseDateOrNull(req.getParameter("manufactureDate"));
+            LocalDate expiryDate = parseDateOrNull(req.getParameter("expiryDate"));
+            LocalDate importDate = LocalDate.parse(req.getParameter("importDate")); // luôn bắt buộc (ngày nhập / ngày dự kiến)
             BigDecimal importPrice = new BigDecimal(req.getParameter("importPrice"));
             int quantity = Integer.parseInt(req.getParameter("quantity"));
 
-            // Chặn cứng dữ liệu KHÔNG THỂ có thật, không phải chuyện "rủi ro nghiệp vụ" như lô
-            // sắp hết hạn (cái đó JS chỉ cảnh báo mềm ở bước 3, vẫn cho ghi). Đây là bất khả thi
-            // vật lý — không có lý do nghiệp vụ nào hợp thức hoá được, nên chặn ở tầng server
-            // dù JS đã chặn từ trước, phòng khi JS bị tắt hoặc bị qua mặt.
-            if (!expiryDate.isAfter(manufactureDate)) {
-                resp.sendRedirect(req.getContextPath() + "/warehouse-import?msg=import-error");
-                return;
-            }
-            if (importDate.isBefore(manufactureDate)) {
-                resp.sendRedirect(req.getContextPath() + "/warehouse-import?msg=import-error");
-                return;
-            }
-            // HSD đã trôi qua quá khứ = lô ĐÃ HẾT HẠN — khác NSX (NSX ở quá khứ là bình thường,
-            // thuốc nào cũng sản xuất trước khi nhập). Không có lý do nghiệp vụ nào để NHẬP KHO
-            // MỚI một lô đã hết hạn, nên chặn cứng ở đây luôn, không chỉ cảnh báo mềm như trước.
-            if (!expiryDate.isAfter(LocalDate.now())) {
-                resp.sendRedirect(req.getContextPath() + "/warehouse-import?msg=import-error");
+            if (receiveNow) {
+                // Hàng đã về tay — NSX/HSD BẮT BUỘC, chặn cứng dữ liệu KHÔNG THỂ có thật (không
+                // phải "rủi ro nghiệp vụ" như lô sắp hết hạn — cái đó JS chỉ cảnh báo mềm ở bước
+                // 3, vẫn cho ghi). Giữ nguyên hành vi cũ 100% khi param receiveNow vắng mặt.
+                if (manufactureDate == null || expiryDate == null) {
+                    resp.sendRedirect(req.getContextPath() + "/warehouse-import?msg=import-error");
+                    return;
+                }
+                if (!expiryDate.isAfter(manufactureDate)) {
+                    resp.sendRedirect(req.getContextPath() + "/warehouse-import?msg=err-exp-mfg");
+                    return;
+                }
+                if (importDate.isBefore(manufactureDate)) {
+                    resp.sendRedirect(req.getContextPath() + "/warehouse-import?msg=err-imp-mfg");
+                    return;
+                }
+                if (!expiryDate.isAfter(LocalDate.now())) {
+                    resp.sendRedirect(req.getContextPath() + "/warehouse-import?msg=err-exp-past");
+                    return;
+                }
+            } else if (manufactureDate != null && expiryDate != null && !expiryDate.isAfter(manufactureDate)) {
+                // Đặt hàng trước nhưng lỡ biết trước cả 2 mốc thì vẫn phải hợp lý — không chặn
+                // khi chỉ biết 1 hoặc chưa biết mốc nào.
+                resp.sendRedirect(req.getContextPath() + "/warehouse-import?msg=err-exp-mfg");
                 return;
             }
 
@@ -211,11 +226,19 @@ public class WarehouseImportServlet extends HttpServlet {
             batch.setCreatedAt(LocalDateTime.now());
 
             boolean ok;
-            if (poId > 0) {
-                // Đã chọn PO có sẵn — gắn lô vào đúng PO đó, insert thẳng như cũ (nhánh này
-                // vốn đã đúng, KHÔNG phải nguồn gây lỗi).
+            if (poId > 0 && receiveNow) {
+                // Đã chọn PO có sẵn VÀ hàng đã về tay — gắn lô vào đúng PO đó, insert thẳng như
+                // cũ (nhánh này vốn đã đúng, KHÔNG phải nguồn gây lỗi).
                 batch.setPoId(poId);
                 ok = batchesDAO.insert(batch);
+            } else if (poId > 0) {
+                // Đã chọn PO có sẵn nhưng hàng CHƯA về — chỉ thêm chứng từ PurchaseOrderDetails
+                // vào đơn đó, KHÔNG tạo Batch thật (đơn giữ nguyên PENDING, tồn kho không đổi).
+                ok = poDAO.addDetail(poId, batch);
+                // Đơn có sẵn (VD: do ReorderAlertService tự đề xuất) thường CHƯA có ExpectedDate
+                // — cập nhật luôn theo ngày Thủ kho vừa cho biết, nếu không tab Đơn hàng sẽ mãi
+                // hiện "—" ở cột "Ngày giao dự kiến" dù đơn đã PENDING (đúng lỗi vừa gặp thực tế).
+                if (ok) poDAO.updateExpectedDate(poId, importDate);
             } else {
                 // BUG THẬT Ở ĐÂY (đã fix): không chọn PO thì Batches.poId để nguyên giá trị
                 // mặc định 0 của kiểu int — POID là khoá ngoại tới PurchaseOrders, không có
@@ -224,18 +247,21 @@ public class WarehouseImportServlet extends HttpServlet {
                 // "batchesDAO.insert(batch);" bỏ luôn giá trị trả về — nên request vẫn redirect
                 // sang trang "thành công" trong khi KHÔNG có dòng nào được ghi vào DB.
                 //
-                // Cách sửa: thủ kho đang ghi nhận hàng ĐÃ VỀ TAY ngay lúc này (khác với Admin
-                // "đặt hàng cho tương lai"), nên tự tạo 1 Phiếu nhập (PurchaseOrders) trạng thái
-                // COMPLETED để có POID hợp lệ — dùng lại đúng PurchaseOrderDAO.createWithBatches()
-                // mà MedicineService (nhập kho bên Admin) đang dùng, không viết luồng insert mới.
+                // Cách sửa: tự tạo 1 Phiếu nhập (PurchaseOrders) — dùng lại đúng
+                // PurchaseOrderDAO.createWithBatches() mà MedicineService (nhập kho bên Admin)
+                // đang dùng, không viết luồng insert mới. Trạng thái quyết định bởi receiveNow:
+                // hàng đã về tay → COMPLETED (insertBatchesFromLines chạy ngay, cộng tồn kho);
+                // đặt hàng trước → PENDING (chỉ ghi chứng từ, hiện "Chờ giao" ở /warehouse-orders
+                // — createWithBatches() đã tự phân biệt 2 trường hợp qua po.getStatus()).
                 // Lợi ích phụ: phiếu này hiện thẳng trong "Đơn đặt hàng" của Admin, có lịch sử
                 // đầy đủ thay vì trôi mất không dấu vết.
                 PurchaseOrders po = new PurchaseOrders();
                 po.setSupplierId(supplierId);
                 po.setAccountId(acc.getAccountId());
-                po.setStatus("COMPLETED");
-                po.setNotes("Nhập nhanh bởi Thủ kho — " + acc.getFullName());
+                po.setStatus(receiveNow ? "COMPLETED" : "PENDING");
+                po.setNotes((receiveNow ? "Nhập nhanh bởi Thủ kho — " : "Đặt hàng trước bởi Thủ kho — ") + acc.getFullName());
                 po.setTotalValue(importPrice.multiply(BigDecimal.valueOf(quantity)));
+                if (!receiveNow) po.setExpectedDate(importDate);
                 int newPoId = poDAO.createWithBatches(po, List.of(batch));
                 ok = newPoId > 0;
             }
@@ -245,7 +271,7 @@ public class WarehouseImportServlet extends HttpServlet {
                 return;
             }
 
-            resp.sendRedirect(req.getContextPath() + "/warehouse-import?msg=success");
+            resp.sendRedirect(req.getContextPath() + "/warehouse-import?msg=" + (receiveNow ? "success" : "success-pending"));
         } catch (Exception e) {
             e.printStackTrace();
             resp.sendRedirect(req.getContextPath() + "/warehouse-import?msg=import-error");
@@ -346,6 +372,11 @@ public class WarehouseImportServlet extends HttpServlet {
     private Integer parseIntOrNull(String s) {
         if (s == null || s.trim().isEmpty()) return null;
         try { return Integer.parseInt(s.trim()); } catch (NumberFormatException e) { return null; }
+    }
+
+    private LocalDate parseDateOrNull(String s) {
+        if (s == null || s.trim().isEmpty()) return null;
+        try { return LocalDate.parse(s.trim()); } catch (Exception e) { return null; }
     }
 
     /**

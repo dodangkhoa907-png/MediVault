@@ -37,6 +37,8 @@ public class PosServlet extends HttpServlet {
     private final IInvoiceDAO       invoiceDAO       = new InvoiceDAO();
     private final IInvoiceDetailDAO invoiceDetailDAO = new InvoiceDetailDAO();
     private final IReturnsDAO       returnsDAO       = new ReturnsDAO();
+    private final com.medicare.service.SaleValidationService saleValidationService = new com.medicare.service.SaleValidationService();
+    private final com.medicare.util.BarcodeService barcodeService = new com.medicare.util.BarcodeService();
 
     private static final int POS_ACCOUNT_ID = 1;
 
@@ -92,6 +94,21 @@ public class PosServlet extends HttpServlet {
             resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             resp.setContentType("application/json;charset=UTF-8");
             resp.getWriter().print("{\"ok\":false,\"error\":\"unauthorized\"}");
+            return;
+        }
+
+        if ("lookup-barcode".equals(action)) {
+            String barcode = req.getParameter("barcode");
+            String source = req.getParameter("source");
+            Medicines m = barcodeService.lookup(barcode, source);
+            resp.setContentType("application/json;charset=UTF-8");
+            resp.setHeader("Cache-Control", "no-store");
+            PrintWriter out = resp.getWriter();
+            if (m != null) {
+                out.print("{\"ok\":true,\"found\":true,\"medicine\":" + com.medicare.util.BarcodeService.medicineJson(m) + "}");
+            } else {
+                out.print("{\"ok\":true,\"found\":false}");
+            }
             return;
         }
 
@@ -566,6 +583,11 @@ public class PosServlet extends HttpServlet {
             return;
         }
 
+        if ("preview-sale".equals(action)) {
+            handlePreviewSale(req, out);
+            return;
+        }
+
         if ("complete-sale".equals(action)) {
             String clientReqId = req.getParameter("clientRequestId");
             if (clientReqId != null && !clientReqId.isBlank()) {
@@ -653,9 +675,16 @@ public class PosServlet extends HttpServlet {
                     quantities[i]  = Integer.parseInt(qtyStrs[i]);
                 }
 
+                // Dòng risky (chia lô/không đủ hạn cho liệu trình) mà dược sĩ đã tự chọn cách xử
+                // lý ở modal xác nhận (sau khi thấy cảnh báo từ action=preview-sale) — FE gửi kèm
+                // JSON {"<index trong medId[]/qty[]>": [{"batchId":x,"quantity":y}, ...], ...}.
+                // Dòng nào KHÔNG có trong đây thì để hệ thống tự phân bổ FEFO như bình thường.
+                java.util.Map<Integer, java.util.List<com.medicare.service.SaleLineRequest.ManualAllocation>> manualAllocationsByIndex =
+                        parseManualAllocations(req.getParameter("manualAllocationsJson"));
+
                 ServiceResult<Invoice> result = saleService.completeSale(
                         accountId, customerId, payMethod, discount,
-                        medicineIds, quantities, req.getRemoteAddr(), posStation);
+                        medicineIds, quantities, manualAllocationsByIndex, req.getRemoteAddr(), posStation);
 
                 String jsonResp;
                 if (result.isOk()) {
@@ -827,6 +856,7 @@ public class PosServlet extends HttpServlet {
                 + ",\"id\":" + c.getCustomerId()
                 + ",\"name\":\"" + esc(c.getCustomerName()) + "\""
                 + ",\"phone\":\"" + esc(c.getPhone() != null ? c.getPhone() : "") + "\""
+                + ",\"code\":\"" + esc(c.getCustomerCode() != null ? c.getCustomerCode() : "") + "\""
                 + ",\"email\":\"" + esc(c.getEmail() != null ? c.getEmail() : "") + "\""
                 + ",\"address\":\"" + esc(c.getAddress() != null ? c.getAddress() : "") + "\""
                 + ",\"gender\":\"" + esc(c.getGender() != null ? c.getGender() : "") + "\""
@@ -855,6 +885,7 @@ public class PosServlet extends HttpServlet {
         return "{\"found\":true,\"id\":" + c.getCustomerId()
                 + ",\"name\":\"" + esc(c.getCustomerName()) + "\""
                 + ",\"phone\":\"" + esc(c.getPhone() != null ? c.getPhone() : "") + "\""
+                + ",\"code\":\"" + esc(c.getCustomerCode() != null ? c.getCustomerCode() : "") + "\""
                 + ",\"allergy\":\"" + esc(allergy) + "\""
                 + ",\"points\":" + (card != null ? card.getAvailablePoints() : 0)
                 + ",\"tier\":\"" + esc(card != null && card.getTierName() != null ? card.getTierName() : "") + "\""
@@ -889,11 +920,13 @@ public class PosServlet extends HttpServlet {
 
         // Tạo luôn thẻ tích điểm hạng khởi điểm
         new com.medicare.dao.LoyaltyDAO().getOrCreateCard(newId);
+        String code = dao.findById(newId).getCustomerCode();
 
         com.medicare.util.AuditHelper.log(req, "Tạo khách hàng (POS)", "Customer", newId,
-                "Tạo nhanh khách tại quầy: " + name.trim() + " — " + phone);
+                "Tạo nhanh khách tại quầy: " + name.trim() + " — " + phone + " — Mã KH: " + code);
         out.print("{\"ok\":true,\"id\":" + newId + ",\"name\":\"" + esc(name.trim())
-                + "\",\"phone\":\"" + phone + "\",\"points\":0,\"tier\":\"\",\"allergy\":\"\"}");
+                + "\",\"phone\":\"" + phone + "\",\"code\":\"" + esc(code)
+                + "\",\"points\":0,\"tier\":\"\",\"allergy\":\"\"}");
     }
 
     /**
@@ -1143,6 +1176,67 @@ public class PosServlet extends HttpServlet {
         }
     }
 
+    /**
+     * action=preview-sale — xem trước cách hệ thống sẽ chia lô cho từng dòng giỏ hàng TRƯỚC khi
+     * thanh toán, KHÔNG ghi gì vào DB. FE gọi đúng lúc bấm "Thanh toán": nếu mọi dòng risky=false
+     * thì gọi thẳng complete-sale như cũ (đường nhanh, không làm chậm giao dịch bình thường);
+     * nếu có dòng risky=true thì dừng lại, hiện cho dược sĩ chọn cách xử lý trước khi xác nhận.
+     * Xem SaleValidationService#previewLine để biết định nghĩa "risky".
+     */
+    private void handlePreviewSale(HttpServletRequest req, PrintWriter out) {
+        String[] medIdStrs = req.getParameterValues("medId[]");
+        String[] qtyStrs   = req.getParameterValues("qty[]");
+        String[] durStrs   = req.getParameterValues("duration[]");
+
+        if (medIdStrs == null || qtyStrs == null || medIdStrs.length != qtyStrs.length) {
+            out.print("{\"ok\":false,\"msg\":\"Dữ liệu giỏ hàng không hợp lệ!\"}");
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder("{\"ok\":true,\"lines\":[");
+        for (int i = 0; i < medIdStrs.length; i++) {
+            int medicineId = Integer.parseInt(medIdStrs[i]);
+            int qty = Integer.parseInt(qtyStrs[i]);
+            Integer duration = (durStrs != null && i < durStrs.length) ? parseIntOrNull(durStrs[i]) : null;
+
+            com.medicare.service.SaleLinePreview preview =
+                    saleValidationService.previewLine(medicineId, qty, duration);
+
+            if (i > 0) sb.append(',');
+            sb.append("{\"index\":").append(i)
+              .append(",\"medicineId\":").append(medicineId)
+              .append(",\"requestedQuantity\":").append(qty)
+              .append(",\"risky\":").append(preview.isRisky())
+              .append(",\"lots\":[");
+            List<com.medicare.service.warehouse.LotAllocation> lots = preview.getFefoAllocation().getAllocations();
+            for (int j = 0; j < lots.size(); j++) {
+                com.medicare.service.warehouse.LotAllocation la = lots.get(j);
+                if (j > 0) sb.append(',');
+                appendLotJson(sb, la.getBatchId(), la.getBatchNumber(), la.getExpiryDate(), la.getAllocatedQuantity());
+            }
+            sb.append(']');
+            com.medicare.service.warehouse.LotAllocation suggested = preview.getSuggestedSingleBatch();
+            sb.append(",\"suggestedSingleBatch\":");
+            if (suggested != null) {
+                appendLotJson(sb, suggested.getBatchId(), suggested.getBatchNumber(), suggested.getExpiryDate(), qty);
+            } else {
+                sb.append("null");
+            }
+            sb.append('}');
+        }
+        sb.append("]}");
+        out.print(sb);
+    }
+
+    private void appendLotJson(StringBuilder sb, int batchId, String batchNumber,
+                               java.time.LocalDate expiryDate, int qty) {
+        sb.append("{\"batchId\":").append(batchId)
+          .append(",\"batchNumber\":\"").append(esc(batchNumber)).append('"')
+          .append(",\"expiryDate\":\"").append(expiryDate != null ? expiryDate.toString() : "").append('"')
+          .append(",\"quantity\":").append(qty)
+          .append('}');
+    }
+
     private void handleOpenShift(HttpServletRequest req, PrintWriter out) {
         HttpSession session = req.getSession(false);
         Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
@@ -1173,6 +1267,22 @@ public class PosServlet extends HttpServlet {
         HttpSession session = req.getSession(false);
         Account staff = session != null ? (Account) session.getAttribute("staffAccount") : null;
         if (staff == null) { out.print("{\"ok\":false,\"reason\":\"not_logged_in\"}"); return; }
+
+        // Chống "buddy punching" — người đang đứng đóng ca (bấm nút, gõ tiền cuối ca) phải là
+        // ĐÚNG người đang đăng nhập trên quầy, không phải đồng nghiệp bấm hộ. Verify PHÍA SERVER
+        // (không tin kết quả so khớp client) — 1-vs-N, claim = chính staff của session hiện tại,
+        // dùng lại FaceVerifier đã dùng cho check-in đầu ca (xem handlePosFaceCheckin).
+        if (staff.isFaceReenrollPending()) {
+            out.print("{\"ok\":false,\"reason\":\"reenroll_pending\"}");
+            return;
+        }
+        String descriptorJson = req.getParameter("descriptor");
+        String verifyResult = com.medicare.util.FaceVerifier.verify(
+                staff.getAccountId(), descriptorJson, accountDAO.findAllWithFaceVector());
+        if (!"MATCH".equals(verifyResult)) {
+            out.print("{\"ok\":false,\"reason\":\"" + verifyResult + "\"}");
+            return;
+        }
 
         // Accept actual cash counted by staff
         BigDecimal closingCash = BigDecimal.ZERO;
@@ -1550,6 +1660,34 @@ public class PosServlet extends HttpServlet {
     }
 
     // ── Helpers ──────────────────────────────────────────────
+    /**
+     * Parse tham số manualAllocationsJson (FE gửi khi dược sĩ tự chọn lô cho dòng risky) —
+     * dạng {@code {"<index>":[{"batchId":x,"quantity":y}, ...], ...}}. Trả về map rỗng nếu
+     * tham số trống/không parse được (nghĩa là mọi dòng để hệ thống tự phân bổ FEFO).
+     */
+    private java.util.Map<Integer, List<com.medicare.service.SaleLineRequest.ManualAllocation>> parseManualAllocations(String json) {
+        java.util.Map<Integer, List<com.medicare.service.SaleLineRequest.ManualAllocation>> result = new HashMap<>();
+        if (json == null || json.trim().isEmpty()) return result;
+        try {
+            com.google.gson.JsonObject obj = com.google.gson.JsonParser.parseString(json).getAsJsonObject();
+            for (String key : obj.keySet()) {
+                int index = Integer.parseInt(key);
+                com.google.gson.JsonArray arr = obj.getAsJsonArray(key);
+                List<com.medicare.service.SaleLineRequest.ManualAllocation> list = new java.util.ArrayList<>();
+                for (com.google.gson.JsonElement el : arr) {
+                    com.google.gson.JsonObject o = el.getAsJsonObject();
+                    list.add(new com.medicare.service.SaleLineRequest.ManualAllocation(
+                            o.get("batchId").getAsInt(), o.get("quantity").getAsInt()));
+                }
+                result.put(index, list);
+            }
+        } catch (Exception ignored) {
+            // JSON hỏng/không đúng định dạng → coi như không có dòng nào được chọn tay,
+            // completeSaleTransaction sẽ tự phân bổ FEFO cho mọi dòng (an toàn, không chặn bán hàng).
+        }
+        return result;
+    }
+
     private Integer parseIntOrNull(String s) {
         if (s == null || s.trim().isEmpty()) return null;
         try { return Integer.parseInt(s.trim()); } catch (Exception e) { return null; }

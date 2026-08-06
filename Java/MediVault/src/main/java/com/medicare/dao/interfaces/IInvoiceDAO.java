@@ -15,15 +15,23 @@ public interface IInvoiceDAO {
     boolean cancel(int invoiceId);
 
     /**
-     * Thực hiện toàn bộ flow bán hàng trong 1 transaction:
-     * createPending → addItemByFEFO (từng SP) → complete
-     * Nếu bất kỳ bước nào lỗi → rollback toàn bộ
+     * Thực hiện toàn bộ flow bán hàng trong 1 transaction: tạo hóa đơn PENDING → phân bổ lô cho
+     * từng dòng (FEFO tự động qua {@link com.medicare.service.warehouse.FefoAllocatorService},
+     * hoặc theo lô dược sĩ đã chọn tay nếu dòng đó có trong {@code manualAllocationsByIndex}) →
+     * complete. Nếu bất kỳ bước nào lỗi → rollback toàn bộ.
+     *
      * @param shiftId  ID ca làm việc hiện tại (null nếu không có ca)
+     * @param manualAllocationsByIndex  key = vị trí (index) trong mảng medicineIds/quantities,
+     *        value = danh sách lô dược sĩ đã tự chọn cho dòng đó (sau khi thấy cảnh báo rủi ro
+     *        hạn dùng ở bước xem trước). null hoặc không có entry cho 1 index = dòng đó để hệ
+     *        thống tự phân bổ FEFO như bình thường. Server đối chiếu lại tồn kho THẬT trước khi
+     *        ghi, không tin số liệu client gửi lên.
      * @return invoiceId nếu thành công, -1 nếu lỗi
      */
     int completeSaleTransaction(int accountId, Integer shiftId, Integer customerId,
                                 String paymentMethod, BigDecimal discount,
-                                int[] medicineIds, int[] quantities, Integer posStation);
+                                int[] medicineIds, int[] quantities,
+                                java.util.Map<Integer, java.util.List<com.medicare.service.SaleLineRequest.ManualAllocation>> manualAllocationsByIndex, Integer posStation);
 
     // Truy vấn
     Invoice findById(int id);

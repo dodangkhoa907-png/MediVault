@@ -126,23 +126,42 @@ public class BatchesDAO implements IBatchesDAO {
     }
 
     public boolean insert(Batches b) {
-        String sql = "INSERT INTO Batches (MedicineID, POID, SupplierID, BatchNumber, " +
+        String checkSql = "SELECT BatchID FROM Batches WHERE MedicineID = ? AND BatchNumber = ? AND Status != 'CANCELLED'";
+        String updateSql = "UPDATE Batches SET CurrentQuantity = CurrentQuantity + ?, InitialQuantity = InitialQuantity + ?, ImportPrice = ?, ImportDate = ?, Status = 'ACTIVE' WHERE BatchID = ?";
+        String insertSql = "INSERT INTO Batches (MedicineID, POID, SupplierID, BatchNumber, " +
                 "ManufactureDate, ImportDate, ExpiryDate, ImportPrice, InitialQuantity, CurrentQuantity) " +
                 "VALUES (?,?,?,?,?,?,?,?,?,?)";
-        try (Connection cn = DBContext.getConnection();
-                PreparedStatement ps = cn.prepareStatement(sql)) {
-            ps.setInt(1, b.getMedicineId());
-            ps.setObject(2, b.getPoId());
-            ps.setObject(3, b.getSupplierId());
-            ps.setString(4, b.getBatchNumber());
-            ps.setObject(5, b.getManufactureDate() != null ? Date.valueOf(b.getManufactureDate()) : null);
-            ps.setDate(6, b.getImportDate() != null ? Date.valueOf(b.getImportDate())
-                    : Date.valueOf(java.time.LocalDate.now()));
-            ps.setDate(7, Date.valueOf(b.getExpiryDate()));
-            ps.setBigDecimal(8, b.getImportPrice());
-            ps.setInt(9, b.getInitialQuantity());
-            ps.setInt(10, b.getInitialQuantity());
-            return ps.executeUpdate() > 0;
+        try (Connection cn = DBContext.getConnection()) {
+            try (PreparedStatement checkPs = cn.prepareStatement(checkSql)) {
+                checkPs.setInt(1, b.getMedicineId());
+                checkPs.setString(2, b.getBatchNumber());
+                try (ResultSet rs = checkPs.executeQuery()) {
+                    if (rs.next()) {
+                        int batchId = rs.getInt("BatchID");
+                        try (PreparedStatement upPs = cn.prepareStatement(updateSql)) {
+                            upPs.setInt(1, b.getInitialQuantity());
+                            upPs.setInt(2, b.getInitialQuantity());
+                            upPs.setBigDecimal(3, b.getImportPrice());
+                            upPs.setDate(4, b.getImportDate() != null ? Date.valueOf(b.getImportDate()) : Date.valueOf(java.time.LocalDate.now()));
+                            upPs.setInt(5, batchId);
+                            return upPs.executeUpdate() > 0;
+                        }
+                    }
+                }
+            }
+            try (PreparedStatement ps = cn.prepareStatement(insertSql)) {
+                ps.setInt(1, b.getMedicineId());
+                ps.setObject(2, b.getPoId() > 0 ? b.getPoId() : null);
+                ps.setObject(3, b.getSupplierId() > 0 ? b.getSupplierId() : null);
+                ps.setString(4, b.getBatchNumber());
+                ps.setObject(5, b.getManufactureDate() != null ? Date.valueOf(b.getManufactureDate()) : null);
+                ps.setDate(6, b.getImportDate() != null ? Date.valueOf(b.getImportDate()) : Date.valueOf(java.time.LocalDate.now()));
+                ps.setDate(7, Date.valueOf(b.getExpiryDate()));
+                ps.setBigDecimal(8, b.getImportPrice());
+                ps.setInt(9, b.getInitialQuantity());
+                ps.setInt(10, b.getInitialQuantity());
+                return ps.executeUpdate() > 0;
+            }
         } catch (Exception e) {
             e.printStackTrace();
             return false;

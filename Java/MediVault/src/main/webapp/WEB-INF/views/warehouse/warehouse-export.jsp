@@ -182,6 +182,16 @@ a{text-decoration:none;color:inherit}
 .exp-done .acts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 
 /* ── Modal quét mã vạch ───────────────────────────────────────────────── */
+.wh-modal svg, #bcModal svg, #helpModal svg, #bcUnknownModal svg {
+  width: 20px !important;
+  height: 20px !important;
+  flex: none !important;
+}
+.wh-modal-head svg {
+  width: 22px !important;
+  height: 22px !important;
+  color: var(--main) !important;
+}
 .bc-manual-row{display:flex;gap:8px;margin-top:12px}
 .bc-manual-row input{flex:1;height:38px;padding:0 12px;border:1.5px solid var(--border);border-radius:10px;
   font-family:inherit;font-size:13.5px;outline:none}
@@ -190,6 +200,7 @@ a{text-decoration:none;color:inherit}
   border:1.5px solid var(--border);background:#fff;color:var(--deep);font-size:12.5px;font-weight:700;
   cursor:pointer;font-family:inherit}
 .bc-tool-btn:hover{border-color:var(--main);color:var(--main)}
+.bc-tool-btn svg{width:18px !important;height:18px !important;flex:none !important}
 #expBcReaderBox{margin-top:12px;border-radius:14px;overflow:hidden;display:none}
 #expBcReaderBox.on{display:block}
 .bc-wiz-err{display:none;color:var(--danger);font-size:12px;font-weight:700;margin-top:8px}
@@ -203,6 +214,92 @@ a{text-decoration:none;color:inherit}
 .exp-drawer-row .mt{font-size:12px;color:var(--muted);margin-top:4px}
 .exp-filter-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
 .exp-filter-row select,.exp-filter-row input{height:36px;padding:0 10px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:12.5px}
+
+/* ── Layout Thông tin Xác nhận dạng Thẻ/Cột To (Rõ Ràng, In Đậm, Dễ Đọc) ── */
+.exp-review-list { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
+.exp-review-card {
+  background: #FFFFFF;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+  transition: all 0.2s ease;
+}
+.exp-review-card:hover {
+  border-color: #0F766E;
+  box-shadow: 0 6px 20px rgba(15, 118, 110, 0.08);
+}
+.exp-review-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 2px dashed #E2E8F0;
+  margin-bottom: 16px;
+}
+.exp-review-med-name {
+  font-size: 19px;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.3;
+}
+.exp-review-med-sub {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #475569;
+  margin-top: 4px;
+}
+.exp-review-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+.exp-review-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  background: #F8FAFC;
+  border-radius: 12px;
+  border: 1.5px solid #E2E8F0;
+}
+.exp-review-item.full-width {
+  grid-column: 1 / -1;
+  background: #FFFBEB;
+  border-color: #FDE68A;
+}
+.exp-review-lbl {
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: #64748B;
+  text-transform: uppercase;
+}
+.exp-review-item.full-width .exp-review-lbl {
+  color: #92400E;
+}
+.exp-review-val {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.4;
+}
+.exp-review-val.highlight-qty {
+  font-size: 20px;
+  font-weight: 800;
+  color: #059669;
+}
+.exp-review-val.highlight-stock {
+  font-size: 17px;
+  font-weight: 800;
+  color: #2563EB;
+}
+.exp-review-val.highlight-lot {
+  font-size: 16.5px;
+  font-weight: 800;
+  color: #B45309;
+}
 </style>
 <meta name="csrf-token" content="${csrfToken}">
 <script src="<%= ctx %>/js/csrf.js"></script>
@@ -453,16 +550,8 @@ a{text-decoration:none;color:inherit}
           <div class="err" id="e-override-reason">Bắt buộc khi có dòng ghi đè FEFO.</div>
         </div>
 
-        <div class="wh-tablecard" style="margin-top:16px">
-          <div class="wh-tablescroll needs-x">
-            <table class="wh-table" id="reviewTable">
-              <thead><tr>
-                <th>Thuốc &amp; Hoạt chất</th><th>Mã vạch / SP</th><th>Vị trí kệ</th><th>Tồn khả dụng</th><th>SL xuất</th><th>Lô &amp; HSD đã chọn</th><th></th>
-              </tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
+        <!-- Thẻ thông tin xác nhận dạng Cột To, In Đậm, Rõ Ràng -->
+        <div class="exp-review-list" id="reviewCards"></div>
 
         <div class="wh-note danger exp-review-warn" id="reviewErrors" style="display:none"></div>
 
@@ -625,6 +714,18 @@ a{text-decoration:none;color:inherit}
 (function () {
   var ctx = "<%= ctx %>";
   var isManager = "<%= isManager %>" === "true";
+  // Danh sách kệ cho nút "Xếp kệ nhanh" ở Bước 3 — xem WarehouseExportServlet#renderPage.
+  var SHELF_DATA = [
+    <%
+      java.util.List<com.medicare.entity.Shelf> __shelves = (java.util.List<com.medicare.entity.Shelf>) request.getAttribute("shelves");
+      if (__shelves != null) { boolean __first = true;
+        for (com.medicare.entity.Shelf __sh : __shelves) {
+          if (!__first) out.print(",");
+          __first = false;
+    %>
+    { id: <%= __sh.getShelfId() %>, name: '<%= (__sh.getShelfName() != null ? __sh.getShelfName() : "Kệ " + __sh.getShelfId()).replace("'", "\\'") %>' }
+    <% } } %>
+  ];
 
   // ── State ──────────────────────────────────────────────────────────────
   var selectedReason = null;   // {id, code, name, requiresReceiver}
@@ -985,8 +1086,20 @@ a{text-decoration:none;color:inherit}
     if (typeof Html5Qrcode === 'undefined') { document.getElementById('bcErr').textContent = 'Thư viện camera chưa sẵn sàng, thử lại sau giây lát.'; document.getElementById('bcErr').classList.add('on'); return; }
     box.classList.add('on');
     box.innerHTML = '<div id="expBcReader" style="width:100%"></div>';
-    html5Qr = new Html5Qrcode('expBcReader');
-    html5Qr.start({ facingMode: 'environment' }, { fps: 10, qrbox: 220 }, function (code) {
+    html5Qr = new Html5Qrcode('expBcReader', { verbose: false });
+    html5Qr.start({ facingMode: 'environment' }, {
+      fps: 20, qrbox: 220,
+      disableFlip: true, // camera sau không cần dò ảnh lật gương — giảm nửa số lần thử/khung hình
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true }, // API giải mã native trình duyệt, nhanh hơn ZXing JS/WASM
+      // Trước đây không giới hạn — html5-qrcode phải thử MỌI symbology mỗi khung hình (chậm nhất
+      // trong 3 màn quét). Giới hạn đúng các loại mã vạch thuốc thực tế dùng, giống Nhập kho/POS.
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.QR_CODE
+      ]
+    }, function (code) {
       handleScanned(code, 'camera');
     }, function () {}).catch(function (err) {
       document.getElementById('bcErr').textContent = 'Không mở được camera: ' + err;
@@ -1080,6 +1193,18 @@ a{text-decoration:none;color:inherit}
       .then(function (r) { return r.json(); })
       .then(function (data) {
         l.allocation = data;
+        // Đơn bị chia ≥2 lô khác hạn (data.risky) — nếu là Quản lý kho, TỰ MỞ SẴN khung ghi đè
+        // để họ thấy ngay bảng lô + tự chọn, thay vì phải tự tick checkbox mới nhìn ra vấn đề.
+        // KHÔNG tự chọn sẵn lô nào (overrideBatchId vẫn null) — con người vẫn phải tự quyết định,
+        // máy chỉ đưa vấn đề ra trước mặt sớm hơn.
+        if (data.risky && isManager && !l.overridden) {
+          l.overridden = true;
+          var reasonEl = document.getElementById('expOverrideReason');
+          if (reasonEl && !reasonEl.value.trim()) {
+            reasonEl.value = 'Hệ thống phát hiện đơn "' + l.name + '" bị chia nhiều lô khác hạn dùng — xác nhận cách phân bổ';
+          }
+          document.getElementById('overrideReasonWrap').style.display = 'block';
+        }
         renderAllocationBlock(l);
       });
   }
@@ -1109,8 +1234,24 @@ a{text-decoration:none;color:inherit}
         '<svg><use href="#ic-cart"/></svg> Tạo đề xuất mua hàng</button></div></div>' + lotTableHtml(a.lots, l);
     } else {
       badge.className = 'wh-badge ok'; badge.textContent = l.overridden ? 'GHI ĐÈ FEFO' : 'AUTO FEFO OK';
-      body.innerHTML = lotTableHtml(a.lots, l) + overrideBoxHtml(l, a);
+      body.innerHTML = riskyBannerHtml(a) + lotTableHtml(a.lots, l) + overrideBoxHtml(l, a);
     }
+  }
+
+  /**
+   * Banner cảnh báo khi đơn bị chia ≥2 lô khác hạn dùng (a.risky, từ AllocationResult.isRisky()
+   * phía server — xem WarehouseExportServlet#allocationJson). Hiện cho MỌI người thao tác, kể cả
+   * không phải Quản lý kho — ai cũng cần biết đơn đang bị chia lô, dù chỉ Quản lý kho mới sửa được.
+   */
+  function riskyBannerHtml(a) {
+    if (!a.risky || !a.lots || !a.lots.length) return '';
+    var nearest = a.lots[0]; // FEFO luôn xếp lô gần hạn nhất lên đầu
+    return '<div class="wh-note warn" style="margin-bottom:10px"><svg><use href="#ic-alert"/></svg><div>' +
+      '<b>⚠️ Đơn này bị chia từ ' + a.lots.length + ' lô có hạn dùng khác nhau</b>' +
+      '<div style="margin-top:2px">Lô gần hạn nhất — <b>' + escapeHtml(nearest.batchNumber) +
+      '</b> (HSD ' + escapeHtml(nearest.expiryDate) + ') — chỉ còn ' + nearest.availableQuantity + ' ' +
+      '. Nếu bên nhận dùng thuốc trong thời gian dài, phần lấy từ lô này có thể hết hạn trước khi dùng hết.' +
+      '</div></div></div>';
   }
 
   function lotTableHtml(lots, l) {
@@ -1122,11 +1263,55 @@ a{text-decoration:none;color:inherit}
         '<td class="num">' + lot.availableQuantity + '</td>' +
         '<td class="num">' + (l.overridden ? (picked ? l.qty : 0) : lot.allocatedQuantity) + '</td></tr>';
     }).join('');
+    var shelfName = l.shelfName || (l.allocation && l.allocation.shelfName) || '';
+    var shelfOptions = SHELF_DATA.map(function (s) {
+      return '<option value="' + s.id + '"' + (l.shelfId === s.id ? ' selected' : '') + '>' + escapeHtml(s.name) + '</option>';
+    }).join('');
     return '<div class="wh-tablecard" style="margin-top:10px"><div class="wh-tablescroll"><table class="wh-table">' +
       '<thead><tr><th>Số lô</th><th>HSD</th><th>Tồn khả dụng</th><th>Được lấy</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>' +
-      '<div class="hint">Vị trí kệ: <b>' + escapeHtml(l.shelfName || (l.allocation && l.allocation.shelfName) || 'Chưa xếp kệ') +
-      '</b>' + ((l.storageConditions || (l.allocation && l.allocation.storageConditions)) ? ' · Bảo quản: ' + escapeHtml(l.storageConditions || l.allocation.storageConditions) : '') + '</div>';
+      '<div class="hint" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">' +
+      '<span>Vị trí kệ: <b class="exp-shelf-label">' + (shelfName ? escapeHtml(shelfName) : 'Chưa xếp kệ') + '</b>' +
+      ((l.storageConditions || (l.allocation && l.allocation.storageConditions)) ? ' · Bảo quản: ' + escapeHtml(l.storageConditions || l.allocation.storageConditions) : '') +
+      '</span>' +
+      '<button type="button" class="wh-btn" style="padding:3px 10px;font-size:12px;border-radius:8px" onclick="openShelfPicker(' + l.medicineId + ')">' +
+      (shelfName ? '✏️ Đổi kệ' : '📍 Xếp kệ') + '</button>' +
+      '<span id="shelfPicker-' + l.medicineId + '" style="display:none;align-items:center;gap:6px">' +
+      '<select id="shelfSelect-' + l.medicineId + '" style="font-size:12px;padding:3px 6px;border-radius:8px">' +
+      '<option value="">— Chọn kệ —</option>' + shelfOptions + '</select>' +
+      '<button type="button" class="wh-btn wh-btn-primary" style="padding:3px 10px;font-size:12px;border-radius:8px" onclick="saveShelfAssign(' + l.medicineId + ')">Lưu</button>' +
+      '<button type="button" class="wh-btn" style="padding:3px 10px;font-size:12px;border-radius:8px" onclick="closeShelfPicker(' + l.medicineId + ')">Huỷ</button>' +
+      '</span></div>';
   }
+
+  window.openShelfPicker = function (medicineId) {
+    var el = document.getElementById('shelfPicker-' + medicineId);
+    if (el) el.style.display = 'inline-flex';
+  };
+  window.closeShelfPicker = function (medicineId) {
+    var el = document.getElementById('shelfPicker-' + medicineId);
+    if (el) el.style.display = 'none';
+  };
+  window.saveShelfAssign = function (medicineId) {
+    var sel = document.getElementById('shelfSelect-' + medicineId);
+    var shelfId = sel ? sel.value : '';
+    if (!shelfId) { if (window.whToast) whToast('Chọn 1 kệ trước khi lưu.', false); return; }
+    var form = new URLSearchParams();
+    form.set('medicineId', medicineId); form.set('shelfId', shelfId);
+    fetch(ctx + '/warehouse-export?action=assign-shelf', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: form })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.ok) { if (window.whToast) whToast('Không gán được kệ — thử lại.', false); return; }
+        var l = lines.find(function (x) { return x.medicineId === medicineId; });
+        if (l) {
+          l.shelfId = data.shelfId;
+          l.shelfName = data.shelfName;
+          if (l.allocation) l.allocation.shelfName = data.shelfName;
+          renderAllocationBlock(l);
+        }
+        if (window.whToast) whToast('Đã cập nhật vị trí kệ.', true);
+      })
+      .catch(function () { if (window.whToast) whToast('Lỗi kết nối — thử lại.', false); });
+  };
 
   function overrideBoxHtml(l, a) {
     if (!isManager) return '';
@@ -1170,23 +1355,49 @@ a{text-decoration:none;color:inherit}
     var anyOverride = lines.some(function (l) { return l.overridden; });
     document.getElementById('overrideReasonWrap').style.display = anyOverride ? 'block' : 'none';
 
-    var tbody = document.querySelector('#reviewTable tbody');
-    tbody.innerHTML = lines.map(function (l) {
+    var box = document.getElementById('reviewCards');
+    if (!box) return;
+    box.innerHTML = lines.map(function (l) {
       var a = l.allocation;
       var lotsText = l.overridden
         ? (a.lots.find(function (x) { return x.batchId === l.overrideBatchId; }) ?
-            (function (lot) { return lot.batchNumber + ' (HSD ' + lot.expiryDate + ')'; })(a.lots.find(function (x) { return x.batchId === l.overrideBatchId; }))
+            (function (lot) { return '<b>' + escapeHtml(lot.batchNumber) + '</b> (HSD ' + lot.expiryDate + ')'; })(a.lots.find(function (x) { return x.batchId === l.overrideBatchId; }))
             : '<span style="color:var(--danger)">Chưa chọn lô ghi đè</span>')
-        : (a.lots || []).map(function (lot) { return lot.batchNumber + ' ×' + lot.allocatedQuantity + ' (HSD ' + lot.expiryDate + ')'; }).join(', ');
-      return '<tr>' +
-        '<td><b>' + escapeHtml(l.name) + '</b>' + (l.genericName ? '<div style="font-size:11.5px;color:var(--muted)">Hoạt chất: ' + escapeHtml(l.genericName) + '</div>' : '') + '</td>' +
-        '<td>' + escapeHtml(l.barcode || l.code || '—') + '</td>' +
-        '<td>' + escapeHtml(l.shelfName || (l.shelfId ? ('Kệ #' + l.shelfId) : '—')) + '</td>' +
-        '<td class="num">' + l.totalStock + ' ' + escapeHtml(l.unit || '') + '</td>' +
-        '<td class="num"><b>' + l.qty + '</b> ' + escapeHtml(l.unit || '') + '</td>' +
-        '<td>' + lotsText + (l.overridden ? ' <span class="wh-badge low">Ghi đè</span>' : '') + '</td>' +
-        '<td><button type="button" class="wh-btn wh-btn-icon" onclick="goStepFromReview(2)" title="Chỉnh sửa"><svg><use href="#ic-edit"/></svg></button></td>' +
-        '</tr>';
+        : (a.lots || []).map(function (lot) { return '<b>' + escapeHtml(lot.batchNumber) + '</b> ×' + lot.allocatedQuantity + ' (HSD ' + lot.expiryDate + ')'; }).join(', ');
+
+      return '<div class="exp-review-card">' +
+        '<div class="exp-review-card-head">' +
+          '<div class="exp-review-med-info">' +
+            '<div class="exp-review-med-name">' + escapeHtml(l.name) + '</div>' +
+            (l.genericName ? '<div class="exp-review-med-sub">Hoạt chất: <b>' + escapeHtml(l.genericName) + '</b></div>' : '') +
+          '</div>' +
+          '<button type="button" class="wh-btn" onclick="goStepFromReview(2)" title="Chỉnh sửa dòng này" style="border-radius:10px;font-weight:700">' +
+            '<svg><use href="#ic-edit"/></svg> Chỉnh sửa' +
+          '</button>' +
+        '</div>' +
+        '<div class="exp-review-card-grid">' +
+          '<div class="exp-review-item">' +
+            '<span class="exp-review-lbl">MÃ VẠCH / SP</span>' +
+            '<span class="exp-review-val" style="font-family:monospace">' + escapeHtml(l.barcode || l.code || '—') + '</span>' +
+          '</div>' +
+          '<div class="exp-review-item">' +
+            '<span class="exp-review-lbl">VỊ TRÍ KỆ</span>' +
+            '<span class="exp-review-val">' + escapeHtml(l.shelfName || (l.shelfId ? ('Kệ #' + l.shelfId) : '—')) + '</span>' +
+          '</div>' +
+          '<div class="exp-review-item">' +
+            '<span class="exp-review-lbl">TỒN KHẢ DỤNG</span>' +
+            '<span class="exp-review-val highlight-stock">' + l.totalStock + ' ' + escapeHtml(l.unit || '') + '</span>' +
+          '</div>' +
+          '<div class="exp-review-item">' +
+            '<span class="exp-review-lbl">SL XUẤT</span>' +
+            '<span class="exp-review-val highlight-qty">' + l.qty + ' ' + escapeHtml(l.unit || '') + '</span>' +
+          '</div>' +
+          '<div class="exp-review-item full-width">' +
+            '<span class="exp-review-lbl">LÔ &amp; HSD ĐÃ CHỌN</span>' +
+            '<span class="exp-review-val highlight-lot">' + lotsText + (l.overridden ? ' <span class="wh-badge low" style="margin-left:8px;font-size:12px">Ghi đè FEFO</span>' : '') + '</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
     }).join('');
     document.getElementById('reviewErrors').style.display = 'none';
   }

@@ -60,6 +60,11 @@ public class StaffAttendanceServlet extends HttpServlet {
         if (staff == null) {
             resp.sendRedirect(req.getContextPath() + "/staff-login"); return;
         }
+        // Dược sĩ bán hàng (roleId 2) điểm danh qua POS từ nay — /staff-checkin chỉ còn phục
+        // vụ Thủ kho (roleId 3), vốn không có POS để dùng (portal riêng, làm giờ hành chính).
+        if (staff.getRoleId() == 2) {
+            resp.sendRedirect(req.getContextPath() + "/staff-dashboard?uid=" + uid); return;
+        }
 
         ShiftSchedule todaySchedule = scheduleDAO.findTodaySchedule(staff.getAccountId());
         Attendance activeAtt        = attendanceDAO.findActiveByAccount(staff.getAccountId());
@@ -87,6 +92,10 @@ public class StaffAttendanceServlet extends HttpServlet {
                 ? (Account) session.getAttribute("staffAccount_" + uid) : null;
         if (staff == null) {
             resp.sendRedirect(req.getContextPath() + "/staff-login"); return;
+        }
+        // Cùng lý do với doGet — chặn roleId 2, chỉ Thủ kho (roleId 3) mới còn điểm danh ở đây.
+        if (staff.getRoleId() == 2) {
+            resp.sendRedirect(req.getContextPath() + "/staff-dashboard?uid=" + uid); return;
         }
 
         String action = req.getParameter("action");

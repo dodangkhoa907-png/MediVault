@@ -466,9 +466,6 @@ body{display:flex;background:var(--soft);color:var(--ink)}
     <a href="${pageContext.request.contextPath}/staff-profile?uid=<%= _uid %>" class="nav-item">
       <span class="nav-icon">👤</span> Hồ sơ của tôi
     </a>
-    <a href="${pageContext.request.contextPath}/staff-checkin?uid=<%= _uid %>" class="nav-item">
-      <span class="nav-icon">✅</span> Điểm danh
-    </a>
     <a href="${pageContext.request.contextPath}/staff-my-shifts?uid=<%= _uid %>" class="nav-item">
       <span class="nav-icon">🕐</span> Ca làm việc
     </a>
@@ -480,9 +477,6 @@ body{display:flex;background:var(--soft);color:var(--ink)}
   <% if (acc.getRoleId() == 2) { %>
   <nav class="nav-block">
     <div class="nav-label">Bán hàng</div>
-    <a href="${pageContext.request.contextPath}/pos?uid=<%= _uid %>" class="nav-item">
-      <span class="nav-icon">🛒</span> Bán thuốc (POS)
-    </a>
     <a href="${pageContext.request.contextPath}/staff-my-invoices?uid=<%= _uid %>" class="nav-item">
       <span class="nav-icon">🧾</span> Hóa đơn của tôi
     </a>
@@ -849,10 +843,9 @@ body{display:flex;background:var(--soft);color:var(--ink)}
                             <c:if test="${todaySchedule.posStation == 0}">
                             <div style="height:8px"></div>
                             </c:if>
-                            <a href="${pageContext.request.contextPath}/staff-checkin?uid=${staffUid}"
-                               style="display:block;text-align:center;background:#10B981;color:#fff;padding:8px;border-radius:8px;font-size:13px;font-weight:750;text-decoration:none">
-                                ✅ Đến trang Điểm danh
-                            </a>
+                            <div style="text-align:center;background:#ECFDF5;color:#065F46;padding:8px;border-radius:8px;font-size:12.5px;font-weight:750">
+                                📱 Điểm danh tại quầy POS khi bắt đầu ca làm việc
+                            </div>
                         </div>
                     </c:when>
                     <c:otherwise>
