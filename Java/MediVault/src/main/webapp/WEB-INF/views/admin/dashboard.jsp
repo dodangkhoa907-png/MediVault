@@ -16,11 +16,13 @@
     Long todayRevenue  = (Long)   request.getAttribute("todayRevenue");
     Integer todayInvoice = (Integer) request.getAttribute("todayInvoices");
     Integer expiryCount  = (Integer) request.getAttribute("expiryCount");
+    Integer lowStockCount = (Integer) request.getAttribute("lowStockCount");
     Long activeAccountsLong = (Long) request.getAttribute("activeAccounts");
     int activeAccounts = activeAccountsLong != null ? activeAccountsLong.intValue() : 0;
     if (todayRevenue   == null) todayRevenue   = 0L;
     if (todayInvoice   == null) todayInvoice   = 0;
     if (expiryCount    == null) expiryCount    = 0;
+    if (lowStockCount  == null) lowStockCount  = 0;
 
     // Trang hiện tại
     java.lang.String currentPage = request.getParameter("view");
@@ -463,7 +465,7 @@ select,option{font-family:inherit;font-size:inherit}
                     <%
                         int staffNotifCount   = pendingReenroll.size() + pendingLeaves.size();
                         int accountNotifCount = pendingResetCount + blockedMap.size();
-                        int stockNotifCount   = expiryCount;
+                        int stockNotifCount   = expiryCount + lowStockCount;
                     %>
                     <div class="notif-tabs">
                         <button class="notif-tab active" data-tab="all" onclick="filterNotif(this,'all')">Tất cả</button>
@@ -533,6 +535,19 @@ select,option{font-family:inherit;font-size:inherit}
                           <div style="flex:1">
                             <div class="notif-text">🏖️ <strong><%= pendingLeaves.size() %> đơn xin nghỉ</strong> chờ duyệt</div>
                             <div class="notif-time">Bấm để xem &amp; duyệt</div>
+                          </div>
+                          <span style="font-size:13px;color:var(--muted);margin-left:auto;align-self:center">→</span>
+                        </a>
+                        <% } %>
+
+                        <%-- ── Thuốc sắp hết hàng (tồn kho ≤ ngưỡng tối thiểu) ── --%>
+                        <% if (lowStockCount > 0) { %>
+                        <a href="<%= request.getContextPath() %>/medicines?statusFilter=low" class="notif-item" data-cat="stock" style="text-decoration:none;display:flex;cursor:pointer;
+                           background:rgba(217,119,6,.06);border-left:3px solid #D97706">
+                          <div class="notif-dot" style="background:#D97706;animation:pulseDot 1.8s ease-in-out infinite"></div>
+                          <div style="flex:1">
+                            <div class="notif-text">📦 Có <%= lowStockCount %> mặt hàng <strong>sắp hết hàng</strong></div>
+                            <div class="notif-time">Tồn kho dưới ngưỡng tối thiểu · Bấm để xem</div>
                           </div>
                           <span style="font-size:13px;color:var(--muted);margin-left:auto;align-self:center">→</span>
                         </a>
