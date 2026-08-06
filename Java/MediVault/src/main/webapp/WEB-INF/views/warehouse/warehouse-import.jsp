@@ -246,6 +246,11 @@ a{text-decoration:none;color:inherit}
         <svg><use href="#ic-check-circle"/></svg>
         <span>Đã nhập lô vào kho. Tồn kho của thuốc được cộng ngay — xem lại ở bảng "Phiếu nhập gần đây" bên dưới.</span>
       </div>
+    <% } else if ("success-pending".equals(msg)) { %>
+      <div class="wh-note ok" role="status">
+        <svg><use href="#ic-check-circle"/></svg>
+        <span>Đã tạo đơn đặt hàng — hiện "Chờ giao" trong tab <b>Đơn hàng</b>. Tồn kho CHƯA đổi — khi hàng thật về, vào Đơn hàng bấm "Nhận hàng" để nhập kho thật.</span>
+      </div>
     <% } %>
 
     <!-- ══ Chỉ dẫn bước ══ -->
@@ -266,6 +271,7 @@ a{text-decoration:none;color:inherit}
 
     <form action="<%= ctx %>/warehouse-import" method="POST" id="importForm">
       <input type="hidden" name="_csrf" value="${csrfToken}">
+      <input type="hidden" id="imReceiveNow" name="receiveNow" value="1">
 
       <!-- ══ BƯỚC 1 ══ -->
       <section class="wh-card pane on" id="p1" aria-labelledby="h1t">
@@ -277,6 +283,20 @@ a{text-decoration:none;color:inherit}
           </div>
         </div>
         <div class="wh-card-body">
+          <!-- Hàng đã về tay ngay hay chỉ mới đặt trước (chưa nhận) — quyết định có cộng tồn
+               kho ngay hay chỉ tạo đơn "Chờ giao" hiện trong tab Đơn hàng. -->
+          <div class="wh-seg" id="arrivalModeToggle" role="group" aria-label="Trạng thái nhận hàng" style="margin-bottom:18px">
+            <button type="button" id="modeReceiveNow" aria-pressed="true" onclick="setArrivalMode(true)">
+              <svg><use href="#ic-box-in"/></svg> Hàng đã về tay — nhập kho ngay
+            </button>
+            <button type="button" id="modePending" aria-pressed="false" onclick="setArrivalMode(false)">
+              <svg><use href="#ic-clock"/></svg> Đặt hàng trước — chưa nhận, về sau
+            </button>
+          </div>
+          <div class="wh-note warn" id="pendingModeHint" hidden style="margin-bottom:18px">
+            <svg><use href="#ic-alert"/></svg>
+            <span>Chưa cộng vào tồn kho — chỉ tạo đơn "Chờ giao" trong tab <b>Đơn hàng</b>. Khi hàng thật sự về, vào Đơn hàng bấm "Nhận hàng" để nhập kho thật (lúc đó mới bắt buộc nhập Hạn sử dụng).</span>
+          </div>
           <div class="wh-row2">
             <div class="wh-fg">
               <label for="imMed">
@@ -429,20 +449,20 @@ a{text-decoration:none;color:inherit}
         <div class="wh-card-body">
           <div class="wh-row2">
             <div class="wh-fg">
-              <label for="imMfg">Ngày sản xuất <span aria-hidden="true">*</span></label>
+              <label for="imMfg">Ngày sản xuất <span aria-hidden="true" id="lblMfgStar">*</span></label>
               <input class="wh-in" type="date" id="imMfg" name="manufactureDate" required>
               <div class="err" id="e-mfg">Chưa chọn ngày sản xuất.</div>
             </div>
             <div class="wh-fg">
-              <label for="imExp">Hạn sử dụng <span aria-hidden="true">*</span></label>
+              <label for="imExp">Hạn sử dụng <span aria-hidden="true" id="lblExpStar">*</span></label>
               <input class="wh-in" type="date" id="imExp" name="expiryDate" required>
               <div class="err" id="e-exp">Chưa chọn hạn sử dụng.</div>
             </div>
           </div>
           <div class="wh-fg">
-            <label for="imIn">Ngày nhập hàng <span aria-hidden="true">*</span></label>
+            <label for="imIn" id="impLabel">Ngày nhập hàng <span aria-hidden="true">*</span></label>
             <input class="wh-in" type="date" id="imIn" name="importDate" required>
-            <div class="hint">Mặc định là hôm nay.</div>
+            <div class="hint" id="impHint">Mặc định là hôm nay.</div>
             <div class="err" id="e-imp">Ngày nhập không được trước ngày sản xuất.</div>
           </div>
 
@@ -584,6 +604,34 @@ a{text-decoration:none;color:inherit}
 
   var F = { med:$('imMed'), sup:$('imSup'), po:$('imPo'), lot:$('imLot'), qty:$('imQty'),
             price:$('imPrice'), mfg:$('imMfg'), exp:$('imExp'), imp:$('imIn') };
+
+  /* ── Hàng đã về tay (mặc định) vs Đặt hàng trước (chưa nhận) ─────────────
+     "Đặt hàng trước": KHÔNG cộng tồn kho ngay, chỉ tạo 1 đơn PENDING hiện trong tab Đơn hàng
+     (WarehouseImportServlet đọc field ẩn "receiveNow" này để quyết định). NSX/HSD trở thành
+     tuỳ chọn vì hàng thật chưa về tay nên có thể chưa biết chính xác — bắt buộc điền lại khi
+     "Nhận hàng" thật (PurchaseOrderDAO.confirmReceived() đã chặn nếu thiếu HSD). ── */
+  var receiveNow = true;
+  window.setArrivalMode = function (isNow) {
+    receiveNow = isNow;
+    $('imReceiveNow').value = isNow ? '1' : '0';
+    $('modeReceiveNow').setAttribute('aria-pressed', isNow ? 'true' : 'false');
+    $('modePending').setAttribute('aria-pressed', isNow ? 'false' : 'true');
+    $('pendingModeHint').hidden = isNow;
+
+    $('lblMfgStar').style.display = isNow ? '' : 'none';
+    $('lblExpStar').style.display = isNow ? '' : 'none';
+    if (isNow) { F.mfg.setAttribute('required', ''); F.exp.setAttribute('required', ''); }
+    else { F.mfg.removeAttribute('required'); F.exp.removeAttribute('required'); }
+
+    $('impLabel').firstChild.textContent = isNow ? 'Ngày nhập hàng ' : 'Ngày dự kiến nhận hàng ';
+    $('impHint').textContent = isNow
+      ? 'Mặc định là hôm nay.'
+      : 'Ngày bạn dự kiến lấy hàng thật — hiện trong tab Đơn hàng để biết đơn nào sắp/đã quá hạn giao.';
+
+    $('btnSubmit').innerHTML = isNow
+      ? '<svg><use href="#ic-box-in"/></svg> Ghi lô vào kho'
+      : '<svg><use href="#ic-clock"/></svg> Tạo đơn đặt hàng';
+  };
 
   if (!F.imp.value) F.imp.value = getLocalIsoDate();
 
@@ -817,8 +865,12 @@ a{text-decoration:none;color:inherit}
       if (F.price.value === '' || +F.price.value < 0) ok = fail(F.price, 'e-price');
     } else if (n === 3) {
       clear(F.mfg, 'e-mfg'); clear(F.exp, 'e-exp'); clear(F.imp, 'e-imp');
-      if (!F.mfg.value) ok = fail(F.mfg, 'e-mfg');
-      if (!F.exp.value) ok = fail(F.exp, 'e-exp');
+      // "Đặt hàng trước": hàng chưa về tay nên NSX/HSD có thể chưa biết chính xác — bỏ bắt buộc,
+      // điền lại lúc "Nhận hàng" thật (server chặn thiếu HSD ở bước đó, không chặn ở đây).
+      if (receiveNow) {
+        if (!F.mfg.value) ok = fail(F.mfg, 'e-mfg');
+        if (!F.exp.value) ok = fail(F.exp, 'e-exp');
+      }
       // Lỗi dữ liệu bất khả thi — CHẶN CỨNG, khác cảnh báo mềm "sắp hết hạn" ở checkDates().
       if (F.mfg.value && F.exp.value && F.exp.value <= F.mfg.value) {
         ok = fail(F.exp, 'e-exp');
@@ -983,13 +1035,14 @@ a{text-decoration:none;color:inherit}
       row('Giá nhập / ' + esc(unit), vnd(p) + 'đ') +
       row('Ngày sản xuất', esc(F.mfg.value || '—')) +
       row('Hạn sử dụng', esc(F.exp.value || '—')) +
-      row('Ngày nhập', esc(F.imp.value || '—')) +
+      row(receiveNow ? 'Ngày nhập' : 'Ngày dự kiến nhận hàng', esc(F.imp.value || '—')) +
       '<div class="r total"><span class="k">Tổng giá trị lô</span><span class="v">' + vnd(q * p) + 'đ</span></div>';
 
-    var after = stock + q;
+    var after = receiveNow ? stock + q : stock;
     $('afStock').textContent = vnd(after);
-    $('afStockNote').textContent = vnd(stock) + ' → ' + vnd(after) + ' ' + unit +
-      (min > 0 ? ' · ngưỡng tối thiểu ' + min : '');
+    $('afStockNote').textContent = receiveNow
+      ? (vnd(stock) + ' → ' + vnd(after) + ' ' + unit + (min > 0 ? ' · ngưỡng tối thiểu ' + min : ''))
+      : ('Chưa đổi (' + vnd(stock) + ' ' + unit + ') — chỉ tăng khi bạn xác nhận "Nhận hàng" lúc hàng thật về.');
 
     var n = daysLeft(F.exp.value);
     $('afDays').textContent = n === null ? '—' : (n < 0 ? '-' + Math.abs(n) : n);
@@ -1011,7 +1064,10 @@ a{text-decoration:none;color:inherit}
       btn.disabled = false;
     } else {
       $('confirmWarn').innerHTML = '<div class="wh-note ok" style="margin-bottom:20px"><svg><use href="#ic-shield-check"/></svg>' +
-        '<span>Không phát hiện bất thường. Lô sẽ vào hàng chờ xuất theo FEFO đúng thứ tự hạn dùng.</span></div>';
+        '<span>' + (receiveNow
+          ? 'Không phát hiện bất thường. Lô sẽ vào hàng chờ xuất theo FEFO đúng thứ tự hạn dùng.'
+          : 'Không phát hiện bất thường. Sẽ tạo 1 đơn "Chờ giao" trong tab Đơn hàng — chưa cộng tồn kho cho tới khi bạn xác nhận Nhận hàng.') +
+        '</span></div>';
       btn.disabled = false;
     }
   }
@@ -1435,10 +1491,12 @@ a{text-decoration:none;color:inherit}
 
   function startCamera(cameraIdOrConstraint) {
     var status = document.getElementById('medBarcodeScanStatus');
-    medBarcodeScanner = new Html5Qrcode('medBarcodeReaderBox');
+    medBarcodeScanner = new Html5Qrcode('medBarcodeReaderBox', { verbose: false });
     medBarcodeScanner.start(
       cameraIdOrConstraint,
-      { fps: 10, qrbox: { width: 300, height: 170 },
+      { fps: 20, qrbox: { width: 300, height: 170 },
+        disableFlip: true, // camera sau không cần dò ảnh lật gương — giảm nửa số lần thử/khung hình
+        experimentalFeatures: { useBarCodeDetectorIfSupported: true }, // API giải mã native trình duyệt, nhanh hơn ZXing JS/WASM
         formatsToSupport: [
           Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
           Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,

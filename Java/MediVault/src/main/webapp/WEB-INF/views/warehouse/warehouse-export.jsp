@@ -714,6 +714,18 @@ a{text-decoration:none;color:inherit}
 (function () {
   var ctx = "<%= ctx %>";
   var isManager = "<%= isManager %>" === "true";
+  // Danh sách kệ cho nút "Xếp kệ nhanh" ở Bước 3 — xem WarehouseExportServlet#renderPage.
+  var SHELF_DATA = [
+    <%
+      java.util.List<com.medicare.entity.Shelf> __shelves = (java.util.List<com.medicare.entity.Shelf>) request.getAttribute("shelves");
+      if (__shelves != null) { boolean __first = true;
+        for (com.medicare.entity.Shelf __sh : __shelves) {
+          if (!__first) out.print(",");
+          __first = false;
+    %>
+    { id: <%= __sh.getShelfId() %>, name: '<%= (__sh.getShelfName() != null ? __sh.getShelfName() : "Kệ " + __sh.getShelfId()).replace("'", "\\'") %>' }
+    <% } } %>
+  ];
 
   // ── State ──────────────────────────────────────────────────────────────
   var selectedReason = null;   // {id, code, name, requiresReceiver}
@@ -1074,8 +1086,20 @@ a{text-decoration:none;color:inherit}
     if (typeof Html5Qrcode === 'undefined') { document.getElementById('bcErr').textContent = 'Thư viện camera chưa sẵn sàng, thử lại sau giây lát.'; document.getElementById('bcErr').classList.add('on'); return; }
     box.classList.add('on');
     box.innerHTML = '<div id="expBcReader" style="width:100%"></div>';
-    html5Qr = new Html5Qrcode('expBcReader');
-    html5Qr.start({ facingMode: 'environment' }, { fps: 10, qrbox: 220 }, function (code) {
+    html5Qr = new Html5Qrcode('expBcReader', { verbose: false });
+    html5Qr.start({ facingMode: 'environment' }, {
+      fps: 20, qrbox: 220,
+      disableFlip: true, // camera sau không cần dò ảnh lật gương — giảm nửa số lần thử/khung hình
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true }, // API giải mã native trình duyệt, nhanh hơn ZXing JS/WASM
+      // Trước đây không giới hạn — html5-qrcode phải thử MỌI symbology mỗi khung hình (chậm nhất
+      // trong 3 màn quét). Giới hạn đúng các loại mã vạch thuốc thực tế dùng, giống Nhập kho/POS.
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.QR_CODE
+      ]
+    }, function (code) {
       handleScanned(code, 'camera');
     }, function () {}).catch(function (err) {
       document.getElementById('bcErr').textContent = 'Không mở được camera: ' + err;
@@ -1169,6 +1193,18 @@ a{text-decoration:none;color:inherit}
       .then(function (r) { return r.json(); })
       .then(function (data) {
         l.allocation = data;
+        // Đơn bị chia ≥2 lô khác hạn (data.risky) — nếu là Quản lý kho, TỰ MỞ SẴN khung ghi đè
+        // để họ thấy ngay bảng lô + tự chọn, thay vì phải tự tick checkbox mới nhìn ra vấn đề.
+        // KHÔNG tự chọn sẵn lô nào (overrideBatchId vẫn null) — con người vẫn phải tự quyết định,
+        // máy chỉ đưa vấn đề ra trước mặt sớm hơn.
+        if (data.risky && isManager && !l.overridden) {
+          l.overridden = true;
+          var reasonEl = document.getElementById('expOverrideReason');
+          if (reasonEl && !reasonEl.value.trim()) {
+            reasonEl.value = 'Hệ thống phát hiện đơn "' + l.name + '" bị chia nhiều lô khác hạn dùng — xác nhận cách phân bổ';
+          }
+          document.getElementById('overrideReasonWrap').style.display = 'block';
+        }
         renderAllocationBlock(l);
       });
   }
@@ -1198,8 +1234,24 @@ a{text-decoration:none;color:inherit}
         '<svg><use href="#ic-cart"/></svg> Tạo đề xuất mua hàng</button></div></div>' + lotTableHtml(a.lots, l);
     } else {
       badge.className = 'wh-badge ok'; badge.textContent = l.overridden ? 'GHI ĐÈ FEFO' : 'AUTO FEFO OK';
-      body.innerHTML = lotTableHtml(a.lots, l) + overrideBoxHtml(l, a);
+      body.innerHTML = riskyBannerHtml(a) + lotTableHtml(a.lots, l) + overrideBoxHtml(l, a);
     }
+  }
+
+  /**
+   * Banner cảnh báo khi đơn bị chia ≥2 lô khác hạn dùng (a.risky, từ AllocationResult.isRisky()
+   * phía server — xem WarehouseExportServlet#allocationJson). Hiện cho MỌI người thao tác, kể cả
+   * không phải Quản lý kho — ai cũng cần biết đơn đang bị chia lô, dù chỉ Quản lý kho mới sửa được.
+   */
+  function riskyBannerHtml(a) {
+    if (!a.risky || !a.lots || !a.lots.length) return '';
+    var nearest = a.lots[0]; // FEFO luôn xếp lô gần hạn nhất lên đầu
+    return '<div class="wh-note warn" style="margin-bottom:10px"><svg><use href="#ic-alert"/></svg><div>' +
+      '<b>⚠️ Đơn này bị chia từ ' + a.lots.length + ' lô có hạn dùng khác nhau</b>' +
+      '<div style="margin-top:2px">Lô gần hạn nhất — <b>' + escapeHtml(nearest.batchNumber) +
+      '</b> (HSD ' + escapeHtml(nearest.expiryDate) + ') — chỉ còn ' + nearest.availableQuantity + ' ' +
+      '. Nếu bên nhận dùng thuốc trong thời gian dài, phần lấy từ lô này có thể hết hạn trước khi dùng hết.' +
+      '</div></div></div>';
   }
 
   function lotTableHtml(lots, l) {
@@ -1211,11 +1263,55 @@ a{text-decoration:none;color:inherit}
         '<td class="num">' + lot.availableQuantity + '</td>' +
         '<td class="num">' + (l.overridden ? (picked ? l.qty : 0) : lot.allocatedQuantity) + '</td></tr>';
     }).join('');
+    var shelfName = l.shelfName || (l.allocation && l.allocation.shelfName) || '';
+    var shelfOptions = SHELF_DATA.map(function (s) {
+      return '<option value="' + s.id + '"' + (l.shelfId === s.id ? ' selected' : '') + '>' + escapeHtml(s.name) + '</option>';
+    }).join('');
     return '<div class="wh-tablecard" style="margin-top:10px"><div class="wh-tablescroll"><table class="wh-table">' +
       '<thead><tr><th>Số lô</th><th>HSD</th><th>Tồn khả dụng</th><th>Được lấy</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>' +
-      '<div class="hint">Vị trí kệ: <b>' + escapeHtml(l.shelfName || (l.allocation && l.allocation.shelfName) || 'Chưa xếp kệ') +
-      '</b>' + ((l.storageConditions || (l.allocation && l.allocation.storageConditions)) ? ' · Bảo quản: ' + escapeHtml(l.storageConditions || l.allocation.storageConditions) : '') + '</div>';
+      '<div class="hint" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">' +
+      '<span>Vị trí kệ: <b class="exp-shelf-label">' + (shelfName ? escapeHtml(shelfName) : 'Chưa xếp kệ') + '</b>' +
+      ((l.storageConditions || (l.allocation && l.allocation.storageConditions)) ? ' · Bảo quản: ' + escapeHtml(l.storageConditions || l.allocation.storageConditions) : '') +
+      '</span>' +
+      '<button type="button" class="wh-btn" style="padding:3px 10px;font-size:12px;border-radius:8px" onclick="openShelfPicker(' + l.medicineId + ')">' +
+      (shelfName ? '✏️ Đổi kệ' : '📍 Xếp kệ') + '</button>' +
+      '<span id="shelfPicker-' + l.medicineId + '" style="display:none;align-items:center;gap:6px">' +
+      '<select id="shelfSelect-' + l.medicineId + '" style="font-size:12px;padding:3px 6px;border-radius:8px">' +
+      '<option value="">— Chọn kệ —</option>' + shelfOptions + '</select>' +
+      '<button type="button" class="wh-btn wh-btn-primary" style="padding:3px 10px;font-size:12px;border-radius:8px" onclick="saveShelfAssign(' + l.medicineId + ')">Lưu</button>' +
+      '<button type="button" class="wh-btn" style="padding:3px 10px;font-size:12px;border-radius:8px" onclick="closeShelfPicker(' + l.medicineId + ')">Huỷ</button>' +
+      '</span></div>';
   }
+
+  window.openShelfPicker = function (medicineId) {
+    var el = document.getElementById('shelfPicker-' + medicineId);
+    if (el) el.style.display = 'inline-flex';
+  };
+  window.closeShelfPicker = function (medicineId) {
+    var el = document.getElementById('shelfPicker-' + medicineId);
+    if (el) el.style.display = 'none';
+  };
+  window.saveShelfAssign = function (medicineId) {
+    var sel = document.getElementById('shelfSelect-' + medicineId);
+    var shelfId = sel ? sel.value : '';
+    if (!shelfId) { if (window.whToast) whToast('Chọn 1 kệ trước khi lưu.', false); return; }
+    var form = new URLSearchParams();
+    form.set('medicineId', medicineId); form.set('shelfId', shelfId);
+    fetch(ctx + '/warehouse-export?action=assign-shelf', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: form })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.ok) { if (window.whToast) whToast('Không gán được kệ — thử lại.', false); return; }
+        var l = lines.find(function (x) { return x.medicineId === medicineId; });
+        if (l) {
+          l.shelfId = data.shelfId;
+          l.shelfName = data.shelfName;
+          if (l.allocation) l.allocation.shelfName = data.shelfName;
+          renderAllocationBlock(l);
+        }
+        if (window.whToast) whToast('Đã cập nhật vị trí kệ.', true);
+      })
+      .catch(function () { if (window.whToast) whToast('Lỗi kết nối — thử lại.', false); });
+  };
 
   function overrideBoxHtml(l, a) {
     if (!isManager) return '';

@@ -241,22 +241,28 @@ public class InvoiceDAO implements IInvoiceDAO {
 
     public int completeSaleTransaction(int accountId, Integer shiftId, Integer customerId,
                                        String paymentMethod, java.math.BigDecimal discount,
-                                       int[] medicineIds, int[] quantities) {
+                                       int[] medicineIds, int[] quantities,
+                                       java.util.Map<Integer, java.util.List<com.medicare.service.SaleLineRequest.ManualAllocation>> manualAllocationsByIndex, Integer posStation) {
         lastSaleError.remove();
         Connection cn = null;
         try {
             cn = DBContext.getConnection();
             cn.setAutoCommit(false);
 
-            // Bước 1: Tạo Invoice PENDING — bao gồm ShiftID
+            // Bước 1: Tạo Invoice PENDING — bao gồm ShiftID + PosStation. PosStation PHẢI được
+            // ghi ngay từ lúc tạo hóa đơn: handleShiftSummary/handleEndShift (PosServlet) lọc
+            // "WHERE ... AND PosStation=?" để tính lại Thu tiền mặt/QR/Thẻ theo đúng quầy đang
+            // chốt ca — nếu cột này luôn NULL (như trước đây), điều kiện đó không khớp bất kỳ
+            // hóa đơn nào ⇒ báo cáo đầu/cuối ca luôn hiện 0đ dù đã bán hàng thành công.
             int invoiceId;
-            String sqlInsert = "INSERT INTO Invoices (AccountID, ShiftID, CustomerID, PaymentMethod) " +
-                    "VALUES (?,?,?,?)";
+            String sqlInsert = "INSERT INTO Invoices (AccountID, ShiftID, CustomerID, PaymentMethod, PosStation) " +
+                    "VALUES (?,?,?,?,?)";
             try (PreparedStatement ps = cn.prepareStatement(sqlInsert, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setInt(1, accountId);
                 if (shiftId != null) ps.setInt(2, shiftId); else ps.setNull(2, Types.INTEGER);
                 if (customerId != null) ps.setInt(3, customerId); else ps.setNull(3, Types.INTEGER);
                 ps.setString(4, paymentMethod != null ? paymentMethod : "CASH");
+                if (posStation != null && posStation > 0) ps.setInt(5, posStation); else ps.setNull(5, Types.INTEGER);
                 ps.executeUpdate();
                 try (ResultSet keys = ps.getGeneratedKeys()) {
                     if (keys.next()) invoiceId = keys.getInt(1);
@@ -265,15 +271,61 @@ public class InvoiceDAO implements IInvoiceDAO {
             }
             if (invoiceId <= 0) throw new Exception("InvoiceID không hợp lệ: " + invoiceId);
 
-            // Bước 2: Thêm từng sản phẩm qua SP (FEFO — hạn dùng gần nhất trước) — cùng connection, cùng transaction
+            // Bước 2: Thêm từng dòng thuốc — phân bổ lô qua FefoAllocatorService (Java, DÙNG CHUNG
+            // với module Xuất kho — không còn gọi SP_AddSaleByFEFO nữa, xem lý do đầy đủ ở
+            // FefoAllocatorService/SaleValidationService). Dòng nào dược sĩ đã CHỌN TAY (sau khi
+            // thấy cảnh báo rủi ro hạn dùng ở bước xem trước) thì dùng đúng lô đã chọn, có đối
+            // chiếu lại tồn kho THẬT trước khi ghi — không tin số liệu client gửi lên trước đó.
+            // INSERT trực tiếp vào InvoiceDetails: trigger TRG_ProcessSaleAndMachine (đã có sẵn
+            // trong DB) tự trừ Batches.CurrentQuantity + ghi StockMovements + bắn lệnh máy, kể cả
+            // khi dòng insert đến từ Java thay vì từ SP — không cần viết lại phần đó.
+            com.medicare.service.warehouse.FefoAllocatorService fefoAllocator =
+                    new com.medicare.service.warehouse.FefoAllocatorService();
+            com.medicare.service.SaleValidationService saleValidation = new com.medicare.service.SaleValidationService();
+            String sqlDetail = "INSERT INTO InvoiceDetails (InvoiceID, BatchID, Quantity, UnitPrice) VALUES (?,?,?,?)";
+
             for (int i = 0; i < medicineIds.length; i++) {
-                try (CallableStatement cs = cn.prepareCall("{CALL SP_AddSaleByFEFO(?, ?, ?)}")) {
-                    cs.setInt(1, invoiceId);
-                    cs.setInt(2, medicineIds[i]);
-                    cs.setInt(3, quantities[i]);
-                    cs.execute();
-                } catch (SQLException spEx) {
-                    throw new Exception("Thuốc ID " + medicineIds[i] + ": " + spEx.getMessage(), spEx);
+                int medicineId = medicineIds[i];
+                int qty = quantities[i];
+                java.math.BigDecimal price = findSellingPrice(cn, medicineId);
+
+                java.util.List<com.medicare.service.SaleLineRequest.ManualAllocation> manual =
+                        manualAllocationsByIndex != null ? manualAllocationsByIndex.get(i) : null;
+
+                java.util.List<int[]> batchQtyPairs = new java.util.ArrayList<>(); // [batchId, qty]
+                if (manual != null && !manual.isEmpty()) {
+                    com.medicare.service.SaleLineRequest line =
+                            new com.medicare.service.SaleLineRequest(medicineId, qty, null, true, manual);
+                    java.util.List<String> errors = saleValidation.validateManualLine(line);
+                    if (!errors.isEmpty()) {
+                        throw new Exception("Thuốc ID " + medicineId + ": " + String.join("; ", errors));
+                    }
+                    for (com.medicare.service.SaleLineRequest.ManualAllocation m : manual) {
+                        batchQtyPairs.add(new int[]{m.getBatchId(), m.getQuantity()});
+                    }
+                } else {
+                    com.medicare.service.warehouse.AllocationResult alloc = fefoAllocator.allocate(medicineId, qty);
+                    if (!alloc.isFullyAllocated()) {
+                        throw new Exception("Thuốc ID " + medicineId + ": Lô thuốc không đủ tồn kho hoặc đã hết hạn.");
+                    }
+                    for (com.medicare.service.warehouse.LotAllocation la : alloc.getAllocations()) {
+                        batchQtyPairs.add(new int[]{la.getBatchId(), la.getAllocatedQuantity()});
+                    }
+                }
+
+                for (int[] pair : batchQtyPairs) {
+                    try (PreparedStatement ps = cn.prepareStatement(sqlDetail)) {
+                        ps.setInt(1, invoiceId);
+                        ps.setInt(2, pair[0]);
+                        ps.setInt(3, pair[1]);
+                        ps.setBigDecimal(4, price);
+                        ps.executeUpdate();
+                    } catch (SQLException spEx) {
+                        // Trigger TRG_ProcessSaleAndMachine ném lỗi này khi tồn kho vừa bị giao dịch
+                        // khác lấy mất giữa lúc xem trước và lúc xác nhận (race condition) — cùng
+                        // hành vi an toàn như trước đây khi còn gọi SP_AddSaleByFEFO.
+                        throw new Exception("Thuốc ID " + medicineId + ": " + spEx.getMessage(), spEx);
+                    }
                 }
             }
 
@@ -323,6 +375,18 @@ public class InvoiceDAO implements IInvoiceDAO {
                 try { cn.setAutoCommit(true); cn.close(); } catch (SQLException ex) { ex.printStackTrace(); }
             }
         }
+    }
+
+    /** Giá bán hiện tại của 1 thuốc — dùng để ghi UnitPrice khi thêm dòng InvoiceDetails
+     *  (đọc trên CÙNG connection/transaction đang mở của completeSaleTransaction). */
+    private java.math.BigDecimal findSellingPrice(Connection cn, int medicineId) throws SQLException {
+        try (PreparedStatement ps = cn.prepareStatement("SELECT SellingPrice FROM Medicines WHERE MedicineID = ?")) {
+            ps.setInt(1, medicineId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getBigDecimal(1);
+            }
+        }
+        return java.math.BigDecimal.ZERO;
     }
 
     // ── NEW ───────────────────────────────────────────────────────────────────

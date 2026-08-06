@@ -93,6 +93,11 @@ public class WarehouseExportServlet extends HttpServlet {
         req.setAttribute("bcCategories", new com.medicare.dao.CategoryDAO().findAll());
         req.setAttribute("bcManufacturers", new com.medicare.dao.ManufacturerDAO().findAll());
 
+        // Danh sách kệ cho nút "Xếp kệ nhanh" ở Bước 3 (Phân bổ FEFO) — khi thấy 1 thuốc
+        // "Chưa xếp kệ" ngay lúc soạn phiếu, thủ kho gán luôn tại chỗ, không phải chạy sang
+        // trang Quản lý kệ riêng rồi quay lại.
+        req.setAttribute("shelves", new com.medicare.dao.ShelfDAO().findAll());
+
         req.setAttribute("activeNav", "export");
         SidebarHelper.loadWarehouse(req, acc.getAccountId());
 
@@ -126,6 +131,7 @@ public class WarehouseExportServlet extends HttpServlet {
         String action = req.getParameter("action");
         if ("quick-create-medicine".equals(action)) { handleQuickCreateMedicine(req, resp, acc); return; }
         if ("bind-barcode".equals(action))          { handleBindBarcode(req, resp, acc); return; }
+        if ("assign-shelf".equals(action))          { handleAssignShelf(req, resp, acc); return; }
         if ("confirm".equals(action))               { handleConfirm(req, resp, acc); return; }
         if ("cancel".equals(action))                { handleCancel(req, resp, acc); return; }
         if ("reverse".equals(action))                { handleReverse(req, resp, acc); return; }
@@ -162,6 +168,9 @@ public class WarehouseExportServlet extends HttpServlet {
           .append(",\"storageConditions\":").append(jstr(med != null ? med.getStorageConditions() : null))
           .append(",\"requestedQuantity\":").append(result.getRequestedQuantity())
           .append(",\"shortfall\":").append(result.getShortfall())
+          // risky = đơn bị chia ≥ 2 lô khác hạn dùng — FE dùng để tự hiện cảnh báo + gợi ý ghi đè,
+          // xem AllocationResult.isRisky() để biết định nghĩa đầy đủ.
+          .append(",\"risky\":").append(result.isRisky())
           .append(",\"lots\":[");
         List<LotAllocation> lots = result.getAllocations();
         for (int i = 0; i < lots.size(); i++) {
@@ -284,6 +293,35 @@ public class WarehouseExportServlet extends HttpServlet {
                     "Gán mã vạch " + barcode.trim() + " vào thuốc " + (m != null ? m.getMedicineName() : "#" + medicineId));
 
             out.print("{\"ok\":true,\"medicine\":" + BarcodeService.medicineJson(m) + "}");
+        } catch (Exception e) {
+            e.printStackTrace();
+            out.print("{\"ok\":false,\"reason\":\"server_error\"}");
+        }
+    }
+
+    /** action=assign-shelf — gán/đổi vị trí kệ ngay tại Bước 3 khi thấy thuốc "Chưa xếp kệ".
+     *  ShelfID nằm trên Medicines (không phải theo lô), giống hệt chỗ Admin gán qua medicine-form.jsp
+     *  — dùng lại MedicineDAO.updateShelf() sẵn có, không tạo đường ghi mới. */
+    private void handleAssignShelf(HttpServletRequest req, HttpServletResponse resp, Account acc) throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        PrintWriter out = resp.getWriter();
+        try {
+            Integer medicineId = parseIntOrNull(req.getParameter("medicineId"));
+            Integer shelfId = parseIntOrNull(req.getParameter("shelfId"));
+            if (medicineId == null) { out.print("{\"ok\":false,\"reason\":\"invalid_medicine\"}"); return; }
+            if (shelfId == null) { out.print("{\"ok\":false,\"reason\":\"invalid_shelf\"}"); return; }
+
+            Medicines med = medicineDAO.findById(medicineId);
+            if (med == null) { out.print("{\"ok\":false,\"reason\":\"medicine_not_found\"}"); return; }
+
+            boolean ok = medicineDAO.updateShelf(medicineId, shelfId);
+            if (!ok) { out.print("{\"ok\":false,\"reason\":\"db_error\"}"); return; }
+
+            String shelfName = findShelfName(shelfId);
+            AuditHelper.log(req, "Xếp kệ nhanh (Xuất kho)", "Medicine", medicineId,
+                    med.getMedicineName() + " → " + (shelfName != null ? shelfName : "Kệ #" + shelfId));
+
+            out.print("{\"ok\":true,\"shelfId\":" + shelfId + ",\"shelfName\":" + jstr(shelfName) + "}");
         } catch (Exception e) {
             e.printStackTrace();
             out.print("{\"ok\":false,\"reason\":\"server_error\"}");

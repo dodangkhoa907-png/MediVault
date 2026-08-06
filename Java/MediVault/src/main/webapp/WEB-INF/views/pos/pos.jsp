@@ -550,7 +550,7 @@ body{display:flex}
   <div class="sb-bottom">
     <div class="sb-divider" style="margin-bottom:6px"></div>
     <div class="sb-checkin-wrap">
-<% String checkinAction = isLoggedIn ? "toggleCheckinPanel()" : "openFaceModal()"; %>
+<% String checkinAction = isLoggedIn ? "toggleCheckinPanel()" : "openOpenCashModalStaged()"; %>
       <button class="sb-btn" id="checkinBtn" onclick="<%= checkinAction %>">
         <span class="sb-icon"><%= isLoggedIn ? "🟢" : "👤" %></span>
         <span class="sb-label"><%= isLoggedIn ? fullName : "Điểm danh" %></span>
@@ -571,7 +571,7 @@ body{display:flex}
         <% } else { %>
         <div style="font-size:11.5px;color:rgba(255,255,255,.5);margin-bottom:11px">Điểm danh để ghi nhận doanh số theo nhân viên</div>
         <!-- Nút điểm danh khuôn mặt -->
-        <button onclick="openFaceModal();toggleCheckinPanel();" style="width:100%;padding:10px;background:linear-gradient(135deg,var(--green),#047857);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:6px">
+        <button onclick="openOpenCashModalStaged();toggleCheckinPanel();" style="width:100%;padding:10px;background:linear-gradient(135deg,var(--green),#047857);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:6px">
           📷 Điểm danh khuôn mặt
         </button>
         <div style="font-size:10.5px;color:rgba(255,255,255,.25);margin-top:6px;text-align:center">POS hoạt động bình thường khi chưa đăng nhập</div>
@@ -620,7 +620,7 @@ body{display:flex}
       <div style="font-size:13px;font-weight:750;color:#92400e">Chưa điểm danh ca làm</div>
       <div style="font-size:11.5px;color:#b45309;margin-top:1px">Vui lòng điểm danh để ghi nhận doanh số theo nhân viên</div>
     </div>
-    <button onclick="openFaceModal()" style="padding:8px 18px;background:#f59e0b;border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:6px">
+    <button onclick="openOpenCashModalStaged()" style="padding:8px 18px;background:#f59e0b;border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:750;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:6px">
       📷 Điểm danh ngay
     </button>
   </div>
@@ -639,7 +639,7 @@ body{display:flex}
              style="width:100%;border:1.5px solid #e2e8f0;border-radius:11px;padding:12px 14px;font-size:17px;font-weight:750;font-family:inherit;box-sizing:border-box"
              oninput="formatMoneyInput(this)" onkeydown="if(event.key==='Enter')confirmOpenShift()">
       <div id="openCashErr" style="color:var(--red);font-size:12px;margin-top:6px;display:none"></div>
-      <button type="button" id="openShiftBtn" onclick="confirmOpenShift()"
+      <button type="button" id="openShiftBtn" onclick="confirmOpeningCashStep()"
               style="width:100%;margin-top:16px;padding:13px;background:linear-gradient(135deg,var(--green),#047857);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">✓ Mở ca &amp; bắt đầu bán hàng</button>
     </div>
   </div>
@@ -1248,6 +1248,23 @@ body{display:flex}
   </div>
 </div>
 
+<%-- Modal quyết định FEFO — chỉ hiện khi action=preview-sale báo có dòng "risky" (chia ≥2 lô
+     khác hạn, hoặc lô gần hạn nhất không đủ cho "số ngày dùng" đã nhập). Con người luôn là
+     người quyết định cuối — hệ thống chỉ tính toán và cảnh báo, không tự ý chọn thay. --%>
+<div class="unk-modal" id="fefoModal" onclick="if(event.target===this)closeFefoModal()">
+  <div class="unk-box" style="max-width:540px">
+    <div class="unk-head" style="background:linear-gradient(135deg,#92400e,#b45309)">
+      <h3>⚠️ Cần xác nhận cách chia lô</h3>
+      <div class="unk-code" style="font-size:12px;font-weight:600;letter-spacing:0">Hệ thống phát hiện rủi ro hạn dùng — bạn quyết định trước khi thanh toán</div>
+    </div>
+    <div class="unk-body" id="fefoBody" style="max-height:56vh;overflow-y:auto"></div>
+    <div style="padding:14px 20px;border-top:1.5px solid var(--border);display:flex;gap:8px">
+      <button type="button" class="unk-opt cancel" style="margin:0;flex:none;width:auto;padding:0 16px" onclick="closeFefoModal()"><span class="ic">✕</span> Hủy</button>
+      <button type="button" class="btn-checkout" style="height:44px;flex:1;border-radius:10px" id="fefoConfirmBtn" onclick="confirmFefoChoices()">Xác nhận &amp; Thanh toán</button>
+    </div>
+  </div>
+</div>
+
 <%-- defer: cả 3 lib này chỉ dùng bên trong hàm gọi lúc người dùng thao tác (quét mã vạch,
      thanh toán QR, check-in khuôn mặt) — không cái nào cần ngay lúc trang vừa load. Để mặc
      định (blocking) thì HTML parser phải dừng lại chờ tải xong CẢ 3 lib từ CDN ngoài trước
@@ -1278,6 +1295,11 @@ let nfcBridge = null;                    // EventSource cầu nối NFC (khai b�
 let currentStaffId = null;
 let currentStaffName = '<%= fullName %>';
 let currentInvoice = null; // {id, code, total, discount, cashReceived, change}
+
+// Tiền đầu ca nhập TRƯỚC khi quét khuôn mặt (chưa điểm danh nên chưa có accountId để gửi
+// open-shift ngay) — giữ tạm ở đây, gửi lên server ngay khi điểm danh khuôn mặt thành công.
+let pendingOpeningCash = null;
+let openCashStaging = false;
 
 // ── Date display ──
 (function() {
@@ -1359,10 +1381,15 @@ function openBarcodeScan() {
     status.textContent = '⚠️ Không tải được thư viện quét mã vạch — kiểm tra kết nối mạng.';
     return;
   }
-  barcodeScanner = new Html5Qrcode('barcodeReaderBox');
+  barcodeScanner = new Html5Qrcode('barcodeReaderBox', { verbose: false });
   const config = {
-    fps: 10,
+    fps: 20,
     qrbox: { width: 260, height: 140 },
+    disableFlip: true, // camera sau không cần dò cả ảnh lật gương — giảm nửa số lần thử/khung hình
+    // BarcodeDetector là API giải mã NATIVE của trình duyệt (Chrome/Edge/Android) — nhanh hơn
+    // nhiều lần so với ZXing chạy bằng JS/WASM mà html5-qrcode dùng mặc định. Có sẵn thì ưu
+    // tiên dùng, trình duyệt không hỗ trợ thì tự rơi về ZXing như cũ, không mất gì.
+    experimentalFeatures: { useBarCodeDetectorIfSupported: true },
     formatsToSupport: [
       Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
       Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
@@ -1669,6 +1696,15 @@ function removeItem(id) {
   renderCart();
 }
 
+/** Dược sĩ nhập "số ngày dùng" cho 1 dòng Rx — dùng ở previewSale() để so với hạn dùng lô.
+ *  Không renderCart() lại — chỉ lưu giá trị, tránh mất focus ô đang gõ. */
+function setCartDuration(id, value) {
+  const item = cart.find(i => i.id === id);
+  if (!item) return;
+  const v = parseInt(value);
+  item.duration = (!isNaN(v) && v > 0) ? v : null;
+}
+
 function clearCart() {
   cart = []; selectedCustomer = null;
   redeemPoints = 0; redeemValue = 0;
@@ -1707,11 +1743,21 @@ function renderCart() {
                 + (item.qty > 0 ? ' (sau bán: ' + (remain < 0 ? 0 : remain) + ')' : '') + '</span>');
       const metaHtml = meta.length ? '<div class="inv-i-meta">' + meta.join(' · ') + '</div>' : '';
       const rxBadge = item.rx ? '<span class="mc-badge mb-rx" style="font-size:9px;padding:1px 4px;margin-right:6px;border-radius:3px;">Rx</span>' : '<span class="mc-badge mb-otc" style="font-size:9px;padding:1px 4px;margin-right:6px;border-radius:3px;">OTC</span>';
+      // S\u1ED1 ng\u00E0y d\u00F9ng \u2014 CH\u1EC8 hi\u1EC7n cho thu\u1ED1c Rx, d\u00F9ng \u0111\u1EC3 so v\u1EDBi h\u1EA1n d\u00F9ng l\u00F4 l\u00FAc b\u1EA5m Thanh to\u00E1n
+      // (xem previewSale()). \u0110\u1EC3 tr\u1ED1ng = b\u1ECF qua ki\u1EC3m tra, h\u00E0nh vi y h\u1EC7t tr\u01B0\u1EDBc khi c\u00F3 t\u00EDnh n\u0103ng n\u00E0y.
+      const durationHtml = item.rx
+        ? '<div class="inv-i-duration" style="margin-top:4px;display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B">'
+          + '<span>\u{1F4C5} S\u1ED1 ng\u00E0y d\u00F9ng:</span>'
+          + '<input type="number" min="1" step="1" value="' + (item.duration || '') + '" placeholder="\u2014"'
+          + ' style="width:52px;padding:2px 6px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit"'
+          + ' onchange="setCartDuration(' + item.id + ', this.value)">'
+          + '</div>'
+        : '';
       return '<div class="inv-item">'
         + '<div class="inv-i-info">'
           + '<div class="inv-i-name" style="display:flex;align-items:center;">' + rxBadge + escHtml(item.name) + '</div>'
           + '<div class="inv-i-price" style="margin-top:3px;color:#475569;">M\u00E3: <span style="font-weight:750;color:#0F172A;">' + escHtml(item.code) + '</span> \u00B7 ' + fmtMoney(item.price) + ' / ' + escHtml(item.unit) + '</div>'
-          + metaHtml
+          + metaHtml + durationHtml
         + '</div>'
         + '<div class="qty-ctrl">'
           + '<button class="qty-btn minus" onclick="changeQty('+item.id+',-1)">−</button>'
@@ -2302,6 +2348,134 @@ function doCheckout() {
     openQrModal(total);
     return;
   }
+  previewThenSubmit();
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FEFO — xem trước cách chia lô, dừng lại hỏi dược sĩ khi có dòng rủi ro
+   (chia ≥2 lô khác hạn, hoặc lô gần hạn nhất không đủ cho "số ngày dùng" đã
+   nhập). Giao dịch bình thường (không rủi ro) đi thẳng submitSale() như cũ —
+   không làm chậm quầy bán cho đa số trường hợp. ══════════════════════════ */
+let _fefoLines = [];              // dòng risky đang chờ dược sĩ chọn: [{index,medicineId,name,lots,suggestedSingleBatch,choice,reason}]
+let _pendingManualAllocationsJson = null; // set sau khi confirmFefoChoices(), gửi kèm complete-sale
+
+async function previewThenSubmit() {
+  const btn = document.getElementById('checkoutBtn');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Đang kiểm tra…';
+  _pendingManualAllocationsJson = null;
+  try {
+    const fd = new URLSearchParams();
+    fd.append('action', 'preview-sale');
+    if (currentStaffId) fd.append('uid', currentStaffId);
+    cart.forEach(item => {
+      fd.append('medId[]', item.id);
+      fd.append('qty[]', item.qty);
+      fd.append('duration[]', item.duration || '');
+    });
+    fd.append('_csrf', '${csrfToken}');
+    const res = await fetch(ctx + '/pos', {
+      method: 'POST', body: fd,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    const data = await res.json();
+    // preview lỗi/không parse được → KHÔNG chặn bán hàng, để submitSale() tự xử lý (đúng tinh
+    // thần "lớp cảnh báo phụ trợ", không phải điều kiện bắt buộc mới được thanh toán).
+    if (!data.ok) { submitSale(); return; }
+
+    const risky = (data.lines || []).filter(l => l.risky);
+    if (risky.length === 0) { submitSale(); return; }
+
+    _fefoLines = risky.map(l => {
+      const item = cart[l.index];
+      return {
+        index: l.index,
+        medicineId: l.medicineId,
+        name: item ? item.name : ('Thuốc #' + l.medicineId),
+        unit: item ? item.unit : '',
+        requestedQuantity: l.requestedQuantity,
+        lots: l.lots,
+        suggestedSingleBatch: l.suggestedSingleBatch,
+        choice: l.suggestedSingleBatch ? 'suggested' : 'split',
+        reason: ''
+      };
+    });
+    openFefoModal();
+    btn.disabled = false; btn.innerHTML = '🛒 THANH TOÁN';
+  } catch (e) {
+    // Lỗi mạng lúc xem trước — không chặn bán hàng, submitSale() sẽ tự báo lỗi thật nếu có.
+    submitSale();
+  }
+}
+
+function openFefoModal() {
+  renderFefoModal();
+  document.getElementById('fefoModal').classList.add('show');
+}
+function closeFefoModal() {
+  document.getElementById('fefoModal').classList.remove('show');
+}
+
+function renderFefoModal() {
+  const body = document.getElementById('fefoBody');
+  body.innerHTML = _fefoLines.map(function (l, li) {
+    const lotsHtml = l.lots.map(function (lot) {
+      return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px dashed var(--border)">'
+        + '<span>Lô ' + escHtml(lot.batchNumber) + ' — HSD ' + escHtml(lot.expiryDate) + '</span>'
+        + '<span style="font-weight:750">' + lot.quantity + ' ' + escHtml(l.unit) + '</span></div>';
+    }).join('');
+
+    const suggestedOpt = l.suggestedSingleBatch
+      ? '<label style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border:1.5px solid var(--green);background:#f0fdf4;border-radius:10px;margin-top:8px;cursor:pointer">'
+        + '<input type="radio" name="fefoChoice' + li + '" ' + (l.choice === 'suggested' ? 'checked' : '') + ' onchange="setFefoChoice(' + li + ',\'suggested\')" style="margin-top:2px">'
+        + '<span><b>Lấy hết từ Lô ' + escHtml(l.suggestedSingleBatch.batchNumber) + '</b> (HSD ' + escHtml(l.suggestedSingleBatch.expiryDate) + ')'
+        + '<div style="font-size:11.5px;color:#166534;margin-top:2px">✓ Đủ hạn dùng cho cả liệu trình, không cần chia lô</div></span></label>'
+      : '<div style="font-size:12px;color:#b45309;background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:10px 12px;margin-top:8px">'
+        + '⚠️ Không có lô nào đơn lẻ vừa đủ số lượng vừa đủ hạn cho liệu trình — bắt buộc chọn chia lô nếu muốn bán đủ số lượng.</div>';
+
+    const splitChecked = l.choice === 'split' ? 'checked' : '';
+    const reasonDisplay = l.choice === 'split' ? 'block' : 'none';
+    return '<div style="padding:12px 0;border-bottom:1.5px solid var(--border)">'
+      + '<div style="font-weight:800;font-size:13.5px;margin-bottom:6px">' + escHtml(l.name) + ' <span style="font-weight:600;color:var(--muted);font-size:12px">(yêu cầu ' + l.requestedQuantity + ' ' + escHtml(l.unit) + ')</span></div>'
+      + '<div style="background:#f8fafc;border-radius:10px;padding:8px 12px">' + lotsHtml + '</div>'
+      + suggestedOpt
+      + '<label style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;margin-top:8px;cursor:pointer">'
+      + '<input type="radio" name="fefoChoice' + li + '" ' + splitChecked + ' onchange="setFefoChoice(' + li + ',\'split\')" style="margin-top:2px">'
+      + '<span><b>Vẫn chia theo đề xuất FEFO như trên</b>'
+      + '<div style="font-size:11.5px;color:var(--muted);margin-top:2px">Cần nhập lý do trước khi xác nhận</div></span></label>'
+      + '<textarea id="fefoReason' + li + '" placeholder="VD: Đã tư vấn khách dùng lô gần hạn trước…" rows="2" '
+      + 'style="display:' + reasonDisplay + ';width:100%;margin-top:6px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:12.5px" '
+      + 'oninput="setFefoReason(' + li + ',this.value)">' + escHtml(l.reason) + '</textarea>'
+      + '</div>';
+  }).join('');
+}
+
+function setFefoChoice(li, choice) {
+  _fefoLines[li].choice = choice;
+  const reasonEl = document.getElementById('fefoReason' + li);
+  if (reasonEl) reasonEl.style.display = choice === 'split' ? 'block' : 'none';
+}
+function setFefoReason(li, value) {
+  _fefoLines[li].reason = value;
+}
+
+function confirmFefoChoices() {
+  const manual = {};
+  for (const l of _fefoLines) {
+    if (l.choice === 'split') {
+      if (!l.reason || !l.reason.trim()) {
+        showToast('⚠️ Vui lòng nhập lý do cho "' + l.name + '" trước khi xác nhận chia lô.', 'err');
+        return;
+      }
+      // Vẫn chia theo đúng đề xuất FEFO ban đầu (l.lots) — dược sĩ đồng ý với cách hệ thống
+      // đã tính, chỉ xác nhận + ghi lý do, không tự gõ lại số lượng từng lô.
+      manual[l.index] = l.lots.map(function (lot) { return { batchId: lot.batchId, quantity: lot.quantity }; });
+    } else if (l.suggestedSingleBatch) {
+      manual[l.index] = [{ batchId: l.suggestedSingleBatch.batchId, quantity: l.requestedQuantity }];
+    }
+  }
+  _pendingManualAllocationsJson = JSON.stringify(manual);
+  closeFefoModal();
   submitSale();
 }
 
@@ -2324,6 +2498,12 @@ function submitSale() {
   if (currentStaffId)   fd.append('uid', currentStaffId);
   if (currentStation > 0) fd.append('posStation', currentStation);
   cart.forEach(item => { fd.append('medId[]', item.id); fd.append('qty[]', item.qty); });
+  // Lô dược sĩ đã tự chọn cho (các) dòng risky, từ confirmFefoChoices() — reset ngay sau khi
+  // đưa vào request để lần thanh toán TIẾP THEO (giỏ hàng khác) không vô tình dùng lại.
+  if (_pendingManualAllocationsJson) {
+    fd.append('manualAllocationsJson', _pendingManualAllocationsJson);
+    _pendingManualAllocationsJson = null;
+  }
   fd.append('_csrf', '${csrfToken}');
   fetch(ctx + '/pos', {
     method: 'POST',
@@ -3433,9 +3613,17 @@ async function confirmFaceCheckin() {
       showToast(msg + ' — ' + data.name, 'ok');
       // Ca đã ACTIVE từ trước (đã khai báo tiền đầu ca trong phiên này) → khỏi hỏi lại.
       // Mọi trường hợp còn lại (mới điểm danh, hoặc điểm danh lại trên phiên/máy khác)
-      // đều BẮT BUỘC khai báo tiền đầu ca trước khi được bán hàng.
+      // đều BẮT BUỘC khai báo tiền đầu ca trước khi được bán hàng — nhưng giờ tiền đầu ca đã
+      // được nhập TRƯỚC lúc quét mặt (xem openOpenCashModalStaged/pendingOpeningCash) nên
+      // chỉ cần gửi thẳng lên server, không hỏi lại nhân viên lần nữa.
       if (data.status !== 'already-active') {
-        openOpenCashModal();
+        const stagedCash = pendingOpeningCash;
+        pendingOpeningCash = null;
+        if (stagedCash !== null) {
+          confirmOpenShift(stagedCash);
+        } else {
+          openOpenCashModal();
+        }
       }
     } else if (data.reason === 'wrong-station') {
       // Kèm tên ca + khung giờ (server đã gửi kèm) để đọc rõ ngay tại quầy POS, thay vì chỉ
@@ -3490,17 +3678,59 @@ function moneyInputValue(el) {
 }
 
 function openOpenCashModal() {
+  openCashStaging = false;
   const m = document.getElementById('openCashModal');
   m.style.display = 'flex';
   const inp = document.getElementById('openCashInput');
   inp.value = '';
   document.getElementById('openCashErr').style.display = 'none';
+  const btn = document.getElementById('openShiftBtn');
+  btn.disabled = false; btn.textContent = '✓ Mở ca & bắt đầu bán hàng';
   setTimeout(() => inp.focus(), 120);
 }
-async function confirmOpenShift() {
+
+// Khai báo tiền đầu ca TRƯỚC khi quét khuôn mặt — chưa cần điểm danh mới báo cáo được doanh
+// thu đầu ca. Số tiền chỉ được lưu tạm ở client (pendingOpeningCash), rồi gửi lên server ngay
+// sau khi quét khuôn mặt xác thực thành công (xem confirmFaceCheckin()).
+function openOpenCashModalStaged() {
+  openCashStaging = true;
+  const m = document.getElementById('openCashModal');
+  m.style.display = 'flex';
+  const inp = document.getElementById('openCashInput');
+  inp.value = '';
+  document.getElementById('openCashErr').style.display = 'none';
+  const btn = document.getElementById('openShiftBtn');
+  btn.disabled = false; btn.textContent = '✓ Tiếp tục → Quét khuôn mặt';
+  setTimeout(() => inp.focus(), 120);
+}
+
+// Điều phối nút xác nhận trên modal "Khai báo tiền đầu ca": nếu đang ở bước khai báo trước
+// khi điểm danh (chưa có accountId) → chỉ lưu tạm rồi mở camera quét mặt; nếu đang sửa tiền
+// đầu ca cho ca đã điểm danh (nút "Sửa tiền đầu ca") → gửi thẳng lên server như trước.
+function confirmOpeningCashStep() {
   const inp = document.getElementById('openCashInput');
   const err = document.getElementById('openCashErr');
   const val = moneyInputValue(inp);
+  if (isNaN(val) || val < 0) {
+    err.textContent = 'Vui lòng nhập số tiền hợp lệ (≥ 0).';
+    err.style.display = 'block';
+    inp.focus();
+    return;
+  }
+  if (openCashStaging) {
+    pendingOpeningCash = val;
+    document.getElementById('openCashModal').style.display = 'none';
+    openFaceModal();
+  } else {
+    confirmOpenShift(val);
+  }
+}
+
+async function confirmOpenShift(explicitVal) {
+  const inp = document.getElementById('openCashInput');
+  const err = document.getElementById('openCashErr');
+  const usingExplicit = explicitVal !== undefined && explicitVal !== null && !isNaN(explicitVal);
+  const val = usingExplicit ? explicitVal : moneyInputValue(inp);
   if (isNaN(val) || val < 0) {
     err.textContent = 'Vui lòng nhập số tiền hợp lệ (≥ 0).';
     err.style.display = 'block';
@@ -3520,6 +3750,11 @@ async function confirmOpenShift() {
       document.getElementById('openCashModal').style.display = 'none';
       hideShiftLock();
       showToast('🔓 Đã mở ca — tiền đầu ca ' + fmtMoney(val), 'ok');
+    } else if (usingExplicit) {
+      // Tiền đã nhập từ trước khi quét mặt nhưng mở ca tự động thất bại (hiếm, vd. session hết
+      // hạn giữa lúc quét mặt) — cho khai báo lại thủ công qua modal thay vì mất luôn số đã nhập.
+      showToast('⚠️ Không tự mở ca được, vui lòng khai báo lại tiền đầu ca.', 'err');
+      openOpenCashModal();
     } else {
       err.textContent = data.reason === 'not_logged_in'
         ? 'Chưa điểm danh — hãy điểm danh khuôn mặt trước.'
@@ -3528,6 +3763,11 @@ async function confirmOpenShift() {
       btn.disabled = false; btn.textContent = '✓ Mở ca & bắt đầu bán hàng';
     }
   } catch (e) {
+    if (usingExplicit) {
+      showToast('⚠️ Lỗi kết nối, vui lòng khai báo lại tiền đầu ca.', 'err');
+      openOpenCashModal();
+      return;
+    }
     err.textContent = 'Lỗi kết nối: ' + e.message;
     err.style.display = 'block';
     btn.disabled = false; btn.textContent = '✓ Mở ca & bắt đầu bán hàng';
