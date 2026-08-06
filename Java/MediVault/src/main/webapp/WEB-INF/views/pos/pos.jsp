@@ -1008,8 +1008,8 @@ body{display:flex}
   <div class="fm-backdrop" onclick="closeFaceModal()"></div>
   <div class="fm-panel">
     <button class="fm-close" onclick="closeFaceModal()">✕</button>
-    <div class="fm-title">📷 Điểm danh qua khuôn mặt</div>
-    <div class="fm-sub">Nhìn thẳng vào camera — hệ thống tự nhận dạng</div>
+    <div class="fm-title" id="fmTitle">📷 Điểm danh qua khuôn mặt</div>
+    <div class="fm-sub" id="fmSub">Nhìn thẳng vào camera — hệ thống tự nhận dạng</div>
     <div id="fmLoading" class="fm-loader"><div class="fm-spinner"></div>Đang tải mô hình nhận dạng…</div>
     <div id="fmCameraWrap" style="display:none">
       <div class="face-video-wrap">
@@ -1024,7 +1024,7 @@ body{display:flex}
       <div class="fm-status" id="fmStatus">Đang quét…</div>
       <div class="fm-actions">
         <button class="fm-btn-cancel" onclick="closeFaceModal()">Hủy</button>
-        <button class="fm-btn-checkin" id="fmCheckinBtn" onclick="confirmFaceCheckin()">✓ Xác nhận điểm danh</button>
+        <button class="fm-btn-checkin" id="fmCheckinBtn" onclick="onFaceModalConfirm()">✓ Xác nhận điểm danh</button>
       </div>
     </div>
   </div>
@@ -3202,6 +3202,8 @@ function pickPrimaryFace(detections) {
   return best;
 }
 
+let faceModalMode     = 'checkin'; // 'checkin' (điểm danh đầu ca) hoặc 'end-shift' (xác thực trước khi đóng ca)
+let pendingClosingCash = null;     // Tiền cuối ca đã nhập & kiểm tra hợp lệ, chờ quét mặt xác thực xong mới gửi lên server
 let faceModelsLoaded  = false;
 let faceVideoStream   = null;
 let faceDetectLoopId  = null;
@@ -3271,6 +3273,37 @@ function closeFaceModal() {
   // clear canvas
   const cv = document.getElementById('faceCanvas');
   if (cv) cv.getContext('2d').clearRect(0,0,cv.width,cv.height);
+  // Trả modal về trạng thái mặc định (điểm danh đầu ca) cho lần mở tiếp theo
+  faceModalMode = 'checkin';
+  const titleEl = document.getElementById('fmTitle');
+  const subEl   = document.getElementById('fmSub');
+  const btn2    = document.getElementById('fmCheckinBtn');
+  if (titleEl) titleEl.textContent = '📷 Điểm danh qua khuôn mặt';
+  if (subEl)   subEl.textContent   = 'Nhìn thẳng vào camera — hệ thống tự nhận dạng';
+  if (btn2)    btn2.textContent    = '✓ Xác nhận điểm danh';
+}
+
+// Điều phối nút xác nhận trên modal quét mặt: chế độ 'checkin' (điểm danh đầu ca, mặc định)
+// dùng luồng cũ confirmFaceCheckin(); chế độ 'end-shift' (xác thực trước khi đóng ca) chỉ cần
+// khớp đúng khuôn mặt nhân viên đang trong ca rồi mới thực sự gửi yêu cầu đóng ca.
+function onFaceModalConfirm() {
+  if (faceModalMode === 'end-shift') {
+    confirmFaceForEndShift();
+  } else {
+    confirmFaceCheckin();
+  }
+}
+
+function confirmFaceForEndShift() {
+  if (!faceMatchedId) { showToast('⚠️ Chưa nhận dạng được khuôn mặt!', 'err'); return; }
+  // Server (handleEndShift) luôn đóng ca theo staffAccount đang lưu trong session — không
+  // theo faceMatchedId gửi từ client — nên chỉ cần xác nhận ĐÃ quét thành công một khuôn mặt
+  // hợp lệ (không cần so khớp lại với currentStaffId, biến này có thể null nếu trang được tải
+  // lại sau lúc điểm danh, khiến việc so khớp phía client sai lệch một cách giả tạo).
+  closeFaceModal();
+  const closingCash = pendingClosingCash;
+  pendingClosingCash = null;
+  doEndShift(closingCash);
 }
 
 function startFaceDetection() {
@@ -3978,7 +4011,7 @@ function calcCashVariance() {
   }
 }
 
-async function confirmEndShift() {
+function confirmEndShift() {
   var inp = document.getElementById('esrActualInput');
   var err = document.getElementById('esrActualErr');
   var closingCash = moneyInputValue(inp);
@@ -3989,6 +4022,27 @@ async function confirmEndShift() {
     return;
   }
   err.style.display = 'none';
+  // Số tiền cuối ca đã hợp lệ — lưu tạm rồi bắt quét khuôn mặt xác thực nhân viên,
+  // xong mới thực sự gửi yêu cầu đóng ca lên server (xem confirmFaceForEndShift()).
+  pendingClosingCash = closingCash;
+  startEndShiftFaceVerify();
+}
+
+function startEndShiftFaceVerify() {
+  faceModalMode = 'end-shift';
+  // Ẩn modal Báo cáo & Đóng ca giống hệt cách modal "Khai báo tiền đầu ca" ẩn đi khi chuyển
+  // sang bước quét mặt (xem confirmOpeningCashStep()) — chỉ hiện lại nếu đóng ca thất bại.
+  document.getElementById('esrModal').classList.remove('show');
+  var titleEl = document.getElementById('fmTitle');
+  var subEl   = document.getElementById('fmSub');
+  var btn     = document.getElementById('fmCheckinBtn');
+  if (titleEl) titleEl.textContent = '📷 Xác thực khuôn mặt trước khi đóng ca';
+  if (subEl)   subEl.textContent   = 'Nhìn thẳng vào camera để xác nhận đóng ca';
+  if (btn)     btn.textContent     = '✓ Xác nhận đóng ca';
+  openFaceModal();
+}
+
+async function doEndShift(closingCash) {
   var btn = document.getElementById('esrConfirmBtn');
   btn.disabled = true;
   btn.textContent = '⏳ Đang đóng ca...';
@@ -4004,11 +4058,15 @@ async function confirmEndShift() {
       showToast('✓ Đóng ca thành công — ' + (d.staffName || ''), 'ok');
       setTimeout(function() { location.reload(); }, 1600);
     } else {
+      // Đã quét mặt xong nhưng đóng ca thất bại (hiếm, vd. session hết hạn) — hiện lại modal
+      // báo cáo để nhân viên xem lại số liệu & thử lại, giống mẫu openOpenCashModal() ở luồng đầu ca.
+      document.getElementById('esrModal').classList.add('show');
       showToast('❌ ' + (d.reason || d.msg || 'Lỗi đóng ca'), 'err');
       btn.disabled = false;
       btn.textContent = '⏻ Xác nhận & Đóng ca';
     }
   } catch(e) {
+    document.getElementById('esrModal').classList.add('show');
     showToast('❌ Lỗi kết nối', 'err');
     btn.disabled = false;
     btn.textContent = '⏻ Xác nhận & Đóng ca';
